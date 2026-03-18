@@ -1,14 +1,14 @@
-// Patch Word Puzzle — A sliding tile puzzle, ported from the .NET MAUI sample.
-// No XAML. No data binding. Just C# with Patch's declarative component model.
+// Duct Word Puzzle — A sliding tile puzzle, ported from the .NET MAUI sample.
+// No XAML. No data binding. Just C# with Duct's declarative component model.
 
-using Patch;
-using Patch.Core;
+using Duct;
+using Duct.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Text;
-using static Patch.UI;
+using static Duct.UI;
 
-PatchApp.Run<WordPuzzleApp>("Patch Word Puzzle", width: 520, height: 620);
+DuctApp.Run<WordPuzzleApp>("Duct Word Puzzle", width: 520, height: 620);
 
 // ─── Main game component ───────────────────────────────────────────────────────
 
