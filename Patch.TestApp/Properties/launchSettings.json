@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Patch.TestApp": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}

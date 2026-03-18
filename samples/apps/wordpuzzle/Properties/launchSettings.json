@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "WordPuzzle": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}

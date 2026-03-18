@@ -1,0 +1,11 @@
+<Project>
+
+  <!--
+    Enable self-contained deployment so the WinUI/WinAppSDK runtime DLLs are copied
+    into the app output folder. This allows us to replace them with locally-built binaries.
+  -->
+  <PropertyGroup>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+  </PropertyGroup>
+
+</Project>
