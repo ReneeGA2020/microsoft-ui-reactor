@@ -1,0 +1,13 @@
+[package]
+# Named "viewdiffer" (not "patch_differ") to avoid Windows PCA heuristic
+# that forces UAC elevation for executables with "patch" in the name.
+name = "viewdiffer"
+version = "0.1.0"
+edition = "2021"
+description = "Native view diffing engine for Patch"
+
+[lib]
+name = "viewdiffer"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]

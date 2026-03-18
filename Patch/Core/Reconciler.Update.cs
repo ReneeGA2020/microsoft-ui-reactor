@@ -90,14 +90,14 @@ public sealed partial class Reconciler
                 => UpdateBreadcrumbBar(n, bcb),
             (PivotElement, PivotElement, WinUI.Pivot)
                 => Mount(newEl, requestRerender),
-            (ListViewElement, ListViewElement, WinUI.ListView)
-                => Mount(newEl, requestRerender),
-            (GridViewElement, GridViewElement, WinUI.GridView)
-                => Mount(newEl, requestRerender),
+            (ListViewElement o, ListViewElement n, WinUI.ListView lv)
+                => UpdateListView(o, n, lv, requestRerender),
+            (GridViewElement o, GridViewElement n, WinUI.GridView gv)
+                => UpdateGridView(o, n, gv, requestRerender),
             (TreeViewElement, TreeViewElement, WinUI.TreeView)
                 => Mount(newEl, requestRerender),
-            (FlipViewElement, FlipViewElement, WinUI.FlipView)
-                => Mount(newEl, requestRerender),
+            (FlipViewElement o, FlipViewElement n, WinUI.FlipView fv)
+                => UpdateFlipView(o, n, fv, requestRerender),
             (InfoBarElement, InfoBarElement n, WinUI.InfoBar ib)
                 => UpdateInfoBar(n, ib),
             (InfoBadgeElement, InfoBadgeElement n, WinUI.InfoBadge badge)
@@ -130,8 +130,8 @@ public sealed partial class Reconciler
 
     private static UIElement? UpdateText(TextElement n, TextBlock tb)
     {
-        tb.Text = n.Content;
-        if (n.FontSize.HasValue) tb.FontSize = n.FontSize.Value;
+        if (tb.Text != n.Content) tb.Text = n.Content;
+        if (n.FontSize.HasValue && tb.FontSize != n.FontSize.Value) tb.FontSize = n.FontSize.Value;
         if (n.Weight.HasValue) tb.FontWeight = n.Weight.Value;
         if (n.HorizontalAlignment.HasValue) tb.HorizontalAlignment = n.HorizontalAlignment.Value;
         ApplySetters(n.Setters, tb);
@@ -351,8 +351,7 @@ public sealed partial class Reconciler
     private UIElement? UpdateStack(StackElement o, StackElement n, WinUI.StackPanel sp, Action requestRerender)
     {
         sp.Spacing = n.Spacing;
-        var panelReplacement = ReconcileChildren(o.Children, n.Children, sp, requestRerender);
-        if (panelReplacement is not null) return panelReplacement;
+        ReconcileChildren(o.Children, n.Children, sp, requestRerender);
         sp.Tag = n;
         ApplySetters(n.Setters, sp);
         return null;
@@ -446,6 +445,39 @@ public sealed partial class Reconciler
         tip.Title = n.Title; tip.Subtitle = n.Subtitle ?? ""; tip.IsOpen = n.IsOpen;
         tip.Tag = n;
         ApplySetters(n.Setters, tip);
+        return null;
+    }
+
+    private UIElement? UpdateListView(ListViewElement o, ListViewElement n, WinUI.ListView lv, Action requestRerender)
+    {
+        lv.SelectionMode = n.SelectionMode;
+        lv.IsItemClickEnabled = n.OnItemClick is not null;
+        if (n.Header is not null) lv.Header = n.Header;
+        ReconcileItemsChildren(o.Items, n.Items, lv, requestRerender);
+        if (n.SelectedIndex >= 0) lv.SelectedIndex = n.SelectedIndex;
+        lv.Tag = n;
+        ApplySetters(n.Setters, lv);
+        return null;
+    }
+
+    private UIElement? UpdateGridView(GridViewElement o, GridViewElement n, WinUI.GridView gv, Action requestRerender)
+    {
+        gv.SelectionMode = n.SelectionMode;
+        gv.IsItemClickEnabled = n.OnItemClick is not null;
+        if (n.Header is not null) gv.Header = n.Header;
+        ReconcileItemsChildren(o.Items, n.Items, gv, requestRerender);
+        if (n.SelectedIndex >= 0) gv.SelectedIndex = n.SelectedIndex;
+        gv.Tag = n;
+        ApplySetters(n.Setters, gv);
+        return null;
+    }
+
+    private UIElement? UpdateFlipView(FlipViewElement o, FlipViewElement n, WinUI.FlipView fv, Action requestRerender)
+    {
+        ReconcileItemsChildren(o.Items, n.Items, fv, requestRerender);
+        fv.SelectedIndex = n.SelectedIndex;
+        fv.Tag = n;
+        ApplySetters(n.Setters, fv);
         return null;
     }
 
