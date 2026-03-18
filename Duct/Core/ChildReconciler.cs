@@ -77,8 +77,9 @@ internal static class ChildReconciler
         // Remove excess old children (from end to start to keep indices stable)
         for (int i = children.Count - 1; i >= common; i--)
         {
-            reconciler.UnmountChild(children.Get(i));
+            var old = children.Get(i);
             children.RemoveAt(i);
+            reconciler.UnmountAndPool(old);
         }
 
         // Insert new children beyond old count
@@ -170,8 +171,9 @@ internal static class ChildReconciler
                 int panelIdx = prefixLen + i;
                 if (panelIdx < children.Count)
                 {
-                    reconciler.UnmountChild(children.Get(panelIdx));
+                    var old = children.Get(panelIdx);
                     children.RemoveAt(panelIdx);
+                    reconciler.UnmountAndPool(old);
                 }
             }
             return;
@@ -216,8 +218,9 @@ internal static class ChildReconciler
                 int panelIdx = prefixLen + i;
                 if (panelIdx < children.Count)
                 {
-                    reconciler.UnmountChild(children.Get(panelIdx));
+                    var old = children.Get(panelIdx);
                     children.RemoveAt(panelIdx);
+                    reconciler.UnmountAndPool(old);
                     removeOffset++;
                 }
             }

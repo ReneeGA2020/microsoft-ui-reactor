@@ -18,6 +18,7 @@ namespace Duct.Core;
 public sealed partial class Reconciler
 {
     private readonly Dictionary<UIElement, ComponentNode> _componentNodes = new();
+    private readonly ElementPool _pool = new();
 
     public UIElement? Reconcile(
         Element? oldElement,
@@ -154,6 +155,21 @@ public sealed partial class Reconciler
         {
             Unmount(border.Child);
         }
+        else if (control is WinUI.ScrollViewer sv && sv.Content is UIElement svChild)
+        {
+            Unmount(svChild);
+        }
+    }
+
+    /// <summary>
+    /// Unmounts and returns the element to the pool.
+    /// Only call after the element has been detached from the visual tree.
+    /// </summary>
+    internal void UnmountAndPool(UIElement control)
+    {
+        Unmount(control);
+        if (control is FrameworkElement fe)
+            _pool.Return(fe);
     }
 
     // ════════════════════════════════════════════════════════════════════

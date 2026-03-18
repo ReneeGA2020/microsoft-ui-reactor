@@ -66,6 +66,7 @@ public sealed partial class Reconciler
             MenuBarElement mbEl => MountMenuBar(mbEl),
             CommandBarElement cmdEl => MountCommandBar(cmdEl, requestRerender),
             MenuFlyoutElement mfEl => MountMenuFlyout(mfEl, requestRerender),
+            LazyStackElementBase lazy => MountLazyStack(lazy, requestRerender),
             ComponentElement comp => MountComponent(comp, requestRerender),
             FuncElement func => MountFuncComponent(func, requestRerender),
             _ => null,
@@ -81,7 +82,8 @@ public sealed partial class Reconciler
 
     private TextBlock MountText(TextElement text)
     {
-        var tb = new TextBlock { Text = text.Content };
+        var tb = _pool.TryRent(typeof(TextBlock)) as TextBlock ?? new TextBlock();
+        tb.Text = text.Content;
         if (text.FontSize.HasValue) tb.FontSize = text.FontSize.Value;
         if (text.Weight.HasValue) tb.FontWeight = text.Weight.Value;
         if (text.HorizontalAlignment.HasValue) tb.HorizontalAlignment = text.HorizontalAlignment.Value;
@@ -91,7 +93,7 @@ public sealed partial class Reconciler
 
     private WinUI.RichTextBlock MountRichTextBlock(RichTextBlockElement richText)
     {
-        var rtb = new WinUI.RichTextBlock();
+        var rtb = _pool.TryRent(typeof(WinUI.RichTextBlock)) as WinUI.RichTextBlock ?? new WinUI.RichTextBlock();
         var paragraph = new Microsoft.UI.Xaml.Documents.Paragraph();
         paragraph.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = richText.Text });
         rtb.Blocks.Add(paragraph);
@@ -385,11 +387,12 @@ public sealed partial class Reconciler
 
     private WinUI.ProgressBar MountProgress(ProgressElement prog)
     {
-        var bar = new WinUI.ProgressBar
-        {
-            IsIndeterminate = prog.IsIndeterminate, Minimum = prog.Minimum, Maximum = prog.Maximum,
-            ShowError = prog.ShowError, ShowPaused = prog.ShowPaused,
-        };
+        var bar = _pool.TryRent(typeof(WinUI.ProgressBar)) as WinUI.ProgressBar ?? new WinUI.ProgressBar();
+        bar.IsIndeterminate = prog.IsIndeterminate;
+        bar.Minimum = prog.Minimum;
+        bar.Maximum = prog.Maximum;
+        bar.ShowError = prog.ShowError;
+        bar.ShowPaused = prog.ShowPaused;
         if (prog.Value.HasValue) bar.Value = prog.Value.Value;
         ApplySetters(prog.Setters, bar);
         return bar;
@@ -397,7 +400,11 @@ public sealed partial class Reconciler
 
     private WinUI.ProgressRing MountProgressRing(ProgressRingElement ring)
     {
-        var pr = new WinUI.ProgressRing { IsIndeterminate = ring.IsIndeterminate, IsActive = ring.IsActive, Minimum = ring.Minimum, Maximum = ring.Maximum };
+        var pr = _pool.TryRent(typeof(WinUI.ProgressRing)) as WinUI.ProgressRing ?? new WinUI.ProgressRing();
+        pr.IsIndeterminate = ring.IsIndeterminate;
+        pr.IsActive = ring.IsActive;
+        pr.Minimum = ring.Minimum;
+        pr.Maximum = ring.Maximum;
         if (ring.Value.HasValue) pr.Value = ring.Value.Value;
         ApplySetters(ring.Setters, pr);
         return pr;
@@ -405,7 +412,7 @@ public sealed partial class Reconciler
 
     private WinUI.Image MountImage(ImageElement img)
     {
-        var image = new WinUI.Image();
+        var image = _pool.TryRent(typeof(WinUI.Image)) as WinUI.Image ?? new WinUI.Image();
         image.Source = new BitmapImage(new Uri(img.Source, UriKind.RelativeOrAbsolute));
         if (img.Width.HasValue) image.Width = img.Width.Value;
         if (img.Height.HasValue) image.Height = img.Height.Value;
@@ -439,11 +446,9 @@ public sealed partial class Reconciler
 
     private WinUI.StackPanel MountStack(StackElement stack, Action requestRerender)
     {
-        var panel = new WinUI.StackPanel
-        {
-            Orientation = stack.Orientation,
-            Spacing = stack.Spacing,
-        };
+        var panel = _pool.TryRent(typeof(WinUI.StackPanel)) as WinUI.StackPanel ?? new WinUI.StackPanel();
+        panel.Orientation = stack.Orientation;
+        panel.Spacing = stack.Spacing;
         if (stack.HorizontalAlignment.HasValue) panel.HorizontalAlignment = stack.HorizontalAlignment.Value;
         if (stack.VerticalAlignment.HasValue) panel.VerticalAlignment = stack.VerticalAlignment.Value;
         foreach (var child in stack.Children)
@@ -459,7 +464,11 @@ public sealed partial class Reconciler
 
     private WinUI.Grid MountGrid(GridElement grid, Action requestRerender)
     {
-        var g = new WinUI.Grid { RowSpacing = grid.RowSpacing, ColumnSpacing = grid.ColumnSpacing };
+        var g = _pool.TryRent(typeof(WinUI.Grid)) as WinUI.Grid ?? new WinUI.Grid();
+        g.RowSpacing = grid.RowSpacing;
+        g.ColumnSpacing = grid.ColumnSpacing;
+        g.ColumnDefinitions.Clear();
+        g.RowDefinitions.Clear();
         foreach (var col in grid.Definition.Columns) g.ColumnDefinitions.Add(ParseColumnDef(col));
         foreach (var row in grid.Definition.Rows) g.RowDefinitions.Add(ParseRowDef(row));
         foreach (var child in grid.Children)
@@ -479,11 +488,9 @@ public sealed partial class Reconciler
 
     private WinUI.ScrollViewer MountScrollView(ScrollViewElement scroll, Action requestRerender)
     {
-        var sv = new WinUI.ScrollViewer
-        {
-            HorizontalScrollBarVisibility = scroll.HorizontalScrollBarVisibility,
-            VerticalScrollBarVisibility = scroll.VerticalScrollBarVisibility,
-        };
+        var sv = _pool.TryRent(typeof(WinUI.ScrollViewer)) as WinUI.ScrollViewer ?? new WinUI.ScrollViewer();
+        sv.HorizontalScrollBarVisibility = scroll.HorizontalScrollBarVisibility;
+        sv.VerticalScrollBarVisibility = scroll.VerticalScrollBarVisibility;
         sv.Content = Mount(scroll.Child, requestRerender);
         sv.Tag = scroll;
         ApplySetters(scroll.Setters, sv);
@@ -492,7 +499,7 @@ public sealed partial class Reconciler
 
     private WinUI.Border MountBorder(BorderElement border, Action requestRerender)
     {
-        var bdr = new WinUI.Border();
+        var bdr = _pool.TryRent(typeof(WinUI.Border)) as WinUI.Border ?? new WinUI.Border();
         if (border.CornerRadius.HasValue) bdr.CornerRadius = new Microsoft.UI.Xaml.CornerRadius(border.CornerRadius.Value);
         if (border.Padding.HasValue) bdr.Padding = border.Padding.Value;
         if (border.Background is not null) bdr.Background = border.Background;
@@ -537,7 +544,7 @@ public sealed partial class Reconciler
 
     private WinUI.Viewbox MountViewbox(ViewboxElement vb, Action requestRerender)
     {
-        var viewbox = new WinUI.Viewbox();
+        var viewbox = _pool.TryRent(typeof(WinUI.Viewbox)) as WinUI.Viewbox ?? new WinUI.Viewbox();
         viewbox.Child = Mount(vb.Child, requestRerender) as UIElement;
         ApplySetters(vb.Setters, viewbox);
         return viewbox;
@@ -545,7 +552,7 @@ public sealed partial class Reconciler
 
     private WinUI.Canvas MountCanvas(CanvasElement cvs, Action requestRerender)
     {
-        var canvas = new WinUI.Canvas();
+        var canvas = _pool.TryRent(typeof(WinUI.Canvas)) as WinUI.Canvas ?? new WinUI.Canvas();
         if (cvs.Width.HasValue) canvas.Width = cvs.Width.Value;
         if (cvs.Height.HasValue) canvas.Height = cvs.Height.Value;
         if (cvs.Background is not null) canvas.Background = cvs.Background;
@@ -784,7 +791,7 @@ public sealed partial class Reconciler
 
     private WinUI.InfoBadge MountInfoBadge(InfoBadgeElement badge)
     {
-        var ib = new WinUI.InfoBadge();
+        var ib = _pool.TryRent(typeof(WinUI.InfoBadge)) as WinUI.InfoBadge ?? new WinUI.InfoBadge();
         if (badge.Value.HasValue) ib.Value = badge.Value.Value;
         ApplySetters(badge.Setters, ib);
         return ib;
@@ -964,5 +971,32 @@ public sealed partial class Reconciler
             };
         }
         return control!;
+    }
+
+    private UIElement MountLazyStack(LazyStackElementBase lazy, Action requestRerender)
+    {
+        var repeater = new WinUI.ItemsRepeater();
+
+        repeater.Layout = new WinUI.StackLayout
+        {
+            Orientation = lazy.Orientation,
+            Spacing = lazy.Spacing,
+        };
+
+        repeater.ItemsSource = lazy.GetItemsSource();
+        repeater.ItemTemplate = lazy.CreateFactory(this, requestRerender, _pool);
+        repeater.Tag = lazy;
+
+        var sv = _pool.TryRent(typeof(WinUI.ScrollViewer)) as WinUI.ScrollViewer ?? new WinUI.ScrollViewer();
+        sv.Content = repeater;
+        sv.HorizontalScrollBarVisibility = lazy.Orientation == Microsoft.UI.Xaml.Controls.Orientation.Horizontal
+            ? WinUI.ScrollBarVisibility.Auto
+            : WinUI.ScrollBarVisibility.Disabled;
+        sv.VerticalScrollBarVisibility = lazy.Orientation == Microsoft.UI.Xaml.Controls.Orientation.Vertical
+            ? WinUI.ScrollBarVisibility.Auto
+            : WinUI.ScrollBarVisibility.Disabled;
+        sv.Tag = lazy;
+
+        return sv;
     }
 }
