@@ -1,18 +1,18 @@
 ---
-name: patch-app
+name: duct-app
 description: >
-  Create WinUI 3 desktop applications using the Patch (Functional UI) framework — a React-inspired
+  Create WinUI 3 desktop applications using the Duct (Functional UI) framework — a React-inspired
   declarative C# projection over WinUI 3. No XAML, no data binding, no templates. Use when asked
-  to "create a Patch app", "build a desktop app with Patch", "make a WinUI app", or any request
-  involving the Patch framework. This skill contains the complete API reference, patterns, and
+  to "create a Duct app", "build a desktop app with Duct", "make a WinUI app", or any request
+  involving the Duct framework. This skill contains the complete API reference, patterns, and
   project setup needed to generate correct Patch code in one shot.
 ---
 
-# Patch App Builder — Complete Reference for Code Generation
+# Duct App Builder — Complete Reference for Code Generation
 
 ## What is Patch?
 
-Patch (Functional UI) is a **React-inspired functional projection for WinUI 3**. It replaces XAML
+Duct (Functional UI) is a **React-inspired functional projection for WinUI 3**. It replaces XAML
 with pure C# using a declarative, component-based approach. Think of it as "React hooks + JSX,
 but in C# targeting native Windows controls."
 
@@ -40,7 +40,7 @@ re-renders automatically.
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.0.0-experimental4" />
-    <ProjectReference Include="..\Patch\Patch.csproj" />
+    <ProjectReference Include="..\Patch\Duct.csproj" />
   </ItemGroup>
 </Project>
 ```
@@ -53,14 +53,14 @@ re-renders automatically.
 ### Required Imports (top of every file)
 
 ```csharp
-using Patch;
-using Patch.Core;
+using Duct;
+using Duct.Core;
 using Microsoft.UI.Xaml;           // Thickness, HorizontalAlignment, VerticalAlignment
 using Microsoft.UI.Xaml.Controls;  // Orientation, InfoBarSeverity, etc. (if needed)
-using static Patch.UI;  // Brings Text(), Button(), VStack() etc. into scope
+using static Duct.UI;  // Brings Text(), Button(), VStack() etc. into scope
 ```
 
-The `using static Patch.UI;` import is essential — it makes all DSL factory methods available
+The `using static Duct.UI;` import is essential — it makes all DSL factory methods available
 as bare function calls (like JSX tags). The WinUI usings give you access to enums and structs
 like `Thickness`, `HorizontalAlignment`, and `Orientation` — Patch uses WinUI types directly.
 
@@ -68,12 +68,12 @@ like `Thickness`, `HorizontalAlignment`, and `Orientation` — Patch uses WinUI 
 
 ```csharp
 // Top-level statement — this IS the entire Program.cs
-PatchApp.Run<MyRootComponent>("Window Title", width: 1024, height: 768);
+DuctApp.Run<MyRootComponent>("Window Title", width: 1024, height: 768);
 ```
 
 Alternative inline root (no component class needed):
 ```csharp
-PatchApp.Run("Window Title", ctx =>
+DuctApp.Run("Window Title", ctx =>
 {
     var (msg, setMsg) = ctx.UseState("Hello!");
     return VStack(Text(msg), Button("Change", () => setMsg("Changed!")));
@@ -859,7 +859,7 @@ InfoBar("Title", "Msg") with { Severity = InfoBarSeverity.Warning, IsClosable = 
 ```
 
 ### 6. No XAML, No App.xaml, No Resources
-Patch apps have zero XAML files. The `PatchApplication` class loads `XamlControlsResources`
+Patch apps have zero XAML files. The `DuctApplication` class loads `XamlControlsResources`
 programmatically. WinUI theme resources (Fluent design) are automatically available.
 
 ### 7. Icons Use Symbol Enum Names
@@ -881,13 +881,13 @@ new Thickness(10, 20, 10, 20)       // left, top, right, bottom
 ## Complete Starter App Template
 
 ```csharp
-// App.cs — A complete Patch application in a single file
-using Patch;
-using Patch.Core;
+// App.cs — A complete Duct application in a single file
+using Duct;
+using Duct.Core;
 using Microsoft.UI.Xaml;
-using static Patch.UI;
+using static Duct.UI;
 
-PatchApp.Run<App>("My Patch App", width: 1200, height: 800);
+DuctApp.Run<App>("My Duct App", width: 1200, height: 800);
 
 class App : Component
 {
@@ -937,7 +937,7 @@ class HomePage : Component
                 TextField(name, setName, placeholder: "Enter your name").Width(300),
                 When(!string.IsNullOrEmpty(name), () => Text($"Hello, {name}!").SemiBold())
             ),
-            Text("This is a Patch application — no XAML, just C#.").Opacity(0.6)
+            Text("This is a Duct application — no XAML, just C#.").Opacity(0.6)
         );
     }
 }
@@ -1010,4 +1010,4 @@ class SettingsPage : Component
 | `props` | N/A — components use hooks for all state |
 | `className="..."` | `.Set(el => ...)` for native property access |
 | `style={{margin: 10}}` | `.Margin(10)` |
-| JSX | C# method calls + `using static Patch.UI` |
+| JSX | C# method calls + `using static Duct.UI` |
