@@ -201,3 +201,6 @@ health/
 *.pubxml
 
 selfhost/
+
+# Rust build artifacts
+Patch/Native/differ/target/

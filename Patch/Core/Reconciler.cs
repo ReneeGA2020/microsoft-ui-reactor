@@ -97,53 +97,40 @@ public sealed partial class Reconciler
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  Children reconciliation
+    //  Children reconciliation (keyed LIS + positional)
     // ════════════════════════════════════════════════════════════════════
 
-    private UIElement? ReconcileChildren(
+    private void ReconcileChildren(
         Element[] oldChildren, Element[] newChildren,
-        WinUI.StackPanel panel, Action requestRerender)
+        WinUI.Panel panel, Action requestRerender)
     {
-        var oldFiltered = oldChildren.Where(c => c is not null and not EmptyElement).ToArray();
-        var newFiltered = newChildren.Where(c => c is not null and not EmptyElement).ToArray();
-
-        if (oldFiltered.Length != newFiltered.Length)
-            return RemountPanel(newFiltered, panel, requestRerender);
-
-        for (int i = 0; i < oldFiltered.Length; i++)
-            if (!CanUpdate(oldFiltered[i], newFiltered[i]))
-                return RemountPanel(newFiltered, panel, requestRerender);
-
-        for (int i = 0; i < oldFiltered.Length; i++)
-        {
-            if (i >= panel.Children.Count) break;
-            var replacement = Update(oldFiltered[i], newFiltered[i], panel.Children[i], requestRerender);
-            if (replacement is not null)
-                return RemountPanel(newFiltered, panel, requestRerender);
-        }
-
-        return null;
+        var childCollection = new PanelChildCollection(panel);
+        ChildReconciler.Reconcile(oldChildren, newChildren, childCollection, this, requestRerender);
     }
 
-    private UIElement RemountPanel(Element[] newChildren, WinUI.StackPanel oldPanel, Action requestRerender)
+    private void ReconcileItemsChildren(
+        Element[] oldChildren, Element[] newChildren,
+        WinUI.ItemsControl itemsControl, Action requestRerender)
     {
-        Unmount(oldPanel);
-        var fresh = new WinUI.StackPanel
-        {
-            Orientation = oldPanel.Orientation,
-            Spacing = oldPanel.Spacing,
-            HorizontalAlignment = oldPanel.HorizontalAlignment,
-            VerticalAlignment = oldPanel.VerticalAlignment,
-        };
-        if (!double.IsNaN(oldPanel.Margin.Left)) fresh.Margin = oldPanel.Margin;
+        var childCollection = new ItemsControlChildCollection(itemsControl);
+        ChildReconciler.Reconcile(oldChildren, newChildren, childCollection, this, requestRerender);
+    }
 
-        foreach (var childEl in newChildren)
-        {
-            var ctrl = Mount(childEl, requestRerender);
-            if (ctrl is not null)
-                fresh.Children.Add(ctrl);
-        }
-        return fresh;
+    /// <summary>
+    /// Called by ChildReconciler to update a single child element.
+    /// Returns non-null if the child needs to be replaced (new control returned).
+    /// </summary>
+    internal UIElement? UpdateChild(Element oldEl, Element newEl, UIElement control, Action requestRerender)
+    {
+        return Update(oldEl, newEl, control, requestRerender);
+    }
+
+    /// <summary>
+    /// Called by ChildReconciler to unmount a child.
+    /// </summary>
+    internal void UnmountChild(UIElement control)
+    {
+        Unmount(control);
     }
 
     // ════════════════════════════════════════════════════════════════════
