@@ -110,6 +110,8 @@ public sealed partial class Reconciler
                 => Mount(newEl, requestRerender),
             (CommandBarElement, CommandBarElement, WinUI.CommandBar)
                 => Mount(newEl, requestRerender),
+            (LazyStackElementBase, LazyStackElementBase n, WinUI.ScrollViewer sv)
+                => UpdateLazyStack(n, sv, requestRerender),
             (ComponentElement, ComponentElement, _)
                 => UpdateComponent(oldEl, newEl, control, requestRerender),
             (FuncElement, FuncElement, _)
@@ -478,6 +480,20 @@ public sealed partial class Reconciler
         fv.SelectedIndex = n.SelectedIndex;
         fv.Tag = n;
         ApplySetters(n.Setters, fv);
+        return null;
+    }
+
+    private UIElement? UpdateLazyStack(LazyStackElementBase n, WinUI.ScrollViewer sv, Action requestRerender)
+    {
+        if (sv.Content is WinUI.ItemsRepeater repeater)
+        {
+            repeater.ItemsSource = n.GetItemsSource();
+            repeater.ItemTemplate = n.CreateFactory(this, requestRerender, _pool);
+            if (repeater.Layout is WinUI.StackLayout layout)
+                layout.Spacing = n.Spacing;
+            repeater.Tag = n;
+        }
+        sv.Tag = n;
         return null;
     }
 

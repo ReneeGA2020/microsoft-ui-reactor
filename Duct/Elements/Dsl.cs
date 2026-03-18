@@ -308,6 +308,18 @@ public static class UI
     public static Thickness Thick(double left, double top, double right, double bottom) =>
         new(left, top, right, bottom);
 
+    // ── Virtualized collections ───────────────────────────────────
+
+    public static LazyVStackElement<T> LazyVStack<T>(
+        IReadOnlyList<T> items,
+        Func<T, string> keySelector,
+        Func<T, int, Element> viewBuilder) => new(items, keySelector, viewBuilder);
+
+    public static LazyHStackElement<T> LazyHStack<T>(
+        IReadOnlyList<T> items,
+        Func<T, string> keySelector,
+        Func<T, int, Element> viewBuilder) => new(items, keySelector, viewBuilder);
+
     // ── Internals ───────────────────────────────────────────────────
 
     private static Element[] FilterChildren(Element?[] children) =>

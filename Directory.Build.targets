@@ -19,7 +19,7 @@
     <IXPFrameworkDir>$(WinUIRepoRoot)\packages\microsoft.windowsappsdk.interactiveexperiences\2.0.3-experimental\runtimes-framework\win-arm64\native</IXPFrameworkDir>
   </PropertyGroup>
 
-  <Target Name="CopyLocalWinUIBinaries" AfterTargets="Build" Condition="'$(OutputType)' == 'WinExe' Or '$(OutputType)' == 'Exe'">
+  <Target Name="CopyLocalWinUIBinaries" AfterTargets="Build" Condition="('$(OutputType)' == 'WinExe' Or '$(OutputType)' == 'Exe') And '$(IsTestProject)' != 'true'">
 
     <ItemGroup>
       <WinUIBinaries Include="$(WinUIPackagingDir)\**\*.*" />

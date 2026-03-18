@@ -712,3 +712,54 @@ public record MenuFlyoutElement(
 {
     internal Action<WinUI.MenuFlyout>[] Setters { get; init; } = [];
 }
+
+// ════════════════════════════════════════════════════════════════════════
+//  Virtualized collection elements (backed by ItemsRepeater)
+// ════════════════════════════════════════════════════════════════════════
+
+/// <summary>
+/// Abstract base for virtualized lazy stacks. Non-generic so the reconciler
+/// can match on a single type in its switch expression.
+/// </summary>
+public abstract record LazyStackElementBase : Element
+{
+    public abstract Orientation Orientation { get; }
+    public abstract double Spacing { get; init; }
+    public abstract double EstimatedItemSize { get; init; }
+    public abstract object GetItemsSource();
+    public abstract ElementFactory CreateFactory(Reconciler reconciler, Action requestRerender, ElementPool? pool);
+}
+
+public record LazyVStackElement<T>(
+    IReadOnlyList<T> Items,
+    Func<T, string> KeySelector,
+    Func<T, int, Element> ViewBuilder
+) : LazyStackElementBase
+{
+    public override Orientation Orientation => Orientation.Vertical;
+    public override double Spacing { get; init; } = 8;
+    public override double EstimatedItemSize { get; init; } = 40;
+
+    public override object GetItemsSource() =>
+        Enumerable.Range(0, Items.Count).ToList();
+
+    public override ElementFactory CreateFactory(Reconciler reconciler, Action requestRerender, ElementPool? pool) =>
+        new DuctElementFactory<T>(Items, ViewBuilder, reconciler, requestRerender, pool);
+}
+
+public record LazyHStackElement<T>(
+    IReadOnlyList<T> Items,
+    Func<T, string> KeySelector,
+    Func<T, int, Element> ViewBuilder
+) : LazyStackElementBase
+{
+    public override Orientation Orientation => Orientation.Horizontal;
+    public override double Spacing { get; init; } = 8;
+    public override double EstimatedItemSize { get; init; } = 100;
+
+    public override object GetItemsSource() =>
+        Enumerable.Range(0, Items.Count).ToList();
+
+    public override ElementFactory CreateFactory(Reconciler reconciler, Action requestRerender, ElementPool? pool) =>
+        new DuctElementFactory<T>(Items, ViewBuilder, reconciler, requestRerender, pool);
+}
