@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>patch</AssemblyName>
+    <RootNamespace>Patch.Cli</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <SelfHostDir>$(MSBuildThisFileDirectory)..\selfhost</SelfHostDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\SKILL.md" Link="SKILL.md" LogicalName="SKILL.md" />
+  </ItemGroup>
+
+  <!-- After build, populate selfhost/ with the CLI exe and bootstrap skill -->
+  <Target Name="PopulateSelfHost" AfterTargets="Build">
+    <MakeDir Directories="$(SelfHostDir)" />
+    <ItemGroup>
+      <SelfHostFiles Include="$(OutputPath)**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(SelfHostFiles)"
+          DestinationFolder="$(SelfHostDir)\%(RecursiveDir)"
+          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)BOOTSTRAP-SKILL.md"
+          DestinationFiles="$(SelfHostDir)\SKILL.md"
+          SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Selfhost populated: $(SelfHostDir)" />
+  </Target>
+
+</Project>
