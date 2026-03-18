@@ -1,0 +1,65 @@
+<Project>
+
+  <!--
+    After building, overwrite the WinUI binaries in the output folder with the
+    locally-built ARM64 CHK binaries from the microsoft-ui-xaml repo.
+    Also copy PDBs so we can debug into the WinUI implementation.
+
+    Only applies to executable projects (TestApp, MiniTest).
+  -->
+  <PropertyGroup>
+    <WinUIRepoRoot>$(MSBuildThisFileDirectory)..\microsoft-ui-xaml\src</WinUIRepoRoot>
+    <WinUILocalBuildRoot>$(WinUIRepoRoot)\BuildOutput</WinUILocalBuildRoot>
+    <WinUIPackagingDir>$(WinUILocalBuildRoot)\packaging\Debug\runtimes\win10-$(Platform)\native</WinUIPackagingDir>
+    <WinUIFrameworkDir>$(WinUILocalBuildRoot)\packaging\Debug\runtimes-framework\win-$(Platform)\native</WinUIFrameworkDir>
+    <WinUISymbolsDir>$(WinUILocalBuildRoot)\bin\arm64chk\Symbols\Product</WinUISymbolsDir>
+    <WinUIManagedDir>$(WinUILocalBuildRoot)\packaging\Debug\lib\net6.0-windows10.0.17763.0</WinUIManagedDir>
+    <WinUIWinmdDir>$(WinUILocalBuildRoot)\packaging\Debug\lib\uap10.0</WinUIWinmdDir>
+    <!-- IXP framework DLLs (dwmcorei, dcompi, etc.) that the locally built WinUI depends on -->
+    <IXPFrameworkDir>$(WinUIRepoRoot)\packages\microsoft.windowsappsdk.interactiveexperiences\2.0.3-experimental\runtimes-framework\win-arm64\native</IXPFrameworkDir>
+  </PropertyGroup>
+
+  <Target Name="CopyLocalWinUIBinaries" AfterTargets="Build" Condition="'$(OutputType)' == 'WinExe' Or '$(OutputType)' == 'Exe'">
+
+    <ItemGroup>
+      <WinUIBinaries Include="$(WinUIPackagingDir)\**\*.*" />
+      <WinUIFrameworkBinaries Include="$(WinUIFrameworkDir)\**\*.*" Condition="Exists('$(WinUIFrameworkDir)')" />
+      <IXPFrameworkBinaries Include="$(IXPFrameworkDir)\*.*" Condition="Exists('$(IXPFrameworkDir)')" />
+      <WinUISymbols Include="$(WinUISymbolsDir)\*.pdb" />
+    </ItemGroup>
+
+    <Message Importance="high" Text="Copying locally-built WinUI ARM64 CHK binaries from $(WinUIPackagingDir)" />
+    <Copy SourceFiles="@(WinUIBinaries)"
+          DestinationFolder="$(OutputPath)%(RecursiveDir)"
+          SkipUnchangedFiles="true" />
+
+    <Message Importance="high" Text="Copying locally-built WinUI framework binaries from $(WinUIFrameworkDir)" Condition="'@(WinUIFrameworkBinaries)' != ''" />
+    <Copy SourceFiles="@(WinUIFrameworkBinaries)"
+          DestinationFolder="$(OutputPath)%(RecursiveDir)"
+          SkipUnchangedFiles="true"
+          Condition="'@(WinUIFrameworkBinaries)' != ''" />
+
+    <Message Importance="high" Text="Copying IXP framework binaries (dwmcorei, dcompi, etc.) from $(IXPFrameworkDir)" Condition="'@(IXPFrameworkBinaries)' != ''" />
+    <Copy SourceFiles="@(IXPFrameworkBinaries)"
+          DestinationFolder="$(OutputPath)"
+          SkipUnchangedFiles="true"
+          Condition="'@(IXPFrameworkBinaries)' != ''" />
+
+    <Message Importance="high" Text="Copying locally-built WinUI managed projection from $(WinUIManagedDir)" />
+    <Copy SourceFiles="$(WinUIManagedDir)\Microsoft.WinUI.dll"
+          DestinationFolder="$(OutputPath)"
+          SkipUnchangedFiles="true" />
+
+    <Message Importance="high" Text="Copying locally-built WinUI metadata (winmd) from $(WinUIWinmdDir)" />
+    <Copy SourceFiles="$(WinUIWinmdDir)\Microsoft.UI.Xaml.winmd"
+          DestinationFolder="$(OutputPath)"
+          SkipUnchangedFiles="true" />
+
+    <Message Importance="high" Text="Copying WinUI debug symbols from $(WinUISymbolsDir)" />
+    <Copy SourceFiles="@(WinUISymbols)"
+          DestinationFolder="$(OutputPath)"
+          SkipUnchangedFiles="true" />
+
+  </Target>
+
+</Project>
