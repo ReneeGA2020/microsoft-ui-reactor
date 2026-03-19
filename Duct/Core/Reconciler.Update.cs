@@ -459,9 +459,14 @@ public sealed partial class Reconciler
         lv.SelectionMode = n.SelectionMode;
         lv.IsItemClickEnabled = n.OnItemClick is not null;
         if (n.Header is not null) lv.Header = n.Header;
-        ReconcileItemsChildren(o.Items, n.Items, lv, requestRerender);
-        if (n.SelectedIndex >= 0) lv.SelectedIndex = n.SelectedIndex;
+
+        // Update ItemsSource — ContainerContentChanging re-mounts visible items via Tag
+        if (o.Items.Length != n.Items.Length)
+            lv.ItemsSource = Enumerable.Range(0, n.Items.Length).ToList();
+
         SetElementTag(lv, n);
+
+        if (n.SelectedIndex >= 0) lv.SelectedIndex = n.SelectedIndex;
         ApplySetters(n.Setters, lv);
         return null;
     }
@@ -471,9 +476,13 @@ public sealed partial class Reconciler
         gv.SelectionMode = n.SelectionMode;
         gv.IsItemClickEnabled = n.OnItemClick is not null;
         if (n.Header is not null) gv.Header = n.Header;
-        ReconcileItemsChildren(o.Items, n.Items, gv, requestRerender);
-        if (n.SelectedIndex >= 0) gv.SelectedIndex = n.SelectedIndex;
+
+        if (o.Items.Length != n.Items.Length)
+            gv.ItemsSource = Enumerable.Range(0, n.Items.Length).ToList();
+
         SetElementTag(gv, n);
+
+        if (n.SelectedIndex >= 0) gv.SelectedIndex = n.SelectedIndex;
         ApplySetters(n.Setters, gv);
         return null;
     }

@@ -45,9 +45,11 @@ public sealed class DuctElementFactory<T> : ElementFactory
     {
         if (args.Element is null) return;
 
+        // Only clean up Duct state (component contexts, effects).
+        // Do NOT pool or CleanElement here — ItemsRepeater owns the element lifecycle
+        // and may still reference the visual tree during its layout pass. Modifying
+        // children (panel.Children.Clear, border.Child = null) during recycling causes
+        // parenting conflicts and COMExceptions on the next GetElementCore.
         _reconciler.UnmountChild(args.Element);
-
-        if (_pool is not null && args.Element is FrameworkElement fe)
-            _pool.Return(fe);
     }
 }

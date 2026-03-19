@@ -676,16 +676,42 @@ public sealed partial class Reconciler
     {
         var listView = new WinUI.ListView
         {
-            SelectedIndex = lv.SelectedIndex, SelectionMode = lv.SelectionMode,
+            SelectionMode = lv.SelectionMode,
             IsItemClickEnabled = lv.OnItemClick is not null,
         };
         if (lv.Header is not null) listView.Header = lv.Header;
-        foreach (var item in lv.Items)
-        {
-            var ctrl = Mount(item, requestRerender);
-            if (ctrl is not null) listView.Items.Add(ctrl);
-        }
+
         SetElementTag(listView, lv);
+
+        // DataTemplate with a ContentControl shell — we populate its Content on demand
+        listView.ItemTemplate = (DataTemplate)Microsoft.UI.Xaml.Markup.XamlReader.Load(
+            "<DataTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'>" +
+            "<ContentControl HorizontalContentAlignment='Stretch' VerticalContentAlignment='Stretch'/>" +
+            "</DataTemplate>");
+
+        listView.ContainerContentChanging += (sender, args) =>
+        {
+            if (args.InRecycleQueue)
+            {
+                if (args.ItemContainer.ContentTemplateRoot is ContentControl oldCc)
+                {
+                    if (oldCc.Content is UIElement oldCtrl)
+                        UnmountChild(oldCtrl);
+                    oldCc.Content = null;
+                }
+                return;
+            }
+
+            args.Handled = true;
+            var items = (GetElementTag((UIElement)sender!) as ListViewElement)?.Items;
+            if (items is not null && args.ItemIndex >= 0 && args.ItemIndex < items.Length
+                && args.ItemContainer.ContentTemplateRoot is ContentControl cc)
+            {
+                var ctrl = Mount(items[args.ItemIndex], requestRerender);
+                cc.Content = ctrl;
+            }
+        };
+
         listView.SelectionChanged += (s, _) =>
         {
             var l = (WinUI.ListView)s!;
@@ -694,8 +720,14 @@ public sealed partial class Reconciler
         listView.ItemClick += (s, args) =>
         {
             var l = (WinUI.ListView)s!;
-            (GetElementTag(l) as ListViewElement)?.OnItemClick?.Invoke(l.Items.IndexOf(args.ClickedItem));
+            if (args.ClickedItem is int idx)
+                (GetElementTag(l) as ListViewElement)?.OnItemClick?.Invoke(idx);
         };
+
+        // Set ItemsSource LAST — triggers container creation which needs the handler above
+        listView.ItemsSource = Enumerable.Range(0, lv.Items.Length).ToList();
+
+        if (lv.SelectedIndex >= 0) listView.SelectedIndex = lv.SelectedIndex;
         ApplySetters(lv.Setters, listView);
         return listView;
     }
@@ -704,16 +736,41 @@ public sealed partial class Reconciler
     {
         var gridView = new WinUI.GridView
         {
-            SelectedIndex = gv.SelectedIndex, SelectionMode = gv.SelectionMode,
+            SelectionMode = gv.SelectionMode,
             IsItemClickEnabled = gv.OnItemClick is not null,
         };
         if (gv.Header is not null) gridView.Header = gv.Header;
-        foreach (var item in gv.Items)
-        {
-            var ctrl = Mount(item, requestRerender);
-            if (ctrl is not null) gridView.Items.Add(ctrl);
-        }
+
         SetElementTag(gridView, gv);
+
+        gridView.ItemTemplate = (DataTemplate)Microsoft.UI.Xaml.Markup.XamlReader.Load(
+            "<DataTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'>" +
+            "<ContentControl HorizontalContentAlignment='Stretch' VerticalContentAlignment='Stretch'/>" +
+            "</DataTemplate>");
+
+        gridView.ContainerContentChanging += (sender, args) =>
+        {
+            if (args.InRecycleQueue)
+            {
+                if (args.ItemContainer.ContentTemplateRoot is ContentControl oldCc)
+                {
+                    if (oldCc.Content is UIElement oldCtrl)
+                        UnmountChild(oldCtrl);
+                    oldCc.Content = null;
+                }
+                return;
+            }
+
+            args.Handled = true;
+            var items = (GetElementTag((UIElement)sender!) as GridViewElement)?.Items;
+            if (items is not null && args.ItemIndex >= 0 && args.ItemIndex < items.Length
+                && args.ItemContainer.ContentTemplateRoot is ContentControl cc)
+            {
+                var ctrl = Mount(items[args.ItemIndex], requestRerender);
+                cc.Content = ctrl;
+            }
+        };
+
         gridView.SelectionChanged += (s, _) =>
         {
             var g = (WinUI.GridView)s!;
@@ -722,8 +779,13 @@ public sealed partial class Reconciler
         gridView.ItemClick += (s, args) =>
         {
             var g = (WinUI.GridView)s!;
-            (GetElementTag(g) as GridViewElement)?.OnItemClick?.Invoke(g.Items.IndexOf(args.ClickedItem));
+            if (args.ClickedItem is int idx)
+                (GetElementTag(g) as GridViewElement)?.OnItemClick?.Invoke(idx);
         };
+
+        gridView.ItemsSource = Enumerable.Range(0, gv.Items.Length).ToList();
+
+        if (gv.SelectedIndex >= 0) gridView.SelectedIndex = gv.SelectedIndex;
         ApplySetters(gv.Setters, gridView);
         return gridView;
     }
