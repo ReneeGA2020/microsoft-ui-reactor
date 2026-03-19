@@ -8,18 +8,64 @@ using WinPrim = Microsoft.UI.Xaml.Controls.Primitives;
 namespace Duct.Core;
 
 /// <summary>
+/// Controls which reconciliation engine is used for tree diffing.
+/// </summary>
+public enum ReconcileMode
+{
+    /// <summary>Use native DiffTrees when available, fall back to C#.</summary>
+    Auto,
+    /// <summary>Force native Rust DiffTrees path (throws if DLL not available).</summary>
+    NativeDiffTree,
+    /// <summary>Force pure C# imperative reconciliation.</summary>
+    CSharpFallback,
+}
+
+/// <summary>
 /// The reconciler diffs old and new element trees and patches the real WinUI control tree.
 ///
 /// Split across partial classes:
-///   - Reconciler.cs        — orchestration, children, unmount, helpers
-///   - Reconciler.Mount.cs  — Mount() dispatch + per-control MountXxx methods
-///   - Reconciler.Update.cs — Update() dispatch + per-control UpdateXxx methods
+///   - Reconciler.cs           — orchestration, children, unmount, helpers
+///   - Reconciler.Mount.cs     — Mount() dispatch + per-control MountXxx methods
+///   - Reconciler.Update.cs    — Update() dispatch + per-control UpdateXxx methods
+///   - Reconciler.DiffTrees.cs — native Rust DiffTrees reconciliation path
 /// </summary>
-public sealed partial class Reconciler
+public sealed partial class Reconciler : IDisposable
 {
     private readonly Dictionary<UIElement, ComponentNode> _componentNodes = new();
     private readonly ElementPool _pool = new();
     private readonly Dictionary<Type, ITypeRegistration> _typeRegistry = new();
+    private ViewDiffer? _differ;
+    private bool _differChecked;
+
+    /// <summary>
+    /// Controls which diffing engine is used. Default is Auto (native when available).
+    /// Set to CSharpFallback or NativeDiffTree to force a specific path for A/B testing.
+    /// </summary>
+    public ReconcileMode Mode { get; set; } = ReconcileMode.Auto;
+
+    /// <summary>
+    /// Returns the native Rust differ if available, or null if the native DLL is not present.
+    /// The differ instance is reused across reconciliation passes for amortized allocation.
+    /// </summary>
+    internal ViewDiffer? Differ
+    {
+        get
+        {
+            if (!_differChecked)
+            {
+                _differChecked = true;
+                try
+                {
+                    _differ = new ViewDiffer();
+                }
+                catch (DllNotFoundException)
+                {
+                    // Native differ not available; fall back to C# implementation
+                }
+            }
+            return _differ;
+        }
+    }
 
     // ════════════════════════════════════════════════════════════════════
     //  Extensible type registry (Feature 1: RegisterType API)
@@ -98,6 +144,38 @@ public sealed partial class Reconciler
         if (oldElement is null or EmptyElement || existingControl is null)
             return Mount(newElement, requestRerender);
 
+        // Try native DiffTrees path for update scenarios (top-level only)
+        // Nested calls (from Update → ReconcileComponent → Reconcile) always use imperative path
+        bool useDiffTrees = !_inDiffTreesPass && Mode switch
+        {
+            ReconcileMode.NativeDiffTree => true,
+            ReconcileMode.CSharpFallback => false,
+            ReconcileMode.Auto => Differ is not null,
+            _ => false,
+        };
+
+        if (useDiffTrees)
+        {
+            return ReconcileWithDiffTrees(oldElement, newElement, existingControl, requestRerender);
+        }
+
+        return ReconcileImperative(oldElement, newElement, existingControl, requestRerender);
+    }
+
+    /// <summary>
+    /// The original C# imperative reconciliation path.
+    /// </summary>
+    private UIElement? ReconcileImperative(
+        Element oldElement, Element newElement,
+        UIElement existingControl, Action requestRerender)
+    {
+        if (_inDiffTreesPass)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[Reconciler] Imperative fallback hit during DiffTrees pass: " +
+                $"{oldElement.GetType().Name} → {newElement.GetType().Name}");
+        }
+
         if (CanUpdate(oldElement, newElement))
         {
             var replacement = Update(oldElement, newElement, existingControl, requestRerender);
@@ -166,7 +244,7 @@ public sealed partial class Reconciler
         WinUI.Panel panel, Action requestRerender)
     {
         var childCollection = new PanelChildCollection(panel);
-        ChildReconciler.Reconcile(oldChildren, newChildren, childCollection, this, requestRerender);
+        ChildReconciler.Reconcile(oldChildren, newChildren, childCollection, this, Differ, requestRerender);
     }
 
     private void ReconcileItemsChildren(
@@ -174,7 +252,7 @@ public sealed partial class Reconciler
         WinUI.ItemsControl itemsControl, Action requestRerender)
     {
         var childCollection = new ItemsControlChildCollection(itemsControl);
-        ChildReconciler.Reconcile(oldChildren, newChildren, childCollection, this, requestRerender);
+        ChildReconciler.Reconcile(oldChildren, newChildren, childCollection, this, Differ, requestRerender);
     }
 
     /// <summary>
@@ -315,5 +393,17 @@ public sealed partial class Reconciler
         public RenderContext? Context;
         public Element? RenderedElement;
         public Element? Element;
+    }
+
+    public void Dispose()
+    {
+        _differ?.Dispose();
+        _differ = null;
+        _cachedOldSerialization = null;
+        _cachedOldControls = null;
+        _treeSerializer = null;
+        _oldRegistry = null;
+        _newRegistry = null;
+        _inDiffTreesPass = false;
     }
 }

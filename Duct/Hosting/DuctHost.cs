@@ -26,6 +26,15 @@ public sealed class DuctHost
     private bool _isRendering;
     private bool _needsRerender;
 
+    /// <summary>
+    /// Controls which diffing engine is used. Set to CSharpFallback or NativeDiffTree for A/B testing.
+    /// </summary>
+    public ReconcileMode ReconcileMode
+    {
+        get => _reconciler.Mode;
+        set => _reconciler.Mode = value;
+    }
+
     public DuctHost(Window window)
     {
         _window = window;
