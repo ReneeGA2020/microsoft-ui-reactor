@@ -34,6 +34,20 @@ public sealed partial class Reconciler : IDisposable
     private readonly Dictionary<UIElement, ComponentNode> _componentNodes = new();
     private readonly ElementPool _pool = new();
     private readonly Dictionary<Type, ITypeRegistration> _typeRegistry = new();
+
+    /// <summary>
+    /// Associates a control with its current element via Tag.
+    /// Only call for interactive controls that need the Tag-based event handler pattern.
+    /// Layout-only controls (Border, StackPanel, TextBlock, etc.) should NOT set Tag
+    /// to avoid expensive COM DependencyProperty calls on the hot path.
+    /// </summary>
+    internal static void SetElementTag(FrameworkElement control, Element element) => control.Tag = element;
+
+    /// <summary>
+    /// Retrieves the element associated with a control via Tag, or null.
+    /// </summary>
+    internal static Element? GetElementTag(UIElement control) =>
+        control is FrameworkElement fe ? fe.Tag as Element : null;
     private ViewDiffer? _differ;
     private bool _differChecked;
 

@@ -134,7 +134,7 @@ public sealed partial class Reconciler
         return null;
     }
 
-    private static UIElement? UpdateText(TextElement n, TextBlock tb)
+    private UIElement? UpdateText(TextElement n, TextBlock tb)
     {
         if (tb.Text != n.Content) tb.Text = n.Content;
         if (n.FontSize.HasValue && tb.FontSize != n.FontSize.Value) tb.FontSize = n.FontSize.Value;
@@ -144,7 +144,7 @@ public sealed partial class Reconciler
         return null;
     }
 
-    private static UIElement? UpdateRichTextBlock(RichTextBlockElement n, WinUI.RichTextBlock rtb)
+    private UIElement? UpdateRichTextBlock(RichTextBlockElement n, WinUI.RichTextBlock rtb)
     {
         rtb.Blocks.Clear();
         var p = new Microsoft.UI.Xaml.Documents.Paragraph();
@@ -155,163 +155,163 @@ public sealed partial class Reconciler
         return null;
     }
 
-    private static UIElement? UpdateButton(ButtonElement n, WinUI.Button b)
+    private UIElement? UpdateButton(ButtonElement n, WinUI.Button b)
     {
-        b.Content = n.Label; b.IsEnabled = n.IsEnabled; b.Tag = n;
+        b.Content = n.Label; b.IsEnabled = n.IsEnabled; SetElementTag(b, n);
         ApplySetters(n.Setters, b);
         return null;
     }
 
-    private static UIElement? UpdateHyperlinkButton(HyperlinkButtonElement n, WinUI.HyperlinkButton hb)
+    private UIElement? UpdateHyperlinkButton(HyperlinkButtonElement n, WinUI.HyperlinkButton hb)
     {
         hb.Content = n.Content;
         if (n.NavigateUri is not null) hb.NavigateUri = n.NavigateUri;
-        hb.Tag = n;
+        SetElementTag(hb, n);
         ApplySetters(n.Setters, hb);
         return null;
     }
 
-    private static UIElement? UpdateRepeatButton(RepeatButtonElement n, WinPrim.RepeatButton rb)
+    private UIElement? UpdateRepeatButton(RepeatButtonElement n, WinPrim.RepeatButton rb)
     {
-        rb.Content = n.Label; rb.Delay = n.Delay; rb.Interval = n.Interval; rb.Tag = n;
+        rb.Content = n.Label; rb.Delay = n.Delay; rb.Interval = n.Interval; SetElementTag(rb, n);
         ApplySetters(n.Setters, rb);
         return null;
     }
 
-    private static UIElement? UpdateToggleButton(ToggleButtonElement n, WinPrim.ToggleButton tb)
+    private UIElement? UpdateToggleButton(ToggleButtonElement n, WinPrim.ToggleButton tb)
     {
-        tb.Content = n.Label; tb.IsChecked = n.IsChecked; tb.Tag = n;
+        tb.Content = n.Label; tb.IsChecked = n.IsChecked; SetElementTag(tb, n);
         ApplySetters(n.Setters, tb);
         return null;
     }
 
-    private static UIElement? UpdateDropDownButton(DropDownButtonElement n, WinUI.DropDownButton ddb)
+    private UIElement? UpdateDropDownButton(DropDownButtonElement n, WinUI.DropDownButton ddb)
     {
-        ddb.Content = n.Label; ddb.Tag = n;
+        ddb.Content = n.Label; SetElementTag(ddb, n);
         ApplySetters(n.Setters, ddb);
         return null;
     }
 
-    private static UIElement? UpdateSplitButton(SplitButtonElement n, WinUI.SplitButton sb)
+    private UIElement? UpdateSplitButton(SplitButtonElement n, WinUI.SplitButton sb)
     {
-        sb.Content = n.Label; sb.Tag = n;
+        sb.Content = n.Label; SetElementTag(sb, n);
         ApplySetters(n.Setters, sb);
         return null;
     }
 
-    private static UIElement? UpdateToggleSplitButton(ToggleSplitButtonElement n, WinUI.ToggleSplitButton tsb)
+    private UIElement? UpdateToggleSplitButton(ToggleSplitButtonElement n, WinUI.ToggleSplitButton tsb)
     {
-        tsb.Content = n.Label; tsb.IsChecked = n.IsChecked; tsb.Tag = n;
+        tsb.Content = n.Label; tsb.IsChecked = n.IsChecked; SetElementTag(tsb, n);
         ApplySetters(n.Setters, tsb);
         return null;
     }
 
-    private static UIElement? UpdateTextField(TextFieldElement o, TextFieldElement n, TextBox tb)
+    private UIElement? UpdateTextField(TextFieldElement o, TextFieldElement n, TextBox tb)
     {
         if (o.Value != n.Value) tb.Text = n.Value;
-        tb.PlaceholderText = n.Placeholder ?? ""; tb.Tag = n;
+        tb.PlaceholderText = n.Placeholder ?? ""; SetElementTag(tb, n);
         ApplySetters(n.Setters, tb);
         return null;
     }
 
-    private static UIElement? UpdatePasswordBox(PasswordBoxElement n, WinUI.PasswordBox pb)
+    private UIElement? UpdatePasswordBox(PasswordBoxElement n, WinUI.PasswordBox pb)
     {
-        pb.Password = n.Password; pb.PlaceholderText = n.PlaceholderText ?? ""; pb.Tag = n;
+        pb.Password = n.Password; pb.PlaceholderText = n.PlaceholderText ?? ""; SetElementTag(pb, n);
         ApplySetters(n.Setters, pb);
         return null;
     }
 
-    private static UIElement? UpdateNumberBox(NumberBoxElement n, WinUI.NumberBox nb)
+    private UIElement? UpdateNumberBox(NumberBoxElement n, WinUI.NumberBox nb)
     {
         nb.Value = n.Value; nb.Minimum = n.Minimum; nb.Maximum = n.Maximum;
         nb.SmallChange = n.SmallChange; nb.LargeChange = n.LargeChange;
         nb.SpinButtonPlacementMode = n.SpinButtonPlacement;
         if (n.Header is not null) nb.Header = n.Header;
-        nb.Tag = n;
+        SetElementTag(nb, n);
         ApplySetters(n.Setters, nb);
         return null;
     }
 
-    private static UIElement? UpdateAutoSuggestBox(AutoSuggestBoxElement n, WinUI.AutoSuggestBox asb)
+    private UIElement? UpdateAutoSuggestBox(AutoSuggestBoxElement n, WinUI.AutoSuggestBox asb)
     {
         asb.Text = n.Text; asb.PlaceholderText = n.PlaceholderText ?? "";
-        asb.ItemsSource = n.Suggestions; asb.Tag = n;
+        asb.ItemsSource = n.Suggestions; SetElementTag(asb, n);
         ApplySetters(n.Setters, asb);
         return null;
     }
 
-    private static UIElement? UpdateCheckBox(CheckBoxElement n, WinUI.CheckBox cb)
+    private UIElement? UpdateCheckBox(CheckBoxElement n, WinUI.CheckBox cb)
     {
-        cb.IsChecked = n.IsChecked; cb.Content = n.Label; cb.Tag = n;
+        cb.IsChecked = n.IsChecked; cb.Content = n.Label; SetElementTag(cb, n);
         ApplySetters(n.Setters, cb);
         return null;
     }
 
-    private static UIElement? UpdateRadioButton(RadioButtonElement n, WinUI.RadioButton rb)
+    private UIElement? UpdateRadioButton(RadioButtonElement n, WinUI.RadioButton rb)
     {
         rb.Content = n.Label; rb.IsChecked = n.IsChecked;
         if (n.GroupName is not null) rb.GroupName = n.GroupName;
-        rb.Tag = n;
+        SetElementTag(rb, n);
         ApplySetters(n.Setters, rb);
         return null;
     }
 
-    private static UIElement? UpdateSlider(SliderElement n, WinUI.Slider s)
+    private UIElement? UpdateSlider(SliderElement n, WinUI.Slider s)
     {
         s.Minimum = n.Min; s.Maximum = n.Max; s.Value = n.Value;
         s.StepFrequency = n.StepFrequency;
         if (n.Header is not null) s.Header = n.Header;
-        s.Tag = n;
+        SetElementTag(s, n);
         ApplySetters(n.Setters, s);
         return null;
     }
 
-    private static UIElement? UpdateToggleSwitch(ToggleSwitchElement n, WinUI.ToggleSwitch ts)
+    private UIElement? UpdateToggleSwitch(ToggleSwitchElement n, WinUI.ToggleSwitch ts)
     {
         ts.IsOn = n.IsOn; ts.OnContent = n.OnContent; ts.OffContent = n.OffContent;
         if (n.Header is not null) ts.Header = n.Header;
-        ts.Tag = n;
+        SetElementTag(ts, n);
         ApplySetters(n.Setters, ts);
         return null;
     }
 
-    private static UIElement? UpdateRatingControl(RatingControlElement n, WinUI.RatingControl r)
+    private UIElement? UpdateRatingControl(RatingControlElement n, WinUI.RatingControl r)
     {
         r.Value = n.Value; r.MaxRating = n.MaxRating; r.IsReadOnly = n.IsReadOnly;
-        r.Caption = n.Caption ?? ""; r.Tag = n;
+        r.Caption = n.Caption ?? ""; SetElementTag(r, n);
         ApplySetters(n.Setters, r);
         return null;
     }
 
-    private static UIElement? UpdateColorPicker(ColorPickerElement n, WinUI.ColorPicker cp)
+    private UIElement? UpdateColorPicker(ColorPickerElement n, WinUI.ColorPicker cp)
     {
-        cp.Color = n.Color; cp.IsAlphaEnabled = n.IsAlphaEnabled; cp.Tag = n;
+        cp.Color = n.Color; cp.IsAlphaEnabled = n.IsAlphaEnabled; SetElementTag(cp, n);
         ApplySetters(n.Setters, cp);
         return null;
     }
 
-    private static UIElement? UpdateCalendarDatePicker(CalendarDatePickerElement n, WinUI.CalendarDatePicker cdp)
+    private UIElement? UpdateCalendarDatePicker(CalendarDatePickerElement n, WinUI.CalendarDatePicker cdp)
     {
-        cdp.Date = n.Date; cdp.Tag = n;
+        cdp.Date = n.Date; SetElementTag(cdp, n);
         ApplySetters(n.Setters, cdp);
         return null;
     }
 
-    private static UIElement? UpdateDatePicker(DatePickerElement n, WinUI.DatePicker dp)
+    private UIElement? UpdateDatePicker(DatePickerElement n, WinUI.DatePicker dp)
     {
-        dp.Date = n.Date; dp.Tag = n;
+        dp.Date = n.Date; SetElementTag(dp, n);
         ApplySetters(n.Setters, dp);
         return null;
     }
 
-    private static UIElement? UpdateTimePicker(TimePickerElement n, WinUI.TimePicker tp)
+    private UIElement? UpdateTimePicker(TimePickerElement n, WinUI.TimePicker tp)
     {
-        tp.Time = n.Time; tp.Tag = n;
+        tp.Time = n.Time; SetElementTag(tp, n);
         ApplySetters(n.Setters, tp);
         return null;
     }
 
-    private static UIElement? UpdateProgress(ProgressElement n, WinUI.ProgressBar pb)
+    private UIElement? UpdateProgress(ProgressElement n, WinUI.ProgressBar pb)
     {
         pb.IsIndeterminate = n.IsIndeterminate; pb.Minimum = n.Minimum; pb.Maximum = n.Maximum;
         pb.ShowError = n.ShowError; pb.ShowPaused = n.ShowPaused;
@@ -320,7 +320,7 @@ public sealed partial class Reconciler
         return null;
     }
 
-    private static UIElement? UpdateProgressRing(ProgressRingElement n, WinUI.ProgressRing pr)
+    private UIElement? UpdateProgressRing(ProgressRingElement n, WinUI.ProgressRing pr)
     {
         pr.IsIndeterminate = n.IsIndeterminate; pr.IsActive = n.IsActive;
         if (n.Value.HasValue) pr.Value = n.Value.Value;
@@ -328,7 +328,7 @@ public sealed partial class Reconciler
         return null;
     }
 
-    private static UIElement? UpdateImage(ImageElement o, ImageElement n, WinUI.Image img)
+    private UIElement? UpdateImage(ImageElement o, ImageElement n, WinUI.Image img)
     {
         if (o.Source != n.Source) img.Source = new BitmapImage(new Uri(n.Source, UriKind.RelativeOrAbsolute));
         if (n.Width.HasValue) img.Width = n.Width.Value;
@@ -337,7 +337,7 @@ public sealed partial class Reconciler
         return null;
     }
 
-    private static UIElement? UpdatePersonPicture(PersonPictureElement n, WinUI.PersonPicture pp)
+    private UIElement? UpdatePersonPicture(PersonPictureElement n, WinUI.PersonPicture pp)
     {
         if (n.DisplayName is not null) pp.DisplayName = n.DisplayName;
         if (n.Initials is not null) pp.Initials = n.Initials;
@@ -346,10 +346,10 @@ public sealed partial class Reconciler
         return null;
     }
 
-    private static UIElement? UpdateWebView2(WebView2Element o, WebView2Element n, WinUI.WebView2 wv)
+    private UIElement? UpdateWebView2(WebView2Element o, WebView2Element n, WinUI.WebView2 wv)
     {
         if (n.Source is not null && n.Source != o.Source) wv.Source = n.Source;
-        wv.Tag = n;
+        SetElementTag(wv, n);
         ApplySetters(n.Setters, wv);
         return null;
     }
@@ -358,7 +358,7 @@ public sealed partial class Reconciler
     {
         sp.Spacing = n.Spacing;
         ReconcileChildren(o.Children, n.Children, sp, requestRerender);
-        sp.Tag = n;
+        // No Tag set — StackPanel has no event handlers. Avoids expensive COM call.
         ApplySetters(n.Setters, sp);
         return null;
     }
@@ -371,7 +371,7 @@ public sealed partial class Reconciler
             if (childRepl is not null) return Mount(newEl, requestRerender);
         }
         else return Mount(newEl, requestRerender);
-        sv.Tag = n;
+        // No Tag set — ScrollViewer has no event handlers.
         ApplySetters(n.Setters, sv);
         return null;
     }
@@ -393,15 +393,15 @@ public sealed partial class Reconciler
         if (n.Background is not null) b.Background = n.Background;
         if (n.BorderBrush is not null) b.BorderBrush = n.BorderBrush;
         if (n.BorderThickness.HasValue) b.BorderThickness = new Microsoft.UI.Xaml.Thickness(n.BorderThickness.Value);
-        b.Tag = n;
+        // No Tag set — Border has no event handlers.
         ApplySetters(n.Setters, b);
         return null;
     }
 
-    private static UIElement? UpdateExpander(ExpanderElement n, WinUI.Expander exp)
+    private UIElement? UpdateExpander(ExpanderElement n, WinUI.Expander exp)
     {
         exp.Header = n.Header; exp.IsExpanded = n.IsExpanded;
-        exp.ExpandDirection = n.ExpandDirection; exp.Tag = n;
+        exp.ExpandDirection = n.ExpandDirection; SetElementTag(exp, n);
         ApplySetters(n.Setters, exp);
         return null;
     }
@@ -410,29 +410,29 @@ public sealed partial class Reconciler
     {
         nv.IsPaneOpen = n.IsPaneOpen; nv.IsBackEnabled = n.IsBackEnabled;
         if (n.Content is not null) nv.Content = Mount(n.Content, requestRerender);
-        nv.Tag = n;
+        SetElementTag(nv, n);
         ApplySetters(n.Setters, nv);
         return null;
     }
 
-    private static UIElement? UpdateBreadcrumbBar(BreadcrumbBarElement n, WinUI.BreadcrumbBar bcb)
+    private UIElement? UpdateBreadcrumbBar(BreadcrumbBarElement n, WinUI.BreadcrumbBar bcb)
     {
         bcb.ItemsSource = n.Items.Select(i => i.Label).ToList();
-        bcb.Tag = n;
+        SetElementTag(bcb, n);
         ApplySetters(n.Setters, bcb);
         return null;
     }
 
-    private static UIElement? UpdateInfoBar(InfoBarElement n, WinUI.InfoBar ib)
+    private UIElement? UpdateInfoBar(InfoBarElement n, WinUI.InfoBar ib)
     {
         ib.Title = n.Title ?? ""; ib.Message = n.Message ?? "";
         ib.Severity = n.Severity; ib.IsOpen = n.IsOpen; ib.IsClosable = n.IsClosable;
-        ib.Tag = n;
+        SetElementTag(ib, n);
         ApplySetters(n.Setters, ib);
         return null;
     }
 
-    private static UIElement? UpdateInfoBadge(InfoBadgeElement n, WinUI.InfoBadge badge)
+    private UIElement? UpdateInfoBadge(InfoBadgeElement n, WinUI.InfoBadge badge)
     {
         if (n.Value.HasValue) badge.Value = n.Value.Value;
         ApplySetters(n.Setters, badge);
@@ -442,14 +442,14 @@ public sealed partial class Reconciler
     private UIElement? UpdateContentDialog(ContentDialogElement o, ContentDialogElement n, FrameworkElement fe, Action requestRerender)
     {
         if (n.IsOpen && !o.IsOpen) ShowContentDialog(n, requestRerender);
-        fe.Tag = n;
+        SetElementTag(fe, n);
         return null;
     }
 
-    private static UIElement? UpdateTeachingTip(TeachingTipElement n, WinUI.TeachingTip tip)
+    private UIElement? UpdateTeachingTip(TeachingTipElement n, WinUI.TeachingTip tip)
     {
         tip.Title = n.Title; tip.Subtitle = n.Subtitle ?? ""; tip.IsOpen = n.IsOpen;
-        tip.Tag = n;
+        SetElementTag(tip, n);
         ApplySetters(n.Setters, tip);
         return null;
     }
@@ -461,7 +461,7 @@ public sealed partial class Reconciler
         if (n.Header is not null) lv.Header = n.Header;
         ReconcileItemsChildren(o.Items, n.Items, lv, requestRerender);
         if (n.SelectedIndex >= 0) lv.SelectedIndex = n.SelectedIndex;
-        lv.Tag = n;
+        SetElementTag(lv, n);
         ApplySetters(n.Setters, lv);
         return null;
     }
@@ -473,7 +473,7 @@ public sealed partial class Reconciler
         if (n.Header is not null) gv.Header = n.Header;
         ReconcileItemsChildren(o.Items, n.Items, gv, requestRerender);
         if (n.SelectedIndex >= 0) gv.SelectedIndex = n.SelectedIndex;
-        gv.Tag = n;
+        SetElementTag(gv, n);
         ApplySetters(n.Setters, gv);
         return null;
     }
@@ -482,7 +482,7 @@ public sealed partial class Reconciler
     {
         ReconcileItemsChildren(o.Items, n.Items, fv, requestRerender);
         fv.SelectedIndex = n.SelectedIndex;
-        fv.Tag = n;
+        SetElementTag(fv, n);
         ApplySetters(n.Setters, fv);
         return null;
     }
@@ -495,9 +495,9 @@ public sealed partial class Reconciler
             repeater.ItemTemplate = n.CreateFactory(this, requestRerender, _pool);
             if (repeater.Layout is WinUI.StackLayout layout)
                 layout.Spacing = n.Spacing;
-            repeater.Tag = n;
+            SetElementTag(repeater, n);
         }
-        sv.Tag = n;
+        SetElementTag(sv, n);
         return null;
     }
 
