@@ -413,7 +413,7 @@ Could be provided as extension methods on `RenderContext` or as static helpers i
 
 ## Feature 7: Reverse Embedding (XAML inside Duct)
 
-**Status: Not started**
+**Status: Complete**
 
 **Priority: P2 (needed when migrating the shell)**
 
@@ -452,7 +452,7 @@ No additional framework feature needed beyond Feature 1, but documenting the pat
 
 ## Feature 8: Animation and Transition Support
 
-**Status: Not started**
+**Status: Complete**
 
 **Priority: P2 (polish, not blocking migration)**
 
@@ -588,8 +588,8 @@ Only needed once most pages are migrated and the shell itself is being converted
 
 | Feature | Description | Status |
 |---------|-------------|--------|
-| 7. Reverse Embedding | XAML pages inside Duct tree (pattern on top of Feature 1) | Not started |
-| 8. Animation Support | Transitions, implicit animations, connected animations | Not started |
+| 7. Reverse Embedding | XAML pages inside Duct tree (pattern on top of Feature 1) | Complete |
+| 8. Animation Support | Transitions, implicit animations, connected animations | Complete |
 
 ### Page Migration Order (once Phase 1 is complete)
 

@@ -1,0 +1,88 @@
+using Duct.Core;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+
+namespace Duct;
+
+// ════════════════════════════════════════════════════════════════════════
+//  Feature 7: Reverse Embedding — XAML pages and controls inside Duct
+// ════════════════════════════════════════════════════════════════════════
+
+/// <summary>
+/// An element that embeds a XAML Page inside a Frame, enabling navigation
+/// to existing XAML pages from within a Duct component tree.
+/// </summary>
+public record XamlPageElement(Type PageType, object? Parameter = null) : Element;
+
+/// <summary>
+/// An element that embeds an arbitrary FrameworkElement (UserControl, custom control, etc.)
+/// into the Duct tree. The factory creates the control; the updater patches it.
+/// </summary>
+public record XamlHostElement(
+    Func<FrameworkElement> Factory,
+    Action<FrameworkElement>? Updater = null
+) : Element
+{
+    /// <summary>
+    /// A discriminator so the reconciler can tell two XamlHostElements apart
+    /// even though the factory delegates may differ. Set this to a stable string
+    /// when you want CanUpdate to return true across re-renders.
+    /// </summary>
+    public string? TypeKey { get; init; }
+}
+
+/// <summary>
+/// Registers the reverse-embedding element types with a Reconciler.
+/// Call this once during app startup or DuctHostControl initialization.
+///
+/// Usage:
+///   XamlInterop.Register(reconciler);
+///
+/// Then in a Duct component:
+///   new XamlPageElement(typeof(ExistingXamlPage), "param")
+///   new XamlHostElement(() => new MyUserControl(), ctrl => ((MyUserControl)ctrl).Value = 42)
+/// </summary>
+public static class XamlInterop
+{
+    public static void Register(Reconciler reconciler)
+    {
+        // ── XamlPageElement → Frame ──────────────────────────────────
+        reconciler.RegisterType<XamlPageElement, Frame>(
+            mount: (el, rerender) =>
+            {
+                var frame = new Frame();
+                frame.Navigate(el.PageType, el.Parameter);
+                frame.Tag = el;
+                return frame;
+            },
+            update: (oldEl, newEl, frame, rerender) =>
+            {
+                if (oldEl.PageType != newEl.PageType || !Equals(oldEl.Parameter, newEl.Parameter))
+                    frame.Navigate(newEl.PageType, newEl.Parameter);
+                frame.Tag = newEl;
+                return null; // updated in place
+            },
+            unmount: frame =>
+            {
+                // Navigate away to trigger Page.OnNavigatedFrom cleanup
+                if (frame.Content is Page)
+                    frame.Content = null;
+            });
+
+        // ── XamlHostElement → FrameworkElement ───────────────────────
+        reconciler.RegisterType<XamlHostElement, FrameworkElement>(
+            mount: (el, rerender) =>
+            {
+                var control = el.Factory();
+                el.Updater?.Invoke(control);
+                control.Tag = el;
+                return control;
+            },
+            update: (oldEl, newEl, control, rerender) =>
+            {
+                newEl.Updater?.Invoke(control);
+                control.Tag = newEl;
+                return null; // updated in place
+            });
+    }
+}

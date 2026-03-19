@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Text;
 using Windows.UI.Text;
 using WinUI = Microsoft.UI.Xaml.Controls;
@@ -424,6 +425,55 @@ public static class ElementExtensions
 
     public static MenuFlyoutElement Set(this MenuFlyoutElement el, Action<WinUI.MenuFlyout> configure) =>
         el with { Setters = [.. el.Setters, configure] };
+
+    // ════════════════════════════════════════════════════════════════
+    //  Transitions (Feature 8: Animation and Transition Support)
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Apply theme transitions to a StackPanel (VStack/HStack).
+    /// Usage: VStack(children).WithTransitions(new RepositionThemeTransition())
+    /// </summary>
+    public static StackElement WithTransitions(this StackElement el, params Transition[] transitions) =>
+        el.Set(sp =>
+        {
+            sp.ChildrenTransitions ??= new TransitionCollection();
+            sp.ChildrenTransitions.Clear();
+            foreach (var t in transitions) sp.ChildrenTransitions.Add(t);
+        });
+
+    /// <summary>
+    /// Apply theme transitions to a Grid.
+    /// </summary>
+    public static GridElement WithTransitions(this GridElement el, params Transition[] transitions) =>
+        el.Set(g =>
+        {
+            g.ChildrenTransitions ??= new TransitionCollection();
+            g.ChildrenTransitions.Clear();
+            foreach (var t in transitions) g.ChildrenTransitions.Add(t);
+        });
+
+    /// <summary>
+    /// Apply content transitions to a Border.
+    /// </summary>
+    public static BorderElement WithTransitions(this BorderElement el, params Transition[] transitions) =>
+        el.Set(b =>
+        {
+            b.ChildTransitions ??= new TransitionCollection();
+            b.ChildTransitions.Clear();
+            foreach (var t in transitions) b.ChildTransitions.Add(t);
+        });
+
+    /// <summary>
+    /// Apply content transitions to a Canvas.
+    /// </summary>
+    public static CanvasElement WithTransitions(this CanvasElement el, params Transition[] transitions) =>
+        el.Set(c =>
+        {
+            c.ChildrenTransitions ??= new TransitionCollection();
+            c.ChildrenTransitions.Clear();
+            foreach (var t in transitions) c.ChildrenTransitions.Add(t);
+        });
 
     // ════════════════════════════════════════════════════════════════
     //  Internal
