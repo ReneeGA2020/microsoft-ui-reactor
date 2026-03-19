@@ -28,11 +28,14 @@ public sealed partial class Reconciler
     /// <summary>
     /// Registers a custom element type so the reconciler knows how to mount, update, and unmount it.
     /// Registered types take priority over built-in types.
+    ///
+    /// The mount and update handlers receive the Reconciler instance so they can
+    /// recursively mount/update/unmount child elements without capturing external state.
     /// </summary>
     public void RegisterType<TElement, TControl>(
-        Func<TElement, Action, TControl> mount,
-        Func<TElement, TElement, TControl, Action, UIElement?> update,
-        Action<TControl>? unmount = null)
+        Func<Reconciler, TElement, Action, TControl> mount,
+        Func<Reconciler, TElement, TElement, TControl, Action, UIElement?> update,
+        Action<Reconciler, TControl>? unmount = null)
         where TElement : Element
         where TControl : UIElement
     {
@@ -41,9 +44,9 @@ public sealed partial class Reconciler
 
     internal interface ITypeRegistration
     {
-        UIElement Mount(Element element, Action requestRerender);
-        UIElement? Update(Element oldEl, Element newEl, UIElement control, Action requestRerender);
-        void Unmount(UIElement control);
+        UIElement Mount(Element element, Action requestRerender, Reconciler reconciler);
+        UIElement? Update(Element oldEl, Element newEl, UIElement control, Action requestRerender, Reconciler reconciler);
+        void Unmount(UIElement control, Reconciler reconciler);
         bool HasUnmount { get; }
     }
 
@@ -51,14 +54,14 @@ public sealed partial class Reconciler
         where TElement : Element
         where TControl : UIElement
     {
-        private readonly Func<TElement, Action, TControl> _mount;
-        private readonly Func<TElement, TElement, TControl, Action, UIElement?> _update;
-        private readonly Action<TControl>? _unmount;
+        private readonly Func<Reconciler, TElement, Action, TControl> _mount;
+        private readonly Func<Reconciler, TElement, TElement, TControl, Action, UIElement?> _update;
+        private readonly Action<Reconciler, TControl>? _unmount;
 
         public TypeRegistration(
-            Func<TElement, Action, TControl> mount,
-            Func<TElement, TElement, TControl, Action, UIElement?> update,
-            Action<TControl>? unmount)
+            Func<Reconciler, TElement, Action, TControl> mount,
+            Func<Reconciler, TElement, TElement, TControl, Action, UIElement?> update,
+            Action<Reconciler, TControl>? unmount)
         {
             _mount = mount;
             _update = update;
@@ -67,14 +70,14 @@ public sealed partial class Reconciler
 
         public bool HasUnmount => _unmount is not null;
 
-        public UIElement Mount(Element element, Action requestRerender)
-            => _mount((TElement)element, requestRerender);
+        public UIElement Mount(Element element, Action requestRerender, Reconciler reconciler)
+            => _mount(reconciler, (TElement)element, requestRerender);
 
-        public UIElement? Update(Element oldEl, Element newEl, UIElement control, Action requestRerender)
-            => _update((TElement)oldEl, (TElement)newEl, (TControl)control, requestRerender);
+        public UIElement? Update(Element oldEl, Element newEl, UIElement control, Action requestRerender, Reconciler reconciler)
+            => _update(reconciler, (TElement)oldEl, (TElement)newEl, (TControl)control, requestRerender);
 
-        public void Unmount(UIElement control)
-            => _unmount?.Invoke((TControl)control);
+        public void Unmount(UIElement control, Reconciler reconciler)
+            => _unmount?.Invoke(reconciler, (TControl)control);
     }
 
     public UIElement? Reconcile(
@@ -208,7 +211,7 @@ public sealed partial class Reconciler
         if (control is FrameworkElement fe && fe.Tag is Element tagEl
             && _typeRegistry.TryGetValue(tagEl.GetType(), out var reg) && reg.HasUnmount)
         {
-            reg.Unmount(control);
+            reg.Unmount(control, this);
             return;
         }
 

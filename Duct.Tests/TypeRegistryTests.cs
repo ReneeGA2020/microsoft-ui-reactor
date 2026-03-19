@@ -24,8 +24,8 @@ public class TypeRegistryTests
     {
         var reconciler = new Reconciler();
         reconciler.RegisterType<TestCustomElement, TextBlock>(
-            mount: (el, rerender) => null!,
-            update: (oldEl, newEl, ctrl, rerender) => null);
+            mount: (r, el, rerender) => null!,
+            update: (r, oldEl, newEl, ctrl, rerender) => null);
     }
 
     [Fact]
@@ -33,11 +33,11 @@ public class TypeRegistryTests
     {
         var reconciler = new Reconciler();
         reconciler.RegisterType<TestCustomElement, TextBlock>(
-            mount: (el, rerender) => null!,
-            update: (oldEl, newEl, ctrl, rerender) => null);
+            mount: (r, el, rerender) => null!,
+            update: (r, oldEl, newEl, ctrl, rerender) => null);
         reconciler.RegisterType<AnotherCustomElement, Border>(
-            mount: (el, rerender) => null!,
-            update: (oldEl, newEl, ctrl, rerender) => null);
+            mount: (r, el, rerender) => null!,
+            update: (r, oldEl, newEl, ctrl, rerender) => null);
     }
 
     [Fact]
@@ -46,11 +46,11 @@ public class TypeRegistryTests
         var reconciler = new Reconciler();
         // Register same type twice — second should overwrite
         reconciler.RegisterType<TestCustomElement, TextBlock>(
-            mount: (el, rerender) => null!,
-            update: (oldEl, newEl, ctrl, rerender) => null);
+            mount: (r, el, rerender) => null!,
+            update: (r, oldEl, newEl, ctrl, rerender) => null);
         reconciler.RegisterType<TestCustomElement, Border>(
-            mount: (el, rerender) => null!,
-            update: (oldEl, newEl, ctrl, rerender) => null);
+            mount: (r, el, rerender) => null!,
+            update: (r, oldEl, newEl, ctrl, rerender) => null);
     }
 
     [Fact]
@@ -58,9 +58,9 @@ public class TypeRegistryTests
     {
         var reconciler = new Reconciler();
         reconciler.RegisterType<TestCustomElement, TextBlock>(
-            mount: (el, rerender) => null!,
-            update: (oldEl, newEl, ctrl, rerender) => null,
-            unmount: ctrl => { });
+            mount: (r, el, rerender) => null!,
+            update: (r, oldEl, newEl, ctrl, rerender) => null,
+            unmount: (r, ctrl) => { });
     }
 
     // ── CanUpdate works with registered custom elements ────────────
@@ -188,12 +188,12 @@ public class TypeRegistryTests
         bool handlerEntered = false;
 
         reconciler.RegisterType<TestCustomElement, TextBlock>(
-            mount: (el, rerender) =>
+            mount: (r, el, rerender) =>
             {
                 handlerEntered = true;
                 throw new InvalidOperationException("Stop here — handler was dispatched");
             },
-            update: (oldEl, newEl, ctrl, rerender) => null);
+            update: (r, oldEl, newEl, ctrl, rerender) => null);
 
         var element = new TestCustomElement("Test");
         Assert.Throws<InvalidOperationException>(() => reconciler.Mount(element, () => { }));
@@ -209,12 +209,12 @@ public class TypeRegistryTests
         bool updateHandlerEntered = false;
 
         reconciler.RegisterType<TestCustomElement, UIElement>(
-            mount: (el, rerender) =>
+            mount: (r, el, rerender) =>
             {
                 // Return a marker — we use a throw to signal dispatch happened
                 throw new InvalidOperationException("Mount dispatched");
             },
-            update: (oldEl, newEl, ctrl, rerender) =>
+            update: (r, oldEl, newEl, ctrl, rerender) =>
             {
                 updateHandlerEntered = true;
                 throw new InvalidOperationException("Update dispatched");
@@ -253,12 +253,12 @@ public class TypeRegistryTests
 
         // Override built-in TextElement
         reconciler.RegisterType<TextElement, TextBlock>(
-            mount: (el, rerender) =>
+            mount: (r, el, rerender) =>
             {
                 customCalled = true;
                 throw new InvalidOperationException("Custom handler reached");
             },
-            update: (oldEl, newEl, ctrl, rerender) => null);
+            update: (r, oldEl, newEl, ctrl, rerender) => null);
 
         Assert.Throws<InvalidOperationException>(() =>
             reconciler.Mount(new TextElement("hello"), () => { }));

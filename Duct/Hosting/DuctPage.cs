@@ -5,78 +5,86 @@ using Microsoft.UI.Xaml.Navigation;
 namespace Duct;
 
 /// <summary>
-/// A Page subclass that hosts a Duct component tree, enabling Duct pages
-/// to participate in Frame-based navigation (e.g., WinUI Gallery).
+/// Helper methods for hosting Duct components inside XAML Pages that participate
+/// in Frame-based navigation.
 ///
-/// Usage:
-///   // In page registry:
-///   { "ButtonPage", typeof(DuctPage&lt;ButtonPageComponent&gt;) }
+/// IMPORTANT: WinUI's Frame.Navigate requires pages to have XAML metadata
+/// (IXamlType registration). Code-only Page subclasses — including generic
+/// base classes like DuctPage&lt;T&gt; — crash with a null access violation
+/// in ActivationAPI::ActivateInstance because GetXamlTypeNoRef() returns null.
 ///
-///   // Navigation parameter is passed as Props (string by default).
+/// The correct pattern for Duct pages in Frame navigation:
+///
+///   1. Create a minimal .xaml file for the page:
+///      &lt;Page x:Class="MyApp.Pages.ButtonPage" ... /&gt;
+///
+///   2. In the code-behind, use DuctPageHelper to mount the component:
+///
+///      public sealed partial class ButtonPage : Page
+///      {
+///          private DuctHostControl? _host;
+///
+///          public ButtonPage() { InitializeComponent(); }
+///
+///          protected override void OnNavigatedTo(NavigationEventArgs e)
+///          {
+///              base.OnNavigatedTo(e);
+///              _host = DuctPageHelper.Mount&lt;MyComponent&gt;(this, e);
+///          }
+///
+///          protected override void OnNavigatedFrom(NavigationEventArgs e)
+///          {
+///              base.OnNavigatedFrom(e);
+///              DuctPageHelper.Unmount(ref _host);
+///          }
+///      }
 /// </summary>
-public class DuctPage<TComponent> : Page
-    where TComponent : Component, new()
+public static class DuctPageHelper
 {
-    private DuctHostControl? _host;
-
-    protected override void OnNavigatedTo(NavigationEventArgs e)
+    /// <summary>
+    /// Creates a DuctHostControl, mounts the component, and sets it as the page's content.
+    /// Passes navigation parameters as props if the component accepts them.
+    /// </summary>
+    public static DuctHostControl Mount<TComponent>(Page page, NavigationEventArgs e)
+        where TComponent : Component, new()
     {
-        base.OnNavigatedTo(e);
-
-        _host = new DuctHostControl();
-
+        var host = new DuctHostControl();
         var component = new TComponent();
 
-        // Pass navigation parameter as props if the component accepts them
         if (e.Parameter is not null)
         {
             var propsProperty = component.GetType().GetProperty("Props");
             propsProperty?.SetValue(component, e.Parameter);
         }
 
-        _host.Mount(component);
-        Content = _host;
+        host.Mount(component);
+        page.Content = host;
+        return host;
     }
 
-    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    /// <summary>
+    /// Creates a DuctHostControl, mounts the component with typed props, and sets it as the page's content.
+    /// </summary>
+    public static DuctHostControl Mount<TComponent, TProps>(Page page, NavigationEventArgs e)
+        where TComponent : Component<TProps>, new()
     {
-        base.OnNavigatedFrom(e);
-        _host?.Dispose();
-        _host = null;
-    }
-}
-
-/// <summary>
-/// A Page subclass that hosts a Duct component with typed props,
-/// supporting strongly-typed navigation parameters.
-///
-/// Usage:
-///   { "ButtonPage", typeof(DuctPage&lt;ButtonPageComponent, string&gt;) }
-/// </summary>
-public class DuctPage<TComponent, TProps> : Page
-    where TComponent : Component<TProps>, new()
-{
-    private DuctHostControl? _host;
-
-    protected override void OnNavigatedTo(NavigationEventArgs e)
-    {
-        base.OnNavigatedTo(e);
-
-        _host = new DuctHostControl();
-
+        var host = new DuctHostControl();
         var component = new TComponent();
 
         if (e.Parameter is TProps props)
             component.Props = props;
 
-        _host.Mount(component);
-        Content = _host;
+        host.Mount(component);
+        page.Content = host;
+        return host;
     }
 
-    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    /// <summary>
+    /// Disposes the DuctHostControl and clears the reference.
+    /// </summary>
+    public static void Unmount(ref DuctHostControl? host)
     {
-        base.OnNavigatedFrom(e);
-        _host?.Dispose();
-        _host = null;
+        host?.Dispose();
+        host = null;
     }
 }
