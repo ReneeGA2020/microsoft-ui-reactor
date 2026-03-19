@@ -18,15 +18,27 @@ public sealed class TreeSerializer
 
     public (ViewNode[] Nodes, ViewProp[] Props) Serialize(Element root)
     {
+        var result = SerializeWithMapping(root);
+        return (result.Nodes, result.Props);
+    }
+
+    /// <summary>
+    /// Serializes an Element tree into flat arrays for the Rust differ,
+    /// and also produces a parallel Element[] in the same BFS order.
+    /// The Element[] enables mapping patch indices back to the original elements.
+    /// </summary>
+    public SerializationResult SerializeWithMapping(Element root)
+    {
         _registry.Clear();
 
         var nodes = new List<ViewNode>();
         var props = new List<ViewProp>();
+        var elements = new List<Element>();
         var queue = new Queue<(Element Element, int ParentIndex)>();
 
         // Unwrap root
         var unwrapped = Unwrap(root);
-        if (unwrapped is null) return ([], []);
+        if (unwrapped is null) return new([], [], []);
 
         queue.Enqueue((unwrapped, -1));
 
@@ -38,22 +50,26 @@ public sealed class TreeSerializer
             var elementProps = SerializeProps(element);
             var children = GetChildren(element);
 
+            // Count only non-null unwrapped children
+            int actualChildCount = 0;
+            foreach (var child in children)
+                if (Unwrap(child) is not null) actualChildCount++;
+
             var node = new ViewNode
             {
                 TypeId = ViewDiffer.HashString(element.GetType().Name),
                 Key = element.Key is not null ? (long)ViewDiffer.HashString(element.Key) : 0L,
                 ParentIndex = parentIndex,
                 PropCount = (ushort)elementProps.Length,
-                ChildCount = (ushort)children.Length,
+                ChildCount = (ushort)actualChildCount,
                 FirstChild = 0, // patched below
                 FirstProp = (uint)props.Count,
             };
 
             nodes.Add(node);
+            elements.Add(element);
             props.AddRange(elementProps);
 
-            // Enqueue children; FirstChild will be the next node index after all current queue items
-            // We patch FirstChild after we know the layout
             foreach (var child in children)
             {
                 var unwrappedChild = Unwrap(child);
@@ -62,10 +78,9 @@ public sealed class TreeSerializer
             }
         }
 
-        // Patch FirstChild: for each node, find its first child by scanning
         PatchFirstChild(nodes);
 
-        return (nodes.ToArray(), props.ToArray());
+        return new(nodes.ToArray(), props.ToArray(), elements.ToArray());
     }
 
     private static void PatchFirstChild(List<ViewNode> nodes)
@@ -502,5 +517,92 @@ public sealed class TreeSerializer
             DpId = ViewDiffer.HashString(name),
             ValueHash = _registry.Register(value),
         });
+    }
+
+    /// <summary>
+    /// Walks a live control tree in the same BFS order as serialization,
+    /// producing a UIElement[] parallel to the serialized Element[].
+    /// This enables mapping patch indices to live controls.
+    /// </summary>
+    public UIElement?[] BuildControlMap(Element root, UIElement rootControl)
+    {
+        var controls = new List<UIElement?>();
+        var queue = new Queue<(Element Element, UIElement? Control)>();
+
+        var unwrapped = Unwrap(root);
+        if (unwrapped is null) return [];
+
+        queue.Enqueue((unwrapped, rootControl));
+
+        while (queue.Count > 0)
+        {
+            var (element, control) = queue.Dequeue();
+            controls.Add(control);
+
+            var childElements = GetChildren(element);
+            var childControls = GetControlChildren(control);
+
+            int controlIdx = 0;
+            foreach (var child in childElements)
+            {
+                var unwrappedChild = Unwrap(child);
+                if (unwrappedChild is null) continue;
+
+                UIElement? childControl = controlIdx < childControls.Count
+                    ? childControls[controlIdx] : null;
+                queue.Enqueue((unwrappedChild, childControl));
+                controlIdx++;
+            }
+        }
+
+        return controls.ToArray();
+    }
+
+    /// <summary>
+    /// Extracts children from a WinUI control, mirroring the order of GetChildren().
+    /// </summary>
+    private static List<UIElement> GetControlChildren(UIElement? control)
+    {
+        if (control is null) return [];
+        return control switch
+        {
+            Microsoft.UI.Xaml.Controls.Panel panel => [.. panel.Children],
+            Microsoft.UI.Xaml.Controls.Border border when border.Child is not null => [border.Child],
+            Microsoft.UI.Xaml.Controls.ScrollViewer sv when sv.Content is UIElement child => [child],
+            Microsoft.UI.Xaml.Controls.Viewbox vb when vb.Child is UIElement child => [child],
+            Microsoft.UI.Xaml.Controls.SplitView splitView =>
+                CollectNonNull(splitView.Pane as UIElement, splitView.Content as UIElement),
+            Microsoft.UI.Xaml.Controls.Expander exp when exp.Content is UIElement child => [child],
+            Microsoft.UI.Xaml.Controls.ContentDialog cd when cd.Content is UIElement child => [child],
+            Microsoft.UI.Xaml.Controls.ItemsControl ic => [.. ic.Items.OfType<UIElement>()],
+            _ => [],
+        };
+    }
+
+    private static List<UIElement> CollectNonNull(params UIElement?[] items)
+    {
+        var result = new List<UIElement>();
+        foreach (var item in items)
+            if (item is not null) result.Add(item);
+        return result;
+    }
+}
+
+/// <summary>
+/// Result of tree serialization: flat ViewNode[]/ViewProp[] for Rust,
+/// plus parallel Element[] for mapping patch indices back to elements.
+/// </summary>
+public sealed class SerializationResult
+{
+    public readonly ViewNode[] Nodes;
+    public readonly ViewProp[] Props;
+    /// <summary>BFS-ordered elements, parallel to Nodes. Index i in Nodes corresponds to Elements[i].</summary>
+    public readonly Element[] Elements;
+
+    public SerializationResult(ViewNode[] nodes, ViewProp[] props, Element[] elements)
+    {
+        Nodes = nodes;
+        Props = props;
+        Elements = elements;
     }
 }

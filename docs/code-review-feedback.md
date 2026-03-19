@@ -48,7 +48,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 1.1 Rust Differ Is Built But Unused By the C# Reconciler
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **Files:** `Duct/Core/Reconciler.cs`, `Duct/Core/ChildReconciler.cs`, `Duct/Native/ViewDiffer.cs`, `Duct/Native/differ/`
 - **Issue:** The Rust native differ is built, packaged, and has a full C# interop layer (`ViewDiffer.cs`), but the actual reconciler (`Reconciler.cs`, `ChildReconciler.cs`) does its own diffing entirely in C#. The `TreeSerializer` serializes elements to the Rust wire format, but nothing consumes those serialized trees. This means:
   - The Rust crate is dead code in production (cargo builds add build time, binary size, and a native dependency for no benefit)
