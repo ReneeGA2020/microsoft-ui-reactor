@@ -449,7 +449,7 @@ internal static class ChildReconciler
 
     /// <summary>
     /// Find the current position of an item that was originally at a given old index.
-    /// Uses the Tag property to match elements.
+    /// Uses the reconciler's element map to match elements.
     /// </summary>
     private static int FindItemByOldIndex(
         IChildCollection children,
@@ -459,7 +459,6 @@ internal static class ChildReconciler
         int searchEnd,
         Reconciler reconciler)
     {
-        // The control's Tag should hold the old element (set during Mount/Update)
         for (int i = searchStart; i < searchEnd && i < children.Count; i++)
         {
             var child = children.Get(i);

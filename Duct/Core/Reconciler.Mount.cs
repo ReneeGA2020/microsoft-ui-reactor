@@ -109,8 +109,8 @@ public sealed partial class Reconciler
     private WinUI.Button MountButton(ButtonElement btn)
     {
         var button = new WinUI.Button { Content = btn.Label, IsEnabled = btn.IsEnabled };
-        button.Tag = btn;
-        button.Click += (s, _) => ((ButtonElement)((WinUI.Button)s!).Tag!).OnClick?.Invoke();
+        SetElementTag(button, btn);
+        button.Click += (s, _) => (GetElementTag((UIElement)s!) as ButtonElement)?.OnClick?.Invoke();
         ApplySetters(btn.Setters, button);
         return button;
     }
@@ -119,8 +119,8 @@ public sealed partial class Reconciler
     {
         var hb = new WinUI.HyperlinkButton { Content = hlBtn.Content };
         if (hlBtn.NavigateUri is not null) hb.NavigateUri = hlBtn.NavigateUri;
-        hb.Tag = hlBtn;
-        hb.Click += (s, _) => ((HyperlinkButtonElement)((WinUI.HyperlinkButton)s!).Tag!).OnClick?.Invoke();
+        SetElementTag(hb, hlBtn);
+        hb.Click += (s, _) => (GetElementTag((UIElement)s!) as HyperlinkButtonElement)?.OnClick?.Invoke();
         ApplySetters(hlBtn.Setters, hb);
         return hb;
     }
@@ -128,8 +128,8 @@ public sealed partial class Reconciler
     private WinPrim.RepeatButton MountRepeatButton(RepeatButtonElement repBtn)
     {
         var rb = new WinPrim.RepeatButton { Content = repBtn.Label, Delay = repBtn.Delay, Interval = repBtn.Interval };
-        rb.Tag = repBtn;
-        rb.Click += (s, _) => ((RepeatButtonElement)((WinPrim.RepeatButton)s!).Tag!).OnClick?.Invoke();
+        SetElementTag(rb, repBtn);
+        rb.Click += (s, _) => (GetElementTag((UIElement)s!) as RepeatButtonElement)?.OnClick?.Invoke();
         ApplySetters(repBtn.Setters, rb);
         return rb;
     }
@@ -137,9 +137,9 @@ public sealed partial class Reconciler
     private WinPrim.ToggleButton MountToggleButton(ToggleButtonElement togBtn)
     {
         var tb = new WinPrim.ToggleButton { Content = togBtn.Label, IsChecked = togBtn.IsChecked };
-        tb.Tag = togBtn;
-        tb.Checked += (s, _) => ((ToggleButtonElement)((WinPrim.ToggleButton)s!).Tag!).OnToggled?.Invoke(true);
-        tb.Unchecked += (s, _) => ((ToggleButtonElement)((WinPrim.ToggleButton)s!).Tag!).OnToggled?.Invoke(false);
+        SetElementTag(tb, togBtn);
+        tb.Checked += (s, _) => (GetElementTag((UIElement)s!) as ToggleButtonElement)?.OnToggled?.Invoke(true);
+        tb.Unchecked += (s, _) => (GetElementTag((UIElement)s!) as ToggleButtonElement)?.OnToggled?.Invoke(false);
         ApplySetters(togBtn.Setters, tb);
         return tb;
     }
@@ -159,8 +159,8 @@ public sealed partial class Reconciler
     private WinUI.SplitButton MountSplitButton(SplitButtonElement spBtn, Action requestRerender)
     {
         var sb = new WinUI.SplitButton { Content = spBtn.Label };
-        sb.Tag = spBtn;
-        sb.Click += (s, _) => ((SplitButtonElement)((WinUI.SplitButton)s!).Tag!).OnClick?.Invoke();
+        SetElementTag(sb, spBtn);
+        sb.Click += (s, _) => (GetElementTag((UIElement)s!) as SplitButtonElement)?.OnClick?.Invoke();
         if (spBtn.Flyout is not null)
         {
             var flyoutContent = Mount(spBtn.Flyout, requestRerender);
@@ -173,11 +173,11 @@ public sealed partial class Reconciler
     private WinUI.ToggleSplitButton MountToggleSplitButton(ToggleSplitButtonElement tspBtn, Action requestRerender)
     {
         var tsb = new WinUI.ToggleSplitButton { Content = tspBtn.Label, IsChecked = tspBtn.IsChecked };
-        tsb.Tag = tspBtn;
+        SetElementTag(tsb, tspBtn);
         tsb.IsCheckedChanged += (s, _) =>
         {
             var t = (WinUI.ToggleSplitButton)s!;
-            ((ToggleSplitButtonElement)t.Tag!).OnIsCheckedChanged?.Invoke(t.IsChecked);
+            (GetElementTag(t) as ToggleSplitButtonElement)?.OnIsCheckedChanged?.Invoke(t.IsChecked);
         };
         if (tspBtn.Flyout is not null)
         {
@@ -191,8 +191,8 @@ public sealed partial class Reconciler
     private TextBox MountTextField(TextFieldElement tf)
     {
         var textBox = new TextBox { Text = tf.Value, PlaceholderText = tf.Placeholder ?? "" };
-        textBox.Tag = tf;
-        textBox.TextChanged += (_, _) => ((TextFieldElement)textBox.Tag!).OnChanged?.Invoke(textBox.Text);
+        SetElementTag(textBox, tf);
+        textBox.TextChanged += (_, _) => (GetElementTag(textBox) as TextFieldElement)?.OnChanged?.Invoke(textBox.Text);
         ApplySetters(tf.Setters, textBox);
         return textBox;
     }
@@ -200,8 +200,8 @@ public sealed partial class Reconciler
     private WinUI.PasswordBox MountPasswordBox(PasswordBoxElement pw)
     {
         var pb = new WinUI.PasswordBox { Password = pw.Password, PlaceholderText = pw.PlaceholderText ?? "" };
-        pb.Tag = pw;
-        pb.PasswordChanged += (s, _) => ((PasswordBoxElement)((WinUI.PasswordBox)s!).Tag!).OnPasswordChanged?.Invoke(((WinUI.PasswordBox)s!).Password);
+        SetElementTag(pb, pw);
+        pb.PasswordChanged += (s, _) => (GetElementTag((UIElement)s!) as PasswordBoxElement)?.OnPasswordChanged?.Invoke(((WinUI.PasswordBox)s!).Password);
         ApplySetters(pw.Setters, pb);
         return pb;
     }
@@ -216,11 +216,11 @@ public sealed partial class Reconciler
             SpinButtonPlacementMode = nb.SpinButtonPlacement,
         };
         if (nb.Header is not null) numBox.Header = nb.Header;
-        numBox.Tag = nb;
+        SetElementTag(numBox, nb);
         numBox.ValueChanged += (s, _) =>
         {
             var box = (WinUI.NumberBox)s!;
-            ((NumberBoxElement)box.Tag!).OnValueChanged?.Invoke(box.Value);
+            (GetElementTag(box) as NumberBoxElement)?.OnValueChanged?.Invoke(box.Value);
         };
         ApplySetters(nb.Setters, numBox);
         return numBox;
@@ -230,16 +230,16 @@ public sealed partial class Reconciler
     {
         var box = new WinUI.AutoSuggestBox { Text = asb.Text, PlaceholderText = asb.PlaceholderText ?? "" };
         box.ItemsSource = asb.Suggestions;
-        box.Tag = asb;
+        SetElementTag(box, asb);
         box.TextChanged += (s, args) =>
         {
             if (args.Reason == WinUI.AutoSuggestionBoxTextChangeReason.UserInput)
-                ((AutoSuggestBoxElement)((WinUI.AutoSuggestBox)s!).Tag!).OnTextChanged?.Invoke(((WinUI.AutoSuggestBox)s!).Text);
+                (GetElementTag((UIElement)s!) as AutoSuggestBoxElement)?.OnTextChanged?.Invoke(((WinUI.AutoSuggestBox)s!).Text);
         };
         box.QuerySubmitted += (s, args) =>
-            ((AutoSuggestBoxElement)((WinUI.AutoSuggestBox)s!).Tag!).OnQuerySubmitted?.Invoke(args.QueryText);
+            (GetElementTag((UIElement)s!) as AutoSuggestBoxElement)?.OnQuerySubmitted?.Invoke(args.QueryText);
         box.SuggestionChosen += (s, args) =>
-            ((AutoSuggestBoxElement)((WinUI.AutoSuggestBox)s!).Tag!).OnSuggestionChosen?.Invoke(args.SelectedItem?.ToString() ?? "");
+            (GetElementTag((UIElement)s!) as AutoSuggestBoxElement)?.OnSuggestionChosen?.Invoke(args.SelectedItem?.ToString() ?? "");
         ApplySetters(asb.Setters, box);
         return box;
     }
@@ -247,9 +247,9 @@ public sealed partial class Reconciler
     private WinUI.CheckBox MountCheckBox(CheckBoxElement cb)
     {
         var checkBox = new WinUI.CheckBox { IsChecked = cb.IsChecked, Content = cb.Label };
-        checkBox.Tag = cb;
-        checkBox.Checked += (_, _) => ((CheckBoxElement)checkBox.Tag!).OnChanged?.Invoke(true);
-        checkBox.Unchecked += (_, _) => ((CheckBoxElement)checkBox.Tag!).OnChanged?.Invoke(false);
+        SetElementTag(checkBox, cb);
+        checkBox.Checked += (_, _) => (GetElementTag(checkBox) as CheckBoxElement)?.OnChanged?.Invoke(true);
+        checkBox.Unchecked += (_, _) => (GetElementTag(checkBox) as CheckBoxElement)?.OnChanged?.Invoke(false);
         ApplySetters(cb.Setters, checkBox);
         return checkBox;
     }
@@ -258,9 +258,9 @@ public sealed partial class Reconciler
     {
         var radio = new WinUI.RadioButton { Content = rb.Label, IsChecked = rb.IsChecked };
         if (rb.GroupName is not null) radio.GroupName = rb.GroupName;
-        radio.Tag = rb;
-        radio.Checked += (s, _) => ((RadioButtonElement)((WinUI.RadioButton)s!).Tag!).OnChecked?.Invoke(true);
-        radio.Unchecked += (s, _) => ((RadioButtonElement)((WinUI.RadioButton)s!).Tag!).OnChecked?.Invoke(false);
+        SetElementTag(radio, rb);
+        radio.Checked += (s, _) => (GetElementTag((UIElement)s!) as RadioButtonElement)?.OnChecked?.Invoke(true);
+        radio.Unchecked += (s, _) => (GetElementTag((UIElement)s!) as RadioButtonElement)?.OnChecked?.Invoke(false);
         ApplySetters(rb.Setters, radio);
         return radio;
     }
@@ -270,11 +270,11 @@ public sealed partial class Reconciler
         var rbGroup = new WinUI.RadioButtons { SelectedIndex = rbs.SelectedIndex };
         if (rbs.Header is not null) rbGroup.Header = rbs.Header;
         foreach (var item in rbs.Items) rbGroup.Items.Add(item);
-        rbGroup.Tag = rbs;
+        SetElementTag(rbGroup, rbs);
         rbGroup.SelectionChanged += (s, _) =>
         {
             var g = (WinUI.RadioButtons)s!;
-            ((RadioButtonsElement)g.Tag!).OnSelectionChanged?.Invoke(g.SelectedIndex);
+            (GetElementTag(g) as RadioButtonsElement)?.OnSelectionChanged?.Invoke(g.SelectedIndex);
         };
         ApplySetters(rbs.Setters, rbGroup);
         return rbGroup;
@@ -290,11 +290,11 @@ public sealed partial class Reconciler
         };
         if (combo.Header is not null) cb.Header = combo.Header;
         foreach (var item in combo.Items) cb.Items.Add(item);
-        cb.Tag = combo;
+        SetElementTag(cb, combo);
         cb.SelectionChanged += (s, _) =>
         {
             var c = (WinUI.ComboBox)s!;
-            ((ComboBoxElement)c.Tag!).OnSelectionChanged?.Invoke(c.SelectedIndex);
+            (GetElementTag(c) as ComboBoxElement)?.OnSelectionChanged?.Invoke(c.SelectedIndex);
         };
         ApplySetters(combo.Setters, cb);
         return cb;
@@ -304,8 +304,8 @@ public sealed partial class Reconciler
     {
         var slider = new WinUI.Slider { Value = sl.Value, Minimum = sl.Min, Maximum = sl.Max, StepFrequency = sl.StepFrequency };
         if (sl.Header is not null) slider.Header = sl.Header;
-        slider.Tag = sl;
-        slider.ValueChanged += (_, args) => ((SliderElement)slider.Tag!).OnChanged?.Invoke(args.NewValue);
+        SetElementTag(slider, sl);
+        slider.ValueChanged += (_, args) => (GetElementTag(slider) as SliderElement)?.OnChanged?.Invoke(args.NewValue);
         ApplySetters(sl.Setters, slider);
         return slider;
     }
@@ -314,11 +314,11 @@ public sealed partial class Reconciler
     {
         var toggle = new WinUI.ToggleSwitch { IsOn = ts.IsOn, OnContent = ts.OnContent, OffContent = ts.OffContent };
         if (ts.Header is not null) toggle.Header = ts.Header;
-        toggle.Tag = ts;
+        SetElementTag(toggle, ts);
         toggle.Toggled += (s, _) =>
         {
             var t = (WinUI.ToggleSwitch)s!;
-            ((ToggleSwitchElement)t.Tag!).OnChanged?.Invoke(t.IsOn);
+            (GetElementTag(t) as ToggleSwitchElement)?.OnChanged?.Invoke(t.IsOn);
         };
         ApplySetters(ts.Setters, toggle);
         return toggle;
@@ -327,11 +327,11 @@ public sealed partial class Reconciler
     private WinUI.RatingControl MountRatingControl(RatingControlElement rc)
     {
         var rating = new WinUI.RatingControl { Value = rc.Value, MaxRating = rc.MaxRating, IsReadOnly = rc.IsReadOnly, Caption = rc.Caption ?? "" };
-        rating.Tag = rc;
+        SetElementTag(rating, rc);
         rating.ValueChanged += (s, _) =>
         {
             var r = (WinUI.RatingControl)s!;
-            ((RatingControlElement)r.Tag!).OnValueChanged?.Invoke(r.Value);
+            (GetElementTag(r) as RatingControlElement)?.OnValueChanged?.Invoke(r.Value);
         };
         ApplySetters(rc.Setters, rating);
         return rating;
@@ -345,8 +345,8 @@ public sealed partial class Reconciler
             IsColorSpectrumVisible = cp.IsColorSpectrumVisible, IsColorSliderVisible = cp.IsColorSliderVisible,
             IsColorChannelTextInputVisible = cp.IsColorChannelTextInputVisible, IsHexInputVisible = cp.IsHexInputVisible,
         };
-        picker.Tag = cp;
-        picker.ColorChanged += (s, args) => ((ColorPickerElement)((WinUI.ColorPicker)s!).Tag!).OnColorChanged?.Invoke(args.NewColor);
+        SetElementTag(picker, cp);
+        picker.ColorChanged += (s, args) => (GetElementTag((UIElement)s!) as ColorPickerElement)?.OnColorChanged?.Invoke(args.NewColor);
         ApplySetters(cp.Setters, picker);
         return picker;
     }
@@ -357,11 +357,11 @@ public sealed partial class Reconciler
         if (cdp.Header is not null) cal.Header = cdp.Header;
         if (cdp.MinDate.HasValue) cal.MinDate = cdp.MinDate.Value;
         if (cdp.MaxDate.HasValue) cal.MaxDate = cdp.MaxDate.Value;
-        cal.Tag = cdp;
+        SetElementTag(cal, cdp);
         cal.DateChanged += (s, _) =>
         {
             var c = (WinUI.CalendarDatePicker)s!;
-            ((CalendarDatePickerElement)c.Tag!).OnDateChanged?.Invoke(c.Date);
+            (GetElementTag(c) as CalendarDatePickerElement)?.OnDateChanged?.Invoke(c.Date);
         };
         ApplySetters(cdp.Setters, cal);
         return cal;
@@ -373,8 +373,8 @@ public sealed partial class Reconciler
         if (dp.Header is not null) picker.Header = dp.Header;
         if (dp.MinYear.HasValue) picker.MinYear = dp.MinYear.Value;
         if (dp.MaxYear.HasValue) picker.MaxYear = dp.MaxYear.Value;
-        picker.Tag = dp;
-        picker.DateChanged += (s, args) => ((DatePickerElement)((WinUI.DatePicker)s!).Tag!).OnDateChanged?.Invoke(args.NewDate);
+        SetElementTag(picker, dp);
+        picker.DateChanged += (s, args) => (GetElementTag((UIElement)s!) as DatePickerElement)?.OnDateChanged?.Invoke(args.NewDate);
         ApplySetters(dp.Setters, picker);
         return picker;
     }
@@ -383,8 +383,8 @@ public sealed partial class Reconciler
     {
         var picker = new WinUI.TimePicker { Time = tp.Time, MinuteIncrement = tp.MinuteIncrement };
         if (tp.Header is not null) picker.Header = tp.Header;
-        picker.Tag = tp;
-        picker.TimeChanged += (s, args) => ((TimePickerElement)((WinUI.TimePicker)s!).Tag!).OnTimeChanged?.Invoke(args.NewTime);
+        SetElementTag(picker, tp);
+        picker.TimeChanged += (s, args) => (GetElementTag((UIElement)s!) as TimePickerElement)?.OnTimeChanged?.Invoke(args.NewTime);
         ApplySetters(tp.Setters, picker);
         return picker;
     }
@@ -439,11 +439,11 @@ public sealed partial class Reconciler
     {
         var webView = new WinUI.WebView2();
         if (wv.Source is not null) webView.Source = wv.Source;
-        webView.Tag = wv;
+        SetElementTag(webView, wv);
         webView.NavigationStarting += (s, args) =>
-            ((WebView2Element)((WinUI.WebView2)s!).Tag!).OnNavigationStarting?.Invoke(new Uri(args.Uri));
+            (GetElementTag((UIElement)s!) as WebView2Element)?.OnNavigationStarting?.Invoke(new Uri(args.Uri));
         webView.NavigationCompleted += (s, _) =>
-            ((WebView2Element)((WinUI.WebView2)s!).Tag!).OnNavigationCompleted?.Invoke(((WinUI.WebView2)s!).Source);
+            (GetElementTag((UIElement)s!) as WebView2Element)?.OnNavigationCompleted?.Invoke(((WinUI.WebView2)s!).Source);
         ApplySetters(wv.Setters, webView);
         return webView;
     }
@@ -461,7 +461,7 @@ public sealed partial class Reconciler
             var childControl = Mount(child, requestRerender);
             if (childControl is not null) panel.Children.Add(childControl);
         }
-        panel.Tag = stack;
+        SetElementTag(panel, stack);
         ApplySetters(stack.Setters, panel);
         return panel;
     }
@@ -485,7 +485,7 @@ public sealed partial class Reconciler
             if (child.ColumnSpan > 1) WinUI.Grid.SetColumnSpan(ctrl as FrameworkElement, child.ColumnSpan);
             g.Children.Add(ctrl);
         }
-        g.Tag = grid;
+        SetElementTag(g, grid);
         ApplySetters(grid.Setters, g);
         return g;
     }
@@ -496,7 +496,7 @@ public sealed partial class Reconciler
         sv.HorizontalScrollBarVisibility = scroll.HorizontalScrollBarVisibility;
         sv.VerticalScrollBarVisibility = scroll.VerticalScrollBarVisibility;
         sv.Content = Mount(scroll.Child, requestRerender);
-        sv.Tag = scroll;
+        SetElementTag(sv, scroll);
         ApplySetters(scroll.Setters, sv);
         return sv;
     }
@@ -510,7 +510,7 @@ public sealed partial class Reconciler
         if (border.BorderBrush is not null) bdr.BorderBrush = border.BorderBrush;
         if (border.BorderThickness.HasValue) bdr.BorderThickness = new Microsoft.UI.Xaml.Thickness(border.BorderThickness.Value);
         bdr.Child = Mount(border.Child, requestRerender);
-        bdr.Tag = border;
+        SetElementTag(bdr, border);
         ApplySetters(border.Setters, bdr);
         return bdr;
     }
@@ -523,9 +523,9 @@ public sealed partial class Reconciler
             Content = Mount(exp.Content, requestRerender),
             ExpandDirection = exp.ExpandDirection,
         };
-        expander.Tag = exp;
-        expander.Expanding += (s, _) => ((ExpanderElement)((WinUI.Expander)s!).Tag!).OnExpandedChanged?.Invoke(true);
-        expander.Collapsed += (s, _) => ((ExpanderElement)((WinUI.Expander)s!).Tag!).OnExpandedChanged?.Invoke(false);
+        SetElementTag(expander, exp);
+        expander.Expanding += (s, _) => (GetElementTag((UIElement)s!) as ExpanderElement)?.OnExpandedChanged?.Invoke(true);
+        expander.Collapsed += (s, _) => (GetElementTag((UIElement)s!) as ExpanderElement)?.OnExpandedChanged?.Invoke(false);
         ApplySetters(exp.Setters, expander);
         return expander;
     }
@@ -539,9 +539,9 @@ public sealed partial class Reconciler
         };
         if (svEl.Pane is not null) splitView.Pane = Mount(svEl.Pane, requestRerender);
         if (svEl.Content is not null) splitView.Content = Mount(svEl.Content, requestRerender);
-        splitView.Tag = svEl;
-        splitView.PaneOpening += (s, _) => ((SplitViewElement)((WinUI.SplitView)s!).Tag!).OnPaneOpenChanged?.Invoke(true);
-        splitView.PaneClosing += (s, _) => ((SplitViewElement)((WinUI.SplitView)s!).Tag!).OnPaneOpenChanged?.Invoke(false);
+        SetElementTag(splitView, svEl);
+        splitView.PaneOpening += (s, _) => (GetElementTag((UIElement)s!) as SplitViewElement)?.OnPaneOpenChanged?.Invoke(true);
+        splitView.PaneClosing += (s, _) => (GetElementTag((UIElement)s!) as SplitViewElement)?.OnPaneOpenChanged?.Invoke(false);
         ApplySetters(svEl.Setters, splitView);
         return splitView;
     }
@@ -568,7 +568,7 @@ public sealed partial class Reconciler
             WinUI.Canvas.SetTop(ctrl as FrameworkElement, child.Top);
             canvas.Children.Add(ctrl);
         }
-        canvas.Tag = cvs;
+        SetElementTag(canvas, cvs);
         ApplySetters(cvs.Setters, canvas);
         return canvas;
     }
@@ -589,13 +589,13 @@ public sealed partial class Reconciler
             foreach (var mi in nv.MenuItems.OfType<WinUI.NavigationViewItem>())
                 if (mi.Tag as string == nav.SelectedTag) { nv.SelectedItem = mi; break; }
         }
-        nv.Tag = nav;
+        SetElementTag(nv, nav);
         nv.SelectionChanged += (s, args) =>
         {
             var selected = args.SelectedItem as WinUI.NavigationViewItem;
-            ((NavigationViewElement)((WinUI.NavigationView)s!).Tag!).OnSelectionChanged?.Invoke(selected?.Tag as string);
+            (GetElementTag((UIElement)s!) as NavigationViewElement)?.OnSelectionChanged?.Invoke(selected?.Tag as string);
         };
-        nv.BackRequested += (s, _) => ((NavigationViewElement)((WinUI.NavigationView)s!).Tag!).OnBackRequested?.Invoke();
+        nv.BackRequested += (s, _) => (GetElementTag((UIElement)s!) as NavigationViewElement)?.OnBackRequested?.Invoke();
         ApplySetters(nav.Setters, nv);
         return nv;
     }
@@ -622,19 +622,19 @@ public sealed partial class Reconciler
             if (tabItem.Icon is not null) tvi.IconSource = new WinUI.SymbolIconSource { Symbol = ParseSymbol(tabItem.Icon) };
             tv.TabItems.Add(tvi);
         }
-        tv.Tag = tab;
+        SetElementTag(tv, tab);
         tv.SelectionChanged += (s, _) =>
         {
             var t = (WinUI.TabView)s!;
-            ((TabViewElement)t.Tag!).OnSelectionChanged?.Invoke(t.SelectedIndex);
+            (GetElementTag(t) as TabViewElement)?.OnSelectionChanged?.Invoke(t.SelectedIndex);
         };
         tv.TabCloseRequested += (s, args) =>
         {
             var t = (WinUI.TabView)s!;
             var idx = t.TabItems.IndexOf(args.Tab);
-            ((TabViewElement)t.Tag!).OnTabCloseRequested?.Invoke(idx);
+            (GetElementTag(t) as TabViewElement)?.OnTabCloseRequested?.Invoke(idx);
         };
-        tv.AddTabButtonClick += (s, _) => ((TabViewElement)((WinUI.TabView)s!).Tag!).OnAddTabButtonClick?.Invoke();
+        tv.AddTabButtonClick += (s, _) => (GetElementTag((UIElement)s!) as TabViewElement)?.OnAddTabButtonClick?.Invoke();
         ApplySetters(tab.Setters, tv);
         return tv;
     }
@@ -643,11 +643,11 @@ public sealed partial class Reconciler
     {
         var bar = new WinUI.BreadcrumbBar();
         bar.ItemsSource = bcb.Items.Select(i => i.Label).ToList();
-        bar.Tag = bcb;
+        SetElementTag(bar, bcb);
         bar.ItemClicked += (s, args) =>
         {
-            var el = (BreadcrumbBarElement)((WinUI.BreadcrumbBar)s!).Tag!;
-            if (args.Index >= 0 && args.Index < el.Items.Length) el.OnItemClicked?.Invoke(el.Items[args.Index]);
+            var el = GetElementTag((UIElement)s!) as BreadcrumbBarElement;
+            if (el is not null && args.Index >= 0 && args.Index < el.Items.Length) el.OnItemClicked?.Invoke(el.Items[args.Index]);
         };
         ApplySetters(bcb.Setters, bar);
         return bar;
@@ -662,11 +662,11 @@ public sealed partial class Reconciler
             var pi = new WinUI.PivotItem { Header = item.Header, Content = Mount(item.Content, requestRerender) };
             pivot.Items.Add(pi);
         }
-        pivot.Tag = pvt;
+        SetElementTag(pivot, pvt);
         pivot.SelectionChanged += (s, _) =>
         {
             var p = (WinUI.Pivot)s!;
-            ((PivotElement)p.Tag!).OnSelectionChanged?.Invoke(p.SelectedIndex);
+            (GetElementTag(p) as PivotElement)?.OnSelectionChanged?.Invoke(p.SelectedIndex);
         };
         ApplySetters(pvt.Setters, pivot);
         return pivot;
@@ -685,16 +685,16 @@ public sealed partial class Reconciler
             var ctrl = Mount(item, requestRerender);
             if (ctrl is not null) listView.Items.Add(ctrl);
         }
-        listView.Tag = lv;
+        SetElementTag(listView, lv);
         listView.SelectionChanged += (s, _) =>
         {
             var l = (WinUI.ListView)s!;
-            ((ListViewElement)l.Tag!).OnSelectionChanged?.Invoke(l.SelectedIndex);
+            (GetElementTag(l) as ListViewElement)?.OnSelectionChanged?.Invoke(l.SelectedIndex);
         };
         listView.ItemClick += (s, args) =>
         {
             var l = (WinUI.ListView)s!;
-            ((ListViewElement)l.Tag!).OnItemClick?.Invoke(l.Items.IndexOf(args.ClickedItem));
+            (GetElementTag(l) as ListViewElement)?.OnItemClick?.Invoke(l.Items.IndexOf(args.ClickedItem));
         };
         ApplySetters(lv.Setters, listView);
         return listView;
@@ -713,16 +713,16 @@ public sealed partial class Reconciler
             var ctrl = Mount(item, requestRerender);
             if (ctrl is not null) gridView.Items.Add(ctrl);
         }
-        gridView.Tag = gv;
+        SetElementTag(gridView, gv);
         gridView.SelectionChanged += (s, _) =>
         {
             var g = (WinUI.GridView)s!;
-            ((GridViewElement)g.Tag!).OnSelectionChanged?.Invoke(g.SelectedIndex);
+            (GetElementTag(g) as GridViewElement)?.OnSelectionChanged?.Invoke(g.SelectedIndex);
         };
         gridView.ItemClick += (s, args) =>
         {
             var g = (WinUI.GridView)s!;
-            ((GridViewElement)g.Tag!).OnItemClick?.Invoke(g.Items.IndexOf(args.ClickedItem));
+            (GetElementTag(g) as GridViewElement)?.OnItemClick?.Invoke(g.Items.IndexOf(args.ClickedItem));
         };
         ApplySetters(gv.Setters, gridView);
         return gridView;
@@ -735,13 +735,13 @@ public sealed partial class Reconciler
             SelectionMode = tv.SelectionMode,
         };
         foreach (var node in tv.Nodes) treeView.RootNodes.Add(CreateTreeNode(node));
-        treeView.Tag = tv;
+        SetElementTag(treeView, tv);
         treeView.ItemInvoked += (s, args) =>
         {
             var t = (WinUI.TreeView)s!;
             var data = args.InvokedItem as WinUI.TreeViewNode;
             if (data?.Content is TreeViewNodeData nodeData)
-                ((TreeViewElement)t.Tag!).OnItemInvoked?.Invoke(nodeData);
+                (GetElementTag(t) as TreeViewElement)?.OnItemInvoked?.Invoke(nodeData);
         };
         ApplySetters(tv.Setters, treeView);
         return treeView;
@@ -763,11 +763,11 @@ public sealed partial class Reconciler
             var ctrl = Mount(item, requestRerender);
             if (ctrl is not null) flipView.Items.Add(ctrl);
         }
-        flipView.Tag = fv;
+        SetElementTag(flipView, fv);
         flipView.SelectionChanged += (s, _) =>
         {
             var f = (WinUI.FlipView)s!;
-            ((FlipViewElement)f.Tag!).OnSelectionChanged?.Invoke(f.SelectedIndex);
+            (GetElementTag(f) as FlipViewElement)?.OnSelectionChanged?.Invoke(f.SelectedIndex);
         };
         ApplySetters(fv.Setters, flipView);
         return flipView;
@@ -783,12 +783,12 @@ public sealed partial class Reconciler
         if (ib.ActionButtonContent is not null)
         {
             infoBar.ActionButton = new WinUI.Button { Content = ib.ActionButtonContent };
-            infoBar.ActionButton.Tag = ib;
+            SetElementTag(infoBar.ActionButton, ib);
             ((WinUI.Button)infoBar.ActionButton).Click += (s, _) =>
-                ((InfoBarElement)((WinUI.Button)s!).Tag!).OnActionButtonClick?.Invoke();
+                (GetElementTag((UIElement)s!) as InfoBarElement)?.OnActionButtonClick?.Invoke();
         }
-        infoBar.Tag = ib;
-        infoBar.Closed += (s, _) => ((InfoBarElement)((WinUI.InfoBar)s!).Tag!).OnClosed?.Invoke();
+        SetElementTag(infoBar, ib);
+        infoBar.Closed += (s, _) => (GetElementTag((UIElement)s!) as InfoBarElement)?.OnClosed?.Invoke();
         ApplySetters(ib.Setters, infoBar);
         return infoBar;
     }
@@ -804,7 +804,7 @@ public sealed partial class Reconciler
     private UIElement MountContentDialog(ContentDialogElement cdEl, Action requestRerender)
     {
         var placeholder = new WinUI.StackPanel { Visibility = Visibility.Collapsed };
-        placeholder.Tag = cdEl;
+        SetElementTag(placeholder, cdEl);
         if (cdEl.IsOpen) ShowContentDialog(cdEl, requestRerender);
         return placeholder;
     }
@@ -840,7 +840,7 @@ public sealed partial class Reconciler
             var flyout = new WinUI.Flyout { Content = flyoutContent, Placement = flyEl.Placement };
             flyout.Opened += (_, _) => flyEl.OnOpened?.Invoke();
             flyout.Closed += (_, _) => flyEl.OnClosed?.Invoke();
-            targetFe.Tag = flyEl;
+            SetElementTag(targetFe, flyEl);
             WinPrim.FlyoutBase.SetAttachedFlyout(targetFe, flyout);
             ApplySetters(flyEl.Setters, flyout);
             if (flyEl.IsOpen) WinPrim.FlyoutBase.ShowAttachedFlyout(targetFe);
@@ -858,8 +858,8 @@ public sealed partial class Reconciler
             tip.ActionButtonClick += (_, _) => ttEl.OnActionButtonClick?.Invoke();
         }
         if (ttEl.CloseButtonContent is not null) tip.CloseButtonContent = ttEl.CloseButtonContent;
-        tip.Tag = ttEl;
-        tip.Closed += (s, _) => ((TeachingTipElement)((WinUI.TeachingTip)s!).Tag!).OnClosed?.Invoke();
+        SetElementTag(tip, ttEl);
+        tip.Closed += (s, _) => (GetElementTag((UIElement)s!) as TeachingTipElement)?.OnClosed?.Invoke();
         ApplySetters(ttEl.Setters, tip);
         return tip;
     }
@@ -889,7 +889,7 @@ public sealed partial class Reconciler
             foreach (var cmd in cmdEl.PrimaryCommands) commandBar.PrimaryCommands.Add(CreateAppBarButton(cmd));
         if (cmdEl.SecondaryCommands is not null)
             foreach (var cmd in cmdEl.SecondaryCommands) commandBar.SecondaryCommands.Add(CreateAppBarButton(cmd));
-        commandBar.Tag = cmdEl;
+        SetElementTag(commandBar, cmdEl);
         ApplySetters(cmdEl.Setters, commandBar);
         return commandBar;
     }
@@ -910,7 +910,7 @@ public sealed partial class Reconciler
         {
             var menuFlyout = new WinUI.MenuFlyout();
             foreach (var item in mfEl.Items) menuFlyout.Items.Add(CreateMenuFlyoutItem(item));
-            targetFe.Tag = mfEl;
+            SetElementTag(targetFe, mfEl);
             WinPrim.FlyoutBase.SetAttachedFlyout(targetFe, menuFlyout);
             ApplySetters(mfEl.Setters, menuFlyout);
         }
@@ -997,7 +997,7 @@ public sealed partial class Reconciler
 
         repeater.ItemsSource = lazy.GetItemsSource();
         repeater.ItemTemplate = lazy.CreateFactory(this, requestRerender, _pool);
-        repeater.Tag = lazy;
+        SetElementTag(repeater, lazy);
 
         var sv = _pool.TryRent(typeof(WinUI.ScrollViewer)) as WinUI.ScrollViewer ?? new WinUI.ScrollViewer();
         sv.Content = repeater;
@@ -1007,7 +1007,7 @@ public sealed partial class Reconciler
         sv.VerticalScrollBarVisibility = lazy.Orientation == Microsoft.UI.Xaml.Controls.Orientation.Vertical
             ? WinUI.ScrollBarVisibility.Auto
             : WinUI.ScrollBarVisibility.Disabled;
-        sv.Tag = lazy;
+        SetElementTag(sv, lazy);
 
         return sv;
     }
