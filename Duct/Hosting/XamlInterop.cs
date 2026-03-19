@@ -48,21 +48,21 @@ public static class XamlInterop
     {
         // ── XamlPageElement → Frame ──────────────────────────────────
         reconciler.RegisterType<XamlPageElement, Frame>(
-            mount: (el, rerender) =>
+            mount: (r, el, rerender) =>
             {
                 var frame = new Frame();
                 frame.Navigate(el.PageType, el.Parameter);
                 frame.Tag = el;
                 return frame;
             },
-            update: (oldEl, newEl, frame, rerender) =>
+            update: (r, oldEl, newEl, frame, rerender) =>
             {
                 if (oldEl.PageType != newEl.PageType || !Equals(oldEl.Parameter, newEl.Parameter))
                     frame.Navigate(newEl.PageType, newEl.Parameter);
                 frame.Tag = newEl;
                 return null; // updated in place
             },
-            unmount: frame =>
+            unmount: (r, frame) =>
             {
                 // Navigate away to trigger Page.OnNavigatedFrom cleanup
                 if (frame.Content is Page)
@@ -71,14 +71,14 @@ public static class XamlInterop
 
         // ── XamlHostElement → FrameworkElement ───────────────────────
         reconciler.RegisterType<XamlHostElement, FrameworkElement>(
-            mount: (el, rerender) =>
+            mount: (r, el, rerender) =>
             {
                 var control = el.Factory();
                 el.Updater?.Invoke(control);
                 control.Tag = el;
                 return control;
             },
-            update: (oldEl, newEl, control, rerender) =>
+            update: (r, oldEl, newEl, control, rerender) =>
             {
                 newEl.Updater?.Invoke(control);
                 control.Tag = newEl;
