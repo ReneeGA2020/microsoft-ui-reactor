@@ -12,7 +12,7 @@ public sealed partial class Reconciler
     {
         // Registered types checked first (but after ModifiedElement, handled inside switch)
         if (element is not ModifiedElement && _typeRegistry.TryGetValue(element.GetType(), out var reg))
-            return reg.Mount(element, requestRerender);
+            return reg.Mount(element, requestRerender, this);
 
         return element switch
         {
