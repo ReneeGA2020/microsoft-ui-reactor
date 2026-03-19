@@ -182,6 +182,101 @@ public sealed class RenderContext
         return (Ref<T>)hook.Value;
     }
 
+    // ════════════════════════════════════════════════════════════════
+    //  Observable interop hooks
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Subscribes to an INotifyPropertyChanged source and re-renders when any property changes.
+    /// Returns the same source object.
+    /// </summary>
+    public T UseObservable<T>(T source) where T : System.ComponentModel.INotifyPropertyChanged
+    {
+        var (_, forceRender) = UseReducer(0);
+        UseEffect(() =>
+        {
+            void handler(object? s, System.ComponentModel.PropertyChangedEventArgs e)
+                => forceRender(v => v + 1);
+            source.PropertyChanged += handler;
+            return () => source.PropertyChanged -= handler;
+        }, source);
+        return source;
+    }
+
+    /// <summary>
+    /// Subscribes to a specific property on an INotifyPropertyChanged source.
+    /// Re-renders only when that property changes.
+    /// </summary>
+    public TProp UseObservableProperty<T, TProp>(T source, Func<T, TProp> selector, string propertyName)
+        where T : System.ComponentModel.INotifyPropertyChanged
+    {
+        var (_, forceRender) = UseReducer(0);
+        UseEffect(() =>
+        {
+            void handler(object? s, System.ComponentModel.PropertyChangedEventArgs e)
+            {
+                if (e.PropertyName == propertyName || string.IsNullOrEmpty(e.PropertyName))
+                    forceRender(v => v + 1);
+            }
+            source.PropertyChanged += handler;
+            return () => source.PropertyChanged -= handler;
+        }, source, propertyName);
+        return selector(source);
+    }
+
+    /// <summary>
+    /// Subscribes to an ObservableCollection and re-renders on Add/Remove/Reset.
+    /// Returns the collection as IReadOnlyList.
+    /// </summary>
+    public IReadOnlyList<T> UseCollection<T>(System.Collections.ObjectModel.ObservableCollection<T> collection)
+    {
+        var (_, forceRender) = UseReducer(0);
+        UseEffect(() =>
+        {
+            void handler(object? s, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+                => forceRender(v => v + 1);
+            collection.CollectionChanged += handler;
+            return () => collection.CollectionChanged -= handler;
+        }, collection);
+        return collection;
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Responsive layout hooks
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Returns (width, height) of the given window and re-renders when the window resizes.
+    /// </summary>
+    public (double Width, double Height) UseWindowSize(Microsoft.UI.Xaml.Window window)
+    {
+        var (size, setSize) = UseState((window.Bounds.Width, window.Bounds.Height));
+
+        UseEffect(() =>
+        {
+            void handler(object sender, Microsoft.UI.Xaml.WindowSizeChangedEventArgs args)
+            {
+                setSize((args.Size.Width, args.Size.Height));
+            }
+            window.SizeChanged += handler;
+            // Set initial size
+            setSize((window.Bounds.Width, window.Bounds.Height));
+            return () => window.SizeChanged -= handler;
+        }, window);
+
+        return size;
+    }
+
+    /// <summary>
+    /// Returns true when the given window's width is >= minWidth.
+    /// Re-renders when the window resizes across the breakpoint.
+    /// </summary>
+    public bool UseBreakpoint(Microsoft.UI.Xaml.Window window, double minWidth)
+    {
+        var (width, _) = UseWindowSize(window);
+        return width >= minWidth;
+    }
+
     internal void FlushEffects()
     {
         foreach (var hook in _hooks.OfType<EffectHookState>())

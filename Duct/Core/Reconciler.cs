@@ -19,6 +19,63 @@ public sealed partial class Reconciler
 {
     private readonly Dictionary<UIElement, ComponentNode> _componentNodes = new();
     private readonly ElementPool _pool = new();
+    private readonly Dictionary<Type, ITypeRegistration> _typeRegistry = new();
+
+    // ════════════════════════════════════════════════════════════════════
+    //  Extensible type registry (Feature 1: RegisterType API)
+    // ════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Registers a custom element type so the reconciler knows how to mount, update, and unmount it.
+    /// Registered types take priority over built-in types.
+    /// </summary>
+    public void RegisterType<TElement, TControl>(
+        Func<TElement, Action, TControl> mount,
+        Func<TElement, TElement, TControl, Action, UIElement?> update,
+        Action<TControl>? unmount = null)
+        where TElement : Element
+        where TControl : UIElement
+    {
+        _typeRegistry[typeof(TElement)] = new TypeRegistration<TElement, TControl>(mount, update, unmount);
+    }
+
+    internal interface ITypeRegistration
+    {
+        UIElement Mount(Element element, Action requestRerender);
+        UIElement? Update(Element oldEl, Element newEl, UIElement control, Action requestRerender);
+        void Unmount(UIElement control);
+        bool HasUnmount { get; }
+    }
+
+    private sealed class TypeRegistration<TElement, TControl> : ITypeRegistration
+        where TElement : Element
+        where TControl : UIElement
+    {
+        private readonly Func<TElement, Action, TControl> _mount;
+        private readonly Func<TElement, TElement, TControl, Action, UIElement?> _update;
+        private readonly Action<TControl>? _unmount;
+
+        public TypeRegistration(
+            Func<TElement, Action, TControl> mount,
+            Func<TElement, TElement, TControl, Action, UIElement?> update,
+            Action<TControl>? unmount)
+        {
+            _mount = mount;
+            _update = update;
+            _unmount = unmount;
+        }
+
+        public bool HasUnmount => _unmount is not null;
+
+        public UIElement Mount(Element element, Action requestRerender)
+            => _mount((TElement)element, requestRerender);
+
+        public UIElement? Update(Element oldEl, Element newEl, UIElement control, Action requestRerender)
+            => _update((TElement)oldEl, (TElement)newEl, (TControl)control, requestRerender);
+
+        public void Unmount(UIElement control)
+            => _unmount?.Invoke((TControl)control);
+    }
 
     public UIElement? Reconcile(
         Element? oldElement,
@@ -118,18 +175,18 @@ public sealed partial class Reconciler
     }
 
     /// <summary>
-    /// Called by ChildReconciler to update a single child element.
-    /// Returns non-null if the child needs to be replaced (new control returned).
+    /// Updates a single child element. Returns non-null if the child control was replaced.
+    /// Public so registered type handlers can recursively reconcile children.
     /// </summary>
-    internal UIElement? UpdateChild(Element oldEl, Element newEl, UIElement control, Action requestRerender)
+    public UIElement? UpdateChild(Element oldEl, Element newEl, UIElement control, Action requestRerender)
     {
         return Update(oldEl, newEl, control, requestRerender);
     }
 
     /// <summary>
-    /// Called by ChildReconciler to unmount a child.
+    /// Unmounts a child control. Public so registered type handlers can unmount children.
     /// </summary>
-    internal void UnmountChild(UIElement control)
+    public void UnmountChild(UIElement control)
     {
         Unmount(control);
     }
@@ -146,6 +203,15 @@ public sealed partial class Reconciler
             node.Context?.RunCleanups();
             _componentNodes.Remove(control);
         }
+
+        // Check registered type unmount handlers via Tag
+        if (control is FrameworkElement fe && fe.Tag is Element tagEl
+            && _typeRegistry.TryGetValue(tagEl.GetType(), out var reg) && reg.HasUnmount)
+        {
+            reg.Unmount(control);
+            return;
+        }
+
         if (control is WinUI.Panel panel)
         {
             foreach (var child in panel.Children)

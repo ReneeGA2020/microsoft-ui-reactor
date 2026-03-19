@@ -10,6 +10,10 @@ public sealed partial class Reconciler
 {
     private UIElement? Update(Element oldEl, Element newEl, UIElement control, Action requestRerender)
     {
+        // Registered types checked first (but after ModifiedElement, handled inside switch)
+        if (newEl is not ModifiedElement && _typeRegistry.TryGetValue(newEl.GetType(), out var reg))
+            return reg.Update(oldEl, newEl, control, requestRerender);
+
         return (oldEl, newEl, control) switch
         {
             (ModifiedElement oldMod, ModifiedElement newMod, FrameworkElement fe)

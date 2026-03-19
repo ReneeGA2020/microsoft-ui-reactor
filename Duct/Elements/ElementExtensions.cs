@@ -94,6 +94,21 @@ public static class ElementExtensions
     public static Element ToolTip(this Element el, string tip) =>
         Modify(el, new ElementModifiers { ToolTip = tip });
 
+    // ── Theme / Style ───────────────────────────────────────────────
+
+    /// <summary>
+    /// Apply a named WinUI Style to the element's control at mount/update time.
+    /// Usage: Text("Hello").ApplyStyle("BodyTextBlockStyle")
+    /// </summary>
+    public static TextElement ApplyStyle(this TextElement el, string styleName) =>
+        el.Set(ctrl => ctrl.Style = (Style)Application.Current.Resources[styleName]);
+
+    public static ButtonElement ApplyStyle(this ButtonElement el, string styleName) =>
+        el.Set(ctrl => ctrl.Style = (Style)Application.Current.Resources[styleName]);
+
+    public static BorderElement ApplyStyle(this BorderElement el, string styleName) =>
+        el.Set(ctrl => ctrl.Style = (Style)Application.Current.Resources[styleName]);
+
     // ════════════════════════════════════════════════════════════════
     //  Sugar extensions (typed, return concrete element type)
     // ════════════════════════════════════════════════════════════════

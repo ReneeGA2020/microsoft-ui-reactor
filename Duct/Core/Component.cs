@@ -36,4 +36,32 @@ public abstract class Component
 
     protected Ref<T> UseRef<T>(T initialValue = default!)
         => Context.UseRef(initialValue);
+
+    protected (double Width, double Height) UseWindowSize(Microsoft.UI.Xaml.Window window)
+        => Context.UseWindowSize(window);
+
+    protected bool UseBreakpoint(Microsoft.UI.Xaml.Window window, double minWidth)
+        => Context.UseBreakpoint(window, minWidth);
+
+    protected T UseObservable<T>(T source) where T : System.ComponentModel.INotifyPropertyChanged
+        => Context.UseObservable(source);
+
+    protected TProp UseObservableProperty<T, TProp>(T source, Func<T, TProp> selector, string propertyName)
+        where T : System.ComponentModel.INotifyPropertyChanged
+        => Context.UseObservableProperty(source, selector, propertyName);
+
+    protected IReadOnlyList<T> UseCollection<T>(System.Collections.ObjectModel.ObservableCollection<T> collection)
+        => Context.UseCollection(collection);
+}
+
+/// <summary>
+/// Base class for components that receive typed props (e.g., navigation parameters).
+/// Props are set by the host before rendering.
+/// </summary>
+public abstract class Component<TProps> : Component
+{
+    /// <summary>
+    /// The typed props passed to this component by its parent or host.
+    /// </summary>
+    public TProps Props { get; internal set; } = default!;
 }

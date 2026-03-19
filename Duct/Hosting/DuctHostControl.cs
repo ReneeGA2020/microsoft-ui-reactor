@@ -1,0 +1,197 @@
+using Duct.Core;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+
+namespace Duct;
+
+/// <summary>
+/// A WinUI ContentControl that hosts a Duct component tree.
+/// Place this inside any XAML page to embed Duct-rendered UI.
+/// Each instance owns its own Reconciler and render loop.
+/// </summary>
+public sealed class DuctHostControl : ContentControl, IDisposable
+{
+    private readonly Reconciler _reconciler = new();
+    private readonly DispatcherQueue _dispatcherQueue;
+
+    private Component? _rootComponent;
+    private Func<RenderContext, Element>? _rootRenderFunc;
+    private RenderContext? _funcContext;
+
+    private Element? _currentTree;
+    private UIElement? _currentControl;
+    private bool _renderPending;
+    private bool _isRendering;
+    private bool _needsRerender;
+    private bool _disposed;
+
+    /// <summary>
+    /// The component type to render. Set this or use Mount() for more control.
+    /// </summary>
+    public Type? ComponentType { get; set; }
+
+    /// <summary>
+    /// Optional props to pass to the root component.
+    /// </summary>
+    public object? Props { get; set; }
+
+    /// <summary>
+    /// Provides access to the underlying reconciler for RegisterType calls.
+    /// </summary>
+    public Reconciler Reconciler => _reconciler;
+
+    public DuctHostControl()
+    {
+        _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+        HorizontalContentAlignment = HorizontalAlignment.Stretch;
+        VerticalContentAlignment = VerticalAlignment.Stretch;
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+    }
+
+    /// <summary>
+    /// Mount a Component instance directly.
+    /// </summary>
+    public void Mount(Component component)
+    {
+        _rootComponent = component;
+        RequestRender();
+    }
+
+    /// <summary>
+    /// Mount a function component.
+    /// </summary>
+    public void Mount(Func<RenderContext, Element> renderFunc)
+    {
+        _rootRenderFunc = renderFunc;
+        _funcContext = new RenderContext();
+        RequestRender();
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        if (_rootComponent is not null || _rootRenderFunc is not null)
+            return; // Already mounted via Mount()
+
+        if (ComponentType is null)
+            return;
+
+        var component = (Component)Activator.CreateInstance(ComponentType)!;
+
+        // Pass props if the component is a Component<TProps>
+        if (Props is not null)
+        {
+            var propsProperty = component.GetType().GetProperty("Props");
+            propsProperty?.SetValue(component, Props);
+        }
+
+        Mount(component);
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        Dispose();
+    }
+
+    private void RequestRender()
+    {
+        if (_disposed) return;
+
+        if (_isRendering)
+        {
+            _needsRerender = true;
+            return;
+        }
+
+        if (_renderPending) return;
+        _renderPending = true;
+
+        _dispatcherQueue.TryEnqueue(RenderLoop);
+    }
+
+    private void RenderLoop()
+    {
+        if (_disposed) return;
+
+        if (_isRendering)
+        {
+            _needsRerender = true;
+            _renderPending = false;
+            return;
+        }
+
+        _renderPending = false;
+
+        do
+        {
+            _needsRerender = false;
+            Render();
+        }
+        while (_needsRerender && !_disposed);
+    }
+
+    private void Render()
+    {
+        _isRendering = true;
+        try
+        {
+            Element? newTree = null;
+
+            if (_rootComponent is not null)
+            {
+                _rootComponent.Context.BeginRender(RequestRender);
+                newTree = _rootComponent.Render();
+                _rootComponent.Context.FlushEffects();
+            }
+            else if (_rootRenderFunc is not null && _funcContext is not null)
+            {
+                _funcContext.BeginRender(RequestRender);
+                newTree = _rootRenderFunc(_funcContext);
+                _funcContext.FlushEffects();
+            }
+
+            if (newTree is null) return;
+
+            var newControl = _reconciler.Reconcile(
+                _currentTree,
+                newTree,
+                _currentControl,
+                null,
+                childIndex: 0,
+                RequestRender
+            );
+
+            if (newControl != _currentControl)
+            {
+                Content = newControl;
+            }
+
+            _currentControl = newControl;
+            _currentTree = newTree;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DuctHostControl] Render FAILED: {ex}");
+            throw;
+        }
+        finally
+        {
+            _isRendering = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        _rootComponent?.Context.RunCleanups();
+        _funcContext?.RunCleanups();
+        _rootComponent = null;
+        _rootRenderFunc = null;
+        _funcContext = null;
+        _currentTree = null;
+        _currentControl = null;
+    }
+}

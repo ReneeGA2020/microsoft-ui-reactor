@@ -14,7 +14,7 @@ This document tracks the features needed to incrementally migrate the WinUI Gall
 
 ## Feature 1: Extensible Reconciler (`RegisterType`)
 
-**Status: Not started**
+**Status: Complete**
 
 **Priority: P0 (prerequisite for all other migration work)**
 
@@ -145,7 +145,7 @@ public override Element Render()
 
 ## Feature 2: DuctHost Control (Embed Duct inside XAML)
 
-**Status: Not started**
+**Status: Complete**
 
 **Priority: P0 (prerequisite for incremental migration)**
 
@@ -205,7 +205,7 @@ public class DuctHost : ContentControl
 
 ## Feature 3: Duct Page Adapter (Frame Navigation)
 
-**Status: Not started**
+**Status: Complete**
 
 **Priority: P0 (required to migrate Gallery pages)**
 
@@ -262,7 +262,7 @@ The rest of the Gallery navigation infrastructure (NavigationView, Frame, back/f
 
 ## Feature 4: Theme Resource Access
 
-**Status: Not started**
+**Status: Complete**
 
 **Priority: P1 (required for visual correctness of migrated pages)**
 
@@ -319,7 +319,7 @@ This would subscribe to `FrameworkElement.ActualThemeChanged` on the nearest anc
 
 ## Feature 5: Responsive Layout Hook (`UseWindowSize` / `UseBreakpoint`)
 
-**Status: Not started**
+**Status: Complete**
 
 **Priority: P1 (required for responsive Gallery pages)**
 
@@ -359,7 +359,7 @@ return isWide
 
 ## Feature 6: Observable/Binding Interop Hook
 
-**Status: Not started**
+**Status: Complete**
 
 **Priority: P1 (enables reuse of existing Gallery data layer)**
 
@@ -506,7 +506,7 @@ Defer built-in animation support. `.Set()` covers the immediate needs. A conveni
 
 ## Feature 9: Component Props System
 
-**Status: Not started**
+**Status: Complete**
 
 **Priority: P1 (needed for page parameter passing)**
 
@@ -567,9 +567,9 @@ These are prerequisites. Without them, no migration can begin.
 
 | Feature | Description | Status |
 |---------|-------------|--------|
-| 1. Extensible Reconciler | `RegisterType` API on Reconciler | Not started |
-| 2. DuctHost Control | Embed Duct component tree inside XAML | Not started |
-| 3. DuctPage Adapter | `Page` subclass for Frame navigation | Not started |
+| 1. Extensible Reconciler | `RegisterType` API on Reconciler | Complete |
+| 2. DuctHost Control | Embed Duct component tree inside XAML | Complete |
+| 3. DuctPage Adapter | `Page` subclass for Frame navigation | Complete |
 
 ### Phase 2: Practical Migration (Features 4-6, 9)
 
@@ -577,10 +577,10 @@ These make migrating pages practical at scale — without them, each page is pai
 
 | Feature | Description | Status |
 |---------|-------------|--------|
-| 4. Theme Resource Access | Lookup helpers + `.ApplyStyle()` modifier | Not started |
-| 5. Responsive Layout Hook | `UseWindowSize` / `UseBreakpoint` | Not started |
-| 6. Observable Interop Hook | `UseObservable` / `UseCollection` | Not started |
-| 9. Component Props System | Typed props for navigation parameters | Not started |
+| 4. Theme Resource Access | Lookup helpers + `.ApplyStyle()` modifier | Complete |
+| 5. Responsive Layout Hook | `UseWindowSize` / `UseBreakpoint` | Complete |
+| 6. Observable Interop Hook | `UseObservable` / `UseCollection` | Complete |
+| 9. Component Props System | Typed props for navigation parameters | Complete |
 
 ### Phase 3: Shell Migration & Polish (Features 7-8)
 
