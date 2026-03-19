@@ -144,20 +144,10 @@ public sealed partial class Reconciler : IDisposable
         if (oldElement is null or EmptyElement || existingControl is null)
             return Mount(newElement, requestRerender);
 
-        // Try native DiffTrees path for update scenarios (top-level only)
-        // Nested calls (from Update → ReconcileComponent → Reconcile) always use imperative path
-        bool useDiffTrees = !_inDiffTreesPass && Mode switch
-        {
-            ReconcileMode.NativeDiffTree => true,
-            ReconcileMode.CSharpFallback => false,
-            ReconcileMode.Auto => Differ is not null,
-            _ => false,
-        };
-
-        if (useDiffTrees)
-        {
-            return ReconcileWithDiffTrees(oldElement, newElement, existingControl, requestRerender);
-        }
+        // Top-level DiffTrees is not used on the hot path — components are opaque
+        // to the serializer, so most real apps fall through to imperative anyway.
+        // The Rust differ is used at the ChildReconciler level (ReconcileKeys)
+        // which is controlled by the Mode property.
 
         return ReconcileImperative(oldElement, newElement, existingControl, requestRerender);
     }
@@ -169,13 +159,6 @@ public sealed partial class Reconciler : IDisposable
         Element oldElement, Element newElement,
         UIElement existingControl, Action requestRerender)
     {
-        if (_inDiffTreesPass)
-        {
-            System.Diagnostics.Debug.WriteLine(
-                $"[Reconciler] Imperative fallback hit during DiffTrees pass: " +
-                $"{oldElement.GetType().Name} → {newElement.GetType().Name}");
-        }
-
         if (CanUpdate(oldElement, newElement))
         {
             var replacement = Update(oldElement, newElement, existingControl, requestRerender);
@@ -239,12 +222,18 @@ public sealed partial class Reconciler : IDisposable
     //  Children reconciliation (keyed LIS + positional)
     // ════════════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Returns the differ to use for child reconciliation, respecting ReconcileMode.
+    /// CSharpFallback forces C# LIS even when native is available.
+    /// </summary>
+    private ViewDiffer? EffectiveDiffer => Mode == ReconcileMode.CSharpFallback ? null : Differ;
+
     private void ReconcileChildren(
         Element[] oldChildren, Element[] newChildren,
         WinUI.Panel panel, Action requestRerender)
     {
         var childCollection = new PanelChildCollection(panel);
-        ChildReconciler.Reconcile(oldChildren, newChildren, childCollection, this, Differ, requestRerender);
+        ChildReconciler.Reconcile(oldChildren, newChildren, childCollection, this, EffectiveDiffer, requestRerender);
     }
 
     private void ReconcileItemsChildren(
@@ -252,7 +241,7 @@ public sealed partial class Reconciler : IDisposable
         WinUI.ItemsControl itemsControl, Action requestRerender)
     {
         var childCollection = new ItemsControlChildCollection(itemsControl);
-        ChildReconciler.Reconcile(oldChildren, newChildren, childCollection, this, Differ, requestRerender);
+        ChildReconciler.Reconcile(oldChildren, newChildren, childCollection, this, EffectiveDiffer, requestRerender);
     }
 
     /// <summary>

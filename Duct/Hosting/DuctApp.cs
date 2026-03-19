@@ -14,6 +14,7 @@ public static class DuctApp
     internal static string WindowTitle = "Duct App";
     internal static int WindowWidth = 1024;
     internal static int WindowHeight = 768;
+    public static DuctHost? ActiveHost;
 
     public static void Run<TRoot>(string title = "Duct App", int width = 1024, int height = 768)
         where TRoot : Component, new()
@@ -94,6 +95,7 @@ public class DuctApplication : Application, IXamlMetadataProvider
         window.AppWindow.Resize(new Windows.Graphics.SizeInt32(DuctApp.WindowWidth, DuctApp.WindowHeight));
 
         var host = new DuctHost(window);
+        DuctApp.ActiveHost = host;
 
         if (DuctApp.RootComponentType is not null)
         {
