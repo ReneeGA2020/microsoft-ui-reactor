@@ -248,6 +248,14 @@ public static class UI
         new(typeof(T));
 
     /// <summary>
+    /// Embed a Component class with typed props as a child element.
+    /// Usage: Component&lt;MyWidget, string&gt;("param")
+    /// </summary>
+    public static ComponentElement Component<T, TProps>(TProps props)
+        where T : Component<TProps>, new() =>
+        new(typeof(T), props);
+
+    /// <summary>
     /// Define an inline function component (like a React function component).
     /// Usage: Func(ctx => { var (n,setN) = ctx.UseState(0); return Text($"{n}"); })
     /// </summary>

@@ -10,6 +10,10 @@ public sealed partial class Reconciler
 {
     public UIElement? Mount(Element element, Action requestRerender)
     {
+        // Registered types checked first (but after ModifiedElement, handled inside switch)
+        if (element is not ModifiedElement && _typeRegistry.TryGetValue(element.GetType(), out var reg))
+            return reg.Mount(element, requestRerender);
+
         return element switch
         {
             ModifiedElement mod => MountModified(mod, requestRerender),
@@ -942,6 +946,14 @@ public sealed partial class Reconciler
     private UIElement MountComponent(ComponentElement compElement, Action requestRerender)
     {
         var component = (Component)Activator.CreateInstance(compElement.ComponentType)!;
+
+        // If the component accepts typed props and props were provided, set them
+        if (compElement.Props is not null)
+        {
+            var propsProperty = component.GetType().GetProperty("Props");
+            propsProperty?.SetValue(component, compElement.Props);
+        }
+
         component.Context.BeginRender(requestRerender);
         var childElement = component.Render();
         component.Context.FlushEffects();
