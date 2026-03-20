@@ -98,8 +98,8 @@ public sealed partial class Reconciler
                 => UpdateListView(o, n, lv, requestRerender),
             (GridViewElement o, GridViewElement n, WinUI.GridView gv)
                 => UpdateGridView(o, n, gv, requestRerender),
-            (TreeViewElement, TreeViewElement, WinUI.TreeView)
-                => Mount(newEl, requestRerender),
+            (TreeViewElement o, TreeViewElement n, WinUI.TreeView tv)
+                => UpdateTreeView(o, n, tv, requestRerender),
             (FlipViewElement o, FlipViewElement n, WinUI.FlipView fv)
                 => UpdateFlipView(o, n, fv, requestRerender),
             (InfoBarElement, InfoBarElement n, WinUI.InfoBar ib)
@@ -112,8 +112,10 @@ public sealed partial class Reconciler
                 => UpdateTeachingTip(n, tip),
             (MenuBarElement, MenuBarElement, WinUI.MenuBar)
                 => Mount(newEl, requestRerender),
-            (CommandBarElement, CommandBarElement, WinUI.CommandBar)
-                => Mount(newEl, requestRerender),
+            (CommandBarElement o, CommandBarElement n, WinUI.CommandBar cb)
+                => UpdateCommandBar(o, n, cb, requestRerender),
+            (Core.GridElement o, Core.GridElement n, WinUI.Grid g)
+                => UpdateGrid(o, n, g, requestRerender),
             (LazyStackElementBase, LazyStackElementBase n, WinUI.ScrollViewer sv)
                 => UpdateLazyStack(n, sv, requestRerender),
             (ComponentElement, ComponentElement, _)
@@ -505,8 +507,142 @@ public sealed partial class Reconciler
             if (repeater.Layout is WinUI.StackLayout layout)
                 layout.Spacing = n.Spacing;
             SetElementTag(repeater, n);
+            ApplySetters(n.RepeaterSetters, repeater);
         }
         SetElementTag(sv, n);
+        ApplySetters(n.ScrollViewerSetters, sv);
+        return null;
+    }
+
+    private UIElement? UpdateCommandBar(CommandBarElement o, CommandBarElement n, WinUI.CommandBar cb, Action requestRerender)
+    {
+        cb.DefaultLabelPosition = n.DefaultLabelPosition;
+        cb.IsOpen = n.IsOpen;
+
+        // Update primary commands in-place
+        UpdateAppBarButtons(cb.PrimaryCommands, n.PrimaryCommands);
+        UpdateAppBarButtons(cb.SecondaryCommands, n.SecondaryCommands);
+
+        SetElementTag(cb, n);
+        ApplySetters(n.Setters, cb);
+        return null;
+    }
+
+    private static void UpdateAppBarButtons(
+        System.Collections.Generic.IList<WinUI.ICommandBarElement> target,
+        AppBarButtonData[]? source)
+    {
+        int newCount = source?.Length ?? 0;
+        int oldCount = target.Count;
+
+        // Update shared range
+        int shared = Math.Min(oldCount, newCount);
+        for (int i = 0; i < shared; i++)
+        {
+            if (target[i] is WinUI.AppBarButton abb && source is not null)
+            {
+                abb.Label = source[i].Label;
+                if (source[i].Icon is not null)
+                    abb.Icon = new WinUI.SymbolIcon(ParseSymbol(source[i].Icon!));
+                abb.Tag = source[i]; // update click handler reference
+            }
+        }
+
+        // Remove excess
+        for (int i = oldCount - 1; i >= shared; i--)
+            target.RemoveAt(i);
+
+        // Add new
+        if (source is not null)
+            for (int i = shared; i < newCount; i++)
+                target.Add(CreateAppBarButton(source[i]));
+    }
+
+    private UIElement? UpdateGrid(Core.GridElement o, Core.GridElement n, WinUI.Grid g, Action requestRerender)
+    {
+        g.RowSpacing = n.RowSpacing;
+        g.ColumnSpacing = n.ColumnSpacing;
+
+        // Reconcile children positionally
+        int oldCount = o.Children.Length;
+        int newCount = n.Children.Length;
+        int shared = Math.Min(oldCount, newCount);
+
+        for (int i = 0; i < shared; i++)
+        {
+            var oldChild = o.Children[i];
+            var newChild = n.Children[i];
+            var existingCtrl = g.Children[i];
+            var replacement = Reconcile(oldChild.Element, newChild.Element, existingCtrl, g, i, requestRerender);
+            if (replacement is not null && replacement != existingCtrl)
+            {
+                g.Children[i] = replacement;
+            }
+            // Update grid placement
+            if (replacement is FrameworkElement fe || g.Children[i] is FrameworkElement)
+            {
+                var ctrl = g.Children[i] as FrameworkElement;
+                if (ctrl is not null)
+                {
+                    WinUI.Grid.SetRow(ctrl, newChild.Row);
+                    WinUI.Grid.SetColumn(ctrl, newChild.Column);
+                    if (newChild.RowSpan > 1) WinUI.Grid.SetRowSpan(ctrl, newChild.RowSpan);
+                    if (newChild.ColumnSpan > 1) WinUI.Grid.SetColumnSpan(ctrl, newChild.ColumnSpan);
+                }
+            }
+        }
+
+        // Remove excess old children
+        for (int i = oldCount - 1; i >= shared; i--)
+        {
+            Unmount(g.Children[i]);
+            g.Children.RemoveAt(i);
+        }
+
+        // Add new children
+        for (int i = shared; i < newCount; i++)
+        {
+            var child = n.Children[i];
+            var ctrl = Mount(child.Element, requestRerender);
+            if (ctrl is null) continue;
+            if (ctrl is FrameworkElement fe)
+            {
+                WinUI.Grid.SetRow(fe, child.Row);
+                WinUI.Grid.SetColumn(fe, child.Column);
+                if (child.RowSpan > 1) WinUI.Grid.SetRowSpan(fe, child.RowSpan);
+                if (child.ColumnSpan > 1) WinUI.Grid.SetColumnSpan(fe, child.ColumnSpan);
+            }
+            g.Children.Add(ctrl);
+        }
+
+        SetElementTag(g, n);
+        ApplySetters(n.Setters, g);
+        return null;
+    }
+
+    private UIElement? UpdateTreeView(TreeViewElement o, TreeViewElement n, WinUI.TreeView tv, Action requestRerender)
+    {
+        // If the node data is reference-equal (same arrays), skip the expensive rebuild
+        if (ReferenceEquals(o.Nodes, n.Nodes))
+        {
+            SetElementTag(tv, n);
+            System.Diagnostics.Trace.WriteLine("[Duct] UpdateTreeView: SKIPPED (same nodes ref)");
+            return null;
+        }
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
+        // Rebuild nodes in-place: clear and re-add
+        tv.RootNodes.Clear();
+        foreach (var node in n.Nodes)
+            tv.RootNodes.Add(CreateTreeNode(node));
+
+        tv.SelectionMode = n.SelectionMode;
+        SetElementTag(tv, n);
+        ApplySetters(n.Setters, tv);
+
+        sw.Stop();
+        System.Diagnostics.Trace.WriteLine($"[Duct] UpdateTreeView: REBUILT {n.Nodes.Length} root nodes in {sw.ElapsedMilliseconds}ms");
         return null;
     }
 
