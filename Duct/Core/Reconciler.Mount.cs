@@ -60,7 +60,7 @@ public sealed partial class Reconciler
             PivotElement pvt => MountPivot(pvt, requestRerender),
             ListViewElement lv => MountListView(lv, requestRerender),
             GridViewElement gv => MountGridView(gv, requestRerender),
-            TreeViewElement tv => MountTreeView(tv),
+            TreeViewElement tv => MountTreeView(tv, requestRerender),
             FlipViewElement fv => MountFlipView(fv, requestRerender),
             InfoBarElement ib => MountInfoBar(ib),
             InfoBadgeElement badge => MountInfoBadge(badge),
@@ -790,21 +790,44 @@ public sealed partial class Reconciler
         return gridView;
     }
 
-    private WinUI.TreeView MountTreeView(TreeViewElement tv)
+    private WinUI.TreeView MountTreeView(TreeViewElement tv, Action requestRerender)
     {
         var treeView = new WinUI.TreeView
         {
             SelectionMode = tv.SelectionMode,
         };
-        foreach (var node in tv.Nodes) treeView.RootNodes.Add(CreateTreeNode(node));
+
+        // Always store TreeViewNodeData as Content so Expanding/ItemInvoked can retrieve it.
+        // Use an ItemTemplate with binding to display the Content string property.
+        // In node-mode, DataContext of the template = TreeViewNode,
+        // so {Binding Content.Content} resolves TreeViewNode.Content (TreeViewNodeData) → .Content (string).
+        treeView.ItemTemplate = (DataTemplate)Microsoft.UI.Xaml.Markup.XamlReader.Load(
+            "<DataTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'>" +
+            "<TextBlock Text='{Binding Content.Content}'/>" +
+            "</DataTemplate>");
+
+        foreach (var node in tv.Nodes)
+            treeView.RootNodes.Add(CreateTreeNode(node));
+
         SetElementTag(treeView, tv);
+
         treeView.ItemInvoked += (s, args) =>
         {
             var t = (WinUI.TreeView)s!;
-            var data = args.InvokedItem as WinUI.TreeViewNode;
-            if (data?.Content is TreeViewNodeData nodeData)
+            if (args.InvokedItem is WinUI.TreeViewNode tvn
+                && tvn.Content is TreeViewNodeData nodeData)
+            {
                 (GetElementTag(t) as TreeViewElement)?.OnItemInvoked?.Invoke(nodeData);
+            }
         };
+
+        treeView.Expanding += (s, args) =>
+        {
+            var t = (WinUI.TreeView)s!;
+            if (args.Node.Content is TreeViewNodeData nodeData)
+                (GetElementTag(t) as TreeViewElement)?.OnExpanding?.Invoke(nodeData);
+        };
+
         ApplySetters(tv.Setters, treeView);
         return treeView;
     }
@@ -1056,6 +1079,7 @@ public sealed partial class Reconciler
         repeater.ItemsSource = lazy.GetItemsSource();
         repeater.ItemTemplate = lazy.CreateFactory(this, requestRerender, _pool);
         SetElementTag(repeater, lazy);
+        ApplySetters(lazy.RepeaterSetters, repeater);
 
         var sv = _pool.TryRent(typeof(WinUI.ScrollViewer)) as WinUI.ScrollViewer ?? new WinUI.ScrollViewer();
         sv.Content = repeater;
@@ -1066,6 +1090,7 @@ public sealed partial class Reconciler
             ? WinUI.ScrollBarVisibility.Auto
             : WinUI.ScrollBarVisibility.Disabled;
         SetElementTag(sv, lazy);
+        ApplySetters(lazy.ScrollViewerSetters, sv);
 
         return sv;
     }

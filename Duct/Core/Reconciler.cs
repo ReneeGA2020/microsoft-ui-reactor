@@ -194,6 +194,13 @@ public sealed partial class Reconciler : IDisposable
         Element newChildElement;
         if (node.Component is not null)
         {
+            // Update props before re-rendering so the component sees fresh data
+            if (newEl is ComponentElement compEl && compEl.Props is not null
+                && node.Component is IPropsReceiver receiver)
+            {
+                receiver.SetProps(compEl.Props);
+            }
+
             node.Component.Context.BeginRender(requestRerender);
             newChildElement = node.Component.Render();
             node.Component.Context.FlushEffects();

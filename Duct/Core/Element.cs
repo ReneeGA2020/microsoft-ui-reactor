@@ -136,6 +136,12 @@ public record BreadcrumbBarItemData(string Label, object? Tag = null);
 public record TreeViewNodeData(string Content, TreeViewNodeData[]? Children = null)
 {
     public bool IsExpanded { get; init; }
+
+    /// <summary>
+    /// Optional Duct element to render as the node's visual content.
+    /// When null, a TextBlock showing Content is rendered.
+    /// </summary>
+    public Element? ContentElement { get; init; }
 }
 
 public record MenuBarItemData(string Title, MenuFlyoutItemBase[] Items);
@@ -605,6 +611,7 @@ public record TreeViewElement(
 ) : Element
 {
     public Action<TreeViewNodeData>? OnItemInvoked { get; init; }
+    public Action<TreeViewNodeData>? OnExpanding { get; init; }
     public TreeViewSelectionMode SelectionMode { get; init; } = TreeViewSelectionMode.Single;
     internal Action<WinUI.TreeView>[] Setters { get; init; } = [];
 }
@@ -737,6 +744,8 @@ public abstract record LazyStackElementBase : Element
     public abstract double EstimatedItemSize { get; init; }
     public abstract object GetItemsSource();
     public abstract ElementFactory CreateFactory(Reconciler reconciler, Action requestRerender, ElementPool? pool);
+    internal Action<WinUI.ScrollViewer>[] ScrollViewerSetters { get; init; } = [];
+    internal Action<WinUI.ItemsRepeater>[] RepeaterSetters { get; init; } = [];
 }
 
 public record LazyVStackElement<T>(

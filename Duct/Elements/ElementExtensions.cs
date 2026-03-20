@@ -426,6 +426,20 @@ public static class ElementExtensions
     public static MenuFlyoutElement Set(this MenuFlyoutElement el, Action<WinUI.MenuFlyout> configure) =>
         el with { Setters = [.. el.Setters, configure] };
 
+    // Virtualized collections (LazyVStack / LazyHStack)
+    // .Set() targets the outer ScrollViewer; .SetRepeater() targets the inner ItemsRepeater
+    public static LazyVStackElement<T> Set<T>(this LazyVStackElement<T> el, Action<WinUI.ScrollViewer> configure) =>
+        el with { ScrollViewerSetters = [.. el.ScrollViewerSetters, configure] };
+
+    public static LazyVStackElement<T> SetRepeater<T>(this LazyVStackElement<T> el, Action<WinUI.ItemsRepeater> configure) =>
+        el with { RepeaterSetters = [.. el.RepeaterSetters, configure] };
+
+    public static LazyHStackElement<T> Set<T>(this LazyHStackElement<T> el, Action<WinUI.ScrollViewer> configure) =>
+        el with { ScrollViewerSetters = [.. el.ScrollViewerSetters, configure] };
+
+    public static LazyHStackElement<T> SetRepeater<T>(this LazyHStackElement<T> el, Action<WinUI.ItemsRepeater> configure) =>
+        el with { RepeaterSetters = [.. el.RepeaterSetters, configure] };
+
     // ════════════════════════════════════════════════════════════════
     //  Transitions (Feature 8: Animation and Transition Support)
     // ════════════════════════════════════════════════════════════════
