@@ -55,13 +55,23 @@ public abstract class Component
 }
 
 /// <summary>
+/// Interface for setting props without reflection.
+/// </summary>
+internal interface IPropsReceiver
+{
+    void SetProps(object props);
+}
+
+/// <summary>
 /// Base class for components that receive typed props (e.g., navigation parameters).
 /// Props are set by the host before rendering.
 /// </summary>
-public abstract class Component<TProps> : Component
+public abstract class Component<TProps> : Component, IPropsReceiver
 {
     /// <summary>
     /// The typed props passed to this component by its parent or host.
     /// </summary>
     public TProps Props { get; internal set; } = default!;
+
+    void IPropsReceiver.SetProps(object props) => Props = (TProps)props;
 }

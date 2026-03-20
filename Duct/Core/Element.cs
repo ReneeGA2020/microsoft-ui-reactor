@@ -50,7 +50,16 @@ public record ModifiedElement(Element Inner, ElementModifiers Modifiers) : Eleme
 /// Wraps a Component class so it can participate in the element tree.
 /// Created automatically by Component&lt;T&gt;() factory method.
 /// </summary>
-public record ComponentElement(Type ComponentType, object? Props = null) : Element;
+public record ComponentElement(Type ComponentType, object? Props = null) : Element
+{
+    // Factory creates the component instance without reflection. Stored as a field
+    // so it does not participate in record equality (two ComponentElements for the
+    // same Type/Props are equal regardless of factory identity).
+    internal Func<Component>? _factory;
+
+    internal Component CreateInstance() =>
+        _factory is not null ? _factory() : (Component)Activator.CreateInstance(ComponentType)!;
+}
 
 /// <summary>
 /// A component defined inline via a render function (like a React function component).

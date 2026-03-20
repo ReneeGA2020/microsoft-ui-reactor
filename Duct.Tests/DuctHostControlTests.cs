@@ -26,11 +26,11 @@ public class DuctHostControlTests
     }
 
     [Fact]
-    public void DuctHostControl_Has_ComponentType_Property()
+    public void DuctHostControl_Has_ComponentFactory_Property()
     {
-        var prop = typeof(DuctHostControl).GetProperty("ComponentType");
+        var prop = typeof(DuctHostControl).GetProperty("ComponentFactory");
         Assert.NotNull(prop);
-        Assert.Equal(typeof(Type), prop!.PropertyType);
+        Assert.Equal(typeof(Func<Component>), prop!.PropertyType);
     }
 
     [Fact]

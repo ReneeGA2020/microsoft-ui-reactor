@@ -109,14 +109,13 @@ public class ComponentPropsTests
     }
 
     [Fact]
-    public void Props_Set_Via_Reflection_Works()
+    public void Props_Set_Via_IPropsReceiver_Works()
     {
-        // This is how the reconciler sets props
+        // This is how the reconciler sets props (via IPropsReceiver, no reflection)
         var comp = new GreetingComponent();
-        var propsProperty = comp.GetType().GetProperty("Props");
-        Assert.NotNull(propsProperty);
-        propsProperty!.SetValue(comp, "ReflectedValue");
-        Assert.Equal("ReflectedValue", comp.Props);
+        Assert.IsAssignableFrom<IPropsReceiver>(comp);
+        ((IPropsReceiver)comp).SetProps("ReceiverValue");
+        Assert.Equal("ReceiverValue", comp.Props);
     }
 
     [Fact]

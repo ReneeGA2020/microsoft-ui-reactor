@@ -245,7 +245,7 @@ public static class UI
     /// Usage: Component&lt;MyWidget&gt;()
     /// </summary>
     public static ComponentElement Component<T>() where T : Component, new() =>
-        new(typeof(T));
+        new(typeof(T)) { _factory = () => new T() };
 
     /// <summary>
     /// Embed a Component class with typed props as a child element.
@@ -253,7 +253,7 @@ public static class UI
     /// </summary>
     public static ComponentElement Component<T, TProps>(TProps props)
         where T : Component<TProps>, new() =>
-        new(typeof(T), props);
+        new(typeof(T), props) { _factory = () => new T() };
 
     /// <summary>
     /// Define an inline function component (like a React function component).

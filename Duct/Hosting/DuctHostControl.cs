@@ -27,9 +27,10 @@ public sealed class DuctHostControl : ContentControl, IDisposable
     private bool _disposed;
 
     /// <summary>
-    /// The component type to render. Set this or use Mount() for more control.
+    /// Factory to create the root component. Set this or use Mount() for more control.
+    /// Example: ComponentFactory = () => new MyComponent();
     /// </summary>
-    public Type? ComponentType { get; set; }
+    public Func<Component>? ComponentFactory { get; set; }
 
     /// <summary>
     /// Optional props to pass to the root component.
@@ -83,17 +84,13 @@ public sealed class DuctHostControl : ContentControl, IDisposable
         if (_rootComponent is not null || _rootRenderFunc is not null)
             return; // Already mounted via Mount()
 
-        if (ComponentType is null)
+        if (ComponentFactory is null)
             return;
 
-        var component = (Component)Activator.CreateInstance(ComponentType)!;
+        var component = ComponentFactory();
 
-        // Pass props if the component is a Component<TProps>
-        if (Props is not null)
-        {
-            var propsProperty = component.GetType().GetProperty("Props");
-            propsProperty?.SetValue(component, Props);
-        }
+        if (Props is not null && component is IPropsReceiver receiver)
+            receiver.SetProps(Props);
 
         Mount(component);
     }

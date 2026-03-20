@@ -9,7 +9,7 @@ namespace Duct;
 
 public static class DuctApp
 {
-    internal static Type? RootComponentType;
+    internal static Func<Component>? RootFactory;
     internal static Func<RenderContext, Element>? RootRenderFunc;
     internal static string WindowTitle = "Duct App";
     internal static int WindowWidth = 1024;
@@ -20,7 +20,7 @@ public static class DuctApp
         where TRoot : Component, new()
     {
         WinRT.ComWrappersSupport.InitializeComWrappers();
-        RootComponentType = typeof(TRoot);
+        RootFactory = () => new TRoot();
         WindowTitle = title;
         WindowWidth = width;
         WindowHeight = height;
@@ -97,10 +97,9 @@ public class DuctApplication : Application, IXamlMetadataProvider
         var host = new DuctHost(window);
         DuctApp.ActiveHost = host;
 
-        if (DuctApp.RootComponentType is not null)
+        if (DuctApp.RootFactory is not null)
         {
-            var component = (Component)Activator.CreateInstance(DuctApp.RootComponentType)!;
-            host.Mount(component);
+            host.Mount(DuctApp.RootFactory());
         }
         else if (DuctApp.RootRenderFunc is not null)
         {

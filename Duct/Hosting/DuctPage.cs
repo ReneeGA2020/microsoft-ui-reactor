@@ -51,11 +51,8 @@ public static class DuctPageHelper
         var host = new DuctHostControl();
         var component = new TComponent();
 
-        if (e.Parameter is not null)
-        {
-            var propsProperty = component.GetType().GetProperty("Props");
-            propsProperty?.SetValue(component, e.Parameter);
-        }
+        if (e.Parameter is not null && component is IPropsReceiver receiver)
+            receiver.SetProps(e.Parameter);
 
         host.Mount(component);
         page.Content = host;

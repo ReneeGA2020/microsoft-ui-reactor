@@ -1007,14 +1007,10 @@ public sealed partial class Reconciler
 
     private UIElement MountComponent(ComponentElement compElement, Action requestRerender)
     {
-        var component = (Component)Activator.CreateInstance(compElement.ComponentType)!;
+        var component = compElement.CreateInstance();
 
-        // If the component accepts typed props and props were provided, set them
-        if (compElement.Props is not null)
-        {
-            var propsProperty = component.GetType().GetProperty("Props");
-            propsProperty?.SetValue(component, compElement.Props);
-        }
+        if (compElement.Props is not null && component is IPropsReceiver receiver)
+            receiver.SetProps(compElement.Props);
 
         component.Context.BeginRender(requestRerender);
         var childElement = component.Render();
