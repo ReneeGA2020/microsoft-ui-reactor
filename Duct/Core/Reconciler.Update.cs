@@ -622,28 +622,90 @@ public sealed partial class Reconciler
 
     private UIElement? UpdateTreeView(TreeViewElement o, TreeViewElement n, WinUI.TreeView tv, Action requestRerender)
     {
-        // If the node data is reference-equal (same arrays), skip the expensive rebuild
+        // If the node data is reference-equal (same arrays), skip entirely
         if (ReferenceEquals(o.Nodes, n.Nodes))
         {
             SetElementTag(tv, n);
-            System.Diagnostics.Trace.WriteLine("[Duct] UpdateTreeView: SKIPPED (same nodes ref)");
             return null;
         }
 
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-
-        // Rebuild nodes in-place: clear and re-add
-        tv.RootNodes.Clear();
-        foreach (var node in n.Nodes)
-            tv.RootNodes.Add(CreateTreeNode(node));
+        // Diff the node tree to minimize WinUI interop calls
+        DiffTreeViewNodes(tv.RootNodes, o.Nodes, n.Nodes);
 
         tv.SelectionMode = n.SelectionMode;
         SetElementTag(tv, n);
         ApplySetters(n.Setters, tv);
-
-        sw.Stop();
-        System.Diagnostics.Trace.WriteLine($"[Duct] UpdateTreeView: REBUILT {n.Nodes.Length} root nodes in {sw.ElapsedMilliseconds}ms");
         return null;
+    }
+
+    /// <summary>
+    /// Recursively diff TreeViewNode lists, reusing existing nodes where Content matches.
+    /// Only adds/removes/updates nodes that actually changed, minimizing COM interop calls.
+    /// </summary>
+    private void DiffTreeViewNodes(
+        IList<WinUI.TreeViewNode> liveNodes,
+        TreeViewNodeData[] oldData,
+        TreeViewNodeData[] newData)
+    {
+        // Build lookup from old data Content → index for matching
+        var oldByContent = new Dictionary<string, int>(oldData.Length);
+        for (int i = 0; i < oldData.Length; i++)
+            oldByContent.TryAdd(oldData[i].Content, i);
+
+        int liveIdx = 0;
+        for (int i = 0; i < newData.Length; i++)
+        {
+            var nd = newData[i];
+
+            if (oldByContent.TryGetValue(nd.Content, out var oldIdx)
+                && liveIdx < liveNodes.Count)
+            {
+                // Reuse existing node — update expand state + diff children
+                var liveNode = liveNodes[liveIdx];
+
+                if (liveNode.IsExpanded != nd.IsExpanded)
+                    liveNode.IsExpanded = nd.IsExpanded;
+
+                // Diff children
+                var oldChildren = oldIdx < oldData.Length ? oldData[oldIdx].Children : null;
+                var newChildren = nd.Children;
+
+                if (ReferenceEquals(oldChildren, newChildren))
+                {
+                    // No change
+                }
+                else if (newChildren is null)
+                {
+                    liveNode.Children.Clear();
+                }
+                else if (oldChildren is null)
+                {
+                    liveNode.Children.Clear();
+                    foreach (var child in newChildren)
+                        liveNode.Children.Add(CreateTreeNode(child));
+                }
+                else
+                {
+                    DiffTreeViewNodes(liveNode.Children, oldChildren, newChildren);
+                }
+
+                liveIdx++;
+            }
+            else
+            {
+                // New node — insert at position
+                var newNode = CreateTreeNode(nd);
+                if (liveIdx < liveNodes.Count)
+                    liveNodes.Insert(liveIdx, newNode);
+                else
+                    liveNodes.Add(newNode);
+                liveIdx++;
+            }
+        }
+
+        // Remove excess nodes from the end
+        while (liveNodes.Count > newData.Length)
+            liveNodes.RemoveAt(liveNodes.Count - 1);
     }
 
     private UIElement? UpdateComponent(Element oldEl, Element newEl, UIElement control, Action requestRerender)

@@ -30,9 +30,13 @@ class DuctFilesApp : Component
         var (sortDirection, setSortDirection) = UseState(SortDirection.Ascending);
         var (isLoading, setIsLoading) = UseState(false);
 
-        // Tree state: expanded paths and loaded children per path
-        var (expandedPaths, setExpandedPaths) = UseState(new HashSet<string>());
-        var (treeChildren, setTreeChildren) = UseState(new Dictionary<string, FileEntry[]>());
+        // Tree state: combined into a single record so expand is one state update → one render
+        var (treeState, setTreeState) = UseState((
+            Expanded: new HashSet<string>(),
+            Children: new Dictionary<string, FileEntry[]>()
+        ));
+        var expandedPaths = treeState.Expanded;
+        var treeChildren = treeState.Children;
 
         // Watcher ref for cleanup
         var watcherRef = UseRef<FileWatcherService?>(null);
@@ -158,10 +162,10 @@ class DuctFilesApp : Component
                     {
                         [path] = subdirs
                     };
-                    setTreeChildren(newChildren);
-
                     var newExpanded = new HashSet<string>(expandedPaths) { path };
-                    setExpandedPaths(newExpanded);
+
+                    // Single state update → single render cycle
+                    setTreeState((Expanded: newExpanded, Children: newChildren));
 
                     swState.Stop();
                     Trace.WriteLine($"[DuctFiles] SetState (UI thread): {swState.ElapsedMilliseconds}ms");
@@ -248,4 +252,36 @@ class DuctFilesApp : Component
             ), 1, 0)
         );
     }
+}
+
+// ─── ETW EventSource for VS profiler integration ──────────────────────────────
+
+[EventSource(Name = "DuctFiles")]
+sealed class DuctFilesEvents : EventSource
+{
+    public static readonly DuctFilesEvents Log = new();
+
+    [Event(1, Level = EventLevel.Informational, Opcode = EventOpcode.Start)]
+    public void ExpandTreeStart(string path) => WriteEvent(1, path);
+
+    [Event(2, Level = EventLevel.Informational, Opcode = EventOpcode.Stop)]
+    public void ExpandTreeStop(string path, int itemCount, long elapsedMs) => WriteEvent(2, path, itemCount, elapsedMs);
+
+    [Event(3, Level = EventLevel.Informational, Opcode = EventOpcode.Start)]
+    public void EnumerateStart(string path) => WriteEvent(3, path);
+
+    [Event(4, Level = EventLevel.Informational, Opcode = EventOpcode.Stop)]
+    public void EnumerateStop(string path, int itemCount, long elapsedMs) => WriteEvent(4, path, itemCount, elapsedMs);
+
+    [Event(5, Level = EventLevel.Informational, Opcode = EventOpcode.Start)]
+    public void SetStateStart() => WriteEvent(5);
+
+    [Event(6, Level = EventLevel.Informational, Opcode = EventOpcode.Stop)]
+    public void SetStateStop(long elapsedMs) => WriteEvent(6, elapsedMs);
+
+    [Event(7, Level = EventLevel.Informational, Opcode = EventOpcode.Start)]
+    public void BuildNodesStart(int expandedCount) => WriteEvent(7, expandedCount);
+
+    [Event(8, Level = EventLevel.Informational, Opcode = EventOpcode.Stop)]
+    public void BuildNodesStop(int rootNodeCount, long elapsedMs) => WriteEvent(8, rootNodeCount, elapsedMs);
 }
