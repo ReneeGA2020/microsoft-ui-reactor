@@ -680,20 +680,20 @@ These gaps were found during the migration of 40 pages and represent areas where
 
 | Gap | Pages Affected | Workaround | Status |
 |-----|---------------|------------|--------|
-| **No Rectangle / Ellipse / Shape elements** | GridPage, CanvasPage, StackPanelPage, ViewboxPage, RadialGradientBrushPage, AcrylicPage | `Border(Empty()).Background(brush).Size(w,h)` — loses RadiusX/RadiusY, StrokeThickness | approved |
-| **No RichTextBlock / Paragraph / Run / Hyperlink inlines** | RichTextBlockPage, MenuBarPage | Entire RichTextBlock built imperatively via `.Set()` — no way to express rich inline text | approved |
-| **No RelativePanel element** | RelativePanelPage | Entire panel built natively — attached properties (RightOf, Below, AlignWith) are inherently element-referencing | approved |
-| **No MediaPlayerElement** | MediaPlayerElementPage | Built imperatively — needs lifecycle management (play/pause on nav) | approved |
-| **No SemanticZoom / CollectionViewSource** | SemanticZoomPage | Entire grouped zoom control built imperatively | approved |
-| **No SelectorBar / SelectorBarItem** | SelectorBarPage | Built imperatively via `.Set()` | approved |
-| **No AnimatedVisualPlayer** | AnimatedVisualPlayerPage | Built imperatively — Lottie animation playback | approved |
-| **No Popup element** | PopupPage | Built imperatively via parent `.Set()` callback | approved |
-| **No CalendarView element** | CalendarViewPage | Built imperatively via Loaded event | approved |
-| **No ListBox element** | ListBoxPage | Built imperatively — different from ListView | approved |
-| **No PipsPager element** | PipsPagerPage | Built imperatively | approved |
-| **No RefreshContainer / RefreshVisualizer** | PullToRefreshPage | Built imperatively | approved |
-| **No AnnotatedScrollBar** | AnnotatedScrollBarPage | Built imperatively | approved |
-| **No CommandBarFlyout** | CommandBarFlyoutPage | Built imperatively inside `.Set()` | approved |
+| **No Rectangle / Ellipse / Shape elements** | GridPage, CanvasPage, StackPanelPage, ViewboxPage, RadialGradientBrushPage, AcrylicPage | `Border(Empty()).Background(brush).Size(w,h)` — loses RadiusX/RadiusY, StrokeThickness | fixed |
+| **No RichTextBlock / Paragraph / Run / Hyperlink inlines** | RichTextBlockPage, MenuBarPage | Entire RichTextBlock built imperatively via `.Set()` — no way to express rich inline text | fixed |
+| **No RelativePanel element** | RelativePanelPage | Entire panel built natively — attached properties (RightOf, Below, AlignWith) are inherently element-referencing | fixed |
+| **No MediaPlayerElement** | MediaPlayerElementPage | Built imperatively — needs lifecycle management (play/pause on nav) | fixed |
+| **No SemanticZoom / CollectionViewSource** | SemanticZoomPage | Entire grouped zoom control built imperatively | fixed |
+| **No SelectorBar / SelectorBarItem** | SelectorBarPage | Built imperatively via `.Set()` | fixed |
+| **No AnimatedVisualPlayer** | AnimatedVisualPlayerPage | Built imperatively — Lottie animation playback | fixed |
+| **No Popup element** | PopupPage | Built imperatively via parent `.Set()` callback | fixed |
+| **No CalendarView element** | CalendarViewPage | Built imperatively via Loaded event | fixed |
+| **No ListBox element** | ListBoxPage | Built imperatively — different from ListView | fixed |
+| **No PipsPager element** | PipsPagerPage | Built imperatively | fixed |
+| **No RefreshContainer / RefreshVisualizer** | PullToRefreshPage | Built imperatively | fixed |
+| **No AnnotatedScrollBar** | AnnotatedScrollBarPage | Built imperatively | fixed |
+| **No CommandBarFlyout** | CommandBarFlyoutPage | Built imperatively inside `.Set()` | fixed |
 
 ### Medium Priority — Missing DSL properties/modifiers
 

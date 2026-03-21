@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinUI = Microsoft.UI.Xaml.Controls;
 using WinPrim = Microsoft.UI.Xaml.Controls.Primitives;
+using WinShapes = Microsoft.UI.Xaml.Shapes;
 
 namespace Duct.Core;
 
@@ -88,6 +89,20 @@ public sealed partial class Reconciler
             MenuFlyoutElement mfEl => MountMenuFlyout(mfEl, requestRerender),
             TemplatedListElementBase tl => MountTemplatedList(tl, requestRerender),
             LazyStackElementBase lazy => MountLazyStack(lazy, requestRerender),
+            RectangleElement rect => MountRectangle(rect),
+            EllipseElement ell => MountEllipse(ell),
+            RelativePanelElement rp => MountRelativePanel(rp, requestRerender),
+            MediaPlayerElementElement mpe => MountMediaPlayerElement(mpe),
+            AnimatedVisualPlayerElement avp => MountAnimatedVisualPlayer(avp),
+            SemanticZoomElement sz => MountSemanticZoom(sz, requestRerender),
+            ListBoxElement lb => MountListBox(lb),
+            SelectorBarElement sb => MountSelectorBar(sb),
+            PipsPagerElement pp => MountPipsPager(pp),
+            AnnotatedScrollBarElement asb => MountAnnotatedScrollBar(asb),
+            PopupElement popup => MountPopup(popup, requestRerender),
+            RefreshContainerElement rc => MountRefreshContainer(rc, requestRerender),
+            CommandBarFlyoutElement cbf => MountCommandBarFlyout(cbf, requestRerender),
+            CalendarViewElement cv => MountCalendarView(cv),
             ComponentElement comp => MountComponent(comp, requestRerender),
             FuncElement func => MountFuncComponent(func, requestRerender),
             _ => null,
@@ -115,9 +130,40 @@ public sealed partial class Reconciler
     private WinUI.RichTextBlock MountRichTextBlock(RichTextBlockElement richText)
     {
         var rtb = _pool.TryRent(typeof(WinUI.RichTextBlock)) as WinUI.RichTextBlock ?? new WinUI.RichTextBlock();
-        var paragraph = new Microsoft.UI.Xaml.Documents.Paragraph();
-        paragraph.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = richText.Text });
-        rtb.Blocks.Add(paragraph);
+        rtb.IsTextSelectionEnabled = richText.IsTextSelectionEnabled;
+        if (richText.Paragraphs is not null)
+        {
+            foreach (var para in richText.Paragraphs)
+            {
+                var p = new Microsoft.UI.Xaml.Documents.Paragraph();
+                foreach (var inline in para.Inlines)
+                {
+                    switch (inline)
+                    {
+                        case RichTextRun run:
+                            var r = new Microsoft.UI.Xaml.Documents.Run { Text = run.Text };
+                            if (run.IsBold) r.FontWeight = Microsoft.UI.Text.FontWeights.Bold;
+                            if (run.IsItalic) r.FontStyle = Windows.UI.Text.FontStyle.Italic;
+                            if (run.FontSize.HasValue) r.FontSize = run.FontSize.Value;
+                            if (run.Foreground is not null) r.Foreground = run.Foreground;
+                            p.Inlines.Add(r);
+                            break;
+                        case RichTextHyperlink link:
+                            var hl = new Microsoft.UI.Xaml.Documents.Hyperlink { NavigateUri = link.NavigateUri };
+                            hl.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = link.Text });
+                            p.Inlines.Add(hl);
+                            break;
+                    }
+                }
+                rtb.Blocks.Add(p);
+            }
+        }
+        else
+        {
+            var paragraph = new Microsoft.UI.Xaml.Documents.Paragraph();
+            paragraph.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = richText.Text });
+            rtb.Blocks.Add(paragraph);
+        }
         if (richText.FontSize.HasValue) rtb.FontSize = richText.FontSize.Value;
         ApplySetters(richText.Setters, rtb);
         return rtb;
@@ -1357,5 +1403,264 @@ public sealed partial class Reconciler
         ApplySetters(lazy.ScrollViewerSetters, sv);
 
         return sv;
+    }
+
+    // ── Shape elements ──────────────────────────────────────────────────
+
+    private WinShapes.Rectangle MountRectangle(RectangleElement rect)
+    {
+        var r = new WinShapes.Rectangle();
+        if (rect.Fill is not null) r.Fill = rect.Fill;
+        if (rect.Stroke is not null) r.Stroke = rect.Stroke;
+        if (rect.StrokeThickness > 0) r.StrokeThickness = rect.StrokeThickness;
+        if (rect.RadiusX > 0) r.RadiusX = rect.RadiusX;
+        if (rect.RadiusY > 0) r.RadiusY = rect.RadiusY;
+        ApplySetters(rect.Setters, r);
+        return r;
+    }
+
+    private WinShapes.Ellipse MountEllipse(EllipseElement ell)
+    {
+        var e = new WinShapes.Ellipse();
+        if (ell.Fill is not null) e.Fill = ell.Fill;
+        if (ell.Stroke is not null) e.Stroke = ell.Stroke;
+        if (ell.StrokeThickness > 0) e.StrokeThickness = ell.StrokeThickness;
+        ApplySetters(ell.Setters, e);
+        return e;
+    }
+
+    // ── RelativePanel ───────────────────────────────────────────────────
+
+    private WinUI.RelativePanel MountRelativePanel(RelativePanelElement rp, Action requestRerender)
+    {
+        var panel = new WinUI.RelativePanel();
+        var nameMap = new Dictionary<string, UIElement>();
+
+        // First pass: mount all children and register names
+        foreach (var child in rp.Children)
+        {
+            var ctrl = Mount(child.Element, requestRerender);
+            if (ctrl is null) continue;
+            if (ctrl is FrameworkElement fe) fe.Name = child.Name;
+            nameMap[child.Name] = ctrl;
+            panel.Children.Add(ctrl);
+        }
+
+        // Second pass: apply attached properties using name references
+        foreach (var child in rp.Children)
+        {
+            if (!nameMap.TryGetValue(child.Name, out var ctrl)) continue;
+
+            if (child.RightOf is not null && nameMap.TryGetValue(child.RightOf, out var rightOf))
+                WinUI.RelativePanel.SetRightOf(ctrl, rightOf);
+            if (child.Below is not null && nameMap.TryGetValue(child.Below, out var below))
+                WinUI.RelativePanel.SetBelow(ctrl, below);
+            if (child.LeftOf is not null && nameMap.TryGetValue(child.LeftOf, out var leftOf))
+                WinUI.RelativePanel.SetLeftOf(ctrl, leftOf);
+            if (child.Above is not null && nameMap.TryGetValue(child.Above, out var above))
+                WinUI.RelativePanel.SetAbove(ctrl, above);
+            if (child.AlignLeftWith is not null && nameMap.TryGetValue(child.AlignLeftWith, out var alw))
+                WinUI.RelativePanel.SetAlignLeftWith(ctrl, alw);
+            if (child.AlignRightWith is not null && nameMap.TryGetValue(child.AlignRightWith, out var arw))
+                WinUI.RelativePanel.SetAlignRightWith(ctrl, arw);
+            if (child.AlignTopWith is not null && nameMap.TryGetValue(child.AlignTopWith, out var atw))
+                WinUI.RelativePanel.SetAlignTopWith(ctrl, atw);
+            if (child.AlignBottomWith is not null && nameMap.TryGetValue(child.AlignBottomWith, out var abw))
+                WinUI.RelativePanel.SetAlignBottomWith(ctrl, abw);
+            if (child.AlignHorizontalCenterWith is not null && nameMap.TryGetValue(child.AlignHorizontalCenterWith, out var ahcw))
+                WinUI.RelativePanel.SetAlignHorizontalCenterWith(ctrl, ahcw);
+            if (child.AlignVerticalCenterWith is not null && nameMap.TryGetValue(child.AlignVerticalCenterWith, out var avcw))
+                WinUI.RelativePanel.SetAlignVerticalCenterWith(ctrl, avcw);
+
+            if (child.AlignLeftWithPanel) WinUI.RelativePanel.SetAlignLeftWithPanel(ctrl, true);
+            if (child.AlignRightWithPanel) WinUI.RelativePanel.SetAlignRightWithPanel(ctrl, true);
+            if (child.AlignTopWithPanel) WinUI.RelativePanel.SetAlignTopWithPanel(ctrl, true);
+            if (child.AlignBottomWithPanel) WinUI.RelativePanel.SetAlignBottomWithPanel(ctrl, true);
+            if (child.AlignHorizontalCenterWithPanel) WinUI.RelativePanel.SetAlignHorizontalCenterWithPanel(ctrl, true);
+            if (child.AlignVerticalCenterWithPanel) WinUI.RelativePanel.SetAlignVerticalCenterWithPanel(ctrl, true);
+        }
+
+        SetElementTag(panel, rp);
+        ApplySetters(rp.Setters, panel);
+        return panel;
+    }
+
+    // ── MediaPlayerElement ──────────────────────────────────────────────
+
+    private WinUI.MediaPlayerElement MountMediaPlayerElement(MediaPlayerElementElement mpe)
+    {
+        var player = new WinUI.MediaPlayerElement
+        {
+            AreTransportControlsEnabled = mpe.AreTransportControlsEnabled,
+            AutoPlay = mpe.AutoPlay,
+        };
+        if (mpe.Source is not null)
+            player.Source = Windows.Media.Core.MediaSource.CreateFromUri(new Uri(mpe.Source, UriKind.RelativeOrAbsolute));
+        SetElementTag(player, mpe);
+        ApplySetters(mpe.Setters, player);
+        return player;
+    }
+
+    // ── AnimatedVisualPlayer ────────────────────────────────────────────
+
+    private WinUI.AnimatedVisualPlayer MountAnimatedVisualPlayer(AnimatedVisualPlayerElement avp)
+    {
+        var player = new WinUI.AnimatedVisualPlayer { AutoPlay = avp.AutoPlay };
+        SetElementTag(player, avp);
+        ApplySetters(avp.Setters, player);
+        return player;
+    }
+
+    // ── SemanticZoom ────────────────────────────────────────────────────
+
+    private WinUI.SemanticZoom MountSemanticZoom(SemanticZoomElement sz, Action requestRerender)
+    {
+        var zoomedIn = Mount(sz.ZoomedInView, requestRerender);
+        var zoomedOut = Mount(sz.ZoomedOutView, requestRerender);
+        var semanticZoom = new WinUI.SemanticZoom();
+        if (zoomedIn is ISemanticZoomInformation szi) semanticZoom.ZoomedInView = szi;
+        if (zoomedOut is ISemanticZoomInformation szo) semanticZoom.ZoomedOutView = szo;
+        SetElementTag(semanticZoom, sz);
+        ApplySetters(sz.Setters, semanticZoom);
+        return semanticZoom;
+    }
+
+    // ── ListBox ─────────────────────────────────────────────────────────
+
+    private WinUI.ListBox MountListBox(ListBoxElement lb)
+    {
+        var listBox = new WinUI.ListBox { SelectedIndex = lb.SelectedIndex };
+        foreach (var item in lb.Items) listBox.Items.Add(item);
+        SetElementTag(listBox, lb);
+        listBox.SelectionChanged += (s, _) =>
+        {
+            var l = (WinUI.ListBox)s!;
+            (GetElementTag(l) as ListBoxElement)?.OnSelectionChanged?.Invoke(l.SelectedIndex);
+        };
+        ApplySetters(lb.Setters, listBox);
+        return listBox;
+    }
+
+    // ── SelectorBar ─────────────────────────────────────────────────────
+
+    private WinUI.SelectorBar MountSelectorBar(SelectorBarElement sb)
+    {
+        var selectorBar = new WinUI.SelectorBar();
+        foreach (var item in sb.Items)
+        {
+            var sbi = new WinUI.SelectorBarItem { Text = item.Text };
+            if (item.Icon is not null) sbi.Icon = new WinUI.SymbolIcon(ParseSymbol(item.Icon));
+            selectorBar.Items.Add(sbi);
+        }
+        if (sb.SelectedIndex >= 0 && sb.SelectedIndex < selectorBar.Items.Count)
+            selectorBar.SelectedItem = selectorBar.Items[sb.SelectedIndex];
+        SetElementTag(selectorBar, sb);
+        selectorBar.SelectionChanged += (s, _) =>
+        {
+            var bar = (WinUI.SelectorBar)s!;
+            var idx = bar.Items.IndexOf(bar.SelectedItem);
+            (GetElementTag(bar) as SelectorBarElement)?.OnSelectionChanged?.Invoke(idx);
+        };
+        ApplySetters(sb.Setters, selectorBar);
+        return selectorBar;
+    }
+
+    // ── PipsPager ───────────────────────────────────────────────────────
+
+    private WinUI.PipsPager MountPipsPager(PipsPagerElement pp)
+    {
+        var pager = new WinUI.PipsPager
+        {
+            NumberOfPages = pp.NumberOfPages,
+            SelectedPageIndex = pp.SelectedPageIndex,
+        };
+        SetElementTag(pager, pp);
+        pager.SelectedIndexChanged += (s, _) =>
+        {
+            var p = (WinUI.PipsPager)s!;
+            (GetElementTag(p) as PipsPagerElement)?.OnSelectedIndexChanged?.Invoke(p.SelectedPageIndex);
+        };
+        ApplySetters(pp.Setters, pager);
+        return pager;
+    }
+
+    // ── AnnotatedScrollBar ──────────────────────────────────────────────
+
+    private WinUI.AnnotatedScrollBar MountAnnotatedScrollBar(AnnotatedScrollBarElement asb)
+    {
+        var scrollBar = new WinUI.AnnotatedScrollBar();
+        ApplySetters(asb.Setters, scrollBar);
+        return scrollBar;
+    }
+
+    // ── Popup ───────────────────────────────────────────────────────────
+
+    private UIElement MountPopup(PopupElement popup, Action requestRerender)
+    {
+        // Popup is not a UIElement child, so we wrap it in a StackPanel
+        var wrapper = new WinUI.StackPanel();
+        var p = new WinPrim.Popup
+        {
+            IsOpen = popup.IsOpen,
+            IsLightDismissEnabled = popup.IsLightDismissEnabled,
+            HorizontalOffset = popup.HorizontalOffset,
+            VerticalOffset = popup.VerticalOffset,
+        };
+        var child = Mount(popup.Child, requestRerender);
+        p.Child = child as UIElement;
+        SetElementTag(wrapper, popup);
+        p.Closed += (s, _) => (GetElementTag(wrapper) as PopupElement)?.OnClosed?.Invoke();
+        ApplySetters(popup.Setters, p);
+        wrapper.Children.Add(p);
+        return wrapper;
+    }
+
+    // ── RefreshContainer ────────────────────────────────────────────────
+
+    private WinUI.RefreshContainer MountRefreshContainer(RefreshContainerElement rc, Action requestRerender)
+    {
+        var container = new WinUI.RefreshContainer();
+        container.Content = Mount(rc.Content, requestRerender);
+        SetElementTag(container, rc);
+        container.RefreshRequested += (s, _) =>
+            (GetElementTag((UIElement)s!) as RefreshContainerElement)?.OnRefreshRequested?.Invoke();
+        ApplySetters(rc.Setters, container);
+        return container;
+    }
+
+    // ── CommandBarFlyout ────────────────────────────────────────────────
+
+    private UIElement? MountCommandBarFlyout(CommandBarFlyoutElement cbf, Action requestRerender)
+    {
+        var target = Mount(cbf.Target, requestRerender);
+        if (target is FrameworkElement targetFe)
+        {
+            var flyout = new WinUI.CommandBarFlyout { Placement = cbf.Placement };
+            if (cbf.PrimaryCommands is not null)
+                foreach (var cmd in cbf.PrimaryCommands) flyout.PrimaryCommands.Add(CreateAppBarItem(cmd));
+            if (cbf.SecondaryCommands is not null)
+                foreach (var cmd in cbf.SecondaryCommands) flyout.SecondaryCommands.Add(CreateAppBarItem(cmd));
+            SetElementTag(targetFe, cbf);
+            WinPrim.FlyoutBase.SetAttachedFlyout(targetFe, flyout);
+            ApplySetters(cbf.Setters, flyout);
+        }
+        return target;
+    }
+
+    // ── CalendarView ────────────────────────────────────────────────────
+
+    private WinUI.CalendarView MountCalendarView(CalendarViewElement cv)
+    {
+        var calendarView = new WinUI.CalendarView
+        {
+            SelectionMode = cv.SelectionMode,
+            IsGroupLabelVisible = cv.IsGroupLabelVisible,
+            IsOutOfScopeEnabled = cv.IsOutOfScopeEnabled,
+        };
+        if (cv.CalendarIdentifier is not null) calendarView.CalendarIdentifier = cv.CalendarIdentifier;
+        if (cv.Language is not null && Windows.Globalization.Language.IsWellFormed(cv.Language))
+            calendarView.Language = cv.Language;
+        ApplySetters(cv.Setters, calendarView);
+        return calendarView;
     }
 }

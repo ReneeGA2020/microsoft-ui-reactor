@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinUI = Microsoft.UI.Xaml.Controls;
 using WinPrim = Microsoft.UI.Xaml.Controls.Primitives;
+using WinShapes = Microsoft.UI.Xaml.Shapes;
 
 namespace Duct.Core;
 
@@ -146,6 +147,34 @@ public sealed partial class Reconciler
                 => UpdateTemplatedFlipView(o, n, fv, requestRerender),
             (LazyStackElementBase, LazyStackElementBase n, WinUI.ScrollViewer sv)
                 => UpdateLazyStack(n, sv, requestRerender),
+            (RectangleElement, RectangleElement n, WinShapes.Rectangle r)
+                => UpdateRectangle(n, r),
+            (EllipseElement, EllipseElement n, WinShapes.Ellipse e)
+                => UpdateEllipse(n, e),
+            (RelativePanelElement, RelativePanelElement, WinUI.RelativePanel)
+                => Mount(newEl, requestRerender),
+            (MediaPlayerElementElement, MediaPlayerElementElement n, WinUI.MediaPlayerElement mpe)
+                => UpdateMediaPlayerElement(n, mpe),
+            (AnimatedVisualPlayerElement, AnimatedVisualPlayerElement n, WinUI.AnimatedVisualPlayer avp)
+                => UpdateAnimatedVisualPlayer(n, avp),
+            (SemanticZoomElement, SemanticZoomElement, WinUI.SemanticZoom)
+                => Mount(newEl, requestRerender),
+            (ListBoxElement, ListBoxElement, WinUI.ListBox)
+                => Mount(newEl, requestRerender),
+            (SelectorBarElement, SelectorBarElement, WinUI.SelectorBar)
+                => Mount(newEl, requestRerender),
+            (PipsPagerElement, PipsPagerElement n, WinUI.PipsPager pp)
+                => UpdatePipsPager(n, pp),
+            (AnnotatedScrollBarElement, AnnotatedScrollBarElement n, WinUI.AnnotatedScrollBar asb)
+                => UpdateAnnotatedScrollBar(n, asb),
+            (PopupElement, PopupElement, WinUI.StackPanel)
+                => Mount(newEl, requestRerender),
+            (RefreshContainerElement, RefreshContainerElement, WinUI.RefreshContainer)
+                => Mount(newEl, requestRerender),
+            (CommandBarFlyoutElement, CommandBarFlyoutElement, _)
+                => Mount(newEl, requestRerender),
+            (CalendarViewElement, CalendarViewElement n, WinUI.CalendarView cv)
+                => UpdateCalendarView(n, cv),
             (ComponentElement, ComponentElement, _)
                 => UpdateComponent(oldEl, newEl, control, requestRerender),
             (FuncElement, FuncElement, _)
@@ -934,6 +963,70 @@ public sealed partial class Reconciler
                 Unmount(oldCtrl2);
             liveNode.Content = newData;
         }
+    }
+
+    private UIElement? UpdateRectangle(RectangleElement n, WinShapes.Rectangle r)
+    {
+        if (n.Fill is not null) r.Fill = n.Fill;
+        if (n.Stroke is not null) r.Stroke = n.Stroke;
+        r.StrokeThickness = n.StrokeThickness;
+        r.RadiusX = n.RadiusX;
+        r.RadiusY = n.RadiusY;
+        ApplySetters(n.Setters, r);
+        return null;
+    }
+
+    private UIElement? UpdateEllipse(EllipseElement n, WinShapes.Ellipse e)
+    {
+        if (n.Fill is not null) e.Fill = n.Fill;
+        if (n.Stroke is not null) e.Stroke = n.Stroke;
+        e.StrokeThickness = n.StrokeThickness;
+        ApplySetters(n.Setters, e);
+        return null;
+    }
+
+    private UIElement? UpdateMediaPlayerElement(MediaPlayerElementElement n, WinUI.MediaPlayerElement mpe)
+    {
+        mpe.AreTransportControlsEnabled = n.AreTransportControlsEnabled;
+        mpe.AutoPlay = n.AutoPlay;
+        SetElementTag(mpe, n);
+        ApplySetters(n.Setters, mpe);
+        return null;
+    }
+
+    private UIElement? UpdateAnimatedVisualPlayer(AnimatedVisualPlayerElement n, WinUI.AnimatedVisualPlayer avp)
+    {
+        avp.AutoPlay = n.AutoPlay;
+        SetElementTag(avp, n);
+        ApplySetters(n.Setters, avp);
+        return null;
+    }
+
+    private UIElement? UpdatePipsPager(PipsPagerElement n, WinUI.PipsPager pp)
+    {
+        pp.NumberOfPages = n.NumberOfPages;
+        pp.SelectedPageIndex = n.SelectedPageIndex;
+        SetElementTag(pp, n);
+        ApplySetters(n.Setters, pp);
+        return null;
+    }
+
+    private UIElement? UpdateAnnotatedScrollBar(AnnotatedScrollBarElement n, WinUI.AnnotatedScrollBar asb)
+    {
+        ApplySetters(n.Setters, asb);
+        return null;
+    }
+
+    private UIElement? UpdateCalendarView(CalendarViewElement n, WinUI.CalendarView cv)
+    {
+        cv.SelectionMode = n.SelectionMode;
+        cv.IsGroupLabelVisible = n.IsGroupLabelVisible;
+        cv.IsOutOfScopeEnabled = n.IsOutOfScopeEnabled;
+        if (n.CalendarIdentifier is not null) cv.CalendarIdentifier = n.CalendarIdentifier;
+        if (n.Language is not null && Windows.Globalization.Language.IsWellFormed(n.Language))
+            cv.Language = n.Language;
+        ApplySetters(n.Setters, cv);
+        return null;
     }
 
     private UIElement? UpdateComponent(Element oldEl, Element newEl, UIElement control, Action requestRerender)

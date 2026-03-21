@@ -9,6 +9,8 @@
     <UseWinUI>true</UseWinUI>
     <WindowsSdkPackageVersion>10.0.22621.52</WindowsSdkPackageVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Library projects must not produce MsixContent — the hosting app handles native DLLs -->
+    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
   </PropertyGroup>
 
   <ItemGroup>
