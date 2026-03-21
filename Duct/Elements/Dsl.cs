@@ -369,6 +369,70 @@ public static class UI
         Func<T, string> keySelector,
         Func<T, int, Element> viewBuilder) => new(items, keySelector, viewBuilder);
 
+    // ── Shapes ───────────────────────────────────────────────────────
+
+    public static RectangleElement Rectangle() => new();
+
+    public static EllipseElement Ellipse() => new();
+
+    // ── Additional layout ───────────────────────────────────────────
+
+    public static RelativePanelElement RelativePanel(params RelativePanelChild[] children) => new(children);
+
+    public static RelativePanelChild RPChild(string name, Element element) => new(name, element);
+
+    // ── Additional media ────────────────────────────────────────────
+
+    public static MediaPlayerElementElement MediaPlayerElement(string? source = null) => new(source);
+
+    public static AnimatedVisualPlayerElement AnimatedVisualPlayer() => new();
+
+    // ── Additional collections ──────────────────────────────────────
+
+    public static SemanticZoomElement SemanticZoom(Element zoomedInView, Element zoomedOutView) =>
+        new(zoomedInView, zoomedOutView);
+
+    public static ListBoxElement ListBox(string[] items, int selectedIndex = -1, Action<int>? onSelectionChanged = null) =>
+        new(items) { SelectedIndex = selectedIndex, OnSelectionChanged = onSelectionChanged };
+
+    // ── Additional navigation ───────────────────────────────────────
+
+    public static SelectorBarElement SelectorBar(SelectorBarItemData[] items, int selectedIndex = 0, Action<int>? onSelectionChanged = null) =>
+        new(items) { SelectedIndex = selectedIndex, OnSelectionChanged = onSelectionChanged };
+
+    public static SelectorBarItemData SelectorBarItem(string text, string? icon = null) => new(text, icon);
+
+    public static PipsPagerElement PipsPager(int numberOfPages, int selectedPageIndex = 0, Action<int>? onSelectedIndexChanged = null) =>
+        new(numberOfPages) { SelectedPageIndex = selectedPageIndex, OnSelectedIndexChanged = onSelectedIndexChanged };
+
+    public static AnnotatedScrollBarElement AnnotatedScrollBar() => new();
+
+    // ── Additional overlays / containers ────────────────────────────
+
+    public static PopupElement Popup(Element child, bool isOpen = false, Action? onClosed = null) =>
+        new(child) { IsOpen = isOpen, OnClosed = onClosed };
+
+    public static RefreshContainerElement RefreshContainer(Element content, Action? onRefreshRequested = null) =>
+        new(content) { OnRefreshRequested = onRefreshRequested };
+
+    public static CommandBarFlyoutElement CommandBarFlyout(Element target, AppBarItemBase[]? primaryCommands = null, AppBarItemBase[]? secondaryCommands = null) =>
+        new(target, primaryCommands, secondaryCommands);
+
+    // ── Additional date / time ──────────────────────────────────────
+
+    public static CalendarViewElement CalendarView() => new();
+
+    // ── Rich text helpers ───────────────────────────────────────────
+
+    public static RichTextBlockElement RichText(RichTextParagraph[] paragraphs) =>
+        new("") { Paragraphs = paragraphs };
+
+    public static RichTextParagraph Paragraph(params RichTextInline[] inlines) => new(inlines);
+
+    public static RichTextRun Run(string text) => new(text);
+
+    public static RichTextHyperlink Hyperlink(string text, Uri navigateUri) => new(text, navigateUri);
+
     // ── Internals ───────────────────────────────────────────────────
 
     private static Element[] FilterChildren(Element?[] children) =>

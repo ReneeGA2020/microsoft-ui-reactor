@@ -8,6 +8,7 @@ using Microsoft.UI.Text;
 using Windows.UI.Text;
 using WinUI = Microsoft.UI.Xaml.Controls;
 using WinPrim = Microsoft.UI.Xaml.Controls.Primitives;
+using WinShapes = Microsoft.UI.Xaml.Shapes;
 
 namespace Duct;
 
@@ -442,6 +443,71 @@ public static class ElementExtensions
 
     public static MenuFlyoutElement Set(this MenuFlyoutElement el, Action<WinUI.MenuFlyout> configure) =>
         el with { Setters = [.. el.Setters, configure] };
+
+    // Shapes
+    public static RectangleElement Set(this RectangleElement el, Action<WinShapes.Rectangle> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    public static EllipseElement Set(this EllipseElement el, Action<WinShapes.Ellipse> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    // Additional layout
+    public static RelativePanelElement Set(this RelativePanelElement el, Action<WinUI.RelativePanel> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    // Additional media
+    public static MediaPlayerElementElement Set(this MediaPlayerElementElement el, Action<WinUI.MediaPlayerElement> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    public static AnimatedVisualPlayerElement Set(this AnimatedVisualPlayerElement el, Action<WinUI.AnimatedVisualPlayer> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    // Additional collections
+    public static SemanticZoomElement Set(this SemanticZoomElement el, Action<WinUI.SemanticZoom> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    public static ListBoxElement Set(this ListBoxElement el, Action<WinUI.ListBox> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    // Additional navigation
+    public static SelectorBarElement Set(this SelectorBarElement el, Action<WinUI.SelectorBar> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    public static PipsPagerElement Set(this PipsPagerElement el, Action<WinUI.PipsPager> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    public static AnnotatedScrollBarElement Set(this AnnotatedScrollBarElement el, Action<WinUI.AnnotatedScrollBar> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    // Additional overlays / containers
+    public static PopupElement Set(this PopupElement el, Action<WinPrim.Popup> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    public static RefreshContainerElement Set(this RefreshContainerElement el, Action<WinUI.RefreshContainer> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    public static CommandBarFlyoutElement Set(this CommandBarFlyoutElement el, Action<WinUI.CommandBarFlyout> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    // Additional date/time
+    public static CalendarViewElement Set(this CalendarViewElement el, Action<WinUI.CalendarView> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    // ── Shape convenience modifiers ─────────────────────────────────
+
+    public static RectangleElement Fill(this RectangleElement el, Brush brush) =>
+        el with { Fill = brush };
+
+    public static EllipseElement Fill(this EllipseElement el, Brush brush) =>
+        el with { Fill = brush };
+
+    // ── Popup convenience modifiers ─────────────────────────────────
+
+    public static PopupElement LightDismiss(this PopupElement el, bool enabled = true) =>
+        el with { IsLightDismissEnabled = enabled };
+
+    public static PopupElement Offset(this PopupElement el, double horizontal, double vertical) =>
+        el with { HorizontalOffset = horizontal, VerticalOffset = vertical };
 
     // Virtualized collections (LazyVStack / LazyHStack)
     // .Set() targets the outer ScrollViewer; .SetRepeater() targets the inner ItemsRepeater

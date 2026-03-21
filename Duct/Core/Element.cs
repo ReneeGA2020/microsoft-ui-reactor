@@ -6,6 +6,7 @@ using Microsoft.UI.Text;
 using Windows.UI.Text;
 using WinUI = Microsoft.UI.Xaml.Controls;
 using WinPrim = Microsoft.UI.Xaml.Controls.Primitives;
+using WinShapes = Microsoft.UI.Xaml.Shapes;
 
 namespace Duct.Core;
 
@@ -184,8 +185,25 @@ public record TextElement(string Content) : Element
 public record RichTextBlockElement(string Text) : Element
 {
     public double? FontSize { get; init; }
+    public RichTextParagraph[]? Paragraphs { get; init; }
+    public bool IsTextSelectionEnabled { get; init; }
     internal Action<WinUI.RichTextBlock>[] Setters { get; init; } = [];
 }
+
+// Rich text inline content types
+public record RichTextParagraph(RichTextInline[] Inlines);
+
+public abstract record RichTextInline;
+
+public record RichTextRun(string Text) : RichTextInline
+{
+    public bool IsBold { get; init; }
+    public bool IsItalic { get; init; }
+    public double? FontSize { get; init; }
+    public Brush? Foreground { get; init; }
+}
+
+public record RichTextHyperlink(string Text, Uri NavigateUri) : RichTextInline;
 
 // ════════════════════════════════════════════════════════════════════════
 //  Button elements
@@ -952,4 +970,157 @@ public record LazyHStackElement<T>(
 
     public override ElementFactory CreateFactory(Reconciler reconciler, Action requestRerender, ElementPool? pool) =>
         new DuctElementFactory<T>(Items, ViewBuilder, reconciler, requestRerender, pool);
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  Shape elements
+// ════════════════════════════════════════════════════════════════════════
+
+public record RectangleElement() : Element
+{
+    public Brush? Fill { get; init; }
+    public Brush? Stroke { get; init; }
+    public double StrokeThickness { get; init; }
+    public double RadiusX { get; init; }
+    public double RadiusY { get; init; }
+    internal Action<WinShapes.Rectangle>[] Setters { get; init; } = [];
+}
+
+public record EllipseElement() : Element
+{
+    public Brush? Fill { get; init; }
+    public Brush? Stroke { get; init; }
+    public double StrokeThickness { get; init; }
+    internal Action<WinShapes.Ellipse>[] Setters { get; init; } = [];
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  Additional layout elements
+// ════════════════════════════════════════════════════════════════════════
+
+public record RelativePanelElement(RelativePanelChild[] Children) : Element
+{
+    internal Action<WinUI.RelativePanel>[] Setters { get; init; } = [];
+}
+
+public record RelativePanelChild(string Name, Element Element)
+{
+    public string? RightOf { get; init; }
+    public string? Below { get; init; }
+    public string? LeftOf { get; init; }
+    public string? Above { get; init; }
+    public string? AlignLeftWith { get; init; }
+    public string? AlignRightWith { get; init; }
+    public string? AlignTopWith { get; init; }
+    public string? AlignBottomWith { get; init; }
+    public string? AlignHorizontalCenterWith { get; init; }
+    public string? AlignVerticalCenterWith { get; init; }
+    public bool AlignLeftWithPanel { get; init; }
+    public bool AlignRightWithPanel { get; init; }
+    public bool AlignTopWithPanel { get; init; }
+    public bool AlignBottomWithPanel { get; init; }
+    public bool AlignHorizontalCenterWithPanel { get; init; }
+    public bool AlignVerticalCenterWithPanel { get; init; }
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  Additional media elements
+// ════════════════════════════════════════════════════════════════════════
+
+public record MediaPlayerElementElement(string? Source = null) : Element
+{
+    public bool AreTransportControlsEnabled { get; init; } = true;
+    public bool AutoPlay { get; init; }
+    internal Action<WinUI.MediaPlayerElement>[] Setters { get; init; } = [];
+}
+
+public record AnimatedVisualPlayerElement() : Element
+{
+    public bool AutoPlay { get; init; }
+    internal Action<WinUI.AnimatedVisualPlayer>[] Setters { get; init; } = [];
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  Additional collection elements
+// ════════════════════════════════════════════════════════════════════════
+
+public record SemanticZoomElement(Element ZoomedInView, Element ZoomedOutView) : Element
+{
+    internal Action<WinUI.SemanticZoom>[] Setters { get; init; } = [];
+}
+
+public record ListBoxElement(string[] Items) : Element
+{
+    public int SelectedIndex { get; init; } = -1;
+    public Action<int>? OnSelectionChanged { get; init; }
+    internal Action<WinUI.ListBox>[] Setters { get; init; } = [];
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  Additional navigation elements
+// ════════════════════════════════════════════════════════════════════════
+
+public record SelectorBarElement(SelectorBarItemData[] Items) : Element
+{
+    public int SelectedIndex { get; init; } = 0;
+    public Action<int>? OnSelectionChanged { get; init; }
+    internal Action<WinUI.SelectorBar>[] Setters { get; init; } = [];
+}
+
+public record SelectorBarItemData(string Text, string? Icon = null);
+
+public record PipsPagerElement(int NumberOfPages) : Element
+{
+    public int SelectedPageIndex { get; init; }
+    public Action<int>? OnSelectedIndexChanged { get; init; }
+    internal Action<WinUI.PipsPager>[] Setters { get; init; } = [];
+}
+
+public record AnnotatedScrollBarElement() : Element
+{
+    internal Action<WinUI.AnnotatedScrollBar>[] Setters { get; init; } = [];
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  Additional overlay / container elements
+// ════════════════════════════════════════════════════════════════════════
+
+public record PopupElement(Element Child) : Element
+{
+    public bool IsOpen { get; init; }
+    public bool IsLightDismissEnabled { get; init; } = true;
+    public double HorizontalOffset { get; init; }
+    public double VerticalOffset { get; init; }
+    public Action? OnClosed { get; init; }
+    internal Action<WinPrim.Popup>[] Setters { get; init; } = [];
+}
+
+public record RefreshContainerElement(Element Content) : Element
+{
+    public Action? OnRefreshRequested { get; init; }
+    internal Action<WinUI.RefreshContainer>[] Setters { get; init; } = [];
+}
+
+public record CommandBarFlyoutElement(
+    Element Target,
+    AppBarItemBase[]? PrimaryCommands = null,
+    AppBarItemBase[]? SecondaryCommands = null
+) : Element
+{
+    public FlyoutPlacementMode Placement { get; init; } = FlyoutPlacementMode.Auto;
+    internal Action<WinUI.CommandBarFlyout>[] Setters { get; init; } = [];
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  Additional date/time elements
+// ════════════════════════════════════════════════════════════════════════
+
+public record CalendarViewElement() : Element
+{
+    public CalendarViewSelectionMode SelectionMode { get; init; } = CalendarViewSelectionMode.Single;
+    public bool IsGroupLabelVisible { get; init; } = true;
+    public bool IsOutOfScopeEnabled { get; init; } = true;
+    public string? CalendarIdentifier { get; init; }
+    public string? Language { get; init; }
+    internal Action<WinUI.CalendarView>[] Setters { get; init; } = [];
 }
