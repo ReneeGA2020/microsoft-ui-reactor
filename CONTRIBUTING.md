@@ -58,6 +58,20 @@ dotnet test Duct.Tests -v normal
 
 Tests use **xUnit** and target the same `net8.0-windows10.0.22621.0` framework as the main library. The test project has `InternalsVisibleTo` access so it can test internal APIs.
 
+### UI tests
+
+```bash
+# Run the UI integration tests (launches TestApp with --self-test)
+dotnet test Duct.UITests -p:Platform=x64
+
+# Or run the self-test harness directly
+dotnet run --project Duct.TestApp -p:Platform=x64 -- --self-test
+```
+
+UI tests exercise the full Duct pipeline (Element DSL → Reconciler → WinUI control tree) by launching the TestApp with a `--self-test` flag. The app uses `VisualTreeHelper` and `ButtonAutomationPeer` to walk and interact with its own WinUI control tree in-process, then reports TAP-format results. The `Duct.UITests` MSTest project wraps these results so they integrate with `dotnet test` and Visual Studio Test Explorer.
+
+> **Why not WinAppDriver?** WinUI 3 Desktop apps host XAML inside a `DesktopChildSiteBridge` which creates a UIA boundary that external-process automation tools (WinAppDriver, FlaUI, System.Windows.Automation) cannot traverse. In-process testing via `VisualTreeHelper` is the reliable approach.
+
 ### What the tests cover
 
 - **Element creation and equality** — `ElementTests.cs`

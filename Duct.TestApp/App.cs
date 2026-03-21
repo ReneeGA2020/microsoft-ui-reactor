@@ -7,7 +7,14 @@ using Duct.Core;
 using Microsoft.UI.Xaml;
 using static Duct.UI;
 
-DuctApp.Run<DemoApp>("Duct Demo", width: 1200, height: 800);
+if (args.Contains("--self-test"))
+{
+    SelfTestRunner.RunAll();
+}
+else
+{
+    DuctApp.Run<DemoApp>("Duct Demo", width: 1200, height: 800);
+}
 
 // ─── Root application component ────────────────────────────────────────────────
 
