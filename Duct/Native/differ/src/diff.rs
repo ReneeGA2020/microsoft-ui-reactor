@@ -3,9 +3,32 @@
 //! Compares old and new view trees represented as flat node arrays.
 //! Generates minimal patch operations: INSERT, REMOVE, MOVE, UPDATE_PROP, REPLACE.
 
-use crate::arena::DiffContext;
+use crate::context::DiffContext;
 use crate::reconcile::reconcile_keys;
 use crate::types::*;
+
+const MAX_DEPTH: u32 = 256;
+
+/// Validate that all node references (children, props) are within bounds.
+fn validate_tree(nodes: &[DifferNode], props: &[DifferProp]) -> Result<(), String> {
+    for (i, node) in nodes.iter().enumerate() {
+        let prop_end = node.first_prop as usize + node.prop_count as usize;
+        if prop_end > props.len() {
+            return Err(format!(
+                "Node {} props out of bounds: {}..{} but props len is {}",
+                i, node.first_prop, prop_end, props.len()
+            ));
+        }
+        let child_end = node.first_child as usize + node.child_count as usize;
+        if child_end > nodes.len() {
+            return Err(format!(
+                "Node {} children out of bounds: {}..{} but nodes len is {}",
+                i, node.first_child, child_end, nodes.len()
+            ));
+        }
+    }
+    Ok(())
+}
 
 /// Diff properties between old and new nodes, emitting UPDATE_PROP patches.
 fn diff_props(
@@ -62,7 +85,7 @@ fn diff_props(
     }
 }
 
-/// Recursive tree diff.
+/// Recursive tree diff with depth limiting.
 fn diff_subtree(
     ctx: &mut DiffContext,
     old_nodes: &[DifferNode],
@@ -71,7 +94,14 @@ fn diff_subtree(
     new_props: &[DifferProp],
     old_index: u32,
     new_index: u32,
+    depth: u32,
 ) {
+    if depth > MAX_DEPTH {
+        ctx.error = format!("Tree depth exceeds maximum of {MAX_DEPTH}\0");
+        log::error!("Tree depth exceeds maximum of {MAX_DEPTH}");
+        return;
+    }
+
     let old_node = &old_nodes[old_index as usize];
     let new_node = &new_nodes[new_index as usize];
 
@@ -122,6 +152,7 @@ fn diff_subtree(
                 new_props,
                 old_node.first_child + i as u32,
                 new_node.first_child + i as u32,
+                depth + 1,
             );
         }
 
@@ -327,5 +358,24 @@ pub fn diff_trees(
         return;
     }
 
-    diff_subtree(ctx, old_nodes, old_props, new_nodes, new_props, 0, 0);
+    // Validate input bounds before diffing
+    if let Err(e) = validate_tree(old_nodes, old_props) {
+        ctx.error = format!("{e}\0");
+        log::error!("Old tree validation failed: {e}");
+        return;
+    }
+    if let Err(e) = validate_tree(new_nodes, new_props) {
+        ctx.error = format!("{e}\0");
+        log::error!("New tree validation failed: {e}");
+        return;
+    }
+
+    log::debug!(
+        "diff_trees: old={} nodes/{} props, new={} nodes/{} props",
+        old_nodes.len(), old_props.len(), new_nodes.len(), new_props.len()
+    );
+
+    diff_subtree(ctx, old_nodes, old_props, new_nodes, new_props, 0, 0, 0);
+
+    log::debug!("diff_trees: emitted {} patches", ctx.patches.len());
 }

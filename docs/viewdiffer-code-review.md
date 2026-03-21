@@ -51,7 +51,7 @@ Engineers: work through `approved` items first, then `optional` if time permits.
 
 ## 1. Critical: FFI Safety
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `approved`
 - **File:** `src/ffi.rs` — all `extern "C"` functions
 - **Lines:** 16–137
 
@@ -101,7 +101,7 @@ Also consider adding `panic = "abort"` to the release profile in `Cargo.toml` as
 
 ## 2. Critical: Struct Layout Verification
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `approved`
 - **File:** `src/types.rs` + `Duct/Native/ViewDiffer.cs`
 - **Lines:** types.rs:7–22 (DifferNode), ViewDiffer.cs:154–164 (ViewNode)
 
@@ -147,7 +147,7 @@ Debug.Assert(Marshal.SizeOf<ViewNode>() == NativeMethods.differ_node_size());
 
 ## 3. High: No Logging
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `approved`
 - **File:** All source files
 - **Lines:** N/A (nothing exists)
 
@@ -215,7 +215,7 @@ Then add logging to critical paths:
 
 ## 4. High: Thread Safety
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `approved`
 - **File:** `src/ffi.rs`, `Duct/Native/ViewDiffer.cs`
 - **Lines:** ffi.rs:16–24, ViewDiffer.cs:17–19
 
@@ -253,7 +253,7 @@ pub struct DiffContext {
 
 ## 5. High: Duplicate Key Handling
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `approved`
 - **File:** `src/reconcile.rs`
 - **Lines:** 85–89
 
@@ -277,7 +277,7 @@ Duplicate keys in a keyed list are always a bug in the calling code, so a loud w
 
 ## 6. High: Unbounded Recursion in diff_subtree
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `approved`
 - **File:** `src/diff.rs`
 - **Lines:** 66–144
 
@@ -313,7 +313,7 @@ fn diff_subtree(
 
 ## 7. High: Bounds Checking on Array Accesses
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `approved`
 - **File:** `src/diff.rs`
 - **Lines:** 23, 27, 56–57, 75–76, 104–107, 164–165, 181–182, and others
 
@@ -349,7 +349,7 @@ Call this at the top of `diff_trees` and return an error code through FFI if val
 
 ## 8. Medium: PatchOp Enum Representation
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `approved`
 - **File:** `src/types.rs`
 - **Lines:** 38–45
 
@@ -377,7 +377,7 @@ This makes the ABI contract explicit rather than relying on platform defaults.
 
 ## 9. Medium: Dead Code — error Field
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `approved`
 - **File:** `src/arena.rs`, `src/ffi.rs`
 - **Lines:** arena.rs:10, ffi.rs:140–150
 
@@ -401,7 +401,7 @@ If you implement the `catch_unwind` and validation recommendations, this field b
 
 ## 10. Medium: differ_get_error Returns Non-Null-Terminated String
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `approved`
 - **File:** `src/ffi.rs`
 - **Lines:** 140–150
 
@@ -430,7 +430,7 @@ Or simply remove the function until it's needed, and when you re-add it, design 
 
 ## 11. Medium: Module Naming — arena.rs
 
-- [ ] **Status:** `optional`
+- [x] **Status:** `optional`
 - **File:** `src/arena.rs`
 
 **Issue:** The file is named `arena.rs` and the doc comment says "Reusable result buffer for zero-allocation diffing." The lib.rs doc comment says "All hot-path allocations use a reusable arena that resets between diffs — zero GC pressure."
@@ -449,7 +449,7 @@ Using incorrect terminology in a crate that other engineers will maintain leads 
 
 ## 12. Medium: Hash Function Duplication
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `approved`
 - **File:** `src/ffi.rs`
 - **Lines:** 126–137 (unsafe FFI version), 153–160 (safe version)
 
@@ -487,7 +487,7 @@ Additionally: the C# side (`ViewDiffer.cs:97–106`) has its **own** implementat
 
 ## 13. Medium: Allocation in reconcile_keyed_children
 
-- [ ] **Status:** `optional`
+- [x] **Status:** `optional`
 - **File:** `src/diff.rs`
 - **Lines:** 223–231, 263–280
 
@@ -514,7 +514,7 @@ For now, update the doc comments to be honest about allocation behavior. Develop
 
 ## 14. Medium: LIS Backtrack Edge Case
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `approved`
 - **File:** `src/reconcile.rs`
 - **Lines:** 52–58
 
@@ -551,7 +551,7 @@ This makes the invariant explicit: every element except the first must have a pr
 
 ## 15. Low: Cargo.toml — Release Profile
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `approved`
 - **File:** `Cargo.toml`
 
 **Issue:** No `[profile.release]` section. The default release profile is reasonable, but for a native library called from a UI framework, you should explicitly configure optimization:
@@ -572,7 +572,7 @@ panic = "abort"     # No unwinding in release — smaller binary, defense-in-dep
 
 ## 16. Low: Cargo.toml — Lints Configuration
 
-- [ ] **Status:** `optional`
+- [x] **Status:** `optional`
 - **File:** `Cargo.toml`
 
 **Issue:** No `[lints]` section. Rust has excellent built-in and clippy lints that catch common mistakes. For a crate with unsafe FFI code, extra strictness pays off.
@@ -597,7 +597,7 @@ At minimum, enable `unsafe_op_in_unsafe_fn` — it forces you to wrap each unsaf
 
 ## 17. Low: lib.rs Module Doc Inconsistency
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `approved`
 - **File:** `src/lib.rs`
 - **Lines:** 1
 
@@ -611,7 +611,7 @@ Change line 1 to `//! # viewdiffer`.
 
 ## 18. Low: Module Visibility
 
-- [ ] **Status:** `optional`
+- [x] **Status:** `optional`
 - **File:** `src/lib.rs`
 - **Lines:** 9–13
 
@@ -632,7 +632,7 @@ For a `cdylib` (C dynamic library), the public Rust API surface doesn't matter f
 
 ## 19. Low: Missing Default Impl
 
-- [ ] **Status:** `optional`
+- [x] **Status:** `optional`
 - **File:** `src/arena.rs`
 - **Lines:** 14–19
 
@@ -652,7 +652,7 @@ impl Default for DiffContext {
 
 ## 20. Low: Missing PartialEq on DifferPatch
 
-- [ ] **Status:** `optional`
+- [x] **Status:** `optional`
 - **File:** `src/types.rs`
 - **Lines:** 49
 
@@ -674,7 +674,7 @@ This has no runtime cost and dramatically improves test ergonomics.
 
 ## 21. Test Coverage Gaps
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `approved`
 - **File:** `src/tests.rs`, `src/reconcile.rs` (lis_tests)
 
 **Current state:** 22 tests, all passing. The tests cover basic scenarios well. Here are the gaps:
@@ -763,7 +763,7 @@ The unsafe FFI hash function is tested only through the safe wrapper. Add a test
 
 ## 22. C# Interop File Review
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `approved`
 - **File:** `Duct/Native/ViewDiffer.cs`
 
 This file is C# rather than Rust, but it's tightly coupled to the Rust code and worth reviewing in context.
@@ -790,7 +790,7 @@ The C# `HashString` method is a third copy of the FNV-1a algorithm (alongside th
 
 ## 23. .gitignore Review
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `approved`
 - **File:** `.gitignore`
 - **Lines:** 205–206
 

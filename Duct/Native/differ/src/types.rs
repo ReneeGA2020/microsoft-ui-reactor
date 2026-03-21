@@ -3,7 +3,7 @@
 
 /// A node in the flat view tree representation.
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DifferNode {
     /// Hash of the view type (e.g. FNV-1a of "TextBlock").
     pub type_id: u32,
@@ -24,7 +24,7 @@ pub struct DifferNode {
 /// A property on a node, represented as (id, value_hash).
 /// The C# side maps dp_id → DependencyProperty and value_hash → actual value.
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DifferProp {
     /// Hash of the DependencyProperty identifier.
     pub dp_id: u32,
@@ -33,7 +33,7 @@ pub struct DifferProp {
 }
 
 /// Patch operation type.
-#[repr(C)]
+#[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PatchOp {
     None = 0,
@@ -46,7 +46,7 @@ pub enum PatchOp {
 
 /// A single patch operation emitted by the differ.
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DifferPatch {
     pub op: PatchOp,
     /// Index in NEW tree (Insert/Replace) or OLD tree (Remove).
@@ -80,3 +80,15 @@ impl DifferPatch {
         Self { op: PatchOp::Replace, node_index: new_index, target_index: old_index, dp_id: 0, new_value_hash: 0 }
     }
 }
+
+// Compile-time struct layout assertions.
+// These must match the C# StructLayout(LayoutKind.Sequential) definitions in ViewDiffer.cs.
+const _: () = {
+    assert!(std::mem::size_of::<DifferNode>() == 32);
+    assert!(std::mem::align_of::<DifferNode>() == 8);
+    assert!(std::mem::size_of::<DifferProp>() == 16);
+    assert!(std::mem::align_of::<DifferProp>() == 8);
+    assert!(std::mem::size_of::<DifferPatch>() == 24);
+    assert!(std::mem::align_of::<DifferPatch>() == 8);
+    assert!(std::mem::size_of::<PatchOp>() == 4);
+};

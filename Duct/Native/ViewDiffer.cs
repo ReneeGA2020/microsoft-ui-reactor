@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -12,7 +13,10 @@ namespace Duct.Core;
 ///   var patches = differ.DiffTrees(oldNodes, oldProps, newNodes, newProps);
 ///   foreach (var patch in patches) { /* apply patch */ }
 ///
-/// The context is reused across diffs — after warm-up, zero allocations on the hot path.
+/// The context is reused across diffs — after warm-up, allocation is amortized on the hot path.
+///
+/// NOT thread-safe. Must be called from the same thread (typically the UI dispatcher thread).
+/// The underlying Rust context has no internal synchronization.
 /// </summary>
 public sealed class ViewDiffer : IDisposable
 {
@@ -24,11 +28,22 @@ public sealed class ViewDiffer : IDisposable
         _ctx = NativeMethods.differ_create_context();
         if (_ctx == IntPtr.Zero)
             throw new InvalidOperationException("Failed to create native diff context");
+
+        // Verify struct layouts match between C# and Rust at runtime
+        Debug.Assert(Marshal.SizeOf<ViewNode>() == NativeMethods.differ_node_size(),
+            $"ViewNode size mismatch: C#={Marshal.SizeOf<ViewNode>()} Rust={NativeMethods.differ_node_size()}");
+        Debug.Assert(Marshal.SizeOf<ViewProp>() == NativeMethods.differ_prop_size(),
+            $"ViewProp size mismatch: C#={Marshal.SizeOf<ViewProp>()} Rust={NativeMethods.differ_prop_size()}");
+        Debug.Assert(Marshal.SizeOf<ViewPatch>() == NativeMethods.differ_patch_size(),
+            $"ViewPatch size mismatch: C#={Marshal.SizeOf<ViewPatch>()} Rust={NativeMethods.differ_patch_size()}");
     }
 
     /// <summary>
     /// Diff two flat view trees. Returns a span of patches pointing into Rust's heap.
-    /// The span is valid until the next call to DiffTrees or Dispose.
+    ///
+    /// WARNING: The returned span is only valid until the next call to DiffTrees, ReconcileKeys,
+    /// or Dispose. The span points directly into the Rust context's internal buffer, which is
+    /// cleared on the next operation. Copy the data if you need to keep it longer.
     /// </summary>
     public ReadOnlySpan<ViewPatch> DiffTrees(
         ReadOnlySpan<ViewNode> oldNodes, ReadOnlySpan<ViewProp> oldProps,
@@ -64,6 +79,8 @@ public sealed class ViewDiffer : IDisposable
 
     /// <summary>
     /// Reconcile two keyed lists. Returns minimal insert/remove/move operations.
+    ///
+    /// WARNING: Same lifetime constraint as DiffTrees — span is valid until the next call.
     /// </summary>
     public ReadOnlySpan<ViewPatch> ReconcileKeys(ReadOnlySpan<long> oldKeys, ReadOnlySpan<long> newKeys)
     {
@@ -93,6 +110,11 @@ public sealed class ViewDiffer : IDisposable
 
     /// <summary>
     /// FNV-1a hash matching the Rust side. Use to create type IDs and property IDs.
+    ///
+    /// NOTE: This is a C# copy of the FNV-1a algorithm also implemented in Rust
+    /// (ffi::fnv1a_hash). Both implementations must be kept in sync. The Rust version
+    /// is authoritative — if you change the algorithm, update both sides and run
+    /// cross-validation tests.
     /// </summary>
     public static uint HashString(string s)
     {
@@ -106,6 +128,17 @@ public sealed class ViewDiffer : IDisposable
     }
 
     public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    ~ViewDiffer()
+    {
+        Dispose(disposing: false);
+    }
+
+    private void Dispose(bool disposing)
     {
         if (!_disposed && _ctx != IntPtr.Zero)
         {
@@ -143,6 +176,15 @@ public sealed class ViewDiffer : IDisposable
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern unsafe uint differ_hash_string(IntPtr s, uint len);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern uint differ_node_size();
+
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern uint differ_prop_size();
+
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern uint differ_patch_size();
     }
 }
 

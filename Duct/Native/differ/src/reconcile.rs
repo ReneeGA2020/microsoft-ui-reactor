@@ -4,7 +4,7 @@
 //! Uses LIS (Longest Increasing Subsequence) for move minimization,
 //! similar to Vue 3's algorithm.
 
-use crate::arena::DiffContext;
+use crate::context::DiffContext;
 use crate::types::DifferPatch;
 use std::collections::HashMap;
 
@@ -53,7 +53,9 @@ fn compute_lis(arr: &[u32]) -> Vec<usize> {
     let mut k = tail_indices[tails.len() - 1];
     for i in (0..tails.len()).rev() {
         result[i] = k;
-        k = predecessors[k].unwrap_or(0);
+        if i > 0 {
+            k = predecessors[k].expect("LIS predecessor chain broken");
+        }
     }
 
     result
@@ -81,12 +83,20 @@ pub fn reconcile_keys(ctx: &mut DiffContext, old_keys: &[i64], new_keys: &[i64])
         return;
     }
 
-    // Build old key → index map
-    let old_map: HashMap<i64, u32> = old_keys
-        .iter()
-        .enumerate()
-        .map(|(i, &k)| (k, i as u32))
-        .collect();
+    // Build old key → index map, detecting duplicates
+    let mut old_map: HashMap<i64, u32> = HashMap::with_capacity(old_keys.len());
+    for (i, &k) in old_keys.iter().enumerate() {
+        if let Some(existing) = old_map.insert(k, i as u32) {
+            log::warn!(
+                "Duplicate key {} in old list at indices {} and {} — earlier entry will be ignored",
+                k, existing, i
+            );
+            debug_assert!(
+                false,
+                "Duplicate key {k} in old list at indices {existing} and {i}"
+            );
+        }
+    }
 
     // Map new keys to old indices
     let mut new_to_old = vec![u32::MAX; new_keys.len()];
@@ -137,6 +147,7 @@ mod lis_tests {
     fn lis_sorted() {
         let result = compute_lis(&[0, 1, 2, 3]);
         assert_eq!(result.len(), 4);
+        assert_eq!(result, vec![0, 1, 2, 3]);
     }
 
     #[test]
@@ -149,5 +160,41 @@ mod lis_tests {
     fn lis_with_unmapped() {
         let result = compute_lis(&[0, u32::MAX, 1, 2]);
         assert_eq!(result.len(), 3);
+        assert_eq!(result, vec![0, 2, 3]);
+    }
+
+    #[test]
+    fn lis_correctness_mixed() {
+        // Input: [2, 0, 3, 1, 4] → LIS values could be [0, 1, 4] or [0, 3, 4] etc.
+        // We verify the result is a valid increasing subsequence of the input.
+        let input = [2u32, 0, 3, 1, 4];
+        let result = compute_lis(&input);
+        // Verify it's actually increasing
+        for w in result.windows(2) {
+            assert!(input[w[0]] < input[w[1]],
+                "LIS not increasing: input[{}]={} >= input[{}]={}",
+                w[0], input[w[0]], w[1], input[w[1]]);
+        }
+        // LIS of [2,0,3,1,4] has length 3 (e.g., [0,1,4] or [0,3,4])
+        assert_eq!(result.len(), 3);
+    }
+
+    #[test]
+    fn lis_single_element() {
+        let result = compute_lis(&[5]);
+        assert_eq!(result, vec![0]);
+    }
+
+    #[test]
+    fn lis_all_same() {
+        // All same value — LIS should be length 1
+        let result = compute_lis(&[3, 3, 3]);
+        assert_eq!(result.len(), 1);
+    }
+
+    #[test]
+    fn lis_all_unmapped() {
+        let result = compute_lis(&[u32::MAX, u32::MAX, u32::MAX]);
+        assert!(result.is_empty());
     }
 }
