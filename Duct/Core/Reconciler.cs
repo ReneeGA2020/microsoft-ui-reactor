@@ -49,6 +49,16 @@ public sealed partial class Reconciler : IDisposable
     /// Layout-only controls (Border, StackPanel, TextBlock, etc.) should NOT set Tag
     /// to avoid expensive COM DependencyProperty calls on the hot path.
     /// </summary>
+    /// <summary>
+    /// A shared DataTemplate containing a ContentControl shell.
+    /// Parsed once via XamlReader.Load, reused across all items controls (ListView, GridView, FlipView).
+    /// </summary>
+    internal static readonly Lazy<DataTemplate> SharedContentControlTemplate = new(() =>
+        (DataTemplate)Microsoft.UI.Xaml.Markup.XamlReader.Load(
+            "<DataTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'>" +
+            "<ContentControl HorizontalContentAlignment='Stretch' VerticalContentAlignment='Stretch'/>" +
+            "</DataTemplate>"));
+
     internal static void SetElementTag(FrameworkElement control, Element element) => control.Tag = element;
 
     /// <summary>

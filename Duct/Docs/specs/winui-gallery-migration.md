@@ -595,37 +595,129 @@ Only needed once most pages are migrated and the shell itself is being converted
 
 - [x] **Proof of concept**: Migrate one simple control page (`ButtonPage`) end-to-end.
 - [x] **Build Duct ControlExample component**: Wrap the existing XAML `ControlExample` custom control using Feature 1, so migrated pages can reuse it.
-- [ ] **Migrate simple pages in batches**: Pages with 1-3 `ControlExample` sections and minimal interactivity (30/107 pages migrated).
+- [ ] **Migrate simple pages in batches**: Pages with 1-3 `ControlExample` sections and minimal interactivity (70/107 pages migrated).
+    - [x] AcrylicPage (3 examples, default/custom/luminosity acrylic brush)
+    - [x] AnimatedVisualPlayerPage (1 example, Lottie animation with play/pause/stop/reverse)
+    - [x] AnnotatedScrollBarPage (1 example, ScrollView + ItemsRepeater + label sections)
+    - [x] AppBarButtonPage (6 examples, symbol/bitmap/font/path icon + keyboard accelerator + flyout)
     - [x] AppBarSeparatorPage (1 example, static CommandBar)
+    - [x] AppBarToggleButtonPage (4 examples, symbol/bitmap/font/path icon three-state)
+    - [x] AppNotificationPage (5 examples, toast notification scenarios)
+    - [x] AutoSuggestBoxPage (2 examples, cat breed suggestions + control search)
+    - [x] BadgeNotificationManagerPage (2 examples, badge count + badge glyph)
+    - [x] BorderPage (1 example, configurable thickness/background/border brush)
+    - [x] BreadcrumbBarPage (2 examples, string-based + custom Folder object)
     - [x] ButtonPage (proof of concept — 3 examples, click events + disable toggle)
     - [x] CalendarDatePickerPage (1 example, date selection with header)
+    - [x] CalendarViewPage (1 example, selection mode/group labels/calendar identifier)
+    - [x] CanvasPage (1 example, positioned colored rectangles with sliders)
     - [x] CheckBoxPage (3 examples, 2-state + 3-state + select-all pattern)
     - [x] ColorPickerPage (1 example, spectrum/slider/channel options)
     - [x] ComboBoxPage (3 examples, inline items + font family + editable)
+    - [x] CommandBarFlyoutPage (1 example, CommandBarFlyout on image button)
+    - [x] CommandBarPage (1 example, primary/secondary commands + open/close + add/remove)
+    - [x] ContentDialogPage (2 examples, basic dialog + custom content dialog)
     - [x] DatePickerPage (2 examples, simple + custom format)
     - [x] DropDownButtonPage (1 example, dropdown menu)
     - [x] ExpanderPage (2 examples, basic + direction option)
+    - [x] FlipViewPage (3 examples, inline images + data template + vertical)
     - [x] FlyoutPage (1 example, confirmation flyout with state-driven dismiss)
+    - [x] GridPage (1 example, 3x3 grid with spacing/positioning sliders)
     - [x] HyperlinkButtonPage (2 examples, URI nav + click event)
+    - [x] IconElementPage (6 examples, BitmapIcon/FontIcon/ImageIcon/PathIcon/SymbolIcon)
     - [x] ImagePage (5 examples, basic + decode + stretch + nine-grid + SVG)
     - [x] InfoBadgePage (4 examples, nav badge + styles + button badge + dynamic value)
     - [x] InfoBarPage (3 examples, severity + message/button + closable/icon)
+    - [x] ListBoxPage (2 examples, color items + font items)
+    - [x] MediaPlayerElementPage (2 examples, transport controls + autoplay)
+    - [x] MenuBarPage (3 examples, simple + keyboard accelerators + submenus)
+    - [x] MenuFlyoutPage (6 examples, sort/toggle/cascade/icons/accelerators/radio items)
     - [x] NumberBoxPage (3 examples, expression + spin buttons + formatted)
     - [x] PasswordBoxPage (3 examples, simple + header/char + reveal mode)
     - [x] PersonPicturePage (1 example, radio button profile type selection)
+    - [x] PipsPagerPage (2 examples, FlipView integration + standalone with options)
+    - [x] PivotPage (1 example, basic Pivot with PivotItems)
+    - [x] PopupPage (1 example, Popup with light dismiss + offset options)
     - [x] ProgressBarPage (2 examples, indeterminate + determinate)
     - [x] ProgressRingPage (2 examples, indeterminate + determinate with background)
+    - [x] PullToRefreshPage (2 examples, basic RefreshContainer + custom visualizer)
+    - [x] RadialGradientBrushPage (1 example, gradient with 6 configurable sliders)
     - [x] RadioButtonPage (2 examples, options group + color selection)
     - [x] RatingControlPage (2 examples, basic + placeholder value)
+    - [x] RelativePanelPage (1 example, positioned elements via attached properties)
     - [x] RepeatButtonPage (1 example, click counter)
+    - [x] RichTextBlockPage (4 examples, simple/selection highlight/overflow/text highlighting)
+    - [x] ScrollViewerPage (1 example, zoom/scroll mode options)
+    - [x] SelectorBarPage (3 examples, basic + frame navigation + ItemsView)
+    - [x] SemanticZoomPage (1 example, grouped GridView + ListView zoom levels)
     - [x] SliderPage (4 examples, simple + range + ticks + vertical)
+    - [x] SoundPage (3 examples, sound toggle + spatial audio + system sounds)
     - [x] SplitButtonPage (2 examples, color picker flyout + text with color grid)
+    - [x] SplitViewPage (1 example, configurable display mode/placement/background)
+    - [x] StackPanelPage (1 example, orientation + spacing options)
     - [x] TextBlockPage (5 examples, text styling/inlines/selection)
+    - [x] TextBoxPage (4 examples, simple/header/read-only/multi-line)
+    - [x] ThemeShadowPage (1 example, Z-translation shadow on Border)
     - [x] TimePickerPage (3 examples, simple + minute increment + 24-hour)
     - [x] ToggleButtonPage (1 example, toggle with disable option)
     - [x] ToggleSplitButtonPage (1 example, list type toggle with flyout)
     - [x] ToggleSwitchPage (2 examples, toggle + ProgressRing binding)
     - [x] ToolTipPage (3 examples, simple + offset + placement rect)
-    - [ ] *(next batch — pick from remaining ~77 simple pages)*
+    - [x] TreeViewPage (4 examples, drag-drop/multi-select/ItemsSource/template selector)
+    - [x] VariableSizedWrapGridPage (1 example, orientation options)
+    - [x] ViewboxPage (1 example, stretch/direction options)
+    - [ ] *(next batch — pick from remaining ~37 pages)*
 - [ ] **Migrate complex pages**: Pages with heavy state, custom controls, or responsive layouts (after Phase 2 features land).
 - [ ] **Migrate shell**: NavigationView, TitleBar, search (after Phase 3 features land).
+
+---
+
+## Duct Framework Gaps (discovered during batch 2 migration)
+
+These gaps were found during the migration of 40 pages and represent areas where the Duct DSL forced workarounds via `.Set()` or imperative construction. They are ordered by impact (how many pages were affected and how painful the workaround was).
+
+### High Priority — Missing DSL elements (required full imperative construction)
+
+| Gap | Pages Affected | Workaround | Status |
+|-----|---------------|------------|--------|
+| **No Rectangle / Ellipse / Shape elements** | GridPage, CanvasPage, StackPanelPage, ViewboxPage, RadialGradientBrushPage, AcrylicPage | `Border(Empty()).Background(brush).Size(w,h)` — loses RadiusX/RadiusY, StrokeThickness | approved |
+| **No RichTextBlock / Paragraph / Run / Hyperlink inlines** | RichTextBlockPage, MenuBarPage | Entire RichTextBlock built imperatively via `.Set()` — no way to express rich inline text | approved |
+| **No RelativePanel element** | RelativePanelPage | Entire panel built natively — attached properties (RightOf, Below, AlignWith) are inherently element-referencing | approved |
+| **No MediaPlayerElement** | MediaPlayerElementPage | Built imperatively — needs lifecycle management (play/pause on nav) | approved |
+| **No SemanticZoom / CollectionViewSource** | SemanticZoomPage | Entire grouped zoom control built imperatively | approved |
+| **No SelectorBar / SelectorBarItem** | SelectorBarPage | Built imperatively via `.Set()` | approved |
+| **No AnimatedVisualPlayer** | AnimatedVisualPlayerPage | Built imperatively — Lottie animation playback | approved |
+| **No Popup element** | PopupPage | Built imperatively via parent `.Set()` callback | approved |
+| **No CalendarView element** | CalendarViewPage | Built imperatively via Loaded event | approved |
+| **No ListBox element** | ListBoxPage | Built imperatively — different from ListView | approved |
+| **No PipsPager element** | PipsPagerPage | Built imperatively | approved |
+| **No RefreshContainer / RefreshVisualizer** | PullToRefreshPage | Built imperatively | approved |
+| **No AnnotatedScrollBar** | AnnotatedScrollBarPage | Built imperatively | approved |
+| **No CommandBarFlyout** | CommandBarFlyoutPage | Built imperatively inside `.Set()` | approved |
+
+### Medium Priority — Missing DSL properties/modifiers
+
+| Gap | Pages Affected | Workaround | Status |
+|-----|---------------|------------|--------|
+| **No ToggleMenuFlyoutItem / RadioMenuFlyoutItem** | MenuFlyoutPage, MenuBarPage | Remove DSL items and replace imperatively | approved |
+| **No MenuFlyoutSubItem (cascading menus)** | MenuFlyoutPage, MenuBarPage | Build entire flyout imperatively | approved |
+| **No KeyboardAccelerator support** | MenuFlyoutPage, MenuBarPage, AppBarButtonPage, CommandBarPage | `.Set()` with `.KeyboardAccelerators.Add()` | approved |
+| **No Icon types (BitmapIcon, FontIcon, PathIcon, ImageIcon)** as DSL elements | IconElementPage, AppBarButtonPage, AppBarToggleButtonPage, MenuFlyoutPage | `.Set()` to assign `.Icon` property | approved |
+| **No DataTemplate declarative support** | FlipViewPage, TreeViewPage, SemanticZoomPage, SelectorBarPage | `XamlReader.Load` or imperative construction | fixed |
+| **No TextBox.Header / PlaceholderText in DSL** | TextBoxPage | `.Set(tb => { tb.Header = ...; tb.PlaceholderText = ...; })` | approved |
+| **No ScrollView ZoomMode / ScrollMode** | ScrollViewerPage | `.Set()` for zoom/scroll configuration | approved |
+| **No ThemeShadow / Translation modifier** | ThemeShadowPage | `.Set()` for shadow + Vector3 translation | approved |
+| **No AcrylicBrush DSL** | AcrylicPage | Brush created imperatively | approved |
+| **No FontStyle modifier** | TextBoxPage | `.Set(tb => tb.FontStyle = ...)` | approved |
+
+### Low Priority — Nice-to-have improvements
+
+| Gap | Pages Affected | Notes | Status |
+|-----|---------------|-------|--------|
+| **AutomationProperties attached properties** | Many pages | Always requires `.Set()` — consider `.AutomationName()` modifier | approved |
+| **No ElementSoundMode modifier** | SoundPage | Rarely needed | approved |
+| **Event handler accumulation in .Set()** | Many pages | `.Set()` lambdas with `+=` can register duplicate handlers on re-render — need mount-only callback or dedup | approved |
+| **ToggleSwitch.Header / OffContent / OnContent** | SplitViewPage, others | Not in DSL signature | approved |
+| **ComboBox with typed ItemsSource** | Multiple pages | DSL only accepts `string[]` — typed enums require `.Set()` | approved |
+| **TreeView drag-and-drop / multi-selection** | TreeViewPage | Not exposed in DSL | approved |
+| **ContentDialog is inherently imperative** | ContentDialogPage | `ShowAsync()` doesn't fit declarative model | skip |
