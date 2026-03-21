@@ -1302,15 +1302,16 @@ public sealed partial class Reconciler
         component.Context.BeginRender(requestRerender);
         var childElement = component.Render();
         component.Context.FlushEffects();
-        var control = Mount(childElement, requestRerender);
-        if (control is not null)
+        var childControl = Mount(childElement, requestRerender);
+
+        // Each component gets its own Border wrapper as an identity anchor
+        // in _componentNodes, preventing key collisions when components nest.
+        var wrapper = new Border { Child = childControl };
+        _componentNodes[wrapper] = new ComponentNode
         {
-            _componentNodes[control] = new ComponentNode
-            {
-                Component = component, RenderedElement = childElement, Element = compElement,
-            };
-        }
-        return control!;
+            Component = component, RenderedElement = childElement, Element = compElement,
+        };
+        return wrapper;
     }
 
     private UIElement MountFuncComponent(FuncElement funcElement, Action requestRerender)
@@ -1319,15 +1320,14 @@ public sealed partial class Reconciler
         ctx.BeginRender(requestRerender);
         var childElement = funcElement.RenderFunc(ctx);
         ctx.FlushEffects();
-        var control = Mount(childElement, requestRerender);
-        if (control is not null)
+        var childControl = Mount(childElement, requestRerender);
+
+        var wrapper = new Border { Child = childControl };
+        _componentNodes[wrapper] = new ComponentNode
         {
-            _componentNodes[control] = new ComponentNode
-            {
-                Context = ctx, RenderedElement = childElement, Element = funcElement,
-            };
-        }
-        return control!;
+            Context = ctx, RenderedElement = childElement, Element = funcElement,
+        };
+        return wrapper;
     }
 
     private UIElement MountLazyStack(LazyStackElementBase lazy, Action requestRerender)

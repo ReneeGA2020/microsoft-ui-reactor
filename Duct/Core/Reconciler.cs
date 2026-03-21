@@ -233,26 +233,14 @@ public sealed partial class Reconciler : IDisposable
         }
         else return;
 
-        var newControl = Reconcile(node.RenderedElement, newChildElement, control, requestRerender);
-        if (newControl is not null && newControl != control)
+        // Dereference the Border wrapper to get the actual child control.
+        // Each component is wrapped in a Border as an identity anchor, so we
+        // reconcile the child inside the wrapper, not the wrapper itself.
+        var existingChild = (control as Border)?.Child;
+        var newControl = Reconcile(node.RenderedElement, newChildElement, existingChild, requestRerender);
+        if (newControl is not null && newControl != existingChild && control is Border border)
         {
-            var parentEl = VisualTreeHelper.GetParent(control);
-            if (parentEl is WinUI.Panel panel)
-            {
-                var idx = panel.Children.IndexOf(control);
-                if (idx >= 0) panel.Children[idx] = newControl;
-            }
-            else if (parentEl is WinUI.Border border)
-            {
-                border.Child = newControl;
-            }
-            else if (parentEl is WinUI.ScrollViewer sv)
-            {
-                sv.Content = newControl;
-            }
-
-            _componentNodes.Remove(control);
-            _componentNodes[newControl] = node;
+            border.Child = newControl;
         }
 
         node.RenderedElement = newChildElement;

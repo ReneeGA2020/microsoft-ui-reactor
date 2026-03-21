@@ -255,4 +255,36 @@ public class ReconcilerRegressionTests
 
         Assert.Equal(["C", "A", "B"], items);
     }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Nested components must not cause infinite reconciliation.
+    //  Runtime test lives in SelfTestRunner (needs WinUI context).
+    //  Here we verify the structural preconditions hold.
+    // ════════════════════════════════════════════════════════════════
+
+    private class InnerComponent : Component
+    {
+        public override Element Render() => new TextElement("Hello from inner");
+    }
+
+    private class OuterComponent : Component
+    {
+        public override Element Render() => new ComponentElement(typeof(InnerComponent));
+    }
+
+    [Fact]
+    public void NestedComponentElements_Are_Structurally_Valid()
+    {
+        var reconciler = new Reconciler();
+        var outerA = new ComponentElement(typeof(OuterComponent));
+        var outerB = new ComponentElement(typeof(OuterComponent));
+        var inner = new ComponentElement(typeof(InnerComponent));
+
+        // Same component type is update-compatible (precondition for the infinite loop)
+        Assert.True(reconciler.CanUpdate(outerA, outerB));
+        Assert.True(reconciler.CanUpdate(inner, inner));
+
+        // Outer and inner are NOT update-compatible (different component types)
+        Assert.False(reconciler.CanUpdate(outerA, inner));
+    }
 }
