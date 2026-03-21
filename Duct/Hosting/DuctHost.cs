@@ -68,6 +68,8 @@ public sealed class DuctHost
         _dispatcherQueue.TryEnqueue(RenderLoop);
     }
 
+    private const int MaxRenderIterations = 50;
+
     private void RenderLoop()
     {
         if (_isRendering)
@@ -78,11 +80,17 @@ public sealed class DuctHost
         }
 
         _renderPending = false;
+        int iteration = 0;
 
         do
         {
             _needsRerender = false;
             Render();
+            if (++iteration >= MaxRenderIterations)
+            {
+                System.Diagnostics.Debug.WriteLine("[DuctHost] Maximum re-render limit exceeded — possible infinite loop in component state.");
+                break;
+            }
         }
         while (_needsRerender);
     }
@@ -97,13 +105,31 @@ public sealed class DuctHost
             if (_rootComponent is not null)
             {
                 _rootComponent.Context.BeginRender(RequestRender);
-                newTree = _rootComponent.Render();
+                try
+                {
+                    newTree = _rootComponent.Render();
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DuctHost] Component Render() threw: {ex}");
+                    ShowErrorFallback(ex);
+                    return;
+                }
                 _rootComponent.Context.FlushEffects();
             }
             else if (_rootRenderFunc is not null && _funcContext is not null)
             {
                 _funcContext.BeginRender(RequestRender);
-                newTree = _rootRenderFunc(_funcContext);
+                try
+                {
+                    newTree = _rootRenderFunc(_funcContext);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DuctHost] Function component threw: {ex}");
+                    ShowErrorFallback(ex);
+                    return;
+                }
                 _funcContext.FlushEffects();
             }
 
@@ -113,8 +139,6 @@ public sealed class DuctHost
                 _currentTree,
                 newTree,
                 _currentControl,
-                null,
-                childIndex: 0,
                 RequestRender
             );
 
@@ -135,5 +159,25 @@ public sealed class DuctHost
         {
             _isRendering = false;
         }
+    }
+
+    private void ShowErrorFallback(Exception ex)
+    {
+        var errorPanel = new WinUI.Border
+        {
+            BorderBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(
+                Windows.UI.Color.FromArgb(255, 255, 0, 0)),
+            BorderThickness = new Thickness(2),
+            Padding = new Thickness(16),
+            Child = new WinUI.TextBlock
+            {
+                Text = $"Render error: {ex.GetType().Name}: {ex.Message}",
+                TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap,
+                IsTextSelectionEnabled = true,
+            }
+        };
+        _window.Content = errorPanel;
+        _currentControl = errorPanel;
+        _currentTree = null;
     }
 }

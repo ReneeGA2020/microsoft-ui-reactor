@@ -633,7 +633,7 @@ public sealed partial class Reconciler
             var oldChild = o.Children[i];
             var newChild = n.Children[i];
             var existingCtrl = g.Children[i];
-            var replacement = Reconcile(oldChild.Element, newChild.Element, existingCtrl, g, i, requestRerender);
+            var replacement = Reconcile(oldChild.Element, newChild.Element, existingCtrl, requestRerender);
             if (replacement is not null && replacement != existingCtrl)
             {
                 g.Children[i] = replacement;

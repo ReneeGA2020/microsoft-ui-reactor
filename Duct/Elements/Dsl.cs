@@ -26,10 +26,10 @@ public static class UI
     public static TextElement Text(string content) => new(content);
 
     public static TextElement Heading(string content) =>
-        new(content) { FontSize = 28, Weight = FontWeights.Bold };
+        new(content) { FontSize = 28, Weight = new Windows.UI.Text.FontWeight { Weight = 700 } };
 
     public static TextElement SubHeading(string content) =>
-        new(content) { FontSize = 20, Weight = FontWeights.SemiBold };
+        new(content) { FontSize = 20, Weight = new Windows.UI.Text.FontWeight { Weight = 600 } };
 
     public static TextElement Caption(string content) =>
         new(content) { FontSize = 12 };

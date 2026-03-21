@@ -116,6 +116,8 @@ public sealed class DuctHostControl : ContentControl, IDisposable
         _dispatcherQueue.TryEnqueue(RenderLoop);
     }
 
+    private const int MaxRenderIterations = 50;
+
     private void RenderLoop()
     {
         if (_disposed) return;
@@ -128,11 +130,17 @@ public sealed class DuctHostControl : ContentControl, IDisposable
         }
 
         _renderPending = false;
+        int iteration = 0;
 
         do
         {
             _needsRerender = false;
             Render();
+            if (++iteration >= MaxRenderIterations)
+            {
+                System.Diagnostics.Debug.WriteLine("[DuctHostControl] Maximum re-render limit exceeded — possible infinite loop in component state.");
+                break;
+            }
         }
         while (_needsRerender && !_disposed);
     }
@@ -163,8 +171,6 @@ public sealed class DuctHostControl : ContentControl, IDisposable
                 _currentTree,
                 newTree,
                 _currentControl,
-                null,
-                childIndex: 0,
                 RequestRender
             );
 
@@ -192,6 +198,9 @@ public sealed class DuctHostControl : ContentControl, IDisposable
         if (_disposed) return;
         _disposed = true;
 
+        Loaded -= OnLoaded;
+        Unloaded -= OnUnloaded;
+
         _rootComponent?.Context.RunCleanups();
         _funcContext?.RunCleanups();
         _reconciler.Dispose();
@@ -200,5 +209,6 @@ public sealed class DuctHostControl : ContentControl, IDisposable
         _funcContext = null;
         _currentTree = null;
         _currentControl = null;
+        Content = null;
     }
 }

@@ -34,7 +34,7 @@ if (arg == "--create")
     if (args.Length < 2)
     {
         Console.Error.WriteLine("Error: --create requires a project name.");
-        Console.Error.WriteLine("Usage: patch --create <ProjectName>");
+        Console.Error.WriteLine("Usage: duct --create <ProjectName>");
         return 1;
     }
     return CreateProject(args[1]);
@@ -53,7 +53,7 @@ void ShowHelp()
 {
     Console.WriteLine($"duct {version} — Duct (Functional UI) CLI");
     Console.WriteLine();
-    Console.WriteLine("Usage: patch [option]");
+    Console.WriteLine("Usage: duct [option]");
     Console.WriteLine();
     Console.WriteLine("Options:");
     Console.WriteLine("  --help, -h       Show this help message");
@@ -77,6 +77,12 @@ int ShowSkill()
 
 int CreateProject(string name)
 {
+    if (!System.Text.RegularExpressions.Regex.IsMatch(name, @"^[A-Za-z_][A-Za-z0-9_\.]*$"))
+    {
+        Console.Error.WriteLine($"Error: Invalid project name '{name}'. Use only letters, digits, underscores, and dots. Must start with a letter or underscore.");
+        return 1;
+    }
+
     var dir = Path.Combine(Directory.GetCurrentDirectory(), name);
 
     if (Directory.Exists(dir))

@@ -31,6 +31,9 @@ fn validate_tree(nodes: &[DifferNode], props: &[DifferProp]) -> Result<(), Strin
 }
 
 /// Diff properties between old and new nodes, emitting UPDATE_PROP patches.
+/// Uses O(old_count * new_count) comparison. This is intentional: WinUI controls
+/// typically have 2-15 properties set per element, so the quadratic cost is negligible.
+/// If a custom element type has 100+ properties, consider using a HashMap instead.
 fn diff_props(
     ctx: &mut DiffContext,
     new_node_index: u32,

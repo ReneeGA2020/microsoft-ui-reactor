@@ -14,17 +14,26 @@ namespace Duct;
 /// </summary>
 public static class ThemeResource
 {
-    public static Brush Brush(string key) =>
-        (Brush)Application.Current.Resources[key];
+    public static Brush Brush(string key) => Get<Brush>(key)
+        ?? throw new KeyNotFoundException($"Theme resource '{key}' not found or is not a Brush");
 
-    public static double Double(string key) =>
-        (double)Application.Current.Resources[key];
+    public static double Double(string key) => Get<double>(key, double.NaN) is double v && !double.IsNaN(v)
+        ? v
+        : throw new KeyNotFoundException($"Theme resource '{key}' not found or is not a double");
 
-    public static CornerRadius CornerRadius(string key) =>
-        (CornerRadius)Application.Current.Resources[key];
+    public static CornerRadius CornerRadius(string key)
+    {
+        if (Application.Current.Resources.TryGetValue(key, out var value) && value is CornerRadius cr)
+            return cr;
+        throw new KeyNotFoundException($"Theme resource '{key}' not found or is not a CornerRadius");
+    }
 
-    public static Thickness Thickness(string key) =>
-        (Thickness)Application.Current.Resources[key];
+    public static Thickness Thickness(string key)
+    {
+        if (Application.Current.Resources.TryGetValue(key, out var value) && value is Thickness t)
+            return t;
+        throw new KeyNotFoundException($"Theme resource '{key}' not found or is not a Thickness");
+    }
 
     /// <summary>
     /// Try to look up a resource, returning default if not found.

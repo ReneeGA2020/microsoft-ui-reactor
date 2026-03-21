@@ -229,12 +229,12 @@ public class DiffTreesReconcilerTests
         // Path A: C# fallback
         var reconA = new Reconciler { Mode = ReconcileMode.CSharpFallback };
         var controlA = reconA.Mount(oldTree, () => { });
-        var resultA = reconA.Reconcile(oldTree, newTree, controlA, null, 0, () => { });
+        var resultA = reconA.Reconcile(oldTree, newTree, controlA, () => { });
 
         // Path B: Native DiffTrees
         var reconB = new Reconciler { Mode = ReconcileMode.NativeDiffTree };
         var controlB = reconB.Mount(oldTree, () => { });
-        var resultB = reconB.Reconcile(oldTree, newTree, controlB, null, 0, () => { });
+        var resultB = reconB.Reconcile(oldTree, newTree, controlB, () => { });
 
         // Both should produce TextBlocks with "World"
         var tbA = Assert.IsType<TextBlock>(resultA);
@@ -263,12 +263,12 @@ public class DiffTreesReconcilerTests
         // Path A: C# fallback
         var reconA = new Reconciler { Mode = ReconcileMode.CSharpFallback };
         var controlA = reconA.Mount(oldTree, () => { });
-        var resultA = reconA.Reconcile(oldTree, newTree, controlA, null, 0, () => { });
+        var resultA = reconA.Reconcile(oldTree, newTree, controlA, () => { });
 
         // Path B: Native DiffTrees
         var reconB = new Reconciler { Mode = ReconcileMode.NativeDiffTree };
         var controlB = reconB.Mount(oldTree, () => { });
-        var resultB = reconB.Reconcile(oldTree, newTree, controlB, null, 0, () => { });
+        var resultB = reconB.Reconcile(oldTree, newTree, controlB, () => { });
 
         // Both should produce StackPanels with 2 children: "A" and "C"
         var spA = Assert.IsType<StackPanel>(resultA);
@@ -300,12 +300,12 @@ public class DiffTreesReconcilerTests
         // Path A: C# fallback
         var reconA = new Reconciler { Mode = ReconcileMode.CSharpFallback };
         var controlA = reconA.Mount(oldTree, () => { });
-        var resultA = reconA.Reconcile(oldTree, newTree, controlA, null, 0, () => { });
+        var resultA = reconA.Reconcile(oldTree, newTree, controlA, () => { });
 
         // Path B: Native DiffTrees
         var reconB = new Reconciler { Mode = ReconcileMode.NativeDiffTree };
         var controlB = reconB.Mount(oldTree, () => { });
-        var resultB = reconB.Reconcile(oldTree, newTree, controlB, null, 0, () => { });
+        var resultB = reconB.Reconcile(oldTree, newTree, controlB, () => { });
 
         var spA = Assert.IsType<StackPanel>(resultA);
         var spB = Assert.IsType<StackPanel>(resultB);
@@ -336,12 +336,12 @@ public class DiffTreesReconcilerTests
         // Path A: C# fallback
         var reconA = new Reconciler { Mode = ReconcileMode.CSharpFallback };
         var controlA = reconA.Mount(oldTree, () => { });
-        var resultA = reconA.Reconcile(oldTree, newTree, controlA, null, 0, () => { });
+        var resultA = reconA.Reconcile(oldTree, newTree, controlA, () => { });
 
         // Path B: Native DiffTrees
         var reconB = new Reconciler { Mode = ReconcileMode.NativeDiffTree };
         var controlB = reconB.Mount(oldTree, () => { });
-        var resultB = reconB.Reconcile(oldTree, newTree, controlB, null, 0, () => { });
+        var resultB = reconB.Reconcile(oldTree, newTree, controlB, () => { });
 
         var spA = Assert.IsType<StackPanel>(resultA);
         var spB = Assert.IsType<StackPanel>(resultB);
@@ -367,12 +367,12 @@ public class DiffTreesReconcilerTests
         // Path A: C# fallback
         var reconA = new Reconciler { Mode = ReconcileMode.CSharpFallback };
         var controlA = reconA.Mount(oldTree, () => { });
-        var resultA = reconA.Reconcile(oldTree, newTree, controlA, null, 0, () => { });
+        var resultA = reconA.Reconcile(oldTree, newTree, controlA, () => { });
 
         // Path B: Native DiffTrees
         var reconB = new Reconciler { Mode = ReconcileMode.NativeDiffTree };
         var controlB = reconB.Mount(oldTree, () => { });
-        var resultB = reconB.Reconcile(oldTree, newTree, controlB, null, 0, () => { });
+        var resultB = reconB.Reconcile(oldTree, newTree, controlB, () => { });
 
         // Both should produce a Button (not a TextBlock)
         Assert.IsType<Button>(resultA);
@@ -392,12 +392,12 @@ public class DiffTreesReconcilerTests
         // Path A: C# fallback
         var reconA = new Reconciler { Mode = ReconcileMode.CSharpFallback };
         var controlA = reconA.Mount(tree, () => { });
-        var resultA = reconA.Reconcile(tree, tree, controlA, null, 0, () => { });
+        var resultA = reconA.Reconcile(tree, tree, controlA, () => { });
 
         // Path B: Native DiffTrees
         var reconB = new Reconciler { Mode = ReconcileMode.NativeDiffTree };
         var controlB = reconB.Mount(tree, () => { });
-        var resultB = reconB.Reconcile(tree, tree, controlB, null, 0, () => { });
+        var resultB = reconB.Reconcile(tree, tree, controlB, () => { });
 
         // Both should return a TextBlock with "Hello"
         var tbA = Assert.IsType<TextBlock>(resultA);
@@ -425,7 +425,7 @@ public class DiffTreesReconcilerTests
         Assert.Equal("Hello", ((TextBlock)control!).Text);
 
         var newTree = new TextElement("World");
-        var result = reconciler.Reconcile(oldTree, newTree, control, null, 0, () => { });
+        var result = reconciler.Reconcile(oldTree, newTree, control, () => { });
         Assert.IsType<TextBlock>(result);
         Assert.Equal("World", ((TextBlock)result!).Text);
     }
@@ -435,7 +435,7 @@ public class DiffTreesReconcilerTests
     {
         if (!CanCreateControls()) return;
         using var reconciler = new Reconciler { Mode = ReconcileMode.CSharpFallback };
-        var result = reconciler.Reconcile(null, new TextElement("Hi"), null, null, 0, () => { });
+        var result = reconciler.Reconcile(null, new TextElement("Hi"), null, () => { });
         Assert.IsType<TextBlock>(result);
     }
 
@@ -445,7 +445,7 @@ public class DiffTreesReconcilerTests
         if (!CanCreateControls()) return;
         using var reconciler = new Reconciler { Mode = ReconcileMode.CSharpFallback };
         var control = reconciler.Mount(new TextElement("Hi"), () => { });
-        var result = reconciler.Reconcile(new TextElement("Hi"), null, control, null, 0, () => { });
+        var result = reconciler.Reconcile(new TextElement("Hi"), null, control, () => { });
         Assert.Null(result);
     }
 
@@ -465,7 +465,7 @@ public class DiffTreesReconcilerTests
         Assert.IsType<TextBlock>(control);
 
         var newTree = new TextElement("World");
-        var result = reconciler.Reconcile(oldTree, newTree, control, null, 0, () => { });
+        var result = reconciler.Reconcile(oldTree, newTree, control, () => { });
         Assert.IsType<TextBlock>(result);
         Assert.Equal("World", ((TextBlock)result!).Text);
     }
@@ -476,7 +476,7 @@ public class DiffTreesReconcilerTests
         if (!NativeAvailable() || !CanCreateControls()) return;
 
         using var reconciler = new Reconciler { Mode = ReconcileMode.NativeDiffTree };
-        var result = reconciler.Reconcile(null, new TextElement("Hi"), null, null, 0, () => { });
+        var result = reconciler.Reconcile(null, new TextElement("Hi"), null, () => { });
         Assert.IsType<TextBlock>(result);
     }
 
@@ -487,7 +487,7 @@ public class DiffTreesReconcilerTests
 
         using var reconciler = new Reconciler { Mode = ReconcileMode.NativeDiffTree };
         var control = reconciler.Mount(new TextElement("Hi"), () => { });
-        var result = reconciler.Reconcile(new TextElement("Hi"), null, control, null, 0, () => { });
+        var result = reconciler.Reconcile(new TextElement("Hi"), null, control, () => { });
         Assert.Null(result);
     }
 
@@ -503,19 +503,19 @@ public class DiffTreesReconcilerTests
 
         // Update 1: V1 → V2
         var next = new TextElement("V2");
-        control = reconciler.Reconcile(current, next, control, null, 0, () => { });
+        control = reconciler.Reconcile(current, next, control, () => { });
         Assert.Equal("V2", ((TextBlock)control!).Text);
         current = next;
 
         // Update 2: V2 → V3
         next = new TextElement("V3");
-        control = reconciler.Reconcile(current, next, control, null, 0, () => { });
+        control = reconciler.Reconcile(current, next, control, () => { });
         Assert.Equal("V3", ((TextBlock)control!).Text);
         current = next;
 
         // Update 3: V3 → V4
         next = new TextElement("V4");
-        control = reconciler.Reconcile(current, next, control, null, 0, () => { });
+        control = reconciler.Reconcile(current, next, control, () => { });
         Assert.Equal("V4", ((TextBlock)control!).Text);
     }
 
@@ -537,7 +537,7 @@ public class DiffTreesReconcilerTests
             new TextElement("A"),
             new TextElement("C"),
         ]);
-        control = reconciler.Reconcile(current, next, control, null, 0, () => { });
+        control = reconciler.Reconcile(current, next, control, () => { });
         var sp = Assert.IsType<StackPanel>(control);
         Assert.Equal(2, sp.Children.Count);
         Assert.Equal("C", ((TextBlock)sp.Children[1]).Text);

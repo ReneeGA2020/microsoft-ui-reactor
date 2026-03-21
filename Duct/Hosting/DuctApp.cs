@@ -7,23 +7,32 @@ using WinUI = Microsoft.UI.Xaml.Controls;
 
 namespace Duct;
 
+/// <summary>
+/// Configuration for DuctApp.Run. Scoped as a single record to avoid scattered static fields.
+/// </summary>
+internal record DuctAppOptions(
+    Func<Component>? RootFactory = null,
+    Func<RenderContext, Element>? RootRenderFunc = null,
+    string WindowTitle = "Duct App",
+    int WindowWidth = 1024,
+    int WindowHeight = 768);
+
 public static class DuctApp
 {
-    internal static Func<Component>? RootFactory;
-    internal static Func<RenderContext, Element>? RootRenderFunc;
-    internal static string WindowTitle = "Duct App";
-    internal static int WindowWidth = 1024;
-    internal static int WindowHeight = 768;
+    // Application.Start blocks and creates DuctApplication via parameterless constructor,
+    // so we must communicate config through a static. Using a single record keeps this scoped.
+    internal static DuctAppOptions Options = new();
     public static DuctHost? ActiveHost;
 
     public static void Run<TRoot>(string title = "Duct App", int width = 1024, int height = 768)
         where TRoot : Component, new()
     {
         WinRT.ComWrappersSupport.InitializeComWrappers();
-        RootFactory = () => new TRoot();
-        WindowTitle = title;
-        WindowWidth = width;
-        WindowHeight = height;
+        Options = new DuctAppOptions(
+            RootFactory: () => new TRoot(),
+            WindowTitle: title,
+            WindowWidth: width,
+            WindowHeight: height);
 
         Application.Start(_ =>
         {
@@ -36,10 +45,11 @@ public static class DuctApp
     public static void Run(string title, Func<RenderContext, Element> rootRender, int width = 1024, int height = 768)
     {
         WinRT.ComWrappersSupport.InitializeComWrappers();
-        RootRenderFunc = rootRender;
-        WindowTitle = title;
-        WindowWidth = width;
-        WindowHeight = height;
+        Options = new DuctAppOptions(
+            RootRenderFunc: rootRender,
+            WindowTitle: title,
+            WindowWidth: width,
+            WindowHeight: height);
 
         Application.Start(_ =>
         {
@@ -77,12 +87,21 @@ public class DuctApplication : Application, IXamlMetadataProvider
         }
     }
 
+    /// <summary>
+    /// Optional callback for unhandled exceptions. If set, called before deciding whether to handle.
+    /// Return true to mark the exception as handled; return false (or leave null) to let it crash.
+    /// </summary>
+    public static Func<Exception, bool>? OnUnhandledException { get; set; }
+
     public DuctApplication()
     {
         UnhandledException += (_, e) =>
         {
             System.Diagnostics.Debug.WriteLine($"[Duct] UnhandledException: {e.Exception.GetType().Name}: {e.Exception.Message}");
-            e.Handled = true;
+            if (OnUnhandledException is not null)
+                e.Handled = OnUnhandledException(e.Exception);
+            // Don't set e.Handled = true for unknown exceptions — let the app crash
+            // with a useful error rather than silently running in a corrupt state.
         };
     }
 
@@ -91,19 +110,20 @@ public class DuctApplication : Application, IXamlMetadataProvider
         // Load WinUI control theme resources programmatically.
         Resources.MergedDictionaries.Add(new XamlControlsResources());
 
-        var window = new Window { Title = DuctApp.WindowTitle };
-        window.AppWindow.Resize(new Windows.Graphics.SizeInt32(DuctApp.WindowWidth, DuctApp.WindowHeight));
+        var opts = DuctApp.Options;
+        var window = new Window { Title = opts.WindowTitle };
+        window.AppWindow.Resize(new Windows.Graphics.SizeInt32(opts.WindowWidth, opts.WindowHeight));
 
         var host = new DuctHost(window);
         DuctApp.ActiveHost = host;
 
-        if (DuctApp.RootFactory is not null)
+        if (opts.RootFactory is not null)
         {
-            host.Mount(DuctApp.RootFactory());
+            host.Mount(opts.RootFactory());
         }
-        else if (DuctApp.RootRenderFunc is not null)
+        else if (opts.RootRenderFunc is not null)
         {
-            host.Mount(DuctApp.RootRenderFunc);
+            host.Mount(opts.RootRenderFunc);
         }
 
         window.Activate();

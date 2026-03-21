@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using WinUI = Microsoft.UI.Xaml.Controls;
@@ -38,6 +39,8 @@ internal sealed class PanelChildCollection : IChildCollection
     public void Move(int oldIndex, int newIndex)
     {
         if (oldIndex == newIndex) return;
+        Debug.Assert(oldIndex >= 0 && oldIndex < _children.Count, $"oldIndex {oldIndex} out of range [0, {_children.Count})");
+        Debug.Assert(newIndex >= 0 && newIndex < _children.Count, $"newIndex {newIndex} out of range [0, {_children.Count})");
         var item = _children[oldIndex];
         _children.RemoveAt(oldIndex);
         // newIndex is the final desired position — no adjustment needed.
@@ -66,13 +69,17 @@ internal sealed class ItemsControlChildCollection : IChildCollection
     }
 
     public int Count => _items.Count;
-    public UIElement Get(int index) => (UIElement)_items[index];
+    public UIElement Get(int index) => _items[index] as UIElement
+        ?? throw new InvalidOperationException(
+            $"ItemsControl item at index {index} is {_items[index]?.GetType().Name ?? "null"}, expected UIElement.");
     public void Insert(int index, UIElement element) => _items.Insert(index, element);
     public void RemoveAt(int index) => _items.RemoveAt(index);
 
     public void Move(int oldIndex, int newIndex)
     {
         if (oldIndex == newIndex) return;
+        Debug.Assert(oldIndex >= 0 && oldIndex < _items.Count, $"oldIndex {oldIndex} out of range [0, {_items.Count})");
+        Debug.Assert(newIndex >= 0 && newIndex < _items.Count, $"newIndex {newIndex} out of range [0, {_items.Count})");
         var item = _items[oldIndex];
         _items.RemoveAt(oldIndex);
         _items.Insert(newIndex, item);

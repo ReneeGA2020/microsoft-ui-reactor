@@ -110,13 +110,13 @@ public class ChildReconcilerTests
     // ════════════════════════════════════════════════════════════════
 
     [Fact]
-    public void CanUpdate_Same_Type_Different_Key_Still_Returns_True()
+    public void CanUpdate_Same_Type_Different_Key_Returns_False()
     {
-        // CanUpdate only checks type, not key — keys are used for matching, not update eligibility
+        // Different keys mean different logical items — should not be updateable
         var reconciler = new Reconciler();
         var a = new TextElement("a") { Key = "1" };
         var b = new TextElement("b") { Key = "2" };
-        Assert.True(reconciler.CanUpdate(a, b));
+        Assert.False(reconciler.CanUpdate(a, b));
     }
 
     // ════════════════════════════════════════════════════════════════

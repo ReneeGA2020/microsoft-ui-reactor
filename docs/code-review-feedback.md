@@ -58,7 +58,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 1.2 Static Mutable State in DuctApp
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Hosting/DuctApp.cs`, lines 12-16
 - **Issue:** `DuctApp` uses `internal static` fields to communicate between the `Run()` call and the `DuctApplication.OnLaunched()` callback:
   ```csharp
@@ -114,7 +114,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 2.2 UnhandledException Handler Silently Swallows Errors
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Hosting/DuctApp.cs`, lines 81-85
 - **Issue:**
   ```csharp
@@ -164,7 +164,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 3.3 Reconciler.Reconcile Has Unused `parent` and `childIndex` Parameters
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Core/Reconciler.cs`, lines 80-86
 - **Issue:** The `Reconcile` method signature is:
   ```csharp
@@ -176,7 +176,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 3.4 ComponentNode Uses Mutable Class Fields
 
-- [ ] **Status:** `draft`
+- [x] **Status:** `done`
 - **File:** `Duct/Core/Reconciler.cs`, lines 309-315
 - **Issue:**
   ```csharp
@@ -193,7 +193,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 3.5 CanUpdate Doesn't Account for Keys
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Core/Reconciler.cs`, lines 245-251
 - **Issue:**
   ```csharp
@@ -214,7 +214,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 4.1 Unsafe Casts in Hook State Retrieval
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Core/RenderContext.cs`, lines 47, 82, 106, 128, 150, 182
 - **Issue:** All hook retrieval uses bare casts like `(T)hook.Value` and `(EffectHookState)_hooks[_hookIndex]`. If a developer accidentally calls hooks in a different order between renders (a known React anti-pattern), these will throw `InvalidCastException` or `NullReferenceException` with no helpful message.
 - **Recommendation:** Add a guard that detects hook type mismatches and provides a clear error:
@@ -228,21 +228,21 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 4.2 UseReducer Integer Overflow for Force-Render Pattern
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Core/RenderContext.cs`, lines 195-202
 - **Issue:** `UseObservable`, `UseObservableProperty`, and `UseCollection` all use `UseReducer(0)` with `forceRender(v => v + 1)` as a force-render mechanism. The counter is `int`, so after ~2.1 billion property changes, it wraps to `int.MinValue`. At that point `EqualityComparer<int>.Default.Equals(prev, next)` would return false (it still works), but the semantics are surprising. More importantly, once it wraps past `int.MaxValue` to `int.MinValue` and keeps incrementing, it will eventually reach the _same_ value it started from, causing `Equals` to return `true` and a render to be skipped.
 - **Recommendation:** Use `forceRender(v => unchecked(v + 1))` to make the intent explicit, or better, use a boolean toggle: `forceRender(v => !v)` with `UseReducer(false)`.
 
 ### 4.3 UseWindowSize Creates a New Event Handler Every Render
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Core/RenderContext.cs`, lines 251-268
 - **Issue:** `UseWindowSize` passes `window` as the dependency to `UseEffect`. Since `window` is a reference type and the same object across renders, `DepsEqual` will return `true` (reference equality) after the first render, so the effect won't re-run. This is actually fine for subscribing once. However, the initial `setSize(...)` call on line 263 is inside the effect, which only runs on mount. If the window has already been resized before the hook runs, the initial value from `UseState` (line 253) might be stale. This is a minor race condition.
 - **Recommendation:** The `setSize` call inside the effect (line 263) is redundant with the initial value on line 253. Consider removing it. If you're concerned about staleness, move the initial value read closer to the subscription.
 
 ### 4.4 FlushEffects Iterates All Hooks Every Render
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Core/RenderContext.cs`, lines 280-298
 - **Issue:** `FlushEffects` uses `_hooks.OfType<EffectHookState>()` which iterates all hooks on every render. For components with many hooks (state + memos + effects), this linear scan is unnecessary overhead. Additionally, `OfType<T>` allocates an iterator.
 - **Recommendation:** Maintain a separate list of pending effects, or track which indices are effect hooks. This matters for perf-sensitive components with many hooks. Low priority, but worth keeping in mind as the framework scales.
@@ -253,7 +253,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 5.1 `Setters` Array Breaks Record Equality
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Core/Element.cs` (every element type with `Setters` property)
 - **Issue:** Every element type has:
   ```csharp
@@ -293,14 +293,14 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 6.3 ChildCollection.Move Semantics Are Subtle
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Core/ChildCollection.cs`, lines 38-47
 - **Issue:** The `Move` implementation does remove-then-insert, which means the `newIndex` parameter represents the position _after_ removal. The comment on line 44 says "no adjustment needed" but this is only correct if callers consistently pass the _final desired index_. This is a common source of off-by-one bugs in list manipulation.
 - **Recommendation:** The existing comment is good but could be strengthened. Consider adding an `[MethodImpl(MethodImplOptions.AggressiveInlining)]` since this is a hot path in keyed reconciliation, or validate the index with a debug assert.
 
 ### 6.4 ItemsControlChildCollection.Get Has Unsafe Cast
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Core/ChildCollection.cs`, line 69
 - **Issue:** `public UIElement Get(int index) => (UIElement)_items[index];` - ItemsControl.Items can contain non-UIElement objects. If a non-UIElement gets into the Items collection (from external code or a bug), this throws InvalidCastException with no context.
 - **Recommendation:** Add a guard: `_items[index] as UIElement ?? throw new InvalidOperationException(...)` with a descriptive message.
@@ -311,14 +311,14 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 7.1 DuctHost.Render Has No Exception Boundary Per Component
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Hosting/DuctHost.cs`, lines 81-129
 - **Issue:** The entire render pass is wrapped in a single try/catch. If a user component's `Render()` method throws, the entire render fails and the catch block re-throws, which could crash the application. React has "error boundaries" that catch errors in subtrees and render fallback UI.
 - **Recommendation:** For V1, at minimum catch exceptions from `_rootComponent.Render()` and show a fallback UI (e.g., a red border with the error message). This prevents user code bugs from crashing the entire application. Long term, consider an error boundary pattern where components can opt into error handling.
 
 ### 7.2 DuctHostControl.Dispose Doesn't Follow IDisposable Pattern
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Hosting/DuctHostControl.cs`, lines 184-196
 - **Issue:** `DuctHostControl` implements `IDisposable` but:
   - Has no `Dispose(bool disposing)` pattern
@@ -334,7 +334,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 7.3 DuctHostControl.OnLoaded Uses Activator.CreateInstance Without Validation
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Hosting/DuctHostControl.cs`, line 80
 - **Issue:** `var component = (Component)Activator.CreateInstance(ComponentType)!;` - If `ComponentType` is set to a type that isn't a `Component` subclass or doesn't have a parameterless constructor, this throws with a confusing error.
 - **Recommendation:** Add validation:
@@ -346,7 +346,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 7.4 DuctPage Props Setting Uses Reflection
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Hosting/DuctPage.cs`, lines 32-35 and `DuctHostControl.cs`, lines 83-87
 - **Issue:** Both `DuctPage<TComponent>` and `DuctHostControl` set props via reflection:
   ```csharp
@@ -358,7 +358,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 7.5 DuctHost Render Loop Could Spin Infinitely
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Hosting/DuctHost.cs`, lines 73-79
 - **Issue:**
   ```csharp
@@ -394,21 +394,21 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 8.1 BrushHelper.ParseHex Throws On Malformed Input
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Elements/BrushHelper.cs`, lines 34-48
 - **Issue:** `byte.Parse(hex[0..2], NumberStyles.HexNumber)` throws `FormatException` if the hex string contains non-hex characters (e.g., `#GGHHII`). The fallback for unknown named colors returns gray, but malformed hex codes crash.
 - **Recommendation:** Use `byte.TryParse` and return the default gray color on failure, consistent with the named color fallback behavior. Or throw a descriptive `ArgumentException` if you prefer fail-fast. The current behavior (exception from deep inside `byte.Parse`) is unhelpful.
 
 ### 8.2 BrushHelper Creates New SolidColorBrush Every Call
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Elements/BrushHelper.cs`, line 31
 - **Issue:** `BrushHelper.Parse` creates a new `SolidColorBrush` on every call. If called during render (e.g., `Background("#ff0000")` in a component), this creates a new brush object every render cycle. WinUI brushes are DependencyObjects and relatively heavyweight.
 - **Recommendation:** Consider caching brushes for common colors or providing a `FrozenBrush` cache. Low priority unless profiling shows it as an issue. Alternatively, document that for performance-sensitive scenarios, users should cache brushes themselves.
 
 ### 8.3 ThemeResource Methods Throw On Missing Keys
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Elements/ThemeResource.cs`, lines 17-27
 - **Issue:** `Brush`, `Double`, `CornerRadius`, and `Thickness` all cast directly from `Application.Current.Resources[key]`. If the key doesn't exist, this throws `KeyNotFoundException`. If the value is the wrong type, this throws `InvalidCastException`. Only the generic `Get<T>` method has a safe fallback.
 - **Recommendation:** Either use `TryGetValue` with descriptive exceptions, or document that these methods throw on missing keys. Consider making the strongly-typed methods delegate to `Get<T>` with a sensible default:
@@ -419,7 +419,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 8.4 FilterChildren Allocates On Every VStack/HStack Call
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Elements/Dsl.cs`, lines 333-334
 - **Issue:**
   ```csharp
@@ -446,14 +446,14 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 9.1 diff_props Is O(n*m) Quadratic
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Native/differ/src/diff.rs`, lines 11-63
 - **Issue:** `diff_props` compares every new property against every old property (nested loop), making it O(old_count * new_count). For elements with many properties (e.g., a `NavigationViewElement` with ~10 props), this is fine. But the function doesn't document the expected count range, and if a custom element had 100+ properties, this would become a bottleneck.
 - **Recommendation:** Add a comment documenting expected property counts. If counts could grow, consider using a hash map for old props. For now, the quadratic approach is fine for small counts.
 
 ### 9.2 Rust FFI Functions Don't Use `catch_unwind`
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Native/differ/src/ffi.rs`, lines 28-81
 - **Issue:** If any Rust code panics (e.g., index out of bounds in `diff_subtree`), the panic will unwind across the FFI boundary, which is undefined behavior. Rust panics across `extern "C"` boundaries can corrupt the C# process.
 - **Recommendation:** Wrap the FFI function bodies in `std::panic::catch_unwind`:
@@ -473,7 +473,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 9.3 Cargo.toml Missing `[profile.release]` Optimization Settings
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Native/differ/Cargo.toml`
 - **Issue:** No `[profile.release]` section. Rust defaults to `opt-level = 3` for release, which is fine, but for a hot-path library consider enabling LTO (Link-Time Optimization) for smaller binaries and better inlining:
   ```toml
@@ -485,7 +485,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 9.4 DiffContext.error Is a Vec<u8> But Always Set to Static Bytes
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Native/differ/src/arena.rs`, `Duct/Native/differ/src/ffi.rs`
 - **Issue:** The `error` field is `Vec<u8>` but is only ever set to static byte strings. The `differ_get_error` FFI function returns a pointer to the vec's data (or a static string), which is fine as long as the context outlives the caller. However, the C# side (`ViewDiffer.cs`) never calls `differ_get_error` - errors are detected by the return code only.
 - **Recommendation:** Either wire up error retrieval in the C# interop layer, or remove the error field to simplify the Rust code.
@@ -496,7 +496,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 10.1 CLI Help Text Says "patch" But Tool Name Is "duct"
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct.Cli/Program.cs`, lines 37-38, 54-63
 - **Issue:** The help text says:
   ```
@@ -520,7 +520,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 10.3 No Input Sanitization on Project Name
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct.Cli/Program.cs`, line 78-109
 - **Issue:** `CreateProject(args[1])` uses the user-provided name directly in:
   - Directory creation (`Path.Combine(cwd, name)`)
@@ -546,7 +546,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 11.2 Directory.Build.targets Copies Local WinUI Binaries
 
-- [ ] **Status:** `approve`
+- [x] **Status:** `done`
 - **File:** `Directory.Build.targets`
 - **Issue:** This file copies ARM64 CHK (debug) binaries from a local clone of `microsoft-ui-xaml`. This is fine for local development but:
   - Hardcodes paths relative to the repo
@@ -652,7 +652,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 12.6 Thickness Tests Are Testing Framework Code, Not Your Code
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct.Tests/ElementTests.cs`, lines 673-701
 - **Issue:** Three tests verify that `new Thickness(10)` sets all four sides to 10, that `Thickness(5,10,5,10)` sets left/right to 5 and top/bottom to 10, etc. These are testing `Microsoft.UI.Xaml.Thickness` constructor behavior, not your code. The compiler guarantees the struct is constructed correctly.
 - **Recommendation:** Remove these tests. They add maintenance burden without validating any Duct code.
@@ -684,7 +684,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 12.10 No Test Coverage Tool Configuration
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct.Tests/Duct.Tests.csproj`
 - **Issue:** No code coverage tool (e.g., `coverlet.collector`) is configured. Without coverage data, you can't measure how much of the framework is actually tested.
 - **Recommendation:** Add coverlet:

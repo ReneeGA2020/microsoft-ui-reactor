@@ -44,6 +44,11 @@ public sealed class RenderContext
         var currentIndex = _hookIndex;
         _hookIndex++;
 
+        if (hook is not HookState || hook is EffectHookState or MemoHookState)
+            throw new InvalidOperationException(
+                $"Hook at index {currentIndex} is {hook.GetType().Name}, expected HookState (UseState). " +
+                "Hooks must be called in the same order every render.");
+
         T current = (T)hook.Value;
 
         void Setter(T newValue)
@@ -74,6 +79,11 @@ public sealed class RenderContext
         var currentIndex = _hookIndex;
         _hookIndex++;
 
+        if (hook is not HookState || hook is EffectHookState or MemoHookState)
+            throw new InvalidOperationException(
+                $"Hook at index {currentIndex} is {hook.GetType().Name}, expected HookState (UseReducer). " +
+                "Hooks must be called in the same order every render.");
+
         T current = (T)hook.Value;
 
         void Updater(Func<T, T> reducer)
@@ -103,7 +113,10 @@ public sealed class RenderContext
             _hooks.Add(new EffectHookState { Dependencies = null, Effect = effect });
         }
 
-        var hook = (EffectHookState)_hooks[_hookIndex];
+        if (_hooks[_hookIndex] is not EffectHookState hook)
+            throw new InvalidOperationException(
+                $"Hook at index {_hookIndex} is {_hooks[_hookIndex].GetType().Name}, expected EffectHookState. " +
+                "Hooks must be called in the same order every render.");
         _hookIndex++;
 
         if (hook.Dependencies is null || !DepsEqual(hook.Dependencies, dependencies))
@@ -125,7 +138,10 @@ public sealed class RenderContext
             _hooks.Add(new EffectHookState { Dependencies = null });
         }
 
-        var hook = (EffectHookState)_hooks[_hookIndex];
+        if (_hooks[_hookIndex] is not EffectHookState hook)
+            throw new InvalidOperationException(
+                $"Hook at index {_hookIndex} is {_hooks[_hookIndex].GetType().Name}, expected EffectHookState. " +
+                "Hooks must be called in the same order every render.");
         _hookIndex++;
 
         if (hook.Dependencies is null || !DepsEqual(hook.Dependencies, dependencies))
@@ -147,7 +163,10 @@ public sealed class RenderContext
             _hooks.Add(new MemoHookState { Dependencies = null, Value = default! });
         }
 
-        var hook = (MemoHookState)_hooks[_hookIndex];
+        if (_hooks[_hookIndex] is not MemoHookState hook)
+            throw new InvalidOperationException(
+                $"Hook at index {_hookIndex} is {_hooks[_hookIndex].GetType().Name}, expected MemoHookState. " +
+                "Hooks must be called in the same order every render.");
         _hookIndex++;
 
         if (hook.Dependencies is null || !DepsEqual(hook.Dependencies, dependencies))
@@ -179,7 +198,11 @@ public sealed class RenderContext
 
         var hook = _hooks[_hookIndex];
         _hookIndex++;
-        return (Ref<T>)hook.Value;
+        if (hook.Value is not Ref<T> refValue)
+            throw new InvalidOperationException(
+                $"Hook at index {_hookIndex - 1} expected Ref<{typeof(T).Name}>, got {hook.Value?.GetType().Name ?? "null"}. " +
+                "Hooks must be called in the same order every render.");
+        return refValue;
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -192,11 +215,11 @@ public sealed class RenderContext
     /// </summary>
     public T UseObservable<T>(T source) where T : System.ComponentModel.INotifyPropertyChanged
     {
-        var (_, forceRender) = UseReducer(0);
+        var (_, forceRender) = UseReducer(false);
         UseEffect(() =>
         {
             void handler(object? s, System.ComponentModel.PropertyChangedEventArgs e)
-                => forceRender(v => v + 1);
+                => forceRender(v => !v);
             source.PropertyChanged += handler;
             return () => source.PropertyChanged -= handler;
         }, source);
@@ -210,13 +233,13 @@ public sealed class RenderContext
     public TProp UseObservableProperty<T, TProp>(T source, Func<T, TProp> selector, string propertyName)
         where T : System.ComponentModel.INotifyPropertyChanged
     {
-        var (_, forceRender) = UseReducer(0);
+        var (_, forceRender) = UseReducer(false);
         UseEffect(() =>
         {
             void handler(object? s, System.ComponentModel.PropertyChangedEventArgs e)
             {
                 if (e.PropertyName == propertyName || string.IsNullOrEmpty(e.PropertyName))
-                    forceRender(v => v + 1);
+                    forceRender(v => !v);
             }
             source.PropertyChanged += handler;
             return () => source.PropertyChanged -= handler;
@@ -230,11 +253,11 @@ public sealed class RenderContext
     /// </summary>
     public IReadOnlyList<T> UseCollection<T>(System.Collections.ObjectModel.ObservableCollection<T> collection)
     {
-        var (_, forceRender) = UseReducer(0);
+        var (_, forceRender) = UseReducer(false);
         UseEffect(() =>
         {
             void handler(object? s, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
-                => forceRender(v => v + 1);
+                => forceRender(v => !v);
             collection.CollectionChanged += handler;
             return () => collection.CollectionChanged -= handler;
         }, collection);
@@ -259,8 +282,6 @@ public sealed class RenderContext
                 setSize((args.Size.Width, args.Size.Height));
             }
             window.SizeChanged += handler;
-            // Set initial size
-            setSize((window.Bounds.Width, window.Bounds.Height));
             return () => window.SizeChanged -= handler;
         }, window);
 
@@ -279,9 +300,9 @@ public sealed class RenderContext
 
     internal void FlushEffects()
     {
-        foreach (var hook in _hooks.OfType<EffectHookState>())
+        for (int i = 0; i < _hooks.Count; i++)
         {
-            if (!hook.Pending) continue;
+            if (_hooks[i] is not EffectHookState hook || !hook.Pending) continue;
             hook.Pending = false;
 
             if (hook.EffectWithCleanup is not null)
@@ -299,9 +320,10 @@ public sealed class RenderContext
 
     internal void RunCleanups()
     {
-        foreach (var hook in _hooks.OfType<EffectHookState>())
+        for (int i = 0; i < _hooks.Count; i++)
         {
-            hook.Cleanup?.Invoke();
+            if (_hooks[i] is EffectHookState hook)
+                hook.Cleanup?.Invoke();
         }
     }
 

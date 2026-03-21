@@ -144,8 +144,6 @@ public sealed partial class Reconciler : IDisposable
         Element? oldElement,
         Element? newElement,
         UIElement? existingControl,
-        WinUI.Panel? parent,
-        int childIndex,
         Action requestRerender)
     {
         if (newElement is null or EmptyElement)
@@ -213,7 +211,7 @@ public sealed partial class Reconciler : IDisposable
         }
         else return;
 
-        var newControl = Reconcile(node.RenderedElement, newChildElement, control, null, 0, requestRerender);
+        var newControl = Reconcile(node.RenderedElement, newChildElement, control, requestRerender);
         if (newControl is not null && newControl != control)
         {
             var parentEl = VisualTreeHelper.GetParent(control);
@@ -336,6 +334,7 @@ public sealed partial class Reconciler : IDisposable
     internal bool CanUpdate(Element oldEl, Element newEl)
     {
         if (oldEl.GetType() != newEl.GetType()) return false;
+        if (oldEl.Key != newEl.Key) return false;
         if (oldEl is ComponentElement oldComp && newEl is ComponentElement newComp)
             return oldComp.ComponentType == newComp.ComponentType;
         return true;
@@ -553,12 +552,19 @@ public sealed partial class Reconciler : IDisposable
         _ => new RowDefinition { Height = new GridLength(1, GridUnitType.Star) },
     };
 
+    /// <summary>
+    /// Tracks the state of a mounted component in the tree.
+    /// </summary>
     internal class ComponentNode
     {
-        public Component? Component;
-        public RenderContext? Context;
-        public Element? RenderedElement;
-        public Element? Element;
+        /// <summary>The class-based Component instance (null for function components).</summary>
+        public Component? Component { get; set; }
+        /// <summary>The RenderContext for function components (null for class components).</summary>
+        public RenderContext? Context { get; set; }
+        /// <summary>The element tree output from the last Render() call.</summary>
+        public Element? RenderedElement { get; set; }
+        /// <summary>The ComponentElement or FuncElement that created this node.</summary>
+        public Element? Element { get; set; }
     }
 
     public void Dispose()
