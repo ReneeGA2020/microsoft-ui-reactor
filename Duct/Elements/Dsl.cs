@@ -1,6 +1,7 @@
 using Duct.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Text;
 using Windows.UI.Text;
 using MenuFlyoutItemBase = Duct.Core.MenuFlyoutItemBase;
@@ -34,6 +35,9 @@ public static class UI
         new(content) { FontSize = 12 };
 
     public static RichTextBlockElement RichText(string text) => new(text);
+
+    public static RichEditBoxElement RichEditBox(string text = "", Action<string>? onTextChanged = null) =>
+        new(text) { OnTextChanged = onTextChanged };
 
     // ── Buttons ─────────────────────────────────────────────────────
 
@@ -74,6 +78,9 @@ public static class UI
 
     public static CheckBoxElement CheckBox(bool isChecked, Action<bool>? onChanged = null, string? label = null) =>
         new(isChecked, onChanged, label);
+
+    public static CheckBoxElement ThreeStateCheckBox(bool? checkedState, Action<bool?>? onCheckedStateChanged = null, string? label = null) =>
+        new(checkedState == true, Label: label) { IsThreeState = true, CheckedState = checkedState, OnCheckedStateChanged = onCheckedStateChanged };
 
     public static RadioButtonElement RadioButton(string label, bool isChecked = false, Action<bool>? onChecked = null, string? groupName = null) =>
         new(label, isChecked, onChecked, groupName);
@@ -135,6 +142,12 @@ public static class UI
 
     public static StackElement HStack(double spacing, params Element?[] children) =>
         new(Orientation.Horizontal, FilterChildren(children)) { Spacing = spacing };
+
+    public static WrapGridElement WrapGrid(params Element?[] children) =>
+        new(FilterChildren(children));
+
+    public static WrapGridElement WrapGrid(int maxRowsOrColumns, params Element?[] children) =>
+        new(FilterChildren(children)) { MaximumRowsOrColumns = maxRowsOrColumns };
 
     public static ScrollViewElement ScrollView(Element child) => new(child);
 
@@ -207,6 +220,15 @@ public static class UI
 
     public static TeachingTipElement TeachingTip(string title, string? subtitle = null) =>
         new(title, subtitle);
+
+    public static ContentFlyoutElement ContentFlyout(Element content, FlyoutPlacementMode placement = FlyoutPlacementMode.Auto) =>
+        new(content) { Placement = placement };
+
+    public static MenuFlyoutContentElement MenuItems(params MenuFlyoutItemBase[] items) =>
+        new(items);
+
+    public static MenuFlyoutContentElement MenuItems(FlyoutPlacementMode placement, params MenuFlyoutItemBase[] items) =>
+        new(items) { Placement = placement };
 
     // ── Menus ───────────────────────────────────────────────────────
 

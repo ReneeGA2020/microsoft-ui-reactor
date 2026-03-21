@@ -40,6 +40,7 @@ public sealed partial class Reconciler
             DropDownButtonElement ddBtn => MountDropDownButton(ddBtn, requestRerender),
             SplitButtonElement spBtn => MountSplitButton(spBtn, requestRerender),
             ToggleSplitButtonElement tspBtn => MountToggleSplitButton(tspBtn, requestRerender),
+            RichEditBoxElement reb => MountRichEditBox(reb),
             TextFieldElement tf => MountTextField(tf),
             PasswordBoxElement pw => MountPasswordBox(pw),
             NumberBoxElement nb => MountNumberBox(nb),
@@ -60,6 +61,7 @@ public sealed partial class Reconciler
             ImageElement img => MountImage(img),
             PersonPictureElement pp => MountPersonPicture(pp),
             WebView2Element wv => MountWebView2(wv),
+            WrapGridElement wg => MountWrapGrid(wg, requestRerender),
             StackElement stack => MountStack(stack, requestRerender),
             GridElement grid => MountGrid(grid, requestRerender),
             ScrollViewElement scroll => MountScrollView(scroll, requestRerender),
@@ -93,7 +95,7 @@ public sealed partial class Reconciler
 
         // Apply inline modifiers after mounting
         if (modifiers is not null && control is FrameworkElement fe)
-            ApplyModifiers(fe, modifiers);
+            ApplyModifiers(fe, modifiers, requestRerender);
 
         return control;
     }
@@ -162,10 +164,7 @@ public sealed partial class Reconciler
     {
         var ddb = new WinUI.DropDownButton { Content = ddBtn.Label };
         if (ddBtn.Flyout is not null)
-        {
-            var flyoutContent = Mount(ddBtn.Flyout, requestRerender);
-            if (flyoutContent is not null) ddb.Flyout = new WinUI.Flyout { Content = flyoutContent };
-        }
+            ddb.Flyout = CreateFlyoutFromElement(ddBtn.Flyout, requestRerender);
         ApplySetters(ddBtn.Setters, ddb);
         return ddb;
     }
@@ -176,10 +175,7 @@ public sealed partial class Reconciler
         SetElementTag(sb, spBtn);
         sb.Click += (s, _) => (GetElementTag((UIElement)s!) as SplitButtonElement)?.OnClick?.Invoke();
         if (spBtn.Flyout is not null)
-        {
-            var flyoutContent = Mount(spBtn.Flyout, requestRerender);
-            if (flyoutContent is not null) sb.Flyout = new WinUI.Flyout { Content = flyoutContent };
-        }
+            sb.Flyout = CreateFlyoutFromElement(spBtn.Flyout, requestRerender);
         ApplySetters(spBtn.Setters, sb);
         return sb;
     }
@@ -194,10 +190,7 @@ public sealed partial class Reconciler
             (GetElementTag(t) as ToggleSplitButtonElement)?.OnIsCheckedChanged?.Invoke(t.IsChecked);
         };
         if (tspBtn.Flyout is not null)
-        {
-            var flyoutContent = Mount(tspBtn.Flyout, requestRerender);
-            if (flyoutContent is not null) tsb.Flyout = new WinUI.Flyout { Content = flyoutContent };
-        }
+            tsb.Flyout = CreateFlyoutFromElement(tspBtn.Flyout, requestRerender);
         ApplySetters(tspBtn.Setters, tsb);
         return tsb;
     }
@@ -260,10 +253,34 @@ public sealed partial class Reconciler
 
     private WinUI.CheckBox MountCheckBox(CheckBoxElement cb)
     {
-        var checkBox = new WinUI.CheckBox { IsChecked = cb.IsChecked, Content = cb.Label };
+        var checkBox = new WinUI.CheckBox { Content = cb.Label };
+        if (cb.IsThreeState)
+        {
+            checkBox.IsThreeState = true;
+            checkBox.IsChecked = cb.CheckedState;
+        }
+        else
+        {
+            checkBox.IsChecked = cb.IsChecked;
+        }
         SetElementTag(checkBox, cb);
-        checkBox.Checked += (_, _) => (GetElementTag(checkBox) as CheckBoxElement)?.OnChanged?.Invoke(true);
-        checkBox.Unchecked += (_, _) => (GetElementTag(checkBox) as CheckBoxElement)?.OnChanged?.Invoke(false);
+        checkBox.Checked += (s, _) =>
+        {
+            var el = GetElementTag((UIElement)s!) as CheckBoxElement;
+            el?.OnChanged?.Invoke(true);
+            el?.OnCheckedStateChanged?.Invoke(true);
+        };
+        checkBox.Unchecked += (s, _) =>
+        {
+            var el = GetElementTag((UIElement)s!) as CheckBoxElement;
+            el?.OnChanged?.Invoke(false);
+            el?.OnCheckedStateChanged?.Invoke(false);
+        };
+        checkBox.Indeterminate += (s, _) =>
+        {
+            var el = GetElementTag((UIElement)s!) as CheckBoxElement;
+            el?.OnCheckedStateChanged?.Invoke(null);
+        };
         ApplySetters(cb.Setters, checkBox);
         return checkBox;
     }
@@ -460,6 +477,41 @@ public sealed partial class Reconciler
             (GetElementTag((UIElement)s!) as WebView2Element)?.OnNavigationCompleted?.Invoke(((WinUI.WebView2)s!).Source);
         ApplySetters(wv.Setters, webView);
         return webView;
+    }
+
+    private WinUI.RichEditBox MountRichEditBox(RichEditBoxElement reb)
+    {
+        var box = new WinUI.RichEditBox { IsReadOnly = reb.IsReadOnly };
+        if (reb.Header is not null) box.Header = reb.Header;
+        if (reb.PlaceholderText is not null) box.PlaceholderText = reb.PlaceholderText;
+        if (!string.IsNullOrEmpty(reb.Text))
+            box.Document.SetText(Microsoft.UI.Text.TextSetOptions.None, reb.Text);
+        SetElementTag(box, reb);
+        box.TextChanged += (s, _) =>
+        {
+            var r = (WinUI.RichEditBox)s!;
+            r.Document.GetText(Microsoft.UI.Text.TextGetOptions.None, out var text);
+            (GetElementTag(r) as RichEditBoxElement)?.OnTextChanged?.Invoke(text?.TrimEnd('\r') ?? "");
+        };
+        ApplySetters(reb.Setters, box);
+        return box;
+    }
+
+    private WinUI.VariableSizedWrapGrid MountWrapGrid(WrapGridElement wg, Action requestRerender)
+    {
+        var grid = new WinUI.VariableSizedWrapGrid { Orientation = wg.Orientation };
+        if (wg.MaximumRowsOrColumns >= 0) grid.MaximumRowsOrColumns = wg.MaximumRowsOrColumns;
+        if (!double.IsNaN(wg.ItemWidth)) grid.ItemWidth = wg.ItemWidth;
+        if (!double.IsNaN(wg.ItemHeight)) grid.ItemHeight = wg.ItemHeight;
+        foreach (var child in wg.Children)
+        {
+            if (child is null or EmptyElement) continue;
+            var childControl = Mount(child, requestRerender);
+            if (childControl is not null) grid.Children.Add(childControl);
+        }
+        SetElementTag(grid, wg);
+        ApplySetters(wg.Setters, grid);
+        return grid;
     }
 
     private WinUI.StackPanel MountStack(StackElement stack, Action requestRerender)

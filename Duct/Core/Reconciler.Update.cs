@@ -11,9 +11,13 @@ public sealed partial class Reconciler
     private UIElement? Update(Element oldEl, Element newEl, UIElement control, Action requestRerender)
     {
         // Unwrap legacy ModifiedElement (backward compat)
+        ElementModifiers? oldModifiers = oldEl.Modifiers;
         ElementModifiers? modifiers = newEl.Modifiers;
         if (oldEl is ModifiedElement oldMod && newEl is ModifiedElement newMod)
         {
+            oldModifiers = oldMod.WrappedModifiers;
+            if (oldMod.Inner.Modifiers is not null)
+                oldModifiers = oldModifiers.Merge(oldMod.Inner.Modifiers);
             modifiers = newMod.WrappedModifiers;
             if (newMod.Inner.Modifiers is not null)
                 modifiers = modifiers.Merge(newMod.Inner.Modifiers);
@@ -50,6 +54,8 @@ public sealed partial class Reconciler
                 => UpdateSplitButton(n, sb),
             (ToggleSplitButtonElement, ToggleSplitButtonElement n, WinUI.ToggleSplitButton tsb)
                 => UpdateToggleSplitButton(n, tsb),
+            (RichEditBoxElement, RichEditBoxElement n, WinUI.RichEditBox reb)
+                => UpdateRichEditBox(n, reb),
             (TextFieldElement o, TextFieldElement n, TextBox tb)
                 => UpdateTextField(o, n, tb),
             (PasswordBoxElement, PasswordBoxElement n, WinUI.PasswordBox pb)
@@ -90,6 +96,8 @@ public sealed partial class Reconciler
                 => UpdatePersonPicture(n, pp),
             (WebView2Element o, WebView2Element n, WinUI.WebView2 wv)
                 => UpdateWebView2(o, n, wv),
+            (WrapGridElement o, WrapGridElement n, WinUI.VariableSizedWrapGrid wg)
+                => UpdateWrapGrid(o, n, wg, requestRerender),
             (StackElement o, StackElement n, WinUI.StackPanel sp)
                 => UpdateStack(o, n, sp, requestRerender),
             (ScrollViewElement o, ScrollViewElement n, WinUI.ScrollViewer sv)
@@ -143,7 +151,7 @@ public sealed partial class Reconciler
         // Apply inline modifiers after update
         var target = result ?? control;
         if (modifiers is not null && target is FrameworkElement fe)
-            ApplyModifiers(fe, modifiers);
+            ApplyModifiers(fe, oldModifiers, modifiers, requestRerender);
 
         return result;
     }
@@ -201,7 +209,8 @@ public sealed partial class Reconciler
 
     private UIElement? UpdateDropDownButton(DropDownButtonElement n, WinUI.DropDownButton ddb)
     {
-        ddb.Content = n.Label; SetElementTag(ddb, n);
+        if (ddb.Content as string != n.Label) ddb.Content = n.Label;
+        SetElementTag(ddb, n);
         ApplySetters(n.Setters, ddb);
         return null;
     }
@@ -256,7 +265,10 @@ public sealed partial class Reconciler
 
     private UIElement? UpdateCheckBox(CheckBoxElement n, WinUI.CheckBox cb)
     {
-        cb.IsChecked = n.IsChecked; cb.Content = n.Label; SetElementTag(cb, n);
+        cb.Content = n.Label;
+        cb.IsThreeState = n.IsThreeState;
+        cb.IsChecked = n.IsThreeState ? n.CheckedState : n.IsChecked;
+        SetElementTag(cb, n);
         ApplySetters(n.Setters, cb);
         return null;
     }
@@ -365,6 +377,28 @@ public sealed partial class Reconciler
         if (n.Source is not null && n.Source != o.Source) wv.Source = n.Source;
         SetElementTag(wv, n);
         ApplySetters(n.Setters, wv);
+        return null;
+    }
+
+    private UIElement? UpdateRichEditBox(RichEditBoxElement n, WinUI.RichEditBox reb)
+    {
+        reb.IsReadOnly = n.IsReadOnly;
+        if (n.Header is not null) reb.Header = n.Header;
+        if (n.PlaceholderText is not null) reb.PlaceholderText = n.PlaceholderText;
+        SetElementTag(reb, n);
+        ApplySetters(n.Setters, reb);
+        return null;
+    }
+
+    private UIElement? UpdateWrapGrid(WrapGridElement o, WrapGridElement n, WinUI.VariableSizedWrapGrid wg, Action requestRerender)
+    {
+        wg.Orientation = n.Orientation;
+        if (n.MaximumRowsOrColumns >= 0) wg.MaximumRowsOrColumns = n.MaximumRowsOrColumns;
+        if (!double.IsNaN(n.ItemWidth)) wg.ItemWidth = n.ItemWidth;
+        if (!double.IsNaN(n.ItemHeight)) wg.ItemHeight = n.ItemHeight;
+        ReconcileChildren(o.Children, n.Children, wg, requestRerender);
+        SetElementTag(wg, n);
+        ApplySetters(n.Setters, wg);
         return null;
     }
 
