@@ -37,6 +37,7 @@ static class SelfTestRunner
                 await Task.Delay(1500);
 
                 RunAppLaunchTests();
+                RunNestedComponentTests();
 
                 await RunCounterTests();
                 await RunNavigationTests();
@@ -129,6 +130,9 @@ static class SelfTestRunner
         {
             ClickButton("Todo List");
             await Render();
+            // CheckBox content may need an extra layout pass to materialize the TextBlock
+            if (FindText("Build Duct library") != null) return true;
+            await Render();
             return FindText("Build Duct library") != null;
         });
 
@@ -200,6 +204,39 @@ static class SelfTestRunner
 
         ClickButton("Counter");
         await Render();
+    }
+
+    // ─── Nested component regression test ──────────────────────────────
+
+    private class InnerComponent : Component
+    {
+        public override Element Render() => UI.Text("Hello from inner");
+    }
+
+    private class OuterComponent : Component
+    {
+        public override Element Render() => UI.Component<InnerComponent>();
+    }
+
+    static void RunNestedComponentTests()
+    {
+        Check("Nested_Components_Mount_Without_Crashing", () =>
+        {
+            var reconciler = new Reconciler();
+            var element = new ComponentElement(typeof(OuterComponent));
+            var control = reconciler.Mount(element, () => { });
+            return control != null;
+        });
+
+        Check("Nested_Components_Reconcile_Without_StackOverflow", () =>
+        {
+            var reconciler = new Reconciler();
+            var element = new ComponentElement(typeof(OuterComponent));
+            var control = reconciler.Mount(element, () => { });
+            // Without the fix this stack-overflows due to infinite recursion
+            var result = reconciler.Reconcile(element, element, control, () => { });
+            return result != null;
+        });
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────
