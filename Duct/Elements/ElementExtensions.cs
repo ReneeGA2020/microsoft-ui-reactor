@@ -13,13 +13,14 @@ namespace Duct;
 
 /// <summary>
 /// Fluent modifier extension methods for elements.
-/// These wrap an element in a ModifiedElement with layout/style properties.
+/// Modifiers are stored inline on Element.Modifiers, preserving the concrete type
+/// through the entire fluent chain. This means .Set() works after any modifier:
 ///
-/// Usage:
 ///   Text("Hello")
 ///       .Bold()
 ///       .Margin(16)
 ///       .HAlign(HorizontalAlignment.Center)
+///       .Set(tb => tb.TextWrapping = TextWrapping.Wrap)  // still TextElement!
 ///
 /// The Set() extension gives strongly-typed native property access:
 ///   Button("Click", onClick)
@@ -28,54 +29,54 @@ namespace Duct;
 public static class ElementExtensions
 {
     // ════════════════════════════════════════════════════════════════
-    //  Layout modifiers (apply to any Element via ModifiedElement)
+    //  Layout modifiers (stored inline on Element.Modifiers)
     // ════════════════════════════════════════════════════════════════
 
-    public static Element Margin(this Element el, double uniform) =>
+    public static T Margin<T>(this T el, double uniform) where T : Element =>
         Modify(el, new ElementModifiers { Margin = new Thickness(uniform) });
 
-    public static Element Margin(this Element el, double horizontal, double vertical) =>
+    public static T Margin<T>(this T el, double horizontal, double vertical) where T : Element =>
         Modify(el, new ElementModifiers { Margin = new Thickness(horizontal, vertical, horizontal, vertical) });
 
-    public static Element Margin(this Element el, double left, double top, double right, double bottom) =>
+    public static T Margin<T>(this T el, double left, double top, double right, double bottom) where T : Element =>
         Modify(el, new ElementModifiers { Margin = new Thickness(left, top, right, bottom) });
 
-    public static Element Padding(this Element el, double uniform) =>
+    public static T Padding<T>(this T el, double uniform) where T : Element =>
         Modify(el, new ElementModifiers { Padding = new Thickness(uniform) });
 
-    public static Element Padding(this Element el, double horizontal, double vertical) =>
+    public static T Padding<T>(this T el, double horizontal, double vertical) where T : Element =>
         Modify(el, new ElementModifiers { Padding = new Thickness(horizontal, vertical, horizontal, vertical) });
 
-    public static Element Width(this Element el, double width) =>
+    public static T Width<T>(this T el, double width) where T : Element =>
         Modify(el, new ElementModifiers { Width = width });
 
-    public static Element Height(this Element el, double height) =>
+    public static T Height<T>(this T el, double height) where T : Element =>
         Modify(el, new ElementModifiers { Height = height });
 
-    public static Element Size(this Element el, double width, double height) =>
+    public static T Size<T>(this T el, double width, double height) where T : Element =>
         Modify(el, new ElementModifiers { Width = width, Height = height });
 
-    public static Element MinWidth(this Element el, double w) =>
+    public static T MinWidth<T>(this T el, double w) where T : Element =>
         Modify(el, new ElementModifiers { MinWidth = w });
 
-    public static Element MinHeight(this Element el, double h) =>
+    public static T MinHeight<T>(this T el, double h) where T : Element =>
         Modify(el, new ElementModifiers { MinHeight = h });
 
-    public static Element MaxWidth(this Element el, double w) =>
+    public static T MaxWidth<T>(this T el, double w) where T : Element =>
         Modify(el, new ElementModifiers { MaxWidth = w });
 
-    public static Element MaxHeight(this Element el, double h) =>
+    public static T MaxHeight<T>(this T el, double h) where T : Element =>
         Modify(el, new ElementModifiers { MaxHeight = h });
 
     // ── Alignment ───────────────────────────────────────────────────
 
-    public static Element HAlign(this Element el, HorizontalAlignment alignment) =>
+    public static T HAlign<T>(this T el, HorizontalAlignment alignment) where T : Element =>
         Modify(el, new ElementModifiers { HorizontalAlignment = alignment });
 
-    public static Element VAlign(this Element el, VerticalAlignment alignment) =>
+    public static T VAlign<T>(this T el, VerticalAlignment alignment) where T : Element =>
         Modify(el, new ElementModifiers { VerticalAlignment = alignment });
 
-    public static Element Center(this Element el) =>
+    public static T Center<T>(this T el) where T : Element =>
         Modify(el, new ElementModifiers
         {
             HorizontalAlignment = HorizontalAlignment.Center,
@@ -84,15 +85,15 @@ public static class ElementExtensions
 
     // ── Visibility ──────────────────────────────────────────────────
 
-    public static Element Visible(this Element el, bool isVisible) =>
+    public static T Visible<T>(this T el, bool isVisible) where T : Element =>
         Modify(el, new ElementModifiers { IsVisible = isVisible });
 
-    public static Element Opacity(this Element el, double opacity) =>
+    public static T Opacity<T>(this T el, double opacity) where T : Element =>
         Modify(el, new ElementModifiers { Opacity = opacity });
 
     // ── Decoration ──────────────────────────────────────────────────
 
-    public static Element ToolTip(this Element el, string tip) =>
+    public static T ToolTip<T>(this T el, string tip) where T : Element =>
         Modify(el, new ElementModifiers { ToolTip = tip });
 
     // ── Theme / Style ───────────────────────────────────────────────
@@ -493,10 +494,6 @@ public static class ElementExtensions
     //  Internal
     // ════════════════════════════════════════════════════════════════
 
-    private static ModifiedElement Modify(Element el, ElementModifiers mods)
-    {
-        if (el is ModifiedElement existing)
-            return existing with { Modifiers = existing.Modifiers.Merge(mods) };
-        return new ModifiedElement(el, mods);
-    }
+    private static T Modify<T>(T el, ElementModifiers mods) where T : Element =>
+        el with { Modifiers = el.Modifiers is not null ? el.Modifiers.Merge(mods) : mods };
 }

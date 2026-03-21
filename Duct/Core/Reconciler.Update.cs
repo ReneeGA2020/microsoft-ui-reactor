@@ -10,14 +10,28 @@ public sealed partial class Reconciler
 {
     private UIElement? Update(Element oldEl, Element newEl, UIElement control, Action requestRerender)
     {
-        // Registered types checked first (but after ModifiedElement, handled inside switch)
-        if (newEl is not ModifiedElement && _typeRegistry.TryGetValue(newEl.GetType(), out var reg))
-            return reg.Update(oldEl, newEl, control, requestRerender, this);
-
-        return (oldEl, newEl, control) switch
+        // Unwrap legacy ModifiedElement (backward compat)
+        ElementModifiers? modifiers = newEl.Modifiers;
+        if (oldEl is ModifiedElement oldMod && newEl is ModifiedElement newMod)
         {
-            (ModifiedElement oldMod, ModifiedElement newMod, FrameworkElement fe)
-                => UpdateModified(oldMod, newMod, fe, newEl, requestRerender),
+            modifiers = newMod.WrappedModifiers;
+            if (newMod.Inner.Modifiers is not null)
+                modifiers = modifiers.Merge(newMod.Inner.Modifiers);
+            oldEl = oldMod.Inner;
+            newEl = newMod.Inner;
+        }
+
+        UIElement? result;
+
+        // Registered types checked first
+        if (_typeRegistry.TryGetValue(newEl.GetType(), out var reg))
+        {
+            result = reg.Update(oldEl, newEl, control, requestRerender, this);
+        }
+        else
+        {
+        result = (oldEl, newEl, control) switch
+        {
             (TextElement, TextElement n, TextBlock tb)
                 => UpdateText(n, tb),
             (RichTextBlockElement, RichTextBlockElement n, WinUI.RichTextBlock rtb)
@@ -106,8 +120,8 @@ public sealed partial class Reconciler
                 => UpdateInfoBar(n, ib),
             (InfoBadgeElement, InfoBadgeElement n, WinUI.InfoBadge badge)
                 => UpdateInfoBadge(n, badge),
-            (ContentDialogElement o, ContentDialogElement n, FrameworkElement fe)
-                => UpdateContentDialog(o, n, fe, requestRerender),
+            (ContentDialogElement o, ContentDialogElement n, FrameworkElement cdFe)
+                => UpdateContentDialog(o, n, cdFe, requestRerender),
             (TeachingTipElement, TeachingTipElement n, WinUI.TeachingTip tip)
                 => UpdateTeachingTip(n, tip),
             (MenuBarElement, MenuBarElement, WinUI.MenuBar)
@@ -124,16 +138,14 @@ public sealed partial class Reconciler
                 => UpdateComponent(oldEl, newEl, control, requestRerender),
             _ => Mount(newEl, requestRerender),
         };
-    }
+        }
 
-    // ── Per-control Update methods ──────────────────────────────────
+        // Apply inline modifiers after update
+        var target = result ?? control;
+        if (modifiers is not null && target is FrameworkElement fe)
+            ApplyModifiers(fe, modifiers);
 
-    private UIElement? UpdateModified(ModifiedElement oldMod, ModifiedElement newMod, FrameworkElement fe, Element newEl, Action requestRerender)
-    {
-        var innerReplacement = Update(oldMod.Inner, newMod.Inner, fe, requestRerender);
-        if (innerReplacement is not null) return Mount(newEl, requestRerender);
-        ApplyModifiers(fe, newMod.Modifiers);
-        return null;
+        return result;
     }
 
     private UIElement? UpdateText(TextElement n, TextBlock tb)
@@ -520,31 +532,45 @@ public sealed partial class Reconciler
         cb.IsOpen = n.IsOpen;
 
         // Update primary commands in-place
-        UpdateAppBarButtons(cb.PrimaryCommands, n.PrimaryCommands);
-        UpdateAppBarButtons(cb.SecondaryCommands, n.SecondaryCommands);
+        UpdateAppBarItems(cb.PrimaryCommands, n.PrimaryCommands);
+        UpdateAppBarItems(cb.SecondaryCommands, n.SecondaryCommands);
 
         SetElementTag(cb, n);
         ApplySetters(n.Setters, cb);
         return null;
     }
 
-    private static void UpdateAppBarButtons(
+    private static void UpdateAppBarItems(
         System.Collections.Generic.IList<WinUI.ICommandBarElement> target,
-        AppBarButtonData[]? source)
+        AppBarItemBase[]? source)
     {
         int newCount = source?.Length ?? 0;
         int oldCount = target.Count;
 
-        // Update shared range
+        // Update shared range (only update if types match, otherwise replace)
         int shared = Math.Min(oldCount, newCount);
         for (int i = 0; i < shared; i++)
         {
-            if (target[i] is WinUI.AppBarButton abb && source is not null)
+            if (source is null) continue;
+            switch (source[i])
             {
-                abb.Label = source[i].Label;
-                if (source[i].Icon is not null)
-                    abb.Icon = new WinUI.SymbolIcon(ParseSymbol(source[i].Icon!));
-                abb.Tag = source[i]; // update click handler reference
+                case AppBarButtonData cmd when target[i] is WinUI.AppBarButton abb:
+                    abb.Label = cmd.Label;
+                    if (cmd.Icon is not null) abb.Icon = new WinUI.SymbolIcon(ParseSymbol(cmd.Icon));
+                    abb.Tag = cmd;
+                    break;
+                case AppBarToggleButtonData toggle when target[i] is WinUI.AppBarToggleButton atb:
+                    atb.Label = toggle.Label;
+                    atb.IsChecked = toggle.IsChecked;
+                    if (toggle.Icon is not null) atb.Icon = new WinUI.SymbolIcon(ParseSymbol(toggle.Icon));
+                    atb.Tag = toggle;
+                    break;
+                case AppBarSeparatorData when target[i] is WinUI.AppBarSeparator:
+                    break; // nothing to update
+                default:
+                    // Type mismatch — replace
+                    target[i] = CreateAppBarItem(source[i]);
+                    break;
             }
         }
 
@@ -555,7 +581,7 @@ public sealed partial class Reconciler
         // Add new
         if (source is not null)
             for (int i = shared; i < newCount; i++)
-                target.Add(CreateAppBarButton(source[i]));
+                target.Add(CreateAppBarItem(source[i]));
     }
 
     private UIElement? UpdateGrid(Core.GridElement o, Core.GridElement n, WinUI.Grid g, Action requestRerender)

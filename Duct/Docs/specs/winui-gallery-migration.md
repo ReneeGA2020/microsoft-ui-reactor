@@ -593,8 +593,16 @@ Only needed once most pages are migrated and the shell itself is being converted
 
 ### Page Migration Order (once Phase 1 is complete)
 
-1. **Proof of concept**: Migrate one simple control page (e.g., `ButtonPage`) end-to-end.
-2. **Build Duct ControlExample component**: Wrap the existing XAML `ControlExample` custom control using Feature 1, so migrated pages can reuse it.
-3. **Migrate simple pages in batches**: Pages with 1-3 `ControlExample` sections and minimal interactivity.
-4. **Migrate complex pages**: Pages with heavy state, custom controls, or responsive layouts (after Phase 2 features land).
-5. **Migrate shell**: NavigationView, TitleBar, search (after Phase 3 features land).
+- [x] **Proof of concept**: Migrate one simple control page (e.g., `ButtonPage`) end-to-end.
+- [x] **Build Duct ControlExample component**: Wrap the existing XAML `ControlExample` custom control using Feature 1, so migrated pages can reuse it.
+- [ ] **Migrate simple pages in batches**: Pages with 1-3 `ControlExample` sections and minimal interactivity.
+    - [x] AppBarSeparatorPage (1 example, static CommandBar)
+    - [x] ToggleSwitchPage (2 examples, toggle + ProgressRing binding)
+    - [x] HyperlinkButtonPage (2 examples, URI nav + click event)
+    - [x] TextBlockPage (5 examples, text styling/inlines/selection)
+    - [x] RepeatButtonPage (1 example, click counter)
+    - [x] ProgressBarPage (2 examples, indeterminate + determinate)
+    - [x] ProgressRingPage (2 examples, indeterminate + determinate with background)
+    - [x] PersonPicturePage (1 example, radio button profile type selection)
+- [ ] **Migrate complex pages**: Pages with heavy state, custom controls, or responsive layouts (after Phase 2 features land).
+- [ ] **Migrate shell**: NavigationView, TitleBar, search (after Phase 3 features land).

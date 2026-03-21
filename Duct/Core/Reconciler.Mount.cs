@@ -10,13 +10,27 @@ public sealed partial class Reconciler
 {
     public UIElement? Mount(Element element, Action requestRerender)
     {
-        // Registered types checked first (but after ModifiedElement, handled inside switch)
-        if (element is not ModifiedElement && _typeRegistry.TryGetValue(element.GetType(), out var reg))
-            return reg.Mount(element, requestRerender, this);
-
-        return element switch
+        // Unwrap legacy ModifiedElement (backward compat)
+        ElementModifiers? modifiers = element.Modifiers;
+        if (element is ModifiedElement mod)
         {
-            ModifiedElement mod => MountModified(mod, requestRerender),
+            modifiers = mod.WrappedModifiers;
+            if (mod.Inner.Modifiers is not null)
+                modifiers = modifiers.Merge(mod.Inner.Modifiers);
+            element = mod.Inner;
+        }
+
+        UIElement? control;
+
+        // Registered types checked first
+        if (_typeRegistry.TryGetValue(element.GetType(), out var reg))
+        {
+            control = reg.Mount(element, requestRerender, this);
+        }
+        else
+        {
+        control = element switch
+        {
             TextElement text => MountText(text),
             RichTextBlockElement richText => MountRichTextBlock(richText),
             ButtonElement btn => MountButton(btn),
@@ -75,13 +89,13 @@ public sealed partial class Reconciler
             FuncElement func => MountFuncComponent(func, requestRerender),
             _ => null,
         };
-    }
+        }
 
-    private UIElement MountModified(ModifiedElement mod, Action requestRerender)
-    {
-        var inner = Mount(mod.Inner, requestRerender);
-        if (inner is FrameworkElement fe) ApplyModifiers(fe, mod.Modifiers);
-        return inner!;
+        // Apply inline modifiers after mounting
+        if (modifiers is not null && control is FrameworkElement fe)
+            ApplyModifiers(fe, modifiers);
+
+        return control;
     }
 
     private TextBlock MountText(TextElement text)
@@ -971,21 +985,40 @@ public sealed partial class Reconciler
         };
         if (cmdEl.Content is not null) commandBar.Content = Mount(cmdEl.Content, requestRerender);
         if (cmdEl.PrimaryCommands is not null)
-            foreach (var cmd in cmdEl.PrimaryCommands) commandBar.PrimaryCommands.Add(CreateAppBarButton(cmd));
+            foreach (var cmd in cmdEl.PrimaryCommands) commandBar.PrimaryCommands.Add(CreateAppBarItem(cmd));
         if (cmdEl.SecondaryCommands is not null)
-            foreach (var cmd in cmdEl.SecondaryCommands) commandBar.SecondaryCommands.Add(CreateAppBarButton(cmd));
+            foreach (var cmd in cmdEl.SecondaryCommands) commandBar.SecondaryCommands.Add(CreateAppBarItem(cmd));
         SetElementTag(commandBar, cmdEl);
         ApplySetters(cmdEl.Setters, commandBar);
         return commandBar;
     }
 
-    private static WinUI.AppBarButton CreateAppBarButton(AppBarButtonData cmd)
+    private static WinUI.ICommandBarElement CreateAppBarItem(AppBarItemBase item)
     {
-        var abb = new WinUI.AppBarButton { Label = cmd.Label };
-        if (cmd.Icon is not null) abb.Icon = new WinUI.SymbolIcon(ParseSymbol(cmd.Icon));
-        abb.Tag = cmd;
-        abb.Click += (s, _) => ((AppBarButtonData)((WinUI.AppBarButton)s!).Tag!).OnClick?.Invoke();
-        return abb;
+        switch (item)
+        {
+            case AppBarButtonData cmd:
+            {
+                var abb = new WinUI.AppBarButton { Label = cmd.Label };
+                if (cmd.Icon is not null) abb.Icon = new WinUI.SymbolIcon(ParseSymbol(cmd.Icon));
+                abb.Tag = cmd;
+                abb.Click += (s, _) => ((AppBarButtonData)((WinUI.AppBarButton)s!).Tag!).OnClick?.Invoke();
+                return abb;
+            }
+            case AppBarToggleButtonData toggle:
+            {
+                var atb = new WinUI.AppBarToggleButton { Label = toggle.Label, IsChecked = toggle.IsChecked };
+                if (toggle.Icon is not null) atb.Icon = new WinUI.SymbolIcon(ParseSymbol(toggle.Icon));
+                atb.Tag = toggle;
+                atb.Checked += (s, _) => ((AppBarToggleButtonData)((WinUI.AppBarToggleButton)s!).Tag!).OnToggled?.Invoke(true);
+                atb.Unchecked += (s, _) => ((AppBarToggleButtonData)((WinUI.AppBarToggleButton)s!).Tag!).OnToggled?.Invoke(false);
+                return atb;
+            }
+            case AppBarSeparatorData:
+                return new WinUI.AppBarSeparator();
+            default:
+                return new WinUI.AppBarSeparator();
+        }
     }
 
     private UIElement? MountMenuFlyout(MenuFlyoutElement mfEl, Action requestRerender)

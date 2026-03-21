@@ -222,13 +222,15 @@ public static class UI
 
     public static MenuFlyoutElement MenuFlyout(Element target, params MenuFlyoutItemBase[] items) => new(target, items);
 
-    public static CommandBarElement CommandBar(AppBarButtonData[]? primaryCommands = null, AppBarButtonData[]? secondaryCommands = null) =>
+    public static CommandBarElement CommandBar(AppBarItemBase[]? primaryCommands = null, AppBarItemBase[]? secondaryCommands = null) =>
         new(primaryCommands, secondaryCommands);
 
     public static AppBarButtonData AppBarButton(string label, Action? onClick = null, string? icon = null) => new(label, onClick, icon);
 
     public static AppBarToggleButtonData AppBarToggleButton(string label, bool isChecked = false, Action<bool>? onToggled = null, string? icon = null) =>
         new(label, isChecked, onToggled, icon);
+
+    public static AppBarSeparatorData AppBarSeparator() => new();
 
     // ── Media ───────────────────────────────────────────────────────
 

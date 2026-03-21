@@ -104,7 +104,7 @@ public sealed class TreeSerializer
     }
 
     /// <summary>
-    /// Unwraps ModifiedElement chains and skips EmptyElement.
+    /// Unwraps legacy ModifiedElement chains and skips EmptyElement.
     /// Returns the inner concrete element, or null if empty.
     /// </summary>
     internal static Element? Unwrap(Element? element)
@@ -117,15 +117,18 @@ public sealed class TreeSerializer
     }
 
     /// <summary>
-    /// Collects modifiers from the entire ModifiedElement chain.
+    /// Collects modifiers from the element (both inline and legacy ModifiedElement chain).
     /// </summary>
     internal static ElementModifiers? CollectModifiers(Element element)
     {
-        ElementModifiers? result = null;
+        ElementModifiers? result = element.Modifiers;
         while (element is ModifiedElement mod)
         {
-            result = result is null ? mod.Modifiers : result.Merge(mod.Modifiers);
+            result = result is null ? mod.WrappedModifiers : result.Merge(mod.WrappedModifiers);
             element = mod.Inner;
+            // Also pick up inner element's inline modifiers
+            if (element.Modifiers is not null)
+                result = result is null ? element.Modifiers : result.Merge(element.Modifiers);
         }
         return result;
     }

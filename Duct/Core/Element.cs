@@ -26,6 +26,13 @@ public abstract record Element
     public string? Key { get; init; }
 
     /// <summary>
+    /// Layout modifiers (margin, padding, size, alignment, etc.) applied to this element.
+    /// Set via fluent extension methods: Text("hi").Margin(10).Width(200)
+    /// Modifiers are stored inline so the concrete element type is preserved through chaining.
+    /// </summary>
+    public ElementModifiers? Modifiers { get; init; }
+
+    /// <summary>
     /// Convenience: implicitly convert a string to a TextElement.
     /// Allows writing: VStack("Hello", "World") instead of VStack(Text("Hello"), Text("World"))
     /// </summary>
@@ -42,9 +49,9 @@ public record EmptyElement : Element
 
 /// <summary>
 /// Wraps any element with layout modifiers (margin, alignment, size, etc.).
-/// Applied via extension methods: Text("hi").Margin(10).Width(200)
+/// Kept for backward compatibility. New code stores modifiers inline on Element.Modifiers.
 /// </summary>
-public record ModifiedElement(Element Inner, ElementModifiers Modifiers) : Element;
+public record ModifiedElement(Element Inner, ElementModifiers WrappedModifiers) : Element;
 
 /// <summary>
 /// Wraps a Component class so it can participate in the element tree.
@@ -151,9 +158,10 @@ public record MenuFlyoutItemData(string Text, Action? OnClick = null, string? Ic
 public record MenuFlyoutSeparatorData() : MenuFlyoutItemBase;
 public record MenuFlyoutSubItemData(string Text, MenuFlyoutItemBase[] Items, string? Icon = null) : MenuFlyoutItemBase;
 
-public record AppBarButtonData(string Label, Action? OnClick = null, string? Icon = null);
-public record AppBarToggleButtonData(string Label, bool IsChecked = false, Action<bool>? OnToggled = null, string? Icon = null);
-public record AppBarSeparatorData;
+public abstract record AppBarItemBase;
+public record AppBarButtonData(string Label, Action? OnClick = null, string? Icon = null) : AppBarItemBase;
+public record AppBarToggleButtonData(string Label, bool IsChecked = false, Action<bool>? OnToggled = null, string? Icon = null) : AppBarItemBase;
+public record AppBarSeparatorData() : AppBarItemBase;
 
 // ════════════════════════════════════════════════════════════════════════
 //  Text elements
@@ -711,8 +719,8 @@ public record MenuBarElement(MenuBarItemData[] Items) : Element
 }
 
 public record CommandBarElement(
-    AppBarButtonData[]? PrimaryCommands = null,
-    AppBarButtonData[]? SecondaryCommands = null
+    AppBarItemBase[]? PrimaryCommands = null,
+    AppBarItemBase[]? SecondaryCommands = null
 ) : Element
 {
     public CommandBarDefaultLabelPosition DefaultLabelPosition { get; init; } = CommandBarDefaultLabelPosition.Bottom;
