@@ -107,6 +107,11 @@ int CreateProject(string name)
     Console.WriteLine($"    {name}{Path.DirectorySeparatorChar}{name}.csproj");
     Console.WriteLine($"    {name}{Path.DirectorySeparatorChar}Program.cs");
     Console.WriteLine();
+    Console.WriteLine("NOTE: The generated .sln assumes this project is a sibling of the Duct directory:");
+    Console.WriteLine($"    parent/");
+    Console.WriteLine($"      Duct/Duct.csproj");
+    Console.WriteLine($"      {name}/{name}.csproj");
+    Console.WriteLine();
     Console.WriteLine("To build and run:");
     Console.WriteLine($"    cd {name}");
     Console.WriteLine($"    dotnet build {name}.sln");
@@ -159,6 +164,11 @@ string GenerateCsproj() =>
     </Project>
     """;
 
+/// <summary>
+/// Generates a .sln that references Duct via a relative project path.
+/// This assumes the new project directory is a sibling of the Duct/ directory.
+/// When Duct is published as a NuGet package, this should switch to a PackageReference.
+/// </summary>
 string GenerateSln(string name, string appGuid, string patchGuid)
 {
     const string csharpGuid = "{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}";

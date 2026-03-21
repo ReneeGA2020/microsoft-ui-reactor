@@ -93,11 +93,13 @@ public class DuctApplication : Application, IXamlMetadataProvider
     /// </summary>
     public static Func<Exception, bool>? OnUnhandledException { get; set; }
 
+    private readonly IDuctLogger _logger = new DebugDuctLogger();
+
     public DuctApplication()
     {
         UnhandledException += (_, e) =>
         {
-            System.Diagnostics.Debug.WriteLine($"[Duct] UnhandledException: {e.Exception.GetType().Name}: {e.Exception.Message}");
+            _logger.Log(DuctLogLevel.Error, $"UnhandledException: {e.Exception.GetType().Name}: {e.Exception.Message}", e.Exception);
             if (OnUnhandledException is not null)
                 e.Handled = OnUnhandledException(e.Exception);
             // Don't set e.Handled = true for unknown exceptions — let the app crash

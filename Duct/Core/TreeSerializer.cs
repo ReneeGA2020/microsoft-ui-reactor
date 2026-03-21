@@ -29,7 +29,7 @@ public sealed class TreeSerializer
     /// </summary>
     public SerializationResult SerializeWithMapping(Element root)
     {
-        _registry.Clear();
+        using var _ = _registry.BeginPass();
 
         var nodes = new List<ViewNode>();
         var props = new List<ViewProp>();

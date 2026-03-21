@@ -213,4 +213,120 @@ public class ObservableHookTests
         items.Add("B");
         Assert.Equal(0, rerenderCount);
     }
+
+    // ── Multi-property change scenarios ──────────────────────────
+
+    [Fact]
+    public void UseObservableProperty_Multiple_Properties_Independent()
+    {
+        var ctx = new RenderContext();
+        var model = new NotifyModel { Name = "Alice", Count = 0 };
+        int rerenderCount = 0;
+
+        // Watch both Name and Count via separate hooks
+        ctx.BeginRender(() => rerenderCount++);
+        var name = ctx.UseObservableProperty(model, m => m.Name, nameof(NotifyModel.Name));
+        var count = ctx.UseObservableProperty(model, m => m.Count, nameof(NotifyModel.Count));
+        ctx.FlushEffects();
+
+        Assert.Equal("Alice", name);
+        Assert.Equal(0, count);
+
+        // Second render to update callback
+        ctx.BeginRender(() => rerenderCount++);
+        ctx.UseObservableProperty(model, m => m.Name, nameof(NotifyModel.Name));
+        ctx.UseObservableProperty(model, m => m.Count, nameof(NotifyModel.Count));
+        ctx.FlushEffects();
+
+        // Changing Name should trigger rerender
+        model.Name = "Bob";
+        Assert.Equal(1, rerenderCount);
+
+        // Third render
+        ctx.BeginRender(() => rerenderCount++);
+        ctx.UseObservableProperty(model, m => m.Name, nameof(NotifyModel.Name));
+        ctx.UseObservableProperty(model, m => m.Count, nameof(NotifyModel.Count));
+        ctx.FlushEffects();
+
+        // Changing Count should also trigger rerender
+        model.Count = 42;
+        Assert.Equal(2, rerenderCount);
+    }
+
+    [Fact]
+    public void UseObservable_Source_Changes_Between_Renders()
+    {
+        var ctx = new RenderContext();
+        var model1 = new NotifyModel { Name = "First" };
+        var model2 = new NotifyModel { Name = "Second" };
+        int rerenderCount = 0;
+
+        // First render: watch model1
+        ctx.BeginRender(() => rerenderCount++);
+        ctx.UseObservable(model1);
+        ctx.FlushEffects();
+
+        // Second render: switch to model2
+        ctx.BeginRender(() => rerenderCount++);
+        ctx.UseObservable(model2);
+        ctx.FlushEffects();
+
+        // Changes to old model should NOT trigger rerender
+        model1.Name = "Changed";
+        Assert.Equal(0, rerenderCount);
+
+        // Changes to new model SHOULD trigger rerender
+        model2.Name = "Updated";
+        Assert.Equal(1, rerenderCount);
+    }
+
+    [Fact]
+    public void UseCollection_Source_Changes_Between_Renders()
+    {
+        var ctx = new RenderContext();
+        var items1 = new ObservableCollection<string> { "A" };
+        var items2 = new ObservableCollection<string> { "X" };
+        int rerenderCount = 0;
+
+        // First render: watch items1
+        ctx.BeginRender(() => rerenderCount++);
+        ctx.UseCollection(items1);
+        ctx.FlushEffects();
+
+        // Second render: switch to items2
+        ctx.BeginRender(() => rerenderCount++);
+        ctx.UseCollection(items2);
+        ctx.FlushEffects();
+
+        // Changes to old collection should NOT trigger rerender
+        items1.Add("B");
+        Assert.Equal(0, rerenderCount);
+
+        // Changes to new collection SHOULD trigger rerender
+        items2.Add("Y");
+        Assert.Equal(1, rerenderCount);
+    }
+
+    [Fact]
+    public void UseObservable_Multiple_Hooks_Same_Source()
+    {
+        var ctx = new RenderContext();
+        var model = new NotifyModel { Name = "Alice" };
+        int rerenderCount = 0;
+
+        // Two hooks watching the same model
+        ctx.BeginRender(() => rerenderCount++);
+        ctx.UseObservable(model);
+        ctx.UseObservable(model);
+        ctx.FlushEffects();
+
+        ctx.BeginRender(() => rerenderCount++);
+        ctx.UseObservable(model);
+        ctx.UseObservable(model);
+        ctx.FlushEffects();
+
+        // A single property change should trigger at least one rerender
+        model.Name = "Bob";
+        Assert.True(rerenderCount >= 1);
+    }
 }

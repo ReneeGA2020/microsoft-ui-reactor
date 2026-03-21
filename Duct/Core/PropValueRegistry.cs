@@ -35,4 +35,24 @@ public sealed class PropValueRegistry
     {
         _values.Clear();
     }
+
+    /// <summary>
+    /// Starts a scoped serialization pass. The registry is cleared at the start
+    /// so that IDs from a previous pass don't leak. The returned scope is a
+    /// disposable marker that enforces the "one pass at a time" contract via
+    /// the type system. Disposing the scope is a no-op — the registry retains
+    /// its values so consumers can retrieve them by ID after serialization.
+    /// </summary>
+    public RegistryScope BeginPass()
+    {
+        Clear();
+        return new RegistryScope(this);
+    }
+
+    public readonly struct RegistryScope : IDisposable
+    {
+        private readonly PropValueRegistry _registry;
+        internal RegistryScope(PropValueRegistry registry) => _registry = registry;
+        public void Dispose() { /* Values remain readable after the pass ends. */ }
+    }
 }

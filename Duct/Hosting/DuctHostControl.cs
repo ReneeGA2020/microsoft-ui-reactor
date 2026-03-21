@@ -12,8 +12,9 @@ namespace Duct;
 /// </summary>
 public sealed class DuctHostControl : ContentControl, IDisposable
 {
-    private readonly Reconciler _reconciler = new();
+    private readonly Reconciler _reconciler;
     private readonly DispatcherQueue _dispatcherQueue;
+    private readonly IDuctLogger _logger;
 
     private Component? _rootComponent;
     private Func<RenderContext, Element>? _rootRenderFunc;
@@ -51,8 +52,10 @@ public sealed class DuctHostControl : ContentControl, IDisposable
         set => _reconciler.Mode = value;
     }
 
-    public DuctHostControl()
+    public DuctHostControl(IDuctLogger? logger = null)
     {
+        _logger = logger ?? new DebugDuctLogger();
+        _reconciler = new Reconciler(_logger);
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         HorizontalContentAlignment = HorizontalAlignment.Stretch;
         VerticalContentAlignment = VerticalAlignment.Stretch;
@@ -138,7 +141,7 @@ public sealed class DuctHostControl : ContentControl, IDisposable
             Render();
             if (++iteration >= MaxRenderIterations)
             {
-                System.Diagnostics.Debug.WriteLine("[DuctHostControl] Maximum re-render limit exceeded — possible infinite loop in component state.");
+                _logger.Log(DuctLogLevel.Warning, "Maximum re-render limit exceeded — possible infinite loop in component state.");
                 break;
             }
         }
@@ -184,7 +187,7 @@ public sealed class DuctHostControl : ContentControl, IDisposable
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[DuctHostControl] Render FAILED: {ex}");
+            _logger.Log(DuctLogLevel.Error, "Render FAILED", ex);
             throw;
         }
         finally

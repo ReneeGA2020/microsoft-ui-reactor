@@ -13,8 +13,9 @@ namespace Duct;
 public sealed class DuctHost
 {
     private readonly Window _window;
-    private readonly Reconciler _reconciler = new();
+    private readonly Reconciler _reconciler;
     private readonly DispatcherQueue _dispatcherQueue;
+    private readonly IDuctLogger _logger;
 
     private Component? _rootComponent;
     private Func<RenderContext, Element>? _rootRenderFunc;
@@ -35,8 +36,10 @@ public sealed class DuctHost
         set => _reconciler.Mode = value;
     }
 
-    public DuctHost(Window window)
+    public DuctHost(Window window, IDuctLogger? logger = null)
     {
+        _logger = logger ?? new DebugDuctLogger();
+        _reconciler = new Reconciler(_logger);
         _window = window;
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
     }
@@ -88,7 +91,7 @@ public sealed class DuctHost
             Render();
             if (++iteration >= MaxRenderIterations)
             {
-                System.Diagnostics.Debug.WriteLine("[DuctHost] Maximum re-render limit exceeded — possible infinite loop in component state.");
+                _logger.Log(DuctLogLevel.Warning, "Maximum re-render limit exceeded — possible infinite loop in component state.");
                 break;
             }
         }
@@ -111,7 +114,7 @@ public sealed class DuctHost
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[DuctHost] Component Render() threw: {ex}");
+                    _logger.Log(DuctLogLevel.Error, "Component Render() threw", ex);
                     ShowErrorFallback(ex);
                     return;
                 }
@@ -126,7 +129,7 @@ public sealed class DuctHost
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[DuctHost] Function component threw: {ex}");
+                    _logger.Log(DuctLogLevel.Error, "Function component threw", ex);
                     ShowErrorFallback(ex);
                     return;
                 }
@@ -152,8 +155,8 @@ public sealed class DuctHost
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[DuctHost] Render FAILED: {ex}");
-            throw; // re-throw so the debugger still breaks
+            _logger.Log(DuctLogLevel.Error, "Render FAILED", ex);
+            throw;
         }
         finally
         {

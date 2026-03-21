@@ -34,6 +34,14 @@ public sealed partial class Reconciler : IDisposable
     private readonly Dictionary<UIElement, ComponentNode> _componentNodes = new();
     private readonly ElementPool _pool = new();
     private readonly Dictionary<Type, ITypeRegistration> _typeRegistry = new();
+    private readonly IDuctLogger _logger;
+
+    public Reconciler() : this(NullDuctLogger.Instance) { }
+
+    public Reconciler(IDuctLogger logger)
+    {
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
 
     /// <summary>
     /// Associates a control with its current element via Tag.
@@ -174,6 +182,10 @@ public sealed partial class Reconciler : IDisposable
         if (CanUpdate(oldElement, newElement))
         {
             var replacement = Update(oldElement, newElement, existingControl, requestRerender);
+            // If Update returned a completely new control (full remount path),
+            // unmount the old control to clean up event handlers and component state.
+            if (replacement is not null && replacement != existingControl)
+                Unmount(existingControl);
             return replacement ?? existingControl;
         }
 

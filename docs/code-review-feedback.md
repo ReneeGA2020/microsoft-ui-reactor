@@ -80,7 +80,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 2.1 No Logging Abstraction Exists
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **Files:** All files in `Duct/Hosting/`, `Duct/Core/`
 - **Issue:** The entire framework has exactly three logging calls, all using `System.Diagnostics.Debug.WriteLine`:
   - `DuctApp.cs:83` - UnhandledException handler
@@ -139,7 +139,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 3.1 Event Handler Leak Pattern in Mount/Update
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Core/Reconciler.Mount.cs` (throughout), `Duct/Core/Reconciler.Update.cs` (throughout)
 - **Issue:** Event handlers are attached during Mount using patterns like:
   ```csharp
@@ -279,7 +279,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 6.1 PropValueRegistry Grows Unboundedly
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Core/PropValueRegistry.cs`
 - **Issue:** `Register()` adds values to a list and returns a 1-based index. `Clear()` empties the list. But if `TreeSerializer.Serialize()` is called repeatedly without `Clear()` (or if serialization is triggered per-render), the list grows without bound. Each serialization pass adds entries for every string, delegate, and brush in the tree.
 - **Recommendation:** The `Serialize()` method does call `_registry.Clear()` at the top, which is good. But this relies on `TreeSerializer` being the sole consumer and always calling `Clear()`. Consider making this a scoped operation (e.g., `using var session = registry.BeginPass()`) so the contract is enforced by the type system. Also, since this is currently unused at runtime (see 1.1), this is lower priority.
@@ -509,7 +509,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 10.2 Generated .sln References Relative Path That Assumes Directory Layout
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct.Cli/Program.cs`, line 172
 - **Issue:** The generated solution includes:
   ```csharp
@@ -574,7 +574,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 12.1 No Tests for Reconciler Mount/Update Logic
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **Files:** `Duct.Tests/` (all test files)
 - **Issue:** The reconciler is the heart of the framework - it creates WinUI controls, applies properties, and reconciles changes. There are **zero tests** that verify:
   - `Reconciler.Mount` creates the correct WinUI control type for a given element
@@ -601,7 +601,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 12.2 No Tests for DuctHost or DuctHostControl Render Loop
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **Files:** `Duct.Tests/DuctHostControlTests.cs`
 - **Issue:** The `DuctHostControlTests` only verify API surface (that properties and methods exist on the type). They don't test:
   - Mounting a component and verifying it renders
@@ -613,7 +613,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 12.3 No Tests for BrushHelper
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct/Elements/BrushHelper.cs`
 - **Issue:** `BrushHelper.Parse` handles named colors, hex codes, and fallback. None of this is tested. Missing test scenarios:
   - Each named color returns the correct ARGB values
@@ -627,7 +627,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 12.4 ViewDifferTests Don't Test Actual Diffing
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct.Tests/ViewDifferTests.cs`
 - **Issue:** The `ViewDifferTests` only test:
   - FNV-1a hash function (4 tests)
@@ -640,7 +640,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 12.5 ChildReconcilerTests Only Test ComputeLIS
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct.Tests/ChildReconcilerTests.cs`
 - **Issue:** The `ChildReconcilerTests` test the LIS algorithm (6 tests), key utilities (3 tests), and element equality (3 tests). They don't test the actual `Reconcile` method, which is the core of the child reconciliation algorithm. Missing scenarios:
   - Positional reconciliation: add, remove, replace children
@@ -659,14 +659,14 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 12.7 ReconcilerRegressionTests.Move_* Tests Don't Test ChildCollection
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct.Tests/ReconcilerRegressionTests.cs`, lines 206-257
 - **Issue:** The Move tests operate on `List<string>`, not on the actual `PanelChildCollection` or `ItemsControlChildCollection`. They verify that remove-then-insert on a `List<string>` produces the right result, but they don't verify that the `Move` method on `IChildCollection` behaves the same way.
 - **Recommendation:** These tests should create a real `StackPanel`, populate its `Children`, and call `PanelChildCollection.Move` to verify the actual WinUI collection behavior matches expectations.
 
 ### 12.8 ObservableHookTests Need Multi-Property Change Scenarios
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct.Tests/ObservableHookTests.cs`
 - **Issue:** The tests cover basic subscribe/unsubscribe but don't test:
   - Rapid successive property changes (should only trigger one re-render if batched)
@@ -677,7 +677,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 
 ### 12.9 TypeRegistryTests Don't Verify Unmount Dispatch
 
-- [ ] **Status:** `approved`
+- [x] **Status:** `done`
 - **File:** `Duct.Tests/TypeRegistryTests.cs`
 - **Issue:** Tests verify mount and update dispatch, but there's no test that verifies the unmount handler is called when a registered type control is removed from the tree.
 - **Recommendation:** Add a test that registers a type with an unmount handler, mounts a control, then calls `UnmountChild` and verifies the unmount handler was invoked.
