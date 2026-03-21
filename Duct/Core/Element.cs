@@ -88,6 +88,9 @@ public record ElementModifiers
     public double? Opacity { get; init; }
     public bool? IsVisible { get; init; }
     public string? ToolTip { get; init; }
+    public Element? RichToolTip { get; init; }
+    public Element? AttachedFlyout { get; init; }
+    public Element? ContextFlyout { get; init; }
 
     public ElementModifiers Merge(ElementModifiers other)
     {
@@ -106,6 +109,9 @@ public record ElementModifiers
             Opacity = other.Opacity ?? Opacity,
             IsVisible = other.IsVisible ?? IsVisible,
             ToolTip = other.ToolTip ?? ToolTip,
+            RichToolTip = other.RichToolTip ?? RichToolTip,
+            AttachedFlyout = other.AttachedFlyout ?? AttachedFlyout,
+            ContextFlyout = other.ContextFlyout ?? ContextFlyout,
         };
     }
 }
@@ -278,6 +284,9 @@ public record CheckBoxElement(
     string? Label = null
 ) : Element
 {
+    public bool IsThreeState { get; init; }
+    public bool? CheckedState { get; init; }
+    public Action<bool?>? OnCheckedStateChanged { get; init; }
     internal Action<WinUI.CheckBox>[] Setters { get; init; } = [];
 }
 
@@ -455,8 +464,34 @@ public record WebView2Element(Uri? Source = null) : Element
 }
 
 // ════════════════════════════════════════════════════════════════════════
+//  Rich text elements
+// ════════════════════════════════════════════════════════════════════════
+
+public record RichEditBoxElement(
+    string Text = ""
+) : Element
+{
+    public bool IsReadOnly { get; init; }
+    public string? Header { get; init; }
+    public string? PlaceholderText { get; init; }
+    public Action<string>? OnTextChanged { get; init; }
+    internal Action<WinUI.RichEditBox>[] Setters { get; init; } = [];
+}
+
+// ════════════════════════════════════════════════════════════════════════
 //  Layout / Container elements
 // ════════════════════════════════════════════════════════════════════════
+
+public record WrapGridElement(
+    Element[] Children
+) : Element
+{
+    public int MaximumRowsOrColumns { get; init; } = -1;
+    public Orientation Orientation { get; init; } = Orientation.Horizontal;
+    public double ItemWidth { get; init; } = double.NaN;
+    public double ItemHeight { get; init; } = double.NaN;
+    internal Action<WinUI.VariableSizedWrapGrid>[] Setters { get; init; } = [];
+}
 
 public record StackElement(
     Orientation Orientation,
@@ -668,6 +703,24 @@ public record FlyoutElement(
     public Action? OnOpened { get; init; }
     public Action? OnClosed { get; init; }
     internal Action<WinUI.Flyout>[] Setters { get; init; } = [];
+}
+
+/// <summary>
+/// Describes a content flyout (used as a slot value on buttons or as a modifier attachment).
+/// NOT independently mountable — the reconciler recognizes it in flyout slots.
+/// </summary>
+public record ContentFlyoutElement(Element Content) : Element
+{
+    public FlyoutPlacementMode Placement { get; init; } = FlyoutPlacementMode.Auto;
+}
+
+/// <summary>
+/// Describes a menu flyout (used as a slot value on buttons or as a modifier attachment).
+/// NOT independently mountable — the reconciler recognizes it in flyout slots.
+/// </summary>
+public record MenuFlyoutContentElement(MenuFlyoutItemBase[] Items) : Element
+{
+    public FlyoutPlacementMode Placement { get; init; } = FlyoutPlacementMode.Auto;
 }
 
 public record TeachingTipElement(

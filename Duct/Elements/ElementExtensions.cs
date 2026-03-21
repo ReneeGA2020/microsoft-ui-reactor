@@ -96,6 +96,16 @@ public static class ElementExtensions
     public static T ToolTip<T>(this T el, string tip) where T : Element =>
         Modify(el, new ElementModifiers { ToolTip = tip });
 
+    // ── Flyout / Context / Rich ToolTip attachments ─────────────
+    public static T WithFlyout<T>(this T el, Element flyout) where T : Element =>
+        Modify(el, new ElementModifiers { AttachedFlyout = flyout });
+
+    public static T WithContextFlyout<T>(this T el, Element contextFlyout) where T : Element =>
+        Modify(el, new ElementModifiers { ContextFlyout = contextFlyout });
+
+    public static T WithToolTip<T>(this T el, Element tooltip) where T : Element =>
+        Modify(el, new ElementModifiers { RichToolTip = tooltip });
+
     // ── Theme / Style ───────────────────────────────────────────────
 
     /// <summary>
@@ -264,6 +274,9 @@ public static class ElementExtensions
     public static RichTextBlockElement Set(this RichTextBlockElement el, Action<WinUI.RichTextBlock> configure) =>
         el with { Setters = [.. el.Setters, configure] };
 
+    public static RichEditBoxElement Set(this RichEditBoxElement el, Action<WinUI.RichEditBox> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
     // Buttons
     public static ButtonElement Set(this ButtonElement el, Action<WinUI.Button> configure) =>
         el with { Setters = [.. el.Setters, configure] };
@@ -351,6 +364,9 @@ public static class ElementExtensions
         el with { Setters = [.. el.Setters, configure] };
 
     // Layout / Containers
+    public static WrapGridElement Set(this WrapGridElement el, Action<WinUI.VariableSizedWrapGrid> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
     public static StackElement Set(this StackElement el, Action<WinUI.StackPanel> configure) =>
         el with { Setters = [.. el.Setters, configure] };
 

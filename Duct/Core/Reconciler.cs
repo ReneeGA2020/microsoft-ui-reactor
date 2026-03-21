@@ -350,7 +350,10 @@ public sealed partial class Reconciler : IDisposable
         foreach (var setter in setters) setter(control);
     }
 
-    internal static void ApplyModifiers(FrameworkElement fe, ElementModifiers m)
+    internal void ApplyModifiers(FrameworkElement fe, ElementModifiers m, Action requestRerender)
+        => ApplyModifiers(fe, null, m, requestRerender);
+
+    internal void ApplyModifiers(FrameworkElement fe, ElementModifiers? oldM, ElementModifiers m, Action requestRerender)
     {
         if (m.Margin.HasValue) fe.Margin = m.Margin.Value;
         if (m.Width.HasValue) fe.Width = m.Width.Value;
@@ -364,7 +367,160 @@ public sealed partial class Reconciler : IDisposable
         if (m.Opacity.HasValue) fe.Opacity = m.Opacity.Value;
         if (m.IsVisible.HasValue)
             fe.Visibility = m.IsVisible.Value ? Visibility.Visible : Visibility.Collapsed;
-        if (m.ToolTip is not null) WinUI.ToolTipService.SetToolTip(fe, m.ToolTip);
+        if (m.RichToolTip is not null)
+        {
+            var oldTipEl = oldM?.RichToolTip;
+            var existingTip = WinUI.ToolTipService.GetToolTip(fe) as UIElement;
+            if (oldTipEl is not null && existingTip is not null && CanUpdate(oldTipEl, m.RichToolTip))
+            {
+                var replacement = Update(oldTipEl, m.RichToolTip, existingTip, requestRerender);
+                if (replacement is not null)
+                    WinUI.ToolTipService.SetToolTip(fe, replacement);
+            }
+            else
+            {
+                WinUI.ToolTipService.SetToolTip(fe, Mount(m.RichToolTip, requestRerender));
+            }
+        }
+        else if (m.ToolTip is not null)
+            WinUI.ToolTipService.SetToolTip(fe, m.ToolTip);
+
+        if (m.AttachedFlyout is not null)
+            ApplyFlyoutAttachment(fe, oldM?.AttachedFlyout, m.AttachedFlyout, requestRerender);
+
+        if (m.ContextFlyout is not null)
+        {
+            var oldContextEl = oldM?.ContextFlyout;
+            if (oldContextEl is not null && fe.ContextFlyout is WinPrim.FlyoutBase existingCtx)
+                UpdateFlyoutInPlace(existingCtx, oldContextEl, m.ContextFlyout, requestRerender);
+            else
+                fe.ContextFlyout = CreateFlyoutFromElement(m.ContextFlyout, requestRerender);
+        }
+    }
+
+    /// <summary>
+    /// Sets or updates the flyout on a control. On first mount, creates a new flyout.
+    /// On update, reconciles the content inside the existing flyout to keep it open.
+    /// </summary>
+    private void ApplyFlyoutAttachment(FrameworkElement fe, Element? oldFlyoutEl, Element newFlyoutEl, Action requestRerender)
+    {
+        // Try to get the existing flyout from the control.
+        // SplitButton.Flyout and Button.Flyout are separate properties (different type hierarchies).
+        WinPrim.FlyoutBase? existingFlyout = fe switch
+        {
+            WinUI.SplitButton sb => sb.Flyout,
+            WinUI.Button btn => btn.Flyout,  // AppBarButton inherits from Button
+            _ => WinPrim.FlyoutBase.GetAttachedFlyout(fe),
+        };
+
+        // If we have an existing flyout and old element, try to update in place
+        if (oldFlyoutEl is not null && existingFlyout is not null)
+        {
+            UpdateFlyoutInPlace(existingFlyout, oldFlyoutEl, newFlyoutEl, requestRerender);
+            return;
+        }
+
+        // First mount — create new flyout
+        var flyout = CreateFlyoutFromElement(newFlyoutEl, requestRerender);
+        if (flyout is null) return;
+
+        SetFlyoutOnControl(fe, flyout);
+    }
+
+    /// <summary>
+    /// Updates the content inside an existing flyout without replacing the flyout object.
+    /// This keeps the flyout open while its content changes.
+    /// </summary>
+    private void UpdateFlyoutInPlace(WinPrim.FlyoutBase existingFlyout, Element oldEl, Element newEl, Action requestRerender)
+    {
+        // ContentFlyout → reconcile child content inside the existing Flyout
+        if (newEl is ContentFlyoutElement newCf && existingFlyout is WinUI.Flyout flyout)
+        {
+            var oldContent = oldEl is ContentFlyoutElement oldCf ? oldCf.Content : null;
+            if (oldContent is not null && flyout.Content is UIElement existingContent && CanUpdate(oldContent, newCf.Content))
+            {
+                var replacement = Update(oldContent, newCf.Content, existingContent, requestRerender);
+                if (replacement is not null)
+                    flyout.Content = replacement;
+            }
+            else
+            {
+                // Type changed — remount content
+                flyout.Content = Mount(newCf.Content, requestRerender);
+            }
+            flyout.Placement = newCf.Placement;
+            return;
+        }
+
+        // MenuFlyout → recreate items (lightweight, no open-state issue)
+        if (newEl is MenuFlyoutContentElement newMf && existingFlyout is WinUI.MenuFlyout menuFlyout)
+        {
+            menuFlyout.Items.Clear();
+            foreach (var item in newMf.Items) menuFlyout.Items.Add(CreateMenuFlyoutItem(item));
+            if (newMf.Placement != WinPrim.FlyoutPlacementMode.Auto)
+                menuFlyout.Placement = newMf.Placement;
+            return;
+        }
+
+        // Fallback: plain element → reconcile inside existing Flyout
+        if (existingFlyout is WinUI.Flyout plainFlyout && plainFlyout.Content is UIElement existingCtrl)
+        {
+            if (CanUpdate(oldEl, newEl))
+            {
+                var replacement = Update(oldEl, newEl, existingCtrl, requestRerender);
+                if (replacement is not null)
+                    plainFlyout.Content = replacement;
+            }
+            else
+            {
+                plainFlyout.Content = Mount(newEl, requestRerender);
+            }
+        }
+    }
+
+    private void SetFlyoutOnControl(FrameworkElement fe, WinPrim.FlyoutBase flyout)
+    {
+        // Check SplitButton before Button (SplitButton doesn't inherit from Button,
+        // but DropDownButton does, so Button catch-all handles it).
+        if (fe is WinUI.SplitButton sb)
+            sb.Flyout = flyout;
+        else if (fe is WinUI.Button btn)  // AppBarButton, DropDownButton inherit from Button
+            btn.Flyout = flyout;
+        else
+            WinPrim.FlyoutBase.SetAttachedFlyout(fe, flyout);
+    }
+
+    /// <summary>
+    /// Creates a WinUI FlyoutBase from a Duct element descriptor.
+    /// Recognizes ContentFlyoutElement and MenuFlyoutContentElement for configured flyouts,
+    /// and falls back to wrapping plain elements in a basic Flyout.
+    /// Used by both ApplyModifiers (for .WithFlyout()/.WithContextFlyout()) and
+    /// button mount methods (for direct Flyout parameter).
+    /// </summary>
+    internal WinPrim.FlyoutBase? CreateFlyoutFromElement(Element flyoutEl, Action requestRerender)
+    {
+        switch (flyoutEl)
+        {
+            case ContentFlyoutElement cf:
+            {
+                var content = Mount(cf.Content, requestRerender);
+                return content is not null ? new WinUI.Flyout { Content = content, Placement = cf.Placement } : null;
+            }
+            case MenuFlyoutContentElement mf:
+            {
+                var menuFlyout = new WinUI.MenuFlyout();
+                // Only set Placement if explicitly specified (Auto can cause assertions on MenuFlyout)
+                if (mf.Placement != WinPrim.FlyoutPlacementMode.Auto)
+                    menuFlyout.Placement = mf.Placement;
+                foreach (var item in mf.Items) menuFlyout.Items.Add(CreateMenuFlyoutItem(item));
+                return menuFlyout;
+            }
+            default:
+            {
+                var content = Mount(flyoutEl, requestRerender);
+                return content is not null ? new WinUI.Flyout { Content = content } : null;
+            }
+        }
     }
 
     // ── Enum conversions removed — Duct now uses WinUI types directly ──

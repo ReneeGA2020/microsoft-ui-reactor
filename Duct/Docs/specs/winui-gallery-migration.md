@@ -593,16 +593,39 @@ Only needed once most pages are migrated and the shell itself is being converted
 
 ### Page Migration Order (once Phase 1 is complete)
 
-- [x] **Proof of concept**: Migrate one simple control page (e.g., `ButtonPage`) end-to-end.
+- [x] **Proof of concept**: Migrate one simple control page (`ButtonPage`) end-to-end.
 - [x] **Build Duct ControlExample component**: Wrap the existing XAML `ControlExample` custom control using Feature 1, so migrated pages can reuse it.
-- [ ] **Migrate simple pages in batches**: Pages with 1-3 `ControlExample` sections and minimal interactivity.
+- [ ] **Migrate simple pages in batches**: Pages with 1-3 `ControlExample` sections and minimal interactivity (30/107 pages migrated).
     - [x] AppBarSeparatorPage (1 example, static CommandBar)
-    - [x] ToggleSwitchPage (2 examples, toggle + ProgressRing binding)
+    - [x] ButtonPage (proof of concept — 3 examples, click events + disable toggle)
+    - [x] CalendarDatePickerPage (1 example, date selection with header)
+    - [x] CheckBoxPage (3 examples, 2-state + 3-state + select-all pattern)
+    - [x] ColorPickerPage (1 example, spectrum/slider/channel options)
+    - [x] ComboBoxPage (3 examples, inline items + font family + editable)
+    - [x] DatePickerPage (2 examples, simple + custom format)
+    - [x] DropDownButtonPage (1 example, dropdown menu)
+    - [x] ExpanderPage (2 examples, basic + direction option)
+    - [x] FlyoutPage (1 example, confirmation flyout with state-driven dismiss)
     - [x] HyperlinkButtonPage (2 examples, URI nav + click event)
-    - [x] TextBlockPage (5 examples, text styling/inlines/selection)
-    - [x] RepeatButtonPage (1 example, click counter)
+    - [x] ImagePage (5 examples, basic + decode + stretch + nine-grid + SVG)
+    - [x] InfoBadgePage (4 examples, nav badge + styles + button badge + dynamic value)
+    - [x] InfoBarPage (3 examples, severity + message/button + closable/icon)
+    - [x] NumberBoxPage (3 examples, expression + spin buttons + formatted)
+    - [x] PasswordBoxPage (3 examples, simple + header/char + reveal mode)
+    - [x] PersonPicturePage (1 example, radio button profile type selection)
     - [x] ProgressBarPage (2 examples, indeterminate + determinate)
     - [x] ProgressRingPage (2 examples, indeterminate + determinate with background)
-    - [x] PersonPicturePage (1 example, radio button profile type selection)
+    - [x] RadioButtonPage (2 examples, options group + color selection)
+    - [x] RatingControlPage (2 examples, basic + placeholder value)
+    - [x] RepeatButtonPage (1 example, click counter)
+    - [x] SliderPage (4 examples, simple + range + ticks + vertical)
+    - [x] SplitButtonPage (2 examples, color picker flyout + text with color grid)
+    - [x] TextBlockPage (5 examples, text styling/inlines/selection)
+    - [x] TimePickerPage (3 examples, simple + minute increment + 24-hour)
+    - [x] ToggleButtonPage (1 example, toggle with disable option)
+    - [x] ToggleSplitButtonPage (1 example, list type toggle with flyout)
+    - [x] ToggleSwitchPage (2 examples, toggle + ProgressRing binding)
+    - [x] ToolTipPage (3 examples, simple + offset + placement rect)
+    - [ ] *(next batch — pick from remaining ~77 simple pages)*
 - [ ] **Migrate complex pages**: Pages with heavy state, custom controls, or responsive layouts (after Phase 2 features land).
 - [ ] **Migrate shell**: NavigationView, TitleBar, search (after Phase 3 features land).
