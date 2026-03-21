@@ -1,14 +1,22 @@
 <Project>
 
   <!--
-    After building, overwrite the WinUI binaries in the output folder with the
-    locally-built ARM64 CHK binaries from the microsoft-ui-xaml repo.
+    OPTIONAL: After building, overwrite the WinUI binaries in the output folder with
+    locally-built ARM64 CHK binaries from a sibling microsoft-ui-xaml repo checkout.
     Also copy PDBs so we can debug into the WinUI implementation.
 
-    Only applies to executable projects (TestApp, MiniTest).
+    This target is a NO-OP unless:
+      1. You have cloned and built microsoft-ui-xaml next to this repo
+      2. The project is an executable (TestApp, MiniTest, samples)
+      3. It is not a test project
+
+    Public/external contributors can ignore this entirely — the NuGet package
+    (Microsoft.WindowsAppSDK) provides everything needed to build and run.
   -->
   <PropertyGroup>
     <WinUIRepoRoot>$(MSBuildThisFileDirectory)..\microsoft-ui-xaml\src</WinUIRepoRoot>
+    <HasLocalWinUIBuild Condition="Exists('$(WinUIRepoRoot)\BuildOutput')">true</HasLocalWinUIBuild>
+    <HasLocalWinUIBuild Condition="!Exists('$(WinUIRepoRoot)\BuildOutput')">false</HasLocalWinUIBuild>
     <WinUILocalBuildRoot>$(WinUIRepoRoot)\BuildOutput</WinUILocalBuildRoot>
     <WinUIPackagingDir>$(WinUILocalBuildRoot)\packaging\Debug\runtimes\win10-$(Platform)\native</WinUIPackagingDir>
     <WinUIFrameworkDir>$(WinUILocalBuildRoot)\packaging\Debug\runtimes-framework\win-$(Platform)\native</WinUIFrameworkDir>
@@ -19,7 +27,7 @@
     <IXPFrameworkDir>$(WinUIRepoRoot)\packages\microsoft.windowsappsdk.interactiveexperiences\2.0.3-experimental\runtimes-framework\win-arm64\native</IXPFrameworkDir>
   </PropertyGroup>
 
-  <Target Name="CopyLocalWinUIBinaries" AfterTargets="Build" Condition="('$(OutputType)' == 'WinExe' Or '$(OutputType)' == 'Exe') And '$(IsTestProject)' != 'true'">
+  <Target Name="CopyLocalWinUIBinaries" AfterTargets="Build" Condition="'$(HasLocalWinUIBuild)' == 'true' And ('$(OutputType)' == 'WinExe' Or '$(OutputType)' == 'Exe') And '$(IsTestProject)' != 'true'">
 
     <ItemGroup>
       <WinUIBinaries Include="$(WinUIPackagingDir)\**\*.*" />

@@ -1,10 +1,12 @@
 <Project>
 
   <!--
-    Enable self-contained deployment so the WinUI/WinAppSDK runtime DLLs are copied
-    into the app output folder. This allows us to replace them with locally-built binaries.
+    Centralize the Windows App SDK version so all projects stay in sync.
+    This uses the public experimental WinUI 3 package from NuGet.
+    To install: dotnet restore (NuGet will pull the package automatically).
   -->
   <PropertyGroup>
+    <WindowsAppSDKVersion>2.0.0-experimental6</WindowsAppSDKVersion>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
   </PropertyGroup>
 

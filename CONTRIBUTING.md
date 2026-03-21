@@ -2,20 +2,38 @@
 
 ## Prerequisites
 
-- .NET 8 SDK
-- Windows App SDK 1.8+
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- Windows App SDK 2.0 (experimental) — restored automatically from NuGet, no manual install required
 - Visual Studio 2022 (17.8+) or VS Code with C# Dev Kit
-- (Optional) Rust toolchain via [rustup](https://rustup.rs/) — needed only for the native differ
+- (Optional) [Rust toolchain](https://rustup.rs/) via rustup — needed only for the native differ
+
+> **Package version:** All projects reference `Microsoft.WindowsAppSDK` version **2.0.0-experimental6**
+> (public NuGet). The version is centralized in `Directory.Build.props` — update it there to change
+> the version for every project at once.
 
 ## Building
 
+### From the command line
+
 ```bash
+# Restore packages (pulls experimental WinUI 3 from NuGet)
+dotnet restore Duct.sln
+
 # Build the entire solution (framework, tests, test app, samples)
-dotnet build Duct.sln
+dotnet build Duct.sln -p:Platform=x64
 
 # Build just the framework
-dotnet build Duct/Duct.csproj
+dotnet build Duct/Duct.csproj -p:Platform=x64
 ```
+
+### From Visual Studio
+
+1. Open `Duct.sln` in Visual Studio 2022 (17.8+)
+2. Select the **x64** or **ARM64** platform from the toolbar (not "Any CPU")
+3. Build the solution (Ctrl+Shift+B)
+
+Visual Studio will automatically restore NuGet packages on first load, pulling the
+experimental Windows App SDK package.
 
 The Duct.csproj has an MSBuild target that automatically builds the Rust differ DLL (`viewdiffer.dll`) via Cargo if the Rust toolchain is installed. If Rust is not installed, the build succeeds and the framework falls back to the pure C# reconciliation path at runtime.
 

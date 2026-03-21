@@ -39,9 +39,16 @@ class MyApp : Component
 
 ### Prerequisites
 
-- .NET 8 SDK
-- Windows App SDK 1.8+
-- (Optional) Rust toolchain — only needed if you want the native differ
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- Windows App SDK 2.0 (experimental) — installed automatically via NuGet on `dotnet restore`
+- Visual Studio 2022 (17.8+) for IDE builds, or just the .NET 8 SDK for CLI builds
+- (Optional) [Rust toolchain](https://rustup.rs/) — only needed if you want the native differ
+
+> **Note:** This project uses the **experimental** Windows App SDK 2.0 (`Microsoft.WindowsAppSDK` 2.0.0-experimental6).
+> The package is pulled from [NuGet](https://www.nuget.org/packages/Microsoft.WindowsAppSDK) automatically —
+> no manual SDK installer is needed. If you want the WinUI 3 runtime for unpackaged apps, install
+> the [Windows App Runtime](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads)
+> or set `<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>` (already set in this repo).
 
 ### Create a new app
 
@@ -59,9 +66,10 @@ Or manually — create a `.csproj`:
     <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260101001" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.0.0-experimental6" />
     <ProjectReference Include="..\Duct\Duct.csproj" />
   </ItemGroup>
 </Project>
@@ -95,14 +103,22 @@ No `App.xaml`. No `MainWindow.xaml`. Just run it.
 ### Build and run
 
 ```bash
-dotnet build Duct.sln
-dotnet run --project Duct.TestApp
+# Restore NuGet packages (pulls the experimental WinUI 3 SDK automatically)
+dotnet restore Duct.sln
+
+# Build the entire solution — from CLI
+dotnet build Duct.sln -p:Platform=x64
+
+# Or open Duct.sln in Visual Studio 2022, select x64 or ARM64, and build (Ctrl+Shift+B)
+
+# Run the interactive test app
+dotnet run --project Duct.TestApp -p:Platform=x64
 ```
 
 ### Run tests
 
 ```bash
-dotnet test Duct.Tests
+dotnet test Duct.Tests -p:Platform=x64
 ```
 
 ## Project structure
