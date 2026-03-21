@@ -133,7 +133,7 @@ public class TypeRegistryTests
         var inner = new TestCustomElement("Wrapped");
         var modified = new ModifiedElement(inner, new ElementModifiers { Margin = new Thickness(10) });
         Assert.Equal(inner, modified.Inner);
-        Assert.Equal(new Thickness(10), modified.Modifiers.Margin);
+        Assert.Equal(new Thickness(10), modified.WrappedModifiers.Margin);
     }
 
     [Fact]
