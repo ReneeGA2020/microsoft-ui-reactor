@@ -86,6 +86,7 @@ public sealed partial class Reconciler
             MenuBarElement mbEl => MountMenuBar(mbEl),
             CommandBarElement cmdEl => MountCommandBar(cmdEl, requestRerender),
             MenuFlyoutElement mfEl => MountMenuFlyout(mfEl, requestRerender),
+            TemplatedListElementBase tl => MountTemplatedList(tl, requestRerender),
             LazyStackElementBase lazy => MountLazyStack(lazy, requestRerender),
             ComponentElement comp => MountComponent(comp, requestRerender),
             FuncElement func => MountFuncComponent(func, requestRerender),
@@ -750,10 +751,7 @@ public sealed partial class Reconciler
         SetElementTag(listView, lv);
 
         // DataTemplate with a ContentControl shell — we populate its Content on demand
-        listView.ItemTemplate = (DataTemplate)Microsoft.UI.Xaml.Markup.XamlReader.Load(
-            "<DataTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'>" +
-            "<ContentControl HorizontalContentAlignment='Stretch' VerticalContentAlignment='Stretch'/>" +
-            "</DataTemplate>");
+        listView.ItemTemplate = SharedContentControlTemplate.Value;
 
         listView.ContainerContentChanging += (sender, args) =>
         {
@@ -809,10 +807,7 @@ public sealed partial class Reconciler
 
         SetElementTag(gridView, gv);
 
-        gridView.ItemTemplate = (DataTemplate)Microsoft.UI.Xaml.Markup.XamlReader.Load(
-            "<DataTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'>" +
-            "<ContentControl HorizontalContentAlignment='Stretch' VerticalContentAlignment='Stretch'/>" +
-            "</DataTemplate>");
+        gridView.ItemTemplate = SharedContentControlTemplate.Value;
 
         gridView.ContainerContentChanging += (sender, args) =>
         {
@@ -863,17 +858,27 @@ public sealed partial class Reconciler
             SelectionMode = tv.SelectionMode,
         };
 
-        // Always store TreeViewNodeData as Content so Expanding/ItemInvoked can retrieve it.
-        // Use an ItemTemplate with binding to display the Content string property.
-        // In node-mode, DataContext of the template = TreeViewNode,
-        // so {Binding Content.Content} resolves TreeViewNode.Content (TreeViewNodeData) → .Content (string).
-        treeView.ItemTemplate = (DataTemplate)Microsoft.UI.Xaml.Markup.XamlReader.Load(
-            "<DataTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'>" +
-            "<TextBlock Text='{Binding Content.Content}'/>" +
-            "</DataTemplate>");
+        // Check if any node uses ContentElement for custom rendering
+        bool hasContentElements = HasAnyContentElement(tv.Nodes);
+
+        if (hasContentElements)
+        {
+            // Use ContentControl template so pre-mounted Elements display in the tree
+            treeView.ItemTemplate = SharedContentControlTemplate.Value;
+        }
+        else
+        {
+            // Default: text-binding template for efficiency
+            // In node-mode, DataContext of the template = TreeViewNode,
+            // so {Binding Content.Content} resolves TreeViewNode.Content (TreeViewNodeData) → .Content (string).
+            treeView.ItemTemplate = (DataTemplate)Microsoft.UI.Xaml.Markup.XamlReader.Load(
+                "<DataTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'>" +
+                "<TextBlock Text='{Binding Content.Content}'/>" +
+                "</DataTemplate>");
+        }
 
         foreach (var node in tv.Nodes)
-            treeView.RootNodes.Add(CreateTreeNode(node));
+            treeView.RootNodes.Add(CreateTreeNode(node, hasContentElements, requestRerender));
 
         SetElementTag(treeView, tv);
 
@@ -898,6 +903,39 @@ public sealed partial class Reconciler
         return treeView;
     }
 
+    private static bool HasAnyContentElement(TreeViewNodeData[] nodes)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.ContentElement is not null) return true;
+            if (node.Children is not null && HasAnyContentElement(node.Children)) return true;
+        }
+        return false;
+    }
+
+    private WinUI.TreeViewNode CreateTreeNode(TreeViewNodeData data, bool mountElements, Action requestRerender)
+    {
+        var node = new WinUI.TreeViewNode { IsExpanded = data.IsExpanded };
+
+        if (mountElements && data.ContentElement is not null)
+        {
+            // Mount the Element and store the UIElement as Content.
+            // The ContentControl template will display it via ContentPresenter.
+            var ctrl = Mount(data.ContentElement, requestRerender);
+            node.Content = ctrl;
+        }
+        else
+        {
+            node.Content = data;
+        }
+
+        if (data.Children is not null)
+            foreach (var child in data.Children)
+                node.Children.Add(CreateTreeNode(child, mountElements, requestRerender));
+        return node;
+    }
+
+    /// <summary>Backward-compatible overload for non-ContentElement code paths.</summary>
     private static WinUI.TreeViewNode CreateTreeNode(TreeViewNodeData data)
     {
         var node = new WinUI.TreeViewNode { Content = data, IsExpanded = data.IsExpanded };
@@ -921,6 +959,147 @@ public sealed partial class Reconciler
             (GetElementTag(f) as FlipViewElement)?.OnSelectionChanged?.Invoke(f.SelectedIndex);
         };
         ApplySetters(fv.Setters, flipView);
+        return flipView;
+    }
+
+    private UIElement MountTemplatedList(TemplatedListElementBase el, Action requestRerender)
+    {
+        return el.ControlKind switch
+        {
+            TemplatedControlKind.ListView => MountTemplatedListView(el, requestRerender),
+            TemplatedControlKind.GridView => MountTemplatedGridView(el, requestRerender),
+            TemplatedControlKind.FlipView => MountTemplatedFlipView(el, requestRerender),
+            _ => throw new InvalidOperationException($"Unknown TemplatedControlKind: {el.ControlKind}")
+        };
+    }
+
+    /// <summary>
+    /// Shared ContainerContentChanging handler for all templated items controls.
+    /// On materialize: calls viewBuilder, mounts element, stores in ContentControl.
+    /// On recycle: unmounts child, clears content.
+    /// </summary>
+    private void HandleTemplatedContainerContentChanging(object sender, ContainerContentChangingEventArgs args, Action requestRerender)
+    {
+        if (args.InRecycleQueue)
+        {
+            if (args.ItemContainer.ContentTemplateRoot is ContentControl oldCc)
+            {
+                if (oldCc.Content is UIElement oldCtrl)
+                    UnmountChild(oldCtrl);
+                oldCc.Content = null;
+                oldCc.Tag = null;
+            }
+            return;
+        }
+
+        args.Handled = true;
+        var currentEl = GetElementTag((UIElement)sender!) as TemplatedListElementBase;
+        if (currentEl is not null && args.ItemIndex >= 0 && args.ItemIndex < currentEl.ItemCount
+            && args.ItemContainer.ContentTemplateRoot is ContentControl cc)
+        {
+            var itemElement = currentEl.BuildItemView(args.ItemIndex);
+            var ctrl = Mount(itemElement, requestRerender);
+            cc.Content = ctrl;
+            cc.Tag = itemElement; // Store for later reconciliation
+        }
+    }
+
+    private WinUI.ListView MountTemplatedListView(TemplatedListElementBase el, Action requestRerender)
+    {
+        var listView = new WinUI.ListView
+        {
+            SelectionMode = el.GetSelectionMode(),
+            IsItemClickEnabled = el.GetIsItemClickEnabled(),
+        };
+        var header = el.GetHeader();
+        if (header is not null) listView.Header = header;
+
+        SetElementTag(listView, el);
+        listView.ItemTemplate = SharedContentControlTemplate.Value;
+
+        listView.ContainerContentChanging += (sender, args) =>
+            HandleTemplatedContainerContentChanging(sender, args, requestRerender);
+
+        listView.SelectionChanged += (s, _) =>
+        {
+            var l = (WinUI.ListView)s!;
+            (GetElementTag(l) as TemplatedListElementBase)?.InvokeSelectionChanged(l.SelectedIndex);
+        };
+        listView.ItemClick += (s, args) =>
+        {
+            var l = (WinUI.ListView)s!;
+            if (args.ClickedItem is int idx)
+                (GetElementTag(l) as TemplatedListElementBase)?.InvokeItemClick(idx);
+        };
+
+        listView.ItemsSource = Enumerable.Range(0, el.ItemCount).ToList();
+
+        var selectedIndex = el.GetSelectedIndex();
+        if (selectedIndex >= 0) listView.SelectedIndex = selectedIndex;
+        el.ApplyControlSetters(listView);
+        return listView;
+    }
+
+    private WinUI.GridView MountTemplatedGridView(TemplatedListElementBase el, Action requestRerender)
+    {
+        var gridView = new WinUI.GridView
+        {
+            SelectionMode = el.GetSelectionMode(),
+            IsItemClickEnabled = el.GetIsItemClickEnabled(),
+        };
+        var header = el.GetHeader();
+        if (header is not null) gridView.Header = header;
+
+        SetElementTag(gridView, el);
+        gridView.ItemTemplate = SharedContentControlTemplate.Value;
+
+        gridView.ContainerContentChanging += (sender, args) =>
+            HandleTemplatedContainerContentChanging(sender, args, requestRerender);
+
+        gridView.SelectionChanged += (s, _) =>
+        {
+            var g = (WinUI.GridView)s!;
+            (GetElementTag(g) as TemplatedListElementBase)?.InvokeSelectionChanged(g.SelectedIndex);
+        };
+        gridView.ItemClick += (s, args) =>
+        {
+            var g = (WinUI.GridView)s!;
+            if (args.ClickedItem is int idx)
+                (GetElementTag(g) as TemplatedListElementBase)?.InvokeItemClick(idx);
+        };
+
+        gridView.ItemsSource = Enumerable.Range(0, el.ItemCount).ToList();
+
+        var selectedIndex = el.GetSelectedIndex();
+        if (selectedIndex >= 0) gridView.SelectedIndex = selectedIndex;
+        el.ApplyControlSetters(gridView);
+        return gridView;
+    }
+
+    private WinUI.FlipView MountTemplatedFlipView(TemplatedListElementBase el, Action requestRerender)
+    {
+        var flipView = new WinUI.FlipView();
+
+        SetElementTag(flipView, el);
+
+        // FlipView doesn't support ContainerContentChanging (not a ListViewBase).
+        // Pre-mount all items — FlipView typically has few items so this is fine.
+        for (int i = 0; i < el.ItemCount; i++)
+        {
+            var itemElement = el.BuildItemView(i);
+            var ctrl = Mount(itemElement, requestRerender);
+            if (ctrl is not null) flipView.Items.Add(ctrl);
+        }
+
+        flipView.SelectionChanged += (s, _) =>
+        {
+            var f = (WinUI.FlipView)s!;
+            (GetElementTag(f) as TemplatedListElementBase)?.InvokeSelectionChanged(f.SelectedIndex);
+        };
+
+        var selectedIndex = el.GetSelectedIndex();
+        if (selectedIndex >= 0) flipView.SelectedIndex = selectedIndex;
+        el.ApplyControlSetters(flipView);
         return flipView;
     }
 

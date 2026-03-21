@@ -791,6 +791,117 @@ public record MenuFlyoutElement(
 }
 
 // ════════════════════════════════════════════════════════════════════════
+//  Templated collection elements (data-driven ListView/GridView/FlipView)
+// ════════════════════════════════════════════════════════════════════════
+
+/// <summary>
+/// Which WinUI control type a templated list element targets.
+/// </summary>
+public enum TemplatedControlKind { ListView, GridView, FlipView }
+
+/// <summary>
+/// Abstract base for data-driven items controls. Non-generic so the reconciler
+/// can match on a single type in its switch expression (same pattern as LazyStackElementBase).
+/// </summary>
+public abstract record TemplatedListElementBase : Element
+{
+    public abstract TemplatedControlKind ControlKind { get; }
+    public abstract int ItemCount { get; }
+    public abstract int GetSelectedIndex();
+    public abstract ListViewSelectionMode GetSelectionMode();
+    public abstract string? GetHeader();
+    public abstract bool GetIsItemClickEnabled();
+    public abstract Element BuildItemView(int index);
+    public abstract bool SameItemsAs(TemplatedListElementBase other);
+    public abstract void InvokeSelectionChanged(int index);
+    public abstract void InvokeItemClick(int index);
+    public abstract void ApplyControlSetters(object control);
+}
+
+public record TemplatedListViewElement<T>(
+    IReadOnlyList<T> Items,
+    Func<T, string> KeySelector,
+    Func<T, int, Element> ViewBuilder
+) : TemplatedListElementBase
+{
+    public int SelectedIndex { get; init; } = -1;
+    public Action<int>? OnSelectionChanged { get; init; }
+    public Action<T>? OnItemClick { get; init; }
+    public ListViewSelectionMode SelectionMode { get; init; } = ListViewSelectionMode.Single;
+    public string? Header { get; init; }
+    internal Action<WinUI.ListView>[] Setters { get; init; } = [];
+
+    public override TemplatedControlKind ControlKind => TemplatedControlKind.ListView;
+    public override int ItemCount => Items.Count;
+    public override int GetSelectedIndex() => SelectedIndex;
+    public override ListViewSelectionMode GetSelectionMode() => SelectionMode;
+    public override string? GetHeader() => Header;
+    public override bool GetIsItemClickEnabled() => OnItemClick is not null;
+    public override Element BuildItemView(int index) => ViewBuilder(Items[index], index);
+    public override bool SameItemsAs(TemplatedListElementBase o) =>
+        o is TemplatedListViewElement<T> x && ReferenceEquals(Items, x.Items);
+    public override void InvokeSelectionChanged(int index) => OnSelectionChanged?.Invoke(index);
+    public override void InvokeItemClick(int index) =>
+        OnItemClick?.Invoke(index >= 0 && index < Items.Count ? Items[index] : default!);
+    public override void ApplyControlSetters(object control) =>
+        Reconciler.ApplySetters(Setters, (WinUI.ListView)control);
+}
+
+public record TemplatedGridViewElement<T>(
+    IReadOnlyList<T> Items,
+    Func<T, string> KeySelector,
+    Func<T, int, Element> ViewBuilder
+) : TemplatedListElementBase
+{
+    public int SelectedIndex { get; init; } = -1;
+    public Action<int>? OnSelectionChanged { get; init; }
+    public Action<T>? OnItemClick { get; init; }
+    public ListViewSelectionMode SelectionMode { get; init; } = ListViewSelectionMode.Single;
+    public string? Header { get; init; }
+    internal Action<WinUI.GridView>[] Setters { get; init; } = [];
+
+    public override TemplatedControlKind ControlKind => TemplatedControlKind.GridView;
+    public override int ItemCount => Items.Count;
+    public override int GetSelectedIndex() => SelectedIndex;
+    public override ListViewSelectionMode GetSelectionMode() => SelectionMode;
+    public override string? GetHeader() => Header;
+    public override bool GetIsItemClickEnabled() => OnItemClick is not null;
+    public override Element BuildItemView(int index) => ViewBuilder(Items[index], index);
+    public override bool SameItemsAs(TemplatedListElementBase o) =>
+        o is TemplatedGridViewElement<T> x && ReferenceEquals(Items, x.Items);
+    public override void InvokeSelectionChanged(int index) => OnSelectionChanged?.Invoke(index);
+    public override void InvokeItemClick(int index) =>
+        OnItemClick?.Invoke(index >= 0 && index < Items.Count ? Items[index] : default!);
+    public override void ApplyControlSetters(object control) =>
+        Reconciler.ApplySetters(Setters, (WinUI.GridView)control);
+}
+
+public record TemplatedFlipViewElement<T>(
+    IReadOnlyList<T> Items,
+    Func<T, string> KeySelector,
+    Func<T, int, Element> ViewBuilder
+) : TemplatedListElementBase
+{
+    public int SelectedIndex { get; init; } = 0;
+    public Action<int>? OnSelectionChanged { get; init; }
+    internal Action<WinUI.FlipView>[] Setters { get; init; } = [];
+
+    public override TemplatedControlKind ControlKind => TemplatedControlKind.FlipView;
+    public override int ItemCount => Items.Count;
+    public override int GetSelectedIndex() => SelectedIndex;
+    public override ListViewSelectionMode GetSelectionMode() => ListViewSelectionMode.Single;
+    public override string? GetHeader() => null;
+    public override bool GetIsItemClickEnabled() => false;
+    public override Element BuildItemView(int index) => ViewBuilder(Items[index], index);
+    public override bool SameItemsAs(TemplatedListElementBase o) =>
+        o is TemplatedFlipViewElement<T> x && ReferenceEquals(Items, x.Items);
+    public override void InvokeSelectionChanged(int index) => OnSelectionChanged?.Invoke(index);
+    public override void InvokeItemClick(int index) { }
+    public override void ApplyControlSetters(object control) =>
+        Reconciler.ApplySetters(Setters, (WinUI.FlipView)control);
+}
+
+// ════════════════════════════════════════════════════════════════════════
 //  Virtualized collection elements (backed by ItemsRepeater)
 // ════════════════════════════════════════════════════════════════════════
 

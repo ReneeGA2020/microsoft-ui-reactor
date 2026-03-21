@@ -34,7 +34,8 @@ class DemoApp : Component
                 TabButton("Dynamic List", currentTab, setTab),
                 TabButton("Perf Stress", currentTab, setTab),
                 TabButton("Virtualization", currentTab, setTab),
-                TabButton("Flyout", currentTab, setTab)
+                TabButton("Flyout", currentTab, setTab),
+                TabButton("DataTemplate", currentTab, setTab)
             ).Margin(16, 16, 16, 0),
 
             // Content area with padding
@@ -49,6 +50,7 @@ class DemoApp : Component
                     "Perf Stress" => Component<PerfStressDemo>(),
                     "Virtualization" => Component<VirtualizationDemo>(),
                     "Flyout" => Component<FlyoutDemo>(),
+                    "DataTemplate" => Component<DataTemplateDemo>(),
                     _ => Text("Select a tab")
                 }
             ).Padding(new Thickness(24)).Margin(16)
@@ -1010,6 +1012,201 @@ class FlyoutDemo : Component
                             .Size(80, 16)
                     )
                 )
+        ));
+    }
+}
+
+// ─── DataTemplate demo ────────────────────────────────────────────────────────
+// Demonstrates typed ListView<T>, GridView<T>, FlipView<T>, and TreeView ContentElement.
+// These use the new Func<T, int, Element> viewBuilder pattern so the reconciler
+// drives mounting/updating/recycling of templated items natively.
+
+class DataTemplateDemo : Component
+{
+    record Animal(int Id, string Name, string Species, string Emoji);
+
+    static readonly List<Animal> AllAnimals =
+    [
+        new(1, "Luna", "Cat", "\U0001F431"),
+        new(2, "Max", "Dog", "\U0001F436"),
+        new(3, "Bella", "Cat", "\U0001F431"),
+        new(4, "Charlie", "Dog", "\U0001F436"),
+        new(5, "Oliver", "Rabbit", "\U0001F430"),
+        new(6, "Lucy", "Cat", "\U0001F431"),
+        new(7, "Buddy", "Dog", "\U0001F436"),
+        new(8, "Daisy", "Hamster", "\U0001F439"),
+        new(9, "Rocky", "Dog", "\U0001F436"),
+        new(10, "Coco", "Parrot", "\U0001F99C"),
+    ];
+
+    public override Element Render()
+    {
+        var (animals, updateAnimals) = UseReducer(AllAnimals);
+        var (selectedListIndex, setSelectedListIndex) = UseState(-1);
+        var (selectedGridIndex, setSelectedGridIndex) = UseState(-1);
+        var (flipIndex, setFlipIndex) = UseState(0);
+        var (filter, setFilter) = UseState("");
+
+        var filtered = string.IsNullOrWhiteSpace(filter)
+            ? animals
+            : animals.Where(a => a.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                                 || a.Species.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                     .ToList();
+
+        return ScrollView(VStack(16,
+            Heading("DataTemplate Demo"),
+            Text("Typed ListView<T>, GridView<T>, FlipView<T> with viewBuilder, plus TreeView ContentElement."),
+
+            // Filter + add/remove controls
+            HStack(12,
+                TextField(filter, setFilter, placeholder: "Filter animals...").Width(200),
+                Button("Add Random", () => updateAnimals(list =>
+                {
+                    var id = list.Count + 1;
+                    var species = new[] { "Cat", "Dog", "Rabbit", "Hamster", "Parrot" };
+                    var emojis = new[] { "\U0001F431", "\U0001F436", "\U0001F430", "\U0001F439", "\U0001F99C" };
+                    var rng = new Random();
+                    var si = rng.Next(species.Length);
+                    return [.. list, new Animal(id, $"Pet #{id}", species[si], emojis[si])];
+                })),
+                Button("Remove Last", () => updateAnimals(list =>
+                    list.Count > 0 ? list.Take(list.Count - 1).ToList() : list
+                )).Disabled(animals.Count == 0)
+            ),
+
+            Text($"{filtered.Count} animals shown").Opacity(0.6),
+
+            // ── 1. Typed ListView<T> ──
+            SubHeading("1. Typed ListView<T>"),
+            Text("Each row uses pattern matching on Species for a DataTemplateSelector-equivalent."),
+            Border(
+                ListView<Animal>(
+                    filtered,
+                    a => a.Id.ToString(),
+                    (animal, i) => HStack(12,
+                        Text(animal.Emoji).FontSize(24),
+                        VStack(2,
+                            Text(animal.Name).SemiBold(),
+                            animal.Species switch
+                            {
+                                "Cat" => Text($"Feline - {animal.Species}").FontSize(12).Opacity(0.7),
+                                "Dog" => Text($"Canine - {animal.Species}").FontSize(12).Opacity(0.7),
+                                _ => Text(animal.Species).FontSize(12).Opacity(0.5),
+                            }
+                        ),
+                        Text($"#{animal.Id}").Opacity(0.3)
+                    ).Margin(4)
+                ) with
+                {
+                    SelectedIndex = selectedListIndex,
+                    OnSelectionChanged = setSelectedListIndex,
+                    OnItemClick = a => setSelectedListIndex(filtered.IndexOf(a)),
+                    Header = "Animals"
+                }
+            ).CornerRadius(8).Height(250),
+
+            When(selectedListIndex >= 0 && selectedListIndex < filtered.Count,
+                () => Text($"Selected: {filtered[Math.Min(selectedListIndex, filtered.Count - 1)].Name}").SemiBold()),
+
+            // ── 2. Typed GridView<T> ──
+            SubHeading("2. Typed GridView<T>"),
+            Text("Card layout with per-species colors."),
+            Border(
+                GridView<Animal>(
+                    filtered,
+                    a => a.Id.ToString(),
+                    (animal, i) =>
+                    {
+                        var bg = animal.Species switch
+                        {
+                            "Cat" => "#fff3e0",
+                            "Dog" => "#e3f2fd",
+                            "Rabbit" => "#f3e5f5",
+                            "Hamster" => "#fff9c4",
+                            "Parrot" => "#e8f5e9",
+                            _ => "#f5f5f5"
+                        };
+                        return Border(
+                            VStack(4,
+                                Text(animal.Emoji).FontSize(32).HAlign(HorizontalAlignment.Center),
+                                Text(animal.Name).SemiBold().HAlign(HorizontalAlignment.Center),
+                                Text(animal.Species).FontSize(11).Opacity(0.6).HAlign(HorizontalAlignment.Center)
+                            )
+                        ).CornerRadius(8).Background(bg).Padding(new Thickness(12)).Width(120).Height(120);
+                    }
+                ) with
+                {
+                    SelectedIndex = selectedGridIndex,
+                    OnSelectionChanged = setSelectedGridIndex,
+                    Header = "Gallery"
+                }
+            ).CornerRadius(8).Height(300),
+
+            // ── 3. Typed FlipView<T> ──
+            SubHeading("3. Typed FlipView<T>"),
+            Text("Swipe through animal cards."),
+            Border(
+                FlipView<Animal>(
+                    filtered,
+                    a => a.Id.ToString(),
+                    (animal, i) => Border(
+                        VStack(12,
+                            Text(animal.Emoji).FontSize(64).HAlign(HorizontalAlignment.Center),
+                            Text(animal.Name).FontSize(24).SemiBold().HAlign(HorizontalAlignment.Center),
+                            Text($"{animal.Species} (#{animal.Id})").Opacity(0.6).HAlign(HorizontalAlignment.Center)
+                        ).HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
+                    ).Background("#f5f5f5").Padding(new Thickness(32))
+                ) with
+                {
+                    SelectedIndex = flipIndex,
+                    OnSelectionChanged = setFlipIndex,
+                }
+            ).CornerRadius(8).Height(250).Width(400),
+
+            Text($"Showing {flipIndex + 1} of {filtered.Count}").Opacity(0.6),
+
+            // ── 4. TreeView with ContentElement ──
+            SubHeading("4. TreeView with ContentElement"),
+            Text("Tree nodes render custom Duct elements instead of plain text."),
+            Border(
+                TreeView(
+                    new TreeViewNodeData("Pets") { IsExpanded = true,
+                        ContentElement = HStack(8,
+                            Text("\U0001F3E0").FontSize(16),
+                            Text("All Pets").Bold()
+                        ),
+                        Children = new[] { "Cat", "Dog", "Rabbit", "Hamster", "Parrot" }
+                            .Where(species => filtered.Any(a => a.Species == species))
+                            .Select(species => new TreeViewNodeData(species)
+                            {
+                                IsExpanded = true,
+                                ContentElement = HStack(8,
+                                    Text(species switch
+                                    {
+                                        "Cat" => "\U0001F431",
+                                        "Dog" => "\U0001F436",
+                                        "Rabbit" => "\U0001F430",
+                                        "Hamster" => "\U0001F439",
+                                        "Parrot" => "\U0001F99C",
+                                        _ => "\U0001F43E"
+                                    }),
+                                    Text(species).SemiBold(),
+                                    Text($"({filtered.Count(a => a.Species == species)})").Opacity(0.5)
+                                ),
+                                Children = filtered
+                                    .Where(a => a.Species == species)
+                                    .Select(a => new TreeViewNodeData(a.Name)
+                                    {
+                                        ContentElement = HStack(8,
+                                            Text(a.Emoji),
+                                            Text(a.Name),
+                                            Text($"#{a.Id}").FontSize(11).Opacity(0.3)
+                                        )
+                                    }).ToArray()
+                            }).ToArray()
+                    }
+                )
+            ).CornerRadius(8).Height(300)
         ));
     }
 }

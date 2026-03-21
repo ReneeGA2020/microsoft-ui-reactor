@@ -340,6 +340,23 @@ public static class UI
     public static Thickness Thick(double left, double top, double right, double bottom) =>
         new(left, top, right, bottom);
 
+    // ── Typed (data-driven) collections ───────────────────────────
+
+    public static TemplatedListViewElement<T> ListView<T>(
+        IReadOnlyList<T> items,
+        Func<T, string> keySelector,
+        Func<T, int, Element> viewBuilder) => new(items, keySelector, viewBuilder);
+
+    public static TemplatedGridViewElement<T> GridView<T>(
+        IReadOnlyList<T> items,
+        Func<T, string> keySelector,
+        Func<T, int, Element> viewBuilder) => new(items, keySelector, viewBuilder);
+
+    public static TemplatedFlipViewElement<T> FlipView<T>(
+        IReadOnlyList<T> items,
+        Func<T, string> keySelector,
+        Func<T, int, Element> viewBuilder) => new(items, keySelector, viewBuilder);
+
     // ── Virtualized collections ───────────────────────────────────
 
     public static LazyVStackElement<T> LazyVStack<T>(

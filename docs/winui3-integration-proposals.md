@@ -7,7 +7,63 @@
 
 ---
 
-## 1. XAML-Free Navigation via Custom Navigation Stack (Unblock)
+## 1. Programmatic DataTemplate Construction Without XamlReader (Unblock)
+
+**Problem:** WinUI's `DataTemplate` can only be created from XAML markup — there is no public API to construct one programmatically from code. Duct works around this by calling `XamlReader.Load()` with a XAML string at runtime to create a DataTemplate wrapping a ContentControl shell:
+
+```csharp
+// Current hack in Reconciler.Mount.cs (lines 687-690, repeated for GridView at 746-749):
+listView.ItemTemplate = (DataTemplate)Microsoft.UI.Xaml.Markup.XamlReader.Load(
+    "<DataTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'>" +
+    "<ContentControl HorizontalContentAlignment='Stretch' VerticalContentAlignment='Stretch'/>" +
+    "</DataTemplate>");
+```
+
+This is a significant hack with real costs:
+1. **XML parsing at runtime** — `XamlReader.Load()` invokes the full XAML parser, allocating an `XamlTextReader`, parsing the XML, resolving namespaces, and instantiating objects through the XAML type system. This is orders of magnitude more expensive than a constructor call.
+2. **Called per ListView/GridView mount** — every time Duct mounts a list, it re-parses this string. No caching is possible because DataTemplate instances can't be reliably shared across different ItemsControls.
+3. **Fragile string-based API** — a typo in the XAML string is a runtime crash, not a compile error. The xmlns declaration is boilerplate noise.
+4. **Incompatible with AOT/trimming** — `XamlReader.Load()` depends on runtime type resolution that may not survive aggressive trimming.
+
+The underlying need is simple: Duct wants a DataTemplate that produces a single ContentControl, then takes over content management via `ContainerContentChanging`. The ContentControl is just a shell — Duct mounts its own element tree into `ContentControl.Content`.
+
+**Gallery migration workarounds:** During the WinUI Gallery migration (70+ pages migrated), every page that used data-driven collections (FlipViewPage, TreeViewPage, SemanticZoomPage, SelectorBarPage) required imperative `XamlReader.Load()` workarounds to construct DataTemplates. The FlipView data-template example was the worst case — the migrated page had to create a hidden placeholder element, hook into its `Loaded` event, walk up to the parent panel, remove existing controls, then programmatically construct a FlipView with a parsed DataTemplate and inject it into the visual tree. This pattern completely defeats the declarative model Duct provides.
+
+To partially address this on the Duct side, we built typed collection elements (`FlipView<T>`, `ListView<T>`, `GridView<T>`) that accept a `Func<T, int, Element> viewBuilder` instead of a DataTemplate. The reconciler drives mounting/updating/recycling of templated items natively, using a shared cached `DataTemplate` with a ContentControl shell. This eliminates the per-mount parsing cost and gives Gallery pages a declarative API. However, the underlying WinUI limitation remains — the cached template still requires one `XamlReader.Load()` call at startup, and any scenario that needs a DataTemplate outside of these typed wrappers (e.g., TreeView `ItemTemplate`, custom `ItemTemplateSelector`, grouped `GridView` with `GroupStyle`) still falls back to string-based XAML parsing.
+
+**Proposal:** WinUI should expose a code-based DataTemplate construction API. The minimal version:
+
+```csharp
+// Option A: Factory-based DataTemplate constructor
+var template = new DataTemplate(() => new ContentControl
+{
+    HorizontalContentAlignment = HorizontalAlignment.Stretch,
+    VerticalContentAlignment = VerticalAlignment.Stretch,
+});
+
+// Option B: Static helper (lower API surface)
+var template = DataTemplate.FromFactory(() => new ContentControl { ... });
+```
+
+Internally, this would create a `DataTemplate` whose `LoadContent()` method calls the factory delegate instead of instantiating from a parsed XAML tree. WinUI's `CDataTemplate` already has the concept of a template content factory (`IDataTemplateComponent`) — the proposal is to make this accessible from managed code without XAML markup.
+
+**Impact:** Eliminates runtime XAML parsing for every ListView/GridView mount. Makes Duct's list virtualization compatible with NativeAOT trimming. Removes a class of potential runtime errors from string-based XAML. Any declarative framework that manages its own item rendering (not just Duct) would benefit from this API.
+
+**WinUI3 files:**
+- `src/dxaml/xcp/core/core/elements/DataTemplate.cpp` — `DataTemplate::LoadContent()` instantiation path
+- `src/dxaml/xcp/dxaml/lib/DataTemplate_Partial.cpp` — Managed peer, `LoadContentImpl()`
+- `src/dxaml/xcp/core/Parser/XamlReader.cpp` — `XamlReader::Load()` full parser invocation
+- `src/dxaml/xcp/core/inc/DataTemplate.h` — Template content factory interfaces
+
+**Duct files:**
+- `Duct/Core/Reconciler.Mount.cs` — ListView mount (lines 687-690) and GridView mount (lines 746-749) both use the `XamlReader.Load()` hack
+- `Duct/Core/Reconciler.Mount.cs` — `ContainerContentChanging` handler (lines 692-712) that populates the ContentControl shell with Duct-mounted content
+- `Duct/Core/Element.cs` — `TemplatedListElementBase` / `TemplatedFlipViewElement<T>` / `TemplatedListViewElement<T>` / `TemplatedGridViewElement<T>` — typed collection elements that work around the DataTemplate gap
+- `Duct/Elements/Dsl.cs` — `FlipView<T>()`, `ListView<T>()`, `GridView<T>()` DSL functions
+
+---
+
+## 2. XAML-Free Navigation via Custom Navigation Stack (Unblock)
 
 **Problem:** WinUI's `Frame.Navigate()` requires page types registered in the XAML type metadata system (`MetadataAPI::GetClassInfoByFullName()` in `NavigationCache.cpp`), parameterless constructors (via `ActivationAPI::ActivateInstance()`), and typically XAML code-behind files. Duct components are render functions with props — they don't have parameterless constructors and aren't registered in the XAML type system. This means Duct apps can't use Frame-based navigation at all, leaving them with no back stack, no navigation lifecycle events, and no state serialization for page history.
 
@@ -45,7 +101,7 @@ return NavigationView(
 
 ---
 
-## 2. Deep Virtualization Hooks for ListView, GridView, and ItemsRepeater (Unblock)
+## 3. Deep Virtualization Hooks for ListView, GridView, and ItemsRepeater (Unblock)
 
 **Problem:** Duct's virtualized list integration has three major gaps:
 
@@ -105,65 +161,6 @@ protected override void RecycleElementCore(ElementFactoryRecycleArgs args) {
 - `Duct/Core/Reconciler.Update.cs` — ListView update (lines 457-472) full-reset pattern, LazyStack update (lines 499-511)
 - `Duct/Core/ElementPool.cs` — `CleanElement()` / pool management — target for deferred return
 - `Duct/Core/Element.cs` — `LazyVStackElement<T>` / `LazyHStackElement<T>` (lines 733-774) — KeySelector exists but unused
-
----
-
-## 3. Programmatic DataTemplate Construction Without XamlReader (Unblock)
-
-**Problem:** WinUI's `DataTemplate` can only be created from XAML markup — there is no public API to construct one programmatically from code. Duct works around this by calling `XamlReader.Load()` with a XAML string at runtime to create a DataTemplate wrapping a ContentControl shell:
-
-```csharp
-// Current hack in Reconciler.Mount.cs (lines 687-690, repeated for GridView at 746-749):
-listView.ItemTemplate = (DataTemplate)Microsoft.UI.Xaml.Markup.XamlReader.Load(
-    "<DataTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'>" +
-    "<ContentControl HorizontalContentAlignment='Stretch' VerticalContentAlignment='Stretch'/>" +
-    "</DataTemplate>");
-```
-
-This is a significant hack with real costs:
-1. **XML parsing at runtime** — `XamlReader.Load()` invokes the full XAML parser, allocating an `XamlTextReader`, parsing the XML, resolving namespaces, and instantiating objects through the XAML type system. This is orders of magnitude more expensive than a constructor call.
-2. **Called per ListView/GridView mount** — every time Duct mounts a list, it re-parses this string. No caching is possible because DataTemplate instances can't be reliably shared across different ItemsControls.
-3. **Fragile string-based API** — a typo in the XAML string is a runtime crash, not a compile error. The xmlns declaration is boilerplate noise.
-4. **Incompatible with AOT/trimming** — `XamlReader.Load()` depends on runtime type resolution that may not survive aggressive trimming.
-
-The underlying need is simple: Duct wants a DataTemplate that produces a single ContentControl, then takes over content management via `ContainerContentChanging`. The ContentControl is just a shell — Duct mounts its own element tree into `ContentControl.Content`.
-
-**Proposal:** WinUI should expose a code-based DataTemplate construction API. The minimal version:
-
-```csharp
-// Option A: Factory-based DataTemplate constructor
-var template = new DataTemplate(() => new ContentControl
-{
-    HorizontalContentAlignment = HorizontalAlignment.Stretch,
-    VerticalContentAlignment = VerticalAlignment.Stretch,
-});
-
-// Option B: Static helper (lower API surface)
-var template = DataTemplate.FromFactory(() => new ContentControl { ... });
-```
-
-Internally, this would create a `DataTemplate` whose `LoadContent()` method calls the factory delegate instead of instantiating from a parsed XAML tree. WinUI's `CDataTemplate` already has the concept of a template content factory (`IDataTemplateComponent`) — the proposal is to make this accessible from managed code without XAML markup.
-
-As a short-term Duct-side workaround, the parsed DataTemplate could be cached as a static and reused:
-
-```csharp
-private static readonly DataTemplate _contentControlTemplate =
-    (DataTemplate)XamlReader.Load("...");
-```
-
-But this only reduces parsing frequency — it doesn't eliminate the fundamental dependency on runtime XAML parsing for what should be a trivial object construction.
-
-**Impact:** Eliminates runtime XAML parsing for every ListView/GridView mount. Makes Duct's list virtualization compatible with NativeAOT trimming. Removes a class of potential runtime errors from string-based XAML. Any declarative framework that manages its own item rendering (not just Duct) would benefit from this API.
-
-**WinUI3 files:**
-- `src/dxaml/xcp/core/core/elements/DataTemplate.cpp` — `DataTemplate::LoadContent()` instantiation path
-- `src/dxaml/xcp/dxaml/lib/DataTemplate_Partial.cpp` — Managed peer, `LoadContentImpl()`
-- `src/dxaml/xcp/core/Parser/XamlReader.cpp` — `XamlReader::Load()` full parser invocation
-- `src/dxaml/xcp/core/inc/DataTemplate.h` — Template content factory interfaces
-
-**Duct files:**
-- `Duct/Core/Reconciler.Mount.cs` — ListView mount (lines 687-690) and GridView mount (lines 746-749) both use the `XamlReader.Load()` hack
-- `Duct/Core/Reconciler.Mount.cs` — `ContainerContentChanging` handler (lines 692-712) that populates the ContentControl shell with Duct-mounted content
 
 ---
 
@@ -518,9 +515,9 @@ The reconciler would store the `StrongBox` alongside the control in its tracking
 
 | # | Proposal | Ambition | Effort | Impact |
 |---|----------|----------|--------|--------|
-| 1 | XAML-free navigation stack | Unblock | M | High |
-| 2 | Deep virtualization hooks (ListView/Repeater) | Unblock | L | High |
-| 3 | Programmatic DataTemplate (no XamlReader) | Unblock | S | Medium |
+| 1 | Programmatic DataTemplate (no XamlReader) | Unblock | S | High |
+| 2 | XAML-free navigation stack | Unblock | M | High |
+| 3 | Deep virtualization hooks (ListView/Repeater) | Unblock | L | High |
 | 4 | Bypass DependencyProperty for Tag | Tactical | S | Medium |
 | 5 | Layout coalescing via LayoutManager | Tactical | M | High |
 | 6 | Pool interactive controls | Tactical | S | Medium |

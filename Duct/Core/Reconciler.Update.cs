@@ -138,6 +138,12 @@ public sealed partial class Reconciler
                 => UpdateCommandBar(o, n, cb, requestRerender),
             (Core.GridElement o, Core.GridElement n, WinUI.Grid g)
                 => UpdateGrid(o, n, g, requestRerender),
+            (TemplatedListElementBase o, TemplatedListElementBase n, WinUI.ListView lv)
+                => UpdateTemplatedListView(o, n, lv, requestRerender),
+            (TemplatedListElementBase o, TemplatedListElementBase n, WinUI.GridView gv)
+                => UpdateTemplatedGridView(o, n, gv, requestRerender),
+            (TemplatedListElementBase o, TemplatedListElementBase n, WinUI.FlipView fv)
+                => UpdateTemplatedFlipView(o, n, fv, requestRerender),
             (LazyStackElementBase, LazyStackElementBase n, WinUI.ScrollViewer sv)
                 => UpdateLazyStack(n, sv, requestRerender),
             (ComponentElement, ComponentElement, _)
@@ -544,6 +550,122 @@ public sealed partial class Reconciler
         return null;
     }
 
+    /// <summary>
+    /// Walks visible (realized) containers and reconciles each item's Element
+    /// using the stored ContentControl.Tag as the old element.
+    /// Null containers (virtualized out) are skipped — ContainerContentChanging handles them on scroll.
+    /// </summary>
+    private void RefreshRealizedContainers(WinUI.ListViewBase listViewBase, TemplatedListElementBase newEl, Action requestRerender)
+    {
+        for (int i = 0; i < newEl.ItemCount; i++)
+        {
+            var container = listViewBase.ContainerFromIndex(i) as WinUI.ListViewItem;
+            if (container?.ContentTemplateRoot is not ContentControl cc) continue;
+
+            var oldItemElement = cc.Tag as Element;
+            var newItemElement = newEl.BuildItemView(i);
+
+            if (oldItemElement is not null && cc.Content is UIElement existingCtrl && CanUpdate(oldItemElement, newItemElement))
+            {
+                var replacement = Update(oldItemElement, newItemElement, existingCtrl, requestRerender);
+                if (replacement is not null)
+                    cc.Content = replacement;
+            }
+            else
+            {
+                if (cc.Content is UIElement oldCtrl)
+                    Unmount(oldCtrl);
+                cc.Content = Mount(newItemElement, requestRerender);
+            }
+            cc.Tag = newItemElement;
+        }
+    }
+
+    private UIElement? UpdateTemplatedListView(TemplatedListElementBase o, TemplatedListElementBase n, WinUI.ListView lv, Action requestRerender)
+    {
+        lv.SelectionMode = n.GetSelectionMode();
+        lv.IsItemClickEnabled = n.GetIsItemClickEnabled();
+        var header = n.GetHeader();
+        if (header is not null) lv.Header = header;
+
+        if (o.ItemCount != n.ItemCount)
+            lv.ItemsSource = Enumerable.Range(0, n.ItemCount).ToList();
+        else if (!n.SameItemsAs(o))
+            RefreshRealizedContainers(lv, n, requestRerender);
+
+        SetElementTag(lv, n);
+
+        var selectedIndex = n.GetSelectedIndex();
+        if (selectedIndex >= 0) lv.SelectedIndex = selectedIndex;
+        n.ApplyControlSetters(lv);
+        return null;
+    }
+
+    private UIElement? UpdateTemplatedGridView(TemplatedListElementBase o, TemplatedListElementBase n, WinUI.GridView gv, Action requestRerender)
+    {
+        gv.SelectionMode = n.GetSelectionMode();
+        gv.IsItemClickEnabled = n.GetIsItemClickEnabled();
+        var header = n.GetHeader();
+        if (header is not null) gv.Header = header;
+
+        if (o.ItemCount != n.ItemCount)
+            gv.ItemsSource = Enumerable.Range(0, n.ItemCount).ToList();
+        else if (!n.SameItemsAs(o))
+            RefreshRealizedContainers(gv, n, requestRerender);
+
+        SetElementTag(gv, n);
+
+        var selectedIndex = n.GetSelectedIndex();
+        if (selectedIndex >= 0) gv.SelectedIndex = selectedIndex;
+        n.ApplyControlSetters(gv);
+        return null;
+    }
+
+    private UIElement? UpdateTemplatedFlipView(TemplatedListElementBase o, TemplatedListElementBase n, WinUI.FlipView fv, Action requestRerender)
+    {
+        // FlipView items are pre-mounted directly (no ContainerContentChanging).
+        // Build old element array from o, then reconcile like regular items.
+        int oldCount = o.ItemCount;
+        int newCount = n.ItemCount;
+        int shared = Math.Min(oldCount, newCount);
+
+        for (int i = 0; i < shared; i++)
+        {
+            var oldItemElement = o.BuildItemView(i);
+            var newItemElement = n.BuildItemView(i);
+            if (fv.Items[i] is UIElement existingCtrl && CanUpdate(oldItemElement, newItemElement))
+            {
+                var replacement = Update(oldItemElement, newItemElement, existingCtrl, requestRerender);
+                if (replacement is not null && replacement != existingCtrl)
+                    fv.Items[i] = replacement;
+            }
+            else
+            {
+                if (fv.Items[i] is UIElement oldCtrl) Unmount(oldCtrl);
+                fv.Items[i] = Mount(newItemElement, requestRerender)!;
+            }
+        }
+
+        // Remove excess
+        for (int i = oldCount - 1; i >= shared; i--)
+        {
+            if (fv.Items[i] is UIElement oldCtrl) Unmount(oldCtrl);
+            fv.Items.RemoveAt(i);
+        }
+
+        // Add new
+        for (int i = shared; i < newCount; i++)
+        {
+            var ctrl = Mount(n.BuildItemView(i), requestRerender);
+            if (ctrl is not null) fv.Items.Add(ctrl);
+        }
+
+        fv.SelectedIndex = n.GetSelectedIndex();
+        SetElementTag(fv, n);
+        n.ApplyControlSetters(fv);
+        return null;
+    }
+
     private UIElement? UpdateLazyStack(LazyStackElementBase n, WinUI.ScrollViewer sv, Action requestRerender)
     {
         if (sv.Content is WinUI.ItemsRepeater repeater)
@@ -690,7 +812,7 @@ public sealed partial class Reconciler
         }
 
         // Diff the node tree to minimize WinUI interop calls
-        DiffTreeViewNodes(tv.RootNodes, o.Nodes, n.Nodes);
+        DiffTreeViewNodes(tv.RootNodes, o.Nodes, n.Nodes, requestRerender);
 
         tv.SelectionMode = n.SelectionMode;
         SetElementTag(tv, n);
@@ -701,11 +823,13 @@ public sealed partial class Reconciler
     /// <summary>
     /// Recursively diff TreeViewNode lists, reusing existing nodes where Content matches.
     /// Only adds/removes/updates nodes that actually changed, minimizing COM interop calls.
+    /// Also reconciles ContentElement changes on existing nodes.
     /// </summary>
     private void DiffTreeViewNodes(
         IList<WinUI.TreeViewNode> liveNodes,
         TreeViewNodeData[] oldData,
-        TreeViewNodeData[] newData)
+        TreeViewNodeData[] newData,
+        Action requestRerender)
     {
         // Build lookup from old data Content → index for matching
         var oldByContent = new Dictionary<string, int>(oldData.Length);
@@ -726,8 +850,12 @@ public sealed partial class Reconciler
                 if (liveNode.IsExpanded != nd.IsExpanded)
                     liveNode.IsExpanded = nd.IsExpanded;
 
+                // Reconcile ContentElement if present
+                var oldNodeData = oldIdx < oldData.Length ? oldData[oldIdx] : null;
+                ReconcileTreeNodeContent(liveNode, oldNodeData, nd, requestRerender);
+
                 // Diff children
-                var oldChildren = oldIdx < oldData.Length ? oldData[oldIdx].Children : null;
+                var oldChildren = oldNodeData?.Children;
                 var newChildren = nd.Children;
 
                 if (ReferenceEquals(oldChildren, newChildren))
@@ -746,7 +874,7 @@ public sealed partial class Reconciler
                 }
                 else
                 {
-                    DiffTreeViewNodes(liveNode.Children, oldChildren, newChildren);
+                    DiffTreeViewNodes(liveNode.Children, oldChildren, newChildren, requestRerender);
                 }
 
                 liveIdx++;
@@ -766,6 +894,46 @@ public sealed partial class Reconciler
         // Remove excess nodes from the end
         while (liveNodes.Count > newData.Length)
             liveNodes.RemoveAt(liveNodes.Count - 1);
+    }
+
+    /// <summary>
+    /// Reconciles ContentElement changes on a TreeViewNode.
+    /// When ContentElement is used, node.Content holds a mounted UIElement.
+    /// </summary>
+    private void ReconcileTreeNodeContent(
+        WinUI.TreeViewNode liveNode,
+        TreeViewNodeData? oldData,
+        TreeViewNodeData newData,
+        Action requestRerender)
+    {
+        var oldContentEl = oldData?.ContentElement;
+        var newContentEl = newData.ContentElement;
+
+        if (newContentEl is null && oldContentEl is null) return; // Both text-only, no change needed
+
+        if (newContentEl is not null && oldContentEl is not null
+            && liveNode.Content is UIElement existingCtrl
+            && CanUpdate(oldContentEl, newContentEl))
+        {
+            // Reconcile in place
+            var replacement = Update(oldContentEl, newContentEl, existingCtrl, requestRerender);
+            if (replacement is not null)
+                liveNode.Content = replacement;
+        }
+        else if (newContentEl is not null)
+        {
+            // Mount new content element
+            if (liveNode.Content is UIElement oldCtrl)
+                Unmount(oldCtrl);
+            liveNode.Content = Mount(newContentEl, requestRerender);
+        }
+        else
+        {
+            // ContentElement removed, revert to data
+            if (liveNode.Content is UIElement oldCtrl2)
+                Unmount(oldCtrl2);
+            liveNode.Content = newData;
+        }
     }
 
     private UIElement? UpdateComponent(Element oldEl, Element newEl, UIElement control, Action requestRerender)

@@ -25,8 +25,13 @@
   <PropertyGroup>
     <RustCrateDir>$(MSBuildThisFileDirectory)Native\differ</RustCrateDir>
     <!-- Map MSBuild Platform → Rust target triple -->
-    <RustTarget Condition="'$(Platform)' == 'ARM64'">aarch64-pc-windows-msvc</RustTarget>
+    <RustTarget Condition="'$(Platform)' == 'ARM64' Or '$(Platform)' == 'arm64'">aarch64-pc-windows-msvc</RustTarget>
     <RustTarget Condition="'$(Platform)' == 'x64'">x86_64-pc-windows-msvc</RustTarget>
+    <!-- Fallback: detect from RuntimeIdentifier or PROCESSOR_ARCHITECTURE when Platform is AnyCPU/unset -->
+    <RustTarget Condition="'$(RustTarget)' == '' And '$(RuntimeIdentifier)' == 'win-arm64'">aarch64-pc-windows-msvc</RustTarget>
+    <RustTarget Condition="'$(RustTarget)' == '' And '$(RuntimeIdentifier)' == 'win-x64'">x86_64-pc-windows-msvc</RustTarget>
+    <RustTarget Condition="'$(RustTarget)' == '' And '$(PROCESSOR_ARCHITECTURE)' == 'ARM64'">aarch64-pc-windows-msvc</RustTarget>
+    <RustTarget Condition="'$(RustTarget)' == '' And '$(PROCESSOR_ARCHITECTURE)' == 'AMD64'">x86_64-pc-windows-msvc</RustTarget>
     <RustProfile Condition="'$(Configuration)' == 'Release'">release</RustProfile>
     <RustProfile Condition="'$(Configuration)' != 'Release'">dev</RustProfile>
     <RustProfileDir Condition="'$(RustProfile)' == 'release'">release</RustProfileDir>
