@@ -18,6 +18,14 @@ public static class FlexExtensions
         double? top = null,
         double? right = null,
         double? bottom = null
-    ) where T : Element =>
-        (T)el.SetAttached(new FlexAttached(grow, shrink, basis, alignSelf, position, left, top, right, bottom));
+    ) where T : Element
+    {
+        if (grow < 0 || double.IsNaN(grow) || double.IsInfinity(grow))
+            throw new ArgumentOutOfRangeException(nameof(grow), "Grow must be a non-negative, finite value.");
+
+        if (shrink < 0 || double.IsNaN(shrink) || double.IsInfinity(shrink))
+            throw new ArgumentOutOfRangeException(nameof(shrink), "Shrink must be a non-negative, finite value.");
+
+        return (T)el.SetAttached(new FlexAttached(grow, shrink, basis, alignSelf, position, left, top, right, bottom));
+    }
 }

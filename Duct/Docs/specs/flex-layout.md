@@ -319,7 +319,7 @@ The FlexPanel maintains a `Dictionary<UIElement, YogaNode>` to avoid recreating 
 ### XAML usage example
 
 ```xml
-<flex:FlexPanel Direction="Row" JustifyContent="SpaceBetween" AlignItems="Center" Padding="16">
+<flex:FlexPanel Direction="Row" JustifyContent="SpaceBetween" AlignItems="Center" FlexPadding="16">
 
     <!-- Logo, no flex, intrinsic size -->
     <Image Source="logo.png" Width="48" Height="48" />
@@ -630,7 +630,14 @@ Each page has a lightweight code-behind or ViewModel with the bindable propertie
 
 ## Open questions
 
-1. **Assembly split**: Should `Duct.Yoga` and `Duct.Flex` be separate assemblies/NuGet packages, or just separate namespaces within the Duct project? Separate assemblies maximize extractability but add build complexity. --> single assembly for now
-2. **Yoga version**: The port should target a specific Yoga commit/tag for reproducibility. Current Yoga main is post-0.72 with Grid support — we should target a stable release tag. --> go with main for now, easier to roll forward if we start on most recent
-3. **Grid support**: Yoga's CSS Grid implementation is behind an experimental feature flag. Should we port it as disabled-by-default, or omit entirely for v1? --> disabled-by-default is good plan
-4. **FlexPanel.Padding vs Panel Padding**: WinUI `Panel` doesn't have a `Padding` property natively. We can either use Yoga's padding (computed as part of the flex layout) or wrap content in a `Border`. Recommendation: use Yoga's padding — it's more correct and avoids an extra element. --> name the property "FlexPadding" which verbose, it makes it clear that this is a different padding than Border.Padding would be.
+1. **Assembly split**: Should `Duct.Layout` and `Duct.Flex` be separate assemblies/NuGet packages, or just separate namespaces within the Duct project? Separate assemblies maximize extractability but add build complexity.
+   - **Decision**: Single assembly for now.
+
+2. **Yoga version**: The port should target a specific Yoga commit/tag for reproducibility. Current Yoga main is post-0.72 with Grid support — we should target a stable release tag.
+   - **Decision**: Go with main for now, easier to roll forward if we start on the most recent.
+
+3. **Grid support**: Yoga's CSS Grid implementation is behind an experimental feature flag. Should we port it as disabled-by-default, or omit entirely for v1?
+   - **Decision**: Disabled-by-default.
+
+4. **FlexPanel.Padding vs Panel Padding**: WinUI `Panel` doesn't have a `Padding` property natively. We can either use Yoga's padding (computed as part of the flex layout) or wrap content in a `Border`. Recommendation: use Yoga's padding — it's more correct and avoids an extra element.
+   - **Decision**: Name the property `FlexPadding` — while verbose, it makes it clear this is different from `Border.Padding`.
