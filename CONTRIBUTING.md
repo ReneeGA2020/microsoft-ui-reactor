@@ -83,6 +83,7 @@ UI tests exercise the full Duct pipeline (Element DSL → Reconciler → WinUI c
 - **Component props** — `ComponentPropsTests.cs`
 - **MVVM interop hooks** — `ObservableHookTests.cs`
 - **Regression cases** — `ReconcilerRegressionTests.cs`
+- **Yoga layout engine** — `YogaGenerated/*.cs` (590 fixtures ported from Yoga C++ test suite)
 
 ## Running the test app
 
@@ -109,8 +110,16 @@ Duct/                          Core framework library
     ElementPool.cs             Control reuse pool
     PropValueRegistry.cs       Property value caching/hashing
   Elements/
-    Dsl.cs                     200+ static factory methods (Text, Button, VStack, etc.)
+    Dsl.cs                     200+ static factory methods (Text, Button, VStack, Flex, etc.)
     ElementExtensions.cs       Fluent modifiers (.Bold(), .Margin(), .Width(), etc.)
+    FlexExtensions.cs          .Flex() attached property modifier for flex children
+  Flex/
+    FlexPanel.cs               CSS Flexbox panel backed by Yoga layout engine
+  Yoga/
+    YogaAlgorithm.cs           Pure C# port of Meta's Yoga layout algorithm
+    YogaNode.cs                Yoga node tree structure
+    YogaStyle.cs               Style properties (direction, justify, align, etc.)
+    YogaEnums.cs               Yoga enum types (YogaFlexDirection, YogaJustify, etc.)
   Hosting/
     DuctApp.cs                 Static entry point — DuctApp.Run<T>()
     DuctHost.cs                Render loop, state batching, dispatcher scheduling

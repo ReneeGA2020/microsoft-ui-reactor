@@ -71,6 +71,7 @@ public sealed partial class Reconciler
             SplitViewElement sv => MountSplitView(sv, requestRerender),
             ViewboxElement vb => MountViewbox(vb, requestRerender),
             CanvasElement cvs => MountCanvas(cvs, requestRerender),
+            FlexElement flex => MountFlex(flex, requestRerender),
             NavigationViewElement nav => MountNavigationView(nav, requestRerender),
             TabViewElement tab => MountTabView(tab, requestRerender),
             BreadcrumbBarElement bcb => MountBreadcrumbBar(bcb),
@@ -697,6 +698,40 @@ public sealed partial class Reconciler
         SetElementTag(canvas, cvs);
         ApplySetters(cvs.Setters, canvas);
         return canvas;
+    }
+
+    private Flex.FlexPanel MountFlex(FlexElement flex, Action requestRerender)
+    {
+        var panel = _pool.TryRent(typeof(Flex.FlexPanel)) as Flex.FlexPanel ?? new Flex.FlexPanel();
+        panel.Direction = flex.Direction;
+        panel.JustifyContent = flex.JustifyContent;
+        panel.AlignItems = flex.AlignItems;
+        panel.AlignContent = flex.AlignContent;
+        panel.Wrap = flex.Wrap;
+        panel.ColumnGap = flex.ColumnGap;
+        panel.RowGap = flex.RowGap;
+        foreach (var child in flex.Children)
+        {
+            var ctrl = Mount(child, requestRerender);
+            if (ctrl is null) continue;
+            var fa = child.GetAttached<FlexAttached>();
+            if (fa is not null)
+            {
+                Flex.FlexPanel.SetGrow(ctrl, fa.Grow);
+                Flex.FlexPanel.SetShrink(ctrl, fa.Shrink);
+                if (fa.Basis.HasValue) Flex.FlexPanel.SetBasis(ctrl, fa.Basis.Value);
+                if (fa.AlignSelf.HasValue) Flex.FlexPanel.SetAlignSelf(ctrl, fa.AlignSelf.Value);
+                Flex.FlexPanel.SetPosition(ctrl, fa.Position);
+                if (fa.Left.HasValue) Flex.FlexPanel.SetLeft(ctrl, fa.Left.Value);
+                if (fa.Top.HasValue) Flex.FlexPanel.SetTop(ctrl, fa.Top.Value);
+                if (fa.Right.HasValue) Flex.FlexPanel.SetRight(ctrl, fa.Right.Value);
+                if (fa.Bottom.HasValue) Flex.FlexPanel.SetBottom(ctrl, fa.Bottom.Value);
+            }
+            panel.Children.Add(ctrl);
+        }
+        SetElementTag(panel, flex);
+        ApplySetters(flex.Setters, panel);
+        return panel;
     }
 
     private WinUI.NavigationView MountNavigationView(NavigationViewElement nav, Action requestRerender)

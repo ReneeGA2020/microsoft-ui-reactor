@@ -113,7 +113,39 @@ RelativePanel(
     Text("Title").RelativePanel(name: "title", alignLeftWithPanel: true),
     Text("Subtitle").RelativePanel(name: "sub", below: "title")
 )
+
+// Flex layout (CSS Flexbox via Yoga engine)
+// Default is row direction — behaves like CSS display:flex
+Flex(
+    Text("Left"),
+    Text("Center"),
+    Text("Right")
+)
+
+// Column direction
+FlexColumn(
+    Text("Top"),
+    Text("Bottom")
+)
+
+// With justify/align and wrapping
+Flex(FlexDirection.Row,
+    Text("A").Flex(grow: 1),
+    Text("B").Flex(grow: 2),
+    Text("C").Flex(grow: 1)
+) with { JustifyContent = FlexJustify.SpaceBetween, Wrap = FlexWrap.Wrap }
+
+// Absolute positioning within a flex container
+Flex(
+    Text("Normal flow"),
+    Text("Overlay").Flex(position: FlexPositionType.Absolute, top: 10, right: 10)
+)
 ```
+
+> **Flex layout** uses the same mental model as CSS Flexbox. If you're familiar with
+> `display: flex`, `justify-content`, `align-items`, and `flex-grow` from web development,
+> the Duct `Flex()` / `FlexRow()` / `FlexColumn()` containers and `.Flex()` child modifier
+> work the same way. See `Duct/Docs/specs/flex-layout.md` for the full spec.
 
 ## Modifiers (Fluent Style)
 
@@ -172,8 +204,8 @@ Button("Silent", onClick).SoundMode(ElementSoundMode.Off)
 
 ### Attached Properties
 
-Containers like Grid, Canvas, and RelativePanel use attached properties to position children.
-Instead of wrapper types, children use fluent `.Grid()`, `.Canvas()`, or `.RelativePanel()` extensions:
+Containers like Grid, Canvas, RelativePanel, and Flex use attached properties to position children.
+Instead of wrapper types, children use fluent `.Grid()`, `.Canvas()`, `.RelativePanel()`, or `.Flex()` extensions:
 
 ```csharp
 // Grid attached properties
@@ -185,6 +217,11 @@ Rectangle().Canvas(left: 50, top: 100)
 // RelativePanel attached properties
 Text("Label").RelativePanel(name: "label", alignLeftWithPanel: true)
 Text("Value").RelativePanel(name: "value", rightOf: "label")
+
+// Flex attached properties (child grow/shrink/basis/positioning)
+Text("Grows").Flex(grow: 1)
+Text("Fixed").Flex(grow: 0, shrink: 0, basis: 200)
+Text("Overlay").Flex(position: FlexPositionType.Absolute, top: 0, right: 0)
 ```
 
 ## State Management

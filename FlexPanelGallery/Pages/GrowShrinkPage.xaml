@@ -1,0 +1,48 @@
+<Page
+    x:Class="FlexPanelGallery.Pages.GrowShrinkPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:flex="using:Duct.Flex">
+
+    <ScrollViewer>
+        <StackPanel Spacing="16" Padding="24">
+            <TextBlock Text="Flex Grow &amp; Shrink" Style="{StaticResource TitleTextBlockStyle}" />
+            <TextBlock Text="Grow distributes remaining space. Shrink determines how items shrink when they overflow." TextWrapping="Wrap" />
+
+            <!-- Grow demo -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8" Padding="16">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Grow: 1 / 2 / 1" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1" MinHeight="80">
+                        <flex:FlexPanel Direction="Row">
+                            <Border Background="CornflowerBlue" CornerRadius="4" Padding="8" flex:FlexPanel.Grow="1">
+                                <TextBlock Text="Grow=1" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <Border Background="MediumSeaGreen" CornerRadius="4" Padding="8" flex:FlexPanel.Grow="2">
+                                <TextBlock Text="Grow=2" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <Border Background="Coral" CornerRadius="4" Padding="8" flex:FlexPanel.Grow="1">
+                                <TextBlock Text="Grow=1" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                        </flex:FlexPanel>
+                    </Border>
+
+                    <TextBlock Text="No Grow (default)" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,16,0,0" />
+                    <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1" MinHeight="80">
+                        <flex:FlexPanel Direction="Row">
+                            <Border Width="80" Background="CornflowerBlue" CornerRadius="4" Padding="8">
+                                <TextBlock Text="Fixed" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <Border Width="120" Background="MediumSeaGreen" CornerRadius="4" Padding="8">
+                                <TextBlock Text="Fixed" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <Border Width="80" Background="Coral" CornerRadius="4" Padding="8">
+                                <TextBlock Text="Fixed" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                        </flex:FlexPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

@@ -1,0 +1,84 @@
+<Page
+    x:Class="FlexPanelGallery.Pages.OverviewPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:flex="using:Duct.Flex"
+    xmlns:yoga="using:Duct.Flex">
+
+    <ScrollViewer>
+        <StackPanel Spacing="16" Padding="24">
+
+            <TextBlock Text="FlexPanel Overview" Style="{StaticResource TitleTextBlockStyle}" />
+            <TextBlock Text="A CSS Flexbox layout panel for WinUI3, powered by a pure C# port of Meta's Yoga layout engine."
+                       TextWrapping="Wrap" />
+
+            <!-- Hero: Horizontal nav bar -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8" Padding="16">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Navigation Bar" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <flex:FlexPanel Direction="Row" JustifyContent="SpaceBetween" AlignItems="Center">
+                        <Border Width="32" Height="32" Background="CornflowerBlue" CornerRadius="16" />
+                        <StackPanel Orientation="Horizontal" Spacing="16" flex:FlexPanel.Grow="1" Margin="16,0,0,0">
+                            <TextBlock Text="Home" VerticalAlignment="Center" />
+                            <TextBlock Text="About" VerticalAlignment="Center" />
+                            <TextBlock Text="Contact" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <Button Content="Sign In" flex:FlexPanel.Shrink="0" />
+                    </flex:FlexPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Hero: Wrapping tags -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8" Padding="16">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Wrapping Tag Cloud" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <flex:FlexPanel Direction="Row" Wrap="Wrap" ColumnGap="8" RowGap="8">
+                        <Border Background="CornflowerBlue" CornerRadius="4" Padding="8,4" flex:FlexPanel.Grow="1">
+                            <TextBlock Text="C#" Foreground="White" HorizontalAlignment="Center" />
+                        </Border>
+                        <Border Background="MediumSeaGreen" CornerRadius="4" Padding="8,4" flex:FlexPanel.Grow="1">
+                            <TextBlock Text="WinUI3" Foreground="White" HorizontalAlignment="Center" />
+                        </Border>
+                        <Border Background="Coral" CornerRadius="4" Padding="8,4" flex:FlexPanel.Grow="1">
+                            <TextBlock Text="Flexbox" Foreground="White" HorizontalAlignment="Center" />
+                        </Border>
+                        <Border Background="MediumPurple" CornerRadius="4" Padding="8,4" flex:FlexPanel.Grow="1">
+                            <TextBlock Text="Yoga" Foreground="White" HorizontalAlignment="Center" />
+                        </Border>
+                        <Border Background="DarkOrange" CornerRadius="4" Padding="8,4" flex:FlexPanel.Grow="1">
+                            <TextBlock Text="Layout" Foreground="White" HorizontalAlignment="Center" />
+                        </Border>
+                        <Border Background="SteelBlue" CornerRadius="4" Padding="8,4" flex:FlexPanel.Grow="1">
+                            <TextBlock Text="Panel" Foreground="White" HorizontalAlignment="Center" />
+                        </Border>
+                    </flex:FlexPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Hero: Column layout -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8" Padding="16">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Column Layout with Grow" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1"
+                            Height="300">
+                        <flex:FlexPanel Direction="Column">
+                            <Border Background="CornflowerBlue" Padding="8">
+                                <TextBlock Text="Header" Foreground="White" />
+                            </Border>
+                            <Border Background="LightGray" flex:FlexPanel.Grow="1" Padding="8">
+                                <TextBlock Text="Content (grows to fill)" />
+                            </Border>
+                            <Border Background="CornflowerBlue" Padding="8">
+                                <TextBlock Text="Footer" Foreground="White" />
+                            </Border>
+                        </flex:FlexPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

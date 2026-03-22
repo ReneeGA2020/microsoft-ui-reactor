@@ -127,9 +127,11 @@ dotnet test Duct.Tests -p:Platform=x64
 Duct/                  Core framework
   Core/                Reconciler, components, hooks, elements
   Elements/            DSL factory methods + fluent modifiers
+  Flex/                FlexPanel — CSS Flexbox layout via Yoga engine
+  Yoga/                Pure C# port of Meta's Yoga layout engine
   Hosting/             App bootstrap, render loop, hot reload
   Native/              Experimental Rust differ (ViewDiffer)
-Duct.Tests/            xUnit test suite
+Duct.Tests/            xUnit test suite (incl. 590 Yoga layout fixtures)
 Duct.TestApp/          Interactive control showcase
 Duct.Cli/              CLI scaffolding tool
 samples/apps/
@@ -143,6 +145,7 @@ samples/apps/
 |-----|-------------|
 | [Getting Started](Duct/Docs/GettingStarted.md) | Tutorial — elements, layout, state, components |
 | [Architecture](Duct/Docs/Architecture.md) | Virtual tree, reconciler, hooks, design decisions |
+| [Flex Layout Spec](Duct/Docs/specs/flex-layout.md) | CSS Flexbox via Yoga — FlexPanel design and API |
 | [Contributing](CONTRIBUTING.md) | Build, test, add features, code style |
 | [State & Hooks](docs/reference/state-and-hooks.md) | Deep dive on the hook system and reactivity |
 | [Reconciliation](docs/reference/reconciliation.md) | How tree diffing works (C# and Rust paths) |

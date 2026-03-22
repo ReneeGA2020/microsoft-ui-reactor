@@ -179,6 +179,19 @@ public record GridAttached(int Row = 0, int Column = 0, int RowSpan = 1, int Col
 /// <summary>Attached property data for Canvas children. Set via .Canvas(left:, top:) extension.</summary>
 public record CanvasAttached(double Left = 0, double Top = 0);
 
+/// <summary>Attached property data for Flex children. Set via .Flex(grow:, shrink:, ...) extension.</summary>
+public record FlexAttached(
+    double Grow = 0,
+    double Shrink = 1,
+    double? Basis = null,
+    Flex.FlexAlign? AlignSelf = null,
+    Flex.FlexPositionType Position = Flex.FlexPositionType.Relative,
+    double? Left = null,
+    double? Top = null,
+    double? Right = null,
+    double? Bottom = null
+);
+
 /// <summary>Attached property data for RelativePanel children. Set via .RelativePanel(...) extension.</summary>
 public record RelativePanelAttached(string Name)
 {
@@ -633,6 +646,18 @@ public record GridElement(
     public double RowSpacing { get; init; }
     public double ColumnSpacing { get; init; }
     internal Action<WinUI.Grid>[] Setters { get; init; } = [];
+}
+
+public record FlexElement(Element[] Children) : Element
+{
+    public Flex.FlexDirection Direction { get; init; } = Flex.FlexDirection.Row;
+    public Flex.FlexJustify JustifyContent { get; init; } = Flex.FlexJustify.FlexStart;
+    public Flex.FlexAlign AlignItems { get; init; } = Flex.FlexAlign.Stretch;
+    public Flex.FlexAlign AlignContent { get; init; } = Flex.FlexAlign.FlexStart;
+    public Flex.FlexWrap Wrap { get; init; } = Flex.FlexWrap.NoWrap;
+    public double ColumnGap { get; init; }
+    public double RowGap { get; init; }
+    internal Action<Flex.FlexPanel>[] Setters { get; init; } = [];
 }
 
 public record ScrollViewElement(Element Child) : Element

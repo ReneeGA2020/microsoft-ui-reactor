@@ -1,0 +1,63 @@
+<Window
+    x:Class="FlexPanelGallery.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
+    Title="FlexPanel Gallery">
+
+    <muxc:NavigationView x:Name="NavView"
+                         IsBackButtonVisible="Collapsed"
+                         IsSettingsVisible="False"
+                         SelectionChanged="NavView_SelectionChanged"
+                         PaneDisplayMode="Left">
+        <muxc:NavigationView.MenuItems>
+            <muxc:NavigationViewItem Content="Overview" Tag="Overview" IsSelected="True">
+                <muxc:NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE80F;" />
+                </muxc:NavigationViewItem.Icon>
+            </muxc:NavigationViewItem>
+            <muxc:NavigationViewItem Content="Direction" Tag="Direction">
+                <muxc:NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE76C;" />
+                </muxc:NavigationViewItem.Icon>
+            </muxc:NavigationViewItem>
+            <muxc:NavigationViewItem Content="Justify Content" Tag="JustifyContent">
+                <muxc:NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE745;" />
+                </muxc:NavigationViewItem.Icon>
+            </muxc:NavigationViewItem>
+            <muxc:NavigationViewItem Content="Align Items" Tag="AlignItems">
+                <muxc:NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE744;" />
+                </muxc:NavigationViewItem.Icon>
+            </muxc:NavigationViewItem>
+            <muxc:NavigationViewItem Content="Wrap" Tag="Wrap">
+                <muxc:NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE8C4;" />
+                </muxc:NavigationViewItem.Icon>
+            </muxc:NavigationViewItem>
+            <muxc:NavigationViewItem Content="Grow &amp; Shrink" Tag="GrowShrink">
+                <muxc:NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE740;" />
+                </muxc:NavigationViewItem.Icon>
+            </muxc:NavigationViewItem>
+            <muxc:NavigationViewItem Content="Gap" Tag="Gap">
+                <muxc:NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE737;" />
+                </muxc:NavigationViewItem.Icon>
+            </muxc:NavigationViewItem>
+            <muxc:NavigationViewItem Content="Absolute Position" Tag="AbsolutePosition">
+                <muxc:NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE759;" />
+                </muxc:NavigationViewItem.Icon>
+            </muxc:NavigationViewItem>
+            <muxc:NavigationViewItem Content="Nested Flex" Tag="NestedFlex">
+                <muxc:NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xF0E2;" />
+                </muxc:NavigationViewItem.Icon>
+            </muxc:NavigationViewItem>
+        </muxc:NavigationView.MenuItems>
+
+        <Frame x:Name="ContentFrame" />
+    </muxc:NavigationView>
+</Window>

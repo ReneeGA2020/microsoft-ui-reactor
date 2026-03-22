@@ -55,6 +55,7 @@ re-renders automatically.
 ```csharp
 using Duct;
 using Duct.Core;
+using Duct.Yoga;                   // YogaFlexDirection, YogaJustify, etc. (if using Flex layout)
 using Microsoft.UI.Xaml;           // Thickness, HorizontalAlignment, VerticalAlignment
 using Microsoft.UI.Xaml.Controls;  // Orientation, InfoBarSeverity, etc. (if needed)
 using static Duct.UI;  // Brings Text(), Button(), VStack() etc. into scope
@@ -287,6 +288,10 @@ UseEffect(() => { prevCount.Current = count; }, count);
 | `Viewbox(child)` | `Element → ViewboxElement` | Scales child to fit |
 | `Canvas(children...)` | `params CanvasChild[] → CanvasElement` | Absolute positioning |
 | `CanvasItem(element, left?, top?)` | `(Element, double, double) → CanvasChild` | Positioned canvas child |
+| `Flex(children...)` | `params Element?[] → FlexElement` | CSS Flexbox (row default) |
+| `Flex(direction, children...)` | `(YogaFlexDirection, params Element?[]) → FlexElement` | Flexbox with direction |
+| `FlexRow(children...)` | `params Element?[] → FlexElement` | Flex row shortcut |
+| `FlexColumn(children...)` | `params Element?[] → FlexElement` | Flex column shortcut |
 
 ### Grid
 
@@ -306,6 +311,93 @@ Column/row definition syntax:
 - `"2*"` — 2 stars
 - `"Auto"` — size to content
 - `"200"` — fixed 200px
+
+### Flex Layout (CSS Flexbox)
+
+FlexPanel implements **CSS Flexbox** using a C# port of Meta's Yoga layout engine. If you know
+CSS Flexbox, you already know how this works — the property names map directly:
+
+| CSS Property | Duct Container Property | Duct Enum |
+|---|---|---|
+| `flex-direction` | `Direction` | `YogaFlexDirection` { Row, RowReverse, Column, ColumnReverse } |
+| `justify-content` | `JustifyContent` | `YogaJustify` { FlexStart, Center, FlexEnd, SpaceBetween, SpaceAround, SpaceEvenly } |
+| `align-items` | `AlignItems` | `YogaAlign` { FlexStart, Center, FlexEnd, Stretch, Baseline } |
+| `align-content` | `AlignContent` | `YogaAlign` (same as above + SpaceBetween, SpaceAround, SpaceEvenly) |
+| `flex-wrap` | `Wrap` | `YogaWrap` { NoWrap, Wrap, WrapReverse } |
+| `column-gap` | `ColumnGap` | `double` |
+| `row-gap` | `RowGap` | `double` |
+
+Child properties (set via `.Flex()` modifier):
+
+| CSS Property | `.Flex()` Parameter | Default |
+|---|---|---|
+| `flex-grow` | `grow` | 0 |
+| `flex-shrink` | `shrink` | 1 |
+| `flex-basis` | `basis` | null (auto) |
+| `align-self` | `alignSelf` | null (inherit) |
+| `position` | `position` | Relative |
+| `left/top/right/bottom` | `left/top/right/bottom` | null |
+
+```csharp
+// Basic row (like CSS: display:flex)
+Flex(
+    Text("A"),
+    Text("B"),
+    Text("C")
+)
+
+// Column with spacing (like flex-direction:column; row-gap:12px)
+FlexColumn(
+    Text("First"),
+    Text("Second"),
+    Text("Third")
+) with { RowGap = 12 }
+
+// Grow children to fill space (like flex-grow)
+FlexRow(
+    Text("Sidebar").Flex(grow: 0, basis: 200),       // fixed 200px
+    Text("Main content").Flex(grow: 1),                // fills remaining
+    Text("Aside").Flex(grow: 0, basis: 150)            // fixed 150px
+)
+
+// Justify and align (like justify-content + align-items)
+Flex(
+    Text("Centered")
+) with { JustifyContent = YogaJustify.Center, AlignItems = YogaAlign.Center }
+
+// Wrapping (like flex-wrap:wrap with gap)
+Flex(
+    tags.Select(t => Text(t).Margin(4)).ToArray()
+) with { Wrap = YogaWrap.Wrap, ColumnGap = 8, RowGap = 8 }
+
+// Absolute positioning within flex (like position:absolute)
+Flex(
+    Text("Normal flow"),
+    Text("Badge").Flex(position: YogaPositionType.Absolute, top: 0, right: 0)
+)
+
+// Nested flex for complex layouts (holy grail)
+FlexColumn(
+    Flex(Text("Header")).Flex(shrink: 0),
+    FlexRow(
+        Text("Nav").Flex(basis: 200, shrink: 0),
+        Text("Content").Flex(grow: 1),
+        Text("Aside").Flex(basis: 150, shrink: 0)
+    ).Flex(grow: 1),
+    Flex(Text("Footer")).Flex(shrink: 0)
+)
+```
+
+**When to use Flex vs other layout containers:**
+- Use **VStack/HStack** for simple stacking with uniform spacing — simpler API, good default
+- Use **Grid** for 2D row/column grid layouts with defined tracks
+- Use **Flex** when you need CSS Flexbox behavior: grow/shrink proportions, wrapping,
+  space distribution (justify/align), or absolute positioning within a flex container
+
+**Required imports for Flex:**
+```csharp
+using Duct.Yoga;  // YogaFlexDirection, YogaJustify, YogaAlign, YogaWrap, YogaPositionType
+```
 
 ### Navigation
 
@@ -519,6 +611,13 @@ FontWeight               // struct; use FontWeights helpers:
 FontWeights.Bold
 FontWeights.SemiBold
 FontWeights.Normal
+
+// Duct.Yoga namespace (for Flex layout):
+YogaFlexDirection        { Column, ColumnReverse, Row, RowReverse }
+YogaJustify              { FlexStart, Center, FlexEnd, SpaceBetween, SpaceAround, SpaceEvenly }
+YogaAlign                { FlexStart, Center, FlexEnd, Stretch, Baseline, SpaceBetween, SpaceAround, SpaceEvenly }
+YogaWrap                 { NoWrap, Wrap, WrapReverse }
+YogaPositionType         { Static, Relative, Absolute }
 ```
 
 ---
@@ -800,6 +899,28 @@ Grid(
 )
 ```
 
+### Flex Layout Pattern (Responsive Sidebar)
+```csharp
+// Familiar to web devs — same mental model as CSS Flexbox
+FlexRow(
+    Border(
+        FlexColumn(
+            Heading("Navigation"),
+            ForEach(navItems, item => Button(item.Label, () => setPage(item.Tag)))
+        ) with { RowGap = 4 }
+    ).Flex(basis: 220, shrink: 0).Background("#f0f0f0").Padding(12),
+
+    Border(
+        page switch
+        {
+            "home" => Component<HomePage>(),
+            "settings" => Component<SettingsPage>(),
+            _ => Text("Select a page")
+        }
+    ).Flex(grow: 1).Padding(16)
+)
+```
+
 ---
 
 ## Critical Rules & Gotchas
@@ -1000,7 +1121,7 @@ class SettingsPage : Component
 | `useEffect(() => {}, [dep])` | `UseEffect(() => {}, dep)` |
 | `useMemo(() => val, [dep])` | `UseMemo(() => val, dep)` |
 | `useRef(null)` | `UseRef<T>(default)` |
-| `<div>` | `VStack()` / `HStack()` / `Border()` |
+| `<div>` | `VStack()` / `HStack()` / `Border()` / `Flex()` |
 | `<span>text</span>` | `Text("text")` |
 | `<button onClick={fn}>` | `Button("label", fn)` |
 | `<input value={v} onChange={fn}>` | `TextField(v, fn)` |
@@ -1009,5 +1130,7 @@ class SettingsPage : Component
 | `<Component />` | `Component<MyComponent>()` |
 | `props` | N/A — components use hooks for all state |
 | `className="..."` | `.Set(el => ...)` for native property access |
+| `display: flex` | `Flex()` / `FlexRow()` / `FlexColumn()` |
+| `flex-grow: 1` | `.Flex(grow: 1)` |
 | `style={{margin: 10}}` | `.Margin(10)` |
 | JSX | C# method calls + `using static Duct.UI` |

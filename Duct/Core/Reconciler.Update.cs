@@ -139,6 +139,8 @@ public sealed partial class Reconciler
                 => UpdateCommandBar(o, n, cb, requestRerender),
             (Core.GridElement o, Core.GridElement n, WinUI.Grid g)
                 => UpdateGrid(o, n, g, requestRerender),
+            (FlexElement o, FlexElement n, Flex.FlexPanel fp)
+                => UpdateFlex(o, n, fp, requestRerender),
             (TemplatedListElementBase o, TemplatedListElementBase n, WinUI.ListView lv)
                 => UpdateTemplatedListView(o, n, lv, requestRerender),
             (TemplatedListElementBase o, TemplatedListElementBase n, WinUI.GridView gv)
@@ -834,6 +836,66 @@ public sealed partial class Reconciler
         SetElementTag(g, n);
         ApplySetters(n.Setters, g);
         return null;
+    }
+
+    private UIElement? UpdateFlex(FlexElement o, FlexElement n, Flex.FlexPanel panel, Action requestRerender)
+    {
+        panel.Direction = n.Direction;
+        panel.JustifyContent = n.JustifyContent;
+        panel.AlignItems = n.AlignItems;
+        panel.AlignContent = n.AlignContent;
+        panel.Wrap = n.Wrap;
+        panel.ColumnGap = n.ColumnGap;
+        panel.RowGap = n.RowGap;
+
+        int oldCount = o.Children.Length;
+        int newCount = n.Children.Length;
+        int shared = Math.Min(oldCount, newCount);
+
+        for (int i = 0; i < shared; i++)
+        {
+            var oldChild = o.Children[i];
+            var newChild = n.Children[i];
+            var existingCtrl = panel.Children[i];
+            var replacement = Reconcile(oldChild, newChild, existingCtrl, requestRerender);
+            if (replacement is not null && replacement != existingCtrl)
+                panel.Children[i] = replacement;
+            ApplyFlexAttached(newChild, panel.Children[i]);
+        }
+
+        for (int i = oldCount - 1; i >= shared; i--)
+        {
+            Unmount(panel.Children[i]);
+            panel.Children.RemoveAt(i);
+        }
+
+        for (int i = shared; i < newCount; i++)
+        {
+            var child = n.Children[i];
+            var ctrl = Mount(child, requestRerender);
+            if (ctrl is null) continue;
+            ApplyFlexAttached(child, ctrl);
+            panel.Children.Add(ctrl);
+        }
+
+        SetElementTag(panel, n);
+        ApplySetters(n.Setters, panel);
+        return null;
+    }
+
+    private static void ApplyFlexAttached(Element child, Microsoft.UI.Xaml.UIElement ctrl)
+    {
+        var fa = child.GetAttached<FlexAttached>();
+        if (fa is null) return;
+        Flex.FlexPanel.SetGrow(ctrl, fa.Grow);
+        Flex.FlexPanel.SetShrink(ctrl, fa.Shrink);
+        if (fa.Basis.HasValue) Flex.FlexPanel.SetBasis(ctrl, fa.Basis.Value);
+        if (fa.AlignSelf.HasValue) Flex.FlexPanel.SetAlignSelf(ctrl, fa.AlignSelf.Value);
+        Flex.FlexPanel.SetPosition(ctrl, fa.Position);
+        if (fa.Left.HasValue) Flex.FlexPanel.SetLeft(ctrl, fa.Left.Value);
+        if (fa.Top.HasValue) Flex.FlexPanel.SetTop(ctrl, fa.Top.Value);
+        if (fa.Right.HasValue) Flex.FlexPanel.SetRight(ctrl, fa.Right.Value);
+        if (fa.Bottom.HasValue) Flex.FlexPanel.SetBottom(ctrl, fa.Bottom.Value);
     }
 
     private UIElement? UpdateTreeView(TreeViewElement o, TreeViewElement n, WinUI.TreeView tv, Action requestRerender)

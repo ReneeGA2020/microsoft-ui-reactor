@@ -1,0 +1,38 @@
+<Page
+    x:Class="FlexPanelGallery.Pages.WrapPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:flex="using:Duct.Flex">
+
+    <ScrollViewer>
+        <StackPanel Spacing="16" Padding="24">
+            <TextBlock Text="Wrap" Style="{StaticResource TitleTextBlockStyle}" />
+            <TextBlock Text="Controls whether items wrap to multiple lines when they exceed the available space." TextWrapping="Wrap" />
+
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8" Padding="16">
+                <StackPanel Spacing="12">
+                    <ComboBox x:Name="WrapCombo" Header="Wrap" SelectedIndex="1"
+                              SelectionChanged="WrapCombo_SelectionChanged">
+                        <ComboBoxItem Content="NoWrap" Tag="NoWrap" />
+                        <ComboBoxItem Content="Wrap" Tag="Wrap" />
+                        <ComboBoxItem Content="WrapReverse" Tag="WrapReverse" />
+                    </ComboBox>
+
+                    <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1"
+                            MinHeight="200">
+                        <flex:FlexPanel x:Name="DemoPanel" Direction="Row" Wrap="Wrap" ColumnGap="8" RowGap="8">
+                            <Border Width="100" Height="80" Background="CornflowerBlue" CornerRadius="4" />
+                            <Border Width="100" Height="80" Background="MediumSeaGreen" CornerRadius="4" />
+                            <Border Width="100" Height="80" Background="Coral" CornerRadius="4" />
+                            <Border Width="100" Height="80" Background="MediumPurple" CornerRadius="4" />
+                            <Border Width="100" Height="80" Background="DarkOrange" CornerRadius="4" />
+                            <Border Width="100" Height="80" Background="SteelBlue" CornerRadius="4" />
+                            <Border Width="100" Height="80" Background="IndianRed" CornerRadius="4" />
+                            <Border Width="100" Height="80" Background="DarkCyan" CornerRadius="4" />
+                        </flex:FlexPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

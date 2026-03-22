@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using Duct;
 using Duct.Core;
+using Duct.Yoga;
 using Microsoft.UI.Xaml;
 using static Duct.UI;
 
@@ -35,7 +36,8 @@ class DemoApp : Component
                 TabButton("Perf Stress", currentTab, setTab),
                 TabButton("Virtualization", currentTab, setTab),
                 TabButton("Flyout", currentTab, setTab),
-                TabButton("DataTemplate", currentTab, setTab)
+                TabButton("DataTemplate", currentTab, setTab),
+                TabButton("FlexPanel", currentTab, setTab)
             ).Margin(16, 16, 16, 0),
 
             // Content area with padding
@@ -51,6 +53,7 @@ class DemoApp : Component
                     "Virtualization" => Component<VirtualizationDemo>(),
                     "Flyout" => Component<FlyoutDemo>(),
                     "DataTemplate" => Component<DataTemplateDemo>(),
+                    "FlexPanel" => Component<FlexPanelDemo>(),
                     _ => Text("Select a tab")
                 }
             ).Padding(24).Margin(16)
@@ -1208,5 +1211,122 @@ class DataTemplateDemo : Component
             ).CornerRadius(8).Height(300)
         ));
     }
+}
+
+// ─── FlexPanel demo ─────────────────────────────────────────────────────────
+
+class FlexPanelDemo : Component
+{
+    public override Element Render()
+    {
+        var (direction, setDirection) = UseState(YogaFlexDirection.Row);
+        var (wrap, setWrap) = UseState(YogaWrap.NoWrap);
+        var (justify, setJustify) = UseState(YogaJustify.FlexStart);
+        var (alignItems, setAlignItems) = UseState(YogaAlign.Stretch);
+
+        return ScrollView(VStack(16,
+            Heading("FlexPanel"),
+            Text("Interactive CSS Flexbox layout powered by the Yoga engine."),
+
+            // ── Controls ──
+            HStack(8,
+                VStack(4,
+                    Text("Direction").SemiBold(),
+                    Button("Row", () => setDirection(YogaFlexDirection.Row))
+                        .Disabled(direction == YogaFlexDirection.Row),
+                    Button("Column", () => setDirection(YogaFlexDirection.Column))
+                        .Disabled(direction == YogaFlexDirection.Column),
+                    Button("Row Reverse", () => setDirection(YogaFlexDirection.RowReverse))
+                        .Disabled(direction == YogaFlexDirection.RowReverse)
+                ),
+                VStack(4,
+                    Text("Wrap").SemiBold(),
+                    Button("No Wrap", () => setWrap(YogaWrap.NoWrap))
+                        .Disabled(wrap == YogaWrap.NoWrap),
+                    Button("Wrap", () => setWrap(YogaWrap.Wrap))
+                        .Disabled(wrap == YogaWrap.Wrap)
+                ),
+                VStack(4,
+                    Text("Justify Content").SemiBold(),
+                    Button("Start", () => setJustify(YogaJustify.FlexStart))
+                        .Disabled(justify == YogaJustify.FlexStart),
+                    Button("Center", () => setJustify(YogaJustify.Center))
+                        .Disabled(justify == YogaJustify.Center),
+                    Button("Space Between", () => setJustify(YogaJustify.SpaceBetween))
+                        .Disabled(justify == YogaJustify.SpaceBetween),
+                    Button("Space Evenly", () => setJustify(YogaJustify.SpaceEvenly))
+                        .Disabled(justify == YogaJustify.SpaceEvenly)
+                ),
+                VStack(4,
+                    Text("Align Items").SemiBold(),
+                    Button("Stretch", () => setAlignItems(YogaAlign.Stretch))
+                        .Disabled(alignItems == YogaAlign.Stretch),
+                    Button("Center", () => setAlignItems(YogaAlign.Center))
+                        .Disabled(alignItems == YogaAlign.Center),
+                    Button("Start", () => setAlignItems(YogaAlign.FlexStart))
+                        .Disabled(alignItems == YogaAlign.FlexStart),
+                    Button("End", () => setAlignItems(YogaAlign.FlexEnd))
+                        .Disabled(alignItems == YogaAlign.FlexEnd)
+                )
+            ),
+
+            Text($"Direction={direction}  Wrap={wrap}  Justify={justify}  Align={alignItems}")
+                .FontSize(12).Opacity(0.5),
+
+            // ── Live flex container ──
+            SubHeading("Live Preview"),
+            Border(
+                new FlexElement([
+                    ColorBox("A", "#4A90D9").Flex(grow: 1).Size(80, 60),
+                    ColorBox("B", "#50B86C").Flex(grow: 2).Size(80, 80),
+                    ColorBox("C", "#E8834A").Flex(grow: 1).Size(80, 40),
+                    ColorBox("D", "#9B59B6").Size(80, 50),
+                    ColorBox("E", "#E74C3C").Flex(grow: 1).Size(80, 70),
+                ])
+                {
+                    Direction = direction,
+                    Wrap = wrap,
+                    JustifyContent = justify,
+                    AlignItems = alignItems,
+                    ColumnGap = 8,
+                    RowGap = 8,
+                }
+            ).Background("#f0f0f0").CornerRadius(8).Padding(8).Height(300),
+
+            // ── Grow ratio demo ──
+            SubHeading("Grow Ratios"),
+            Text("Items with grow 1 : 2 : 1 share available space proportionally."),
+            new FlexElement([
+                ColorBox("1x", "#4A90D9").Flex(grow: 1).Height(50),
+                ColorBox("2x", "#50B86C").Flex(grow: 2).Height(50),
+                ColorBox("1x", "#E8834A").Flex(grow: 1).Height(50),
+            ])
+            {
+                Direction = YogaFlexDirection.Row,
+                ColumnGap = 8,
+            },
+
+            // ── Wrap demo ──
+            SubHeading("Wrap"),
+            Text("Eight items with wrap enabled flow onto multiple lines."),
+            new FlexElement(
+                Enumerable.Range(1, 8).Select(i =>
+                    ColorBox($"{i}", i % 2 == 0 ? "#4A90D9" : "#E8834A")
+                        .Size(120, 50).Flex(grow: 1)
+                ).ToArray()
+            )
+            {
+                Direction = YogaFlexDirection.Row,
+                Wrap = YogaWrap.Wrap,
+                ColumnGap = 8,
+                RowGap = 8,
+            }
+        ));
+    }
+
+    static Element ColorBox(string label, string color) =>
+        Border(
+            Text(label).Bold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
+        ).Background(color).CornerRadius(4).Padding(8);
 }
 

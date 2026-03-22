@@ -163,6 +163,20 @@ public static class UI
 
     public static CanvasElement Canvas(params Element?[] children) => new(FilterChildren(children));
 
+    // ── Flex ────────────────────────────────────────────────────────
+
+    public static FlexElement Flex(params Element?[] children) =>
+        new(FilterChildren(children));
+
+    public static FlexElement Flex(Duct.Flex.FlexDirection direction, params Element?[] children) =>
+        new(FilterChildren(children)) { Direction = direction };
+
+    public static FlexElement FlexRow(params Element?[] children) =>
+        new(FilterChildren(children)) { Direction = Duct.Flex.FlexDirection.Row };
+
+    public static FlexElement FlexColumn(params Element?[] children) =>
+        new(FilterChildren(children)) { Direction = Duct.Flex.FlexDirection.Column };
+
     // ── Grid ────────────────────────────────────────────────────────
 
     public static GridElement Grid(

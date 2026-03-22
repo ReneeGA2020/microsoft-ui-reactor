@@ -19,6 +19,7 @@ Element (abstract record)
 ├── ProgressElement
 ├── StackElement          (children: Element[])
 ├── GridElement
+├── FlexElement           (CSS Flexbox via Yoga engine)
 ├── ScrollViewElement
 ├── BorderElement
 ├── ExpanderElement
@@ -195,8 +196,8 @@ WinUI event handlers are wired once at mount time. To update closures (which cap
 ### Attached property system
 WinUI containers like `Grid`, `Canvas`, and `RelativePanel` use attached properties to position children (e.g., `Grid.SetRow(control, 1)`). In Duct, these are modeled via:
 
-1. **Attached data records** (`GridAttached`, `CanvasAttached`, `RelativePanelAttached`) — stored on `Element.Attached`, a type-keyed `IReadOnlyDictionary<Type, object>`.
-2. **Fluent extension methods** (`.Grid()`, `.Canvas()`, `.RelativePanel()`) — set the attached data on the element.
+1. **Attached data records** (`GridAttached`, `CanvasAttached`, `RelativePanelAttached`, `FlexAttached`) — stored on `Element.Attached`, a type-keyed `IReadOnlyDictionary<Type, object>`.
+2. **Fluent extension methods** (`.Grid()`, `.Canvas()`, `.RelativePanel()`, `.Flex()`) — set the attached data on the element.
 3. **Reconciler reads** attached data during mount and calls the appropriate WinUI static setters.
 
 This replaces the earlier wrapper-type approach (`GridChild`, `CanvasChild`, `RelativePanelChild`) where children were wrapped in a data record containing both the element and its position. The attached property approach is more composable — any element can carry any set of attached properties, and they chain naturally with other modifiers:
