@@ -135,15 +135,24 @@ public sealed class YogaNode
     }
 
     /// <summary>
-    /// Iterate over "layoutable" children — skipping Display.None and flattening Display.Contents.
-    /// For simplicity in this port, Display.Contents is not supported (treated as normal children).
+    /// Iterate over "layoutable" children — flattening Display.Contents nodes
+    /// by recursively yielding their children in place.
+    /// Display.None children are NOT skipped here; the algorithm handles them explicitly.
+    /// Ported from yoga/node/LayoutableChildren.h
     /// </summary>
     internal IEnumerable<YogaNode> GetLayoutChildren()
     {
         foreach (var child in _children)
         {
-            if (child._style.Display != YogaDisplay.None)
+            if (child._style.Display == YogaDisplay.Contents)
+            {
+                foreach (var grandchild in child.GetLayoutChildren())
+                    yield return grandchild;
+            }
+            else
+            {
                 yield return child;
+            }
         }
     }
 
@@ -152,7 +161,9 @@ public sealed class YogaNode
         int count = 0;
         foreach (var child in _children)
         {
-            if (child._style.Display != YogaDisplay.None)
+            if (child._style.Display == YogaDisplay.Contents)
+                count += child.GetLayoutChildCount();
+            else
                 count++;
         }
         return count;

@@ -1416,7 +1416,7 @@ public class YogaJustifyContentTest
         Assert.Equal(102f, root_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Justify_Content_Overflow_Row_Reverse_Space_Around()
     {
         // TODO: GTEST_SKIP();
@@ -1472,7 +1472,7 @@ public class YogaJustifyContentTest
         Assert.Equal(102f, root_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Justify_Content_Overflow_Row_Reverse_Space_Evenly()
     {
         // TODO: GTEST_SKIP();

@@ -482,7 +482,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(50f, root_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Fit_Content_Width()
     {
         // TODO: GTEST_SKIP();
@@ -675,7 +675,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(25f, root_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Fit_Content_Height()
     {
         // TODO: GTEST_SKIP();
@@ -743,7 +743,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(25f, root_child0_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Stretch_Height()
     {
         // TODO: GTEST_SKIP();
@@ -867,7 +867,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(25f, root_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Fit_Content_Flex_Basis_Column()
     {
         // TODO: GTEST_SKIP();
@@ -1002,7 +1002,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(25f, root_child0_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Max_Content_Flex_Basis_Row()
     {
         // TODO: GTEST_SKIP();
@@ -1060,7 +1060,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(50f, root_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Fit_Content_Flex_Basis_Row()
     {
         // TODO: GTEST_SKIP();
@@ -1129,7 +1129,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(50f, root_child0_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Stretch_Flex_Basis_Row()
     {
         // TODO: GTEST_SKIP();
@@ -1198,7 +1198,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(50f, root_child0_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Max_Content_Max_Width()
     {
         // TODO: GTEST_SKIP();
@@ -1257,7 +1257,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(50f, root_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Fit_Content_Max_Width()
     {
         // TODO: GTEST_SKIP();
@@ -1327,7 +1327,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(50f, root_child0_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Stretch_Max_Width()
     {
         // TODO: GTEST_SKIP();
@@ -1397,7 +1397,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(50f, root_child0_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Max_Content_Min_Width()
     {
         // TODO: GTEST_SKIP();
@@ -1456,7 +1456,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(50f, root_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Fit_Content_Min_Width()
     {
         // TODO: GTEST_SKIP();
@@ -1526,7 +1526,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(50f, root_child0_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Stretch_Min_Width()
     {
         // TODO: GTEST_SKIP();
@@ -1596,7 +1596,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(50f, root_child0_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Max_Content_Max_Height()
     {
         // TODO: GTEST_SKIP();
@@ -1654,7 +1654,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(25f, root_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Fit_Content_Max_Height()
     {
         // TODO: GTEST_SKIP();
@@ -1723,7 +1723,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(25f, root_child0_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Stretch_Max_Height()
     {
         // TODO: GTEST_SKIP();
@@ -1792,7 +1792,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(25f, root_child0_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Max_Content_Min_Height()
     {
         // TODO: GTEST_SKIP();
@@ -1850,7 +1850,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(25f, root_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Fit_Content_Min_Height()
     {
         // TODO: GTEST_SKIP();
@@ -1919,7 +1919,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(25f, root_child0_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Stretch_Min_Height()
     {
         // TODO: GTEST_SKIP();
@@ -1988,7 +1988,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(25f, root_child0_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Text_Max_Content_Width()
     {
         // TODO: GTEST_SKIP();
@@ -2032,7 +2032,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(10f, root_child0_child0.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Text_Stretch_Width()
     {
         // TODO: GTEST_SKIP();
@@ -2076,7 +2076,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(20f, root_child0_child0.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Text_Fit_Content_Width()
     {
         // TODO: GTEST_SKIP();
@@ -2120,7 +2120,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(30f, root_child0_child0.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Text_Max_Content_Min_Width()
     {
         // TODO: GTEST_SKIP();
@@ -2165,7 +2165,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(10f, root_child0_child0.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Text_Stretch_Min_Width()
     {
         // TODO: GTEST_SKIP();
@@ -2210,7 +2210,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(20f, root_child0_child0.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Text_Fit_Content_Min_Width()
     {
         // TODO: GTEST_SKIP();
@@ -2255,7 +2255,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(30f, root_child0_child0.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Text_Max_Content_Max_Width()
     {
         // TODO: GTEST_SKIP();
@@ -2300,7 +2300,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(10f, root_child0_child0.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Text_Stretch_Max_Width()
     {
         // TODO: GTEST_SKIP();
@@ -2345,7 +2345,7 @@ public class YogaIntrinsicSizeTest
         Assert.Equal(20f, root_child0_child0.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Text_Fit_Content_Max_Width()
     {
         // TODO: GTEST_SKIP();

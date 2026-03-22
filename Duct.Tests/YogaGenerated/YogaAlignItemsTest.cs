@@ -981,7 +981,7 @@ public class YogaAlignItemsTest
         Assert.Equal(50f, root_child3.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Align_Baseline_Multiline_Column()
     {
         // TODO: GTEST_SKIP();
@@ -1076,7 +1076,7 @@ public class YogaAlignItemsTest
         Assert.Equal(20f, root_child3.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Align_Baseline_Multiline_Column2()
     {
         // TODO: GTEST_SKIP();

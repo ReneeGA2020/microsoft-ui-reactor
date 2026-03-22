@@ -73,7 +73,7 @@ public class YogaMinMaxDimensionTest
         Assert.Equal(50f, root_child0.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Min_Height()
     {
         // TODO: GTEST_SKIP();
@@ -117,7 +117,7 @@ public class YogaMinMaxDimensionTest
         Assert.Equal(40f, root_child1.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Min_Width()
     {
         // TODO: GTEST_SKIP();

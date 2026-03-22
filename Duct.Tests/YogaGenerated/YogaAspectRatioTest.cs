@@ -8,7 +8,7 @@ namespace Duct.Tests.YogaGenerated;
 /// </summary>
 public class YogaAspectRatioTest
 {
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Aspect_Ratio_Does_Not_Stretch_Cross_Axis_Dim()
     {
         // TODO: GTEST_SKIP();

@@ -8,7 +8,7 @@ namespace Duct.Tests.YogaGenerated;
 /// </summary>
 public class YogaFlexWrapTest
 {
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Wrap_Column()
     {
         // TODO: GTEST_SKIP();

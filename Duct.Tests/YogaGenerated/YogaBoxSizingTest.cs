@@ -1495,7 +1495,7 @@ public class YogaBoxSizingTest
         Assert.Equal(9f, root_child0_child0_child0.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Box_Sizing_Content_Box_Flex_Basis_Row()
     {
         // TODO: GTEST_SKIP();
@@ -1567,7 +1567,7 @@ public class YogaBoxSizingTest
         Assert.Equal(30f, root_child0.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Box_Sizing_Content_Box_Flex_Basis_Column()
     {
         // TODO: GTEST_SKIP();

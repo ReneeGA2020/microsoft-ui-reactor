@@ -2389,7 +2389,7 @@ public class YogaGapTest
         Assert.Equal(300f, root_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Row_Gap_Percent_Wrapping_With_Min_Width()
     {
         // TODO: GTEST_SKIP();

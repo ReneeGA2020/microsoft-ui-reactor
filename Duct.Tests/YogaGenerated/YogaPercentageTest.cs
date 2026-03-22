@@ -200,7 +200,7 @@ public class YogaPercentageTest
         Assert.Equal(75f, root_child1.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Percentage_Flex_Basis_Cross_Min_Height()
     {
         // TODO: GTEST_SKIP();
@@ -976,7 +976,7 @@ public class YogaPercentageTest
         Assert.Equal(20f, root_child0.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Percent_Of_Min_Main()
     {
         // TODO: GTEST_SKIP();
@@ -1010,7 +1010,7 @@ public class YogaPercentageTest
         Assert.Equal(20f, root_child0.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Percent_Of_Min_Main_Multiple()
     {
         // TODO: GTEST_SKIP();
@@ -1068,7 +1068,7 @@ public class YogaPercentageTest
         Assert.Equal(20f, root_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Percent_Of_Max_Main()
     {
         // TODO: GTEST_SKIP();
@@ -1203,7 +1203,7 @@ public class YogaPercentageTest
         Assert.Equal(20f, root_child0.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Percent_Of_Min_Cross_Unstretched()
     {
         // TODO: GTEST_SKIP();

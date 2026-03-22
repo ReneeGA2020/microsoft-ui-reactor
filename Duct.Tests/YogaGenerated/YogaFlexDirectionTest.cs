@@ -1996,7 +1996,7 @@ public class YogaFlexDirectionTest
         Assert.Equal(0f, root_child0_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Flex_Direction_Row_Reverse_Inner_Pos_Start()
     {
         // TODO: GTEST_SKIP();
@@ -2066,7 +2066,7 @@ public class YogaFlexDirectionTest
         Assert.Equal(100f, root_child0_child2.LayoutHeight);
     }
 
-    [Fact]
+    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]
     public void Flex_Direction_Row_Reverse_Inner_Pos_End()
     {
         // TODO: GTEST_SKIP();

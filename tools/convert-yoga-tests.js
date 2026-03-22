@@ -190,7 +190,12 @@ function convertFile(inputPath) {
 
   for (const test of tests) {
     const methodName = toPascalCase(test.name);
-    output += `    [Fact]\n`;
+    const isSkipped = test.body.includes('GTEST_SKIP()');
+    if (isSkipped) {
+      output += `    [Fact(Skip = "Skipped in upstream Yoga (GTEST_SKIP)")]\n`;
+    } else {
+      output += `    [Fact]\n`;
+    }
     output += `    public void ${methodName}()\n    {\n`;
     output += convertTestBody(test.body);
     output += `    }\n\n`;

@@ -272,6 +272,7 @@ internal static class YogaAlgorithm
                 availableWidth - marginAxisRow, availableHeight - marginAxisColumn,
                 widthSizingMode, heightSizingMode,
                 ownerWidth, ownerHeight);
+            CleanupContentsNodesRecursively(node);
             return;
         }
 
@@ -283,6 +284,7 @@ internal static class YogaAlgorithm
                 availableWidth - marginAxisRow, availableHeight - marginAxisColumn,
                 widthSizingMode, heightSizingMode,
                 ownerWidth, ownerHeight);
+            CleanupContentsNodesRecursively(node);
             return;
         }
 
@@ -295,11 +297,15 @@ internal static class YogaAlgorithm
                 widthSizingMode, heightSizingMode,
                 ownerWidth, ownerHeight))
         {
+            CleanupContentsNodesRecursively(node);
             return;
         }
 
         // Reset layout flags
         node.SetLayoutHadOverflow(false);
+
+        // Clean and update all display: contents nodes
+        CleanupContentsNodesRecursively(node);
 
         // STEP 1: CALCULATE VALUES FOR REMAINDER OF ALGORITHM
         var mainAxis = FlexDirectionHelper.ResolveDirection(node.Style.FlexDirection, direction);
@@ -1206,6 +1212,32 @@ internal static class YogaAlgorithm
 
         foreach (var child in node.Children)
             ZeroOutLayoutRecursively(child);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // cleanupContentsNodesRecursively
+    // Ported from yoga/algorithm/CalculateLayout.cpp
+    // Zeroes out layout for display:contents nodes since they are not
+    // traversed directly by the algorithm (their children are promoted).
+    // ──────────────────────────────────────────────────────────────────────
+
+    private static void CleanupContentsNodesRecursively(YogaNode node)
+    {
+        foreach (var child in node.Children)
+        {
+            if (child.Style.Display == YogaDisplay.Contents)
+            {
+                child.SetLayoutDimension(0, YogaDimension.Width);
+                child.SetLayoutDimension(0, YogaDimension.Height);
+                child.SetLayoutPosition(0, YogaPhysicalEdge.Left);
+                child.SetLayoutPosition(0, YogaPhysicalEdge.Top);
+                child.SetLayoutPosition(0, YogaPhysicalEdge.Right);
+                child.SetLayoutPosition(0, YogaPhysicalEdge.Bottom);
+                child.HasNewLayout = true;
+                child.SetDirty(false);
+                CleanupContentsNodesRecursively(child);
+            }
+        }
     }
 
     // ──────────────────────────────────────────────────────────────────────
