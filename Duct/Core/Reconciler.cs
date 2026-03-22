@@ -365,6 +365,11 @@ public sealed partial class Reconciler : IDisposable
     internal void ApplyModifiers(FrameworkElement fe, ElementModifiers? oldM, ElementModifiers m, Action requestRerender)
     {
         if (m.Margin.HasValue) fe.Margin = m.Margin.Value;
+        if (m.Padding.HasValue)
+        {
+            if (fe is WinUI.Control padCtrl) padCtrl.Padding = m.Padding.Value;
+            else if (fe is WinUI.Border padBdr) padBdr.Padding = m.Padding.Value;
+        }
         if (m.Width.HasValue) fe.Width = m.Width.Value;
         if (m.Height.HasValue) fe.Height = m.Height.Value;
         if (m.MinWidth.HasValue) fe.MinWidth = m.MinWidth.Value;
@@ -404,6 +409,44 @@ public sealed partial class Reconciler : IDisposable
                 UpdateFlyoutInPlace(existingCtx, oldContextEl, m.ContextFlyout, requestRerender);
             else
                 fe.ContextFlyout = CreateFlyoutFromElement(m.ContextFlyout, requestRerender);
+        }
+
+        // IsEnabled (on Control)
+        if (m.IsEnabled.HasValue && fe is WinUI.Control enCtrl)
+            enCtrl.IsEnabled = m.IsEnabled.Value;
+
+        // CornerRadius (on Control and Border)
+        if (m.CornerRadius.HasValue)
+        {
+            if (fe is WinUI.Control crCtrl) crCtrl.CornerRadius = m.CornerRadius.Value;
+            else if (fe is WinUI.Border crBdr) crBdr.CornerRadius = m.CornerRadius.Value;
+        }
+
+        // BorderBrush / BorderThickness (on Control and Border)
+        if (m.BorderBrush is not null)
+        {
+            if (fe is WinUI.Control bbCtrl) bbCtrl.BorderBrush = m.BorderBrush;
+            else if (fe is WinUI.Border bbBdr) bbBdr.BorderBrush = m.BorderBrush;
+        }
+        if (m.BorderThickness.HasValue)
+        {
+            if (fe is WinUI.Control btCtrl) btCtrl.BorderThickness = m.BorderThickness.Value;
+            else if (fe is WinUI.Border btBdr) btBdr.BorderThickness = m.BorderThickness.Value;
+        }
+
+        // Background (Panel, Control, or Border)
+        if (m.Background is not null)
+        {
+            if (fe is WinUI.Panel panel) panel.Background = m.Background;
+            else if (fe is WinUI.Control ctrl2) ctrl2.Background = m.Background;
+            else if (fe is WinUI.Border bdr) bdr.Background = m.Background;
+        }
+
+        // Foreground (Control or TextBlock)
+        if (m.Foreground is not null)
+        {
+            if (fe is WinUI.Control fgCtrl) fgCtrl.Foreground = m.Foreground;
+            else if (fe is TextBlock fgTb) fgTb.Foreground = m.Foreground;
         }
 
         // AutomationProperties.Name

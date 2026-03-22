@@ -111,16 +111,11 @@ public static class ElementExtensions
 
     /// <summary>
     /// Apply a named WinUI Style to the element's control at mount/update time.
+    /// Style is on FrameworkElement — works on any element.
     /// Usage: Text("Hello").ApplyStyle("BodyTextBlockStyle")
     /// </summary>
-    public static TextElement ApplyStyle(this TextElement el, string styleName) =>
-        el.Set(ctrl => ctrl.Style = (Style)Application.Current.Resources[styleName]);
-
-    public static ButtonElement ApplyStyle(this ButtonElement el, string styleName) =>
-        el.Set(ctrl => ctrl.Style = (Style)Application.Current.Resources[styleName]);
-
-    public static BorderElement ApplyStyle(this BorderElement el, string styleName) =>
-        el.Set(ctrl => ctrl.Style = (Style)Application.Current.Resources[styleName]);
+    public static T ApplyStyle<T>(this T el, string styleName) where T : Element =>
+        el.OnMount(fe => fe.Style = (Style)Application.Current.Resources[styleName]);
 
     // ════════════════════════════════════════════════════════════════
     //  Sugar extensions (typed, return concrete element type)
@@ -140,30 +135,42 @@ public static class ElementExtensions
     public static TextElement FontStyle(this TextElement el, Windows.UI.Text.FontStyle style) =>
         el with { FontStyle = style };
 
-    // ── Button sugar ────────────────────────────────────────────────
+    // ── IsEnabled (on Control — works on buttons, inputs, etc.) ────
 
-    public static ButtonElement Disabled(this ButtonElement el, bool disabled = true) =>
-        el with { IsEnabled = !disabled };
+    public static T Disabled<T>(this T el, bool disabled = true) where T : Element =>
+        Modify(el, new ElementModifiers { IsEnabled = !disabled });
 
-    // ── Border sugar ────────────────────────────────────────────────
+    // ── Background (Panel, Control, Border) ────────────────────────
 
-    public static BorderElement CornerRadius(this BorderElement el, double radius) =>
-        el with { CornerRadius = radius };
+    public static T Background<T>(this T el, string color) where T : Element =>
+        Modify(el, new ElementModifiers { Background = BrushHelper.Parse(color) });
 
-    public static BorderElement Background(this BorderElement el, string color) =>
-        el with { Background = BrushHelper.Parse(color) };
+    public static T Background<T>(this T el, Brush brush) where T : Element =>
+        Modify(el, new ElementModifiers { Background = brush });
 
-    public static BorderElement Background(this BorderElement el, Brush brush) =>
-        el with { Background = brush };
+    // ── Foreground (Control, TextBlock) ──────────────────────────
 
-    public static BorderElement WithBorder(this BorderElement el, string color, double thickness = 1) =>
-        el with { BorderBrush = BrushHelper.Parse(color), BorderThickness = thickness };
+    public static T Foreground<T>(this T el, string color) where T : Element =>
+        Modify(el, new ElementModifiers { Foreground = BrushHelper.Parse(color) });
 
-    public static BorderElement WithBorder(this BorderElement el, Brush brush, double thickness = 1) =>
-        el with { BorderBrush = brush, BorderThickness = thickness };
+    public static T Foreground<T>(this T el, Brush brush) where T : Element =>
+        Modify(el, new ElementModifiers { Foreground = brush });
 
-    public static BorderElement Padding(this BorderElement el, Thickness padding) =>
-        el with { Padding = padding };
+    // ── CornerRadius (on Control and Border) ────────────────────────
+
+    public static T CornerRadius<T>(this T el, double radius) where T : Element =>
+        Modify(el, new ElementModifiers { CornerRadius = new Microsoft.UI.Xaml.CornerRadius(radius) });
+
+    public static T CornerRadius<T>(this T el, double topLeft, double topRight, double bottomRight, double bottomLeft) where T : Element =>
+        Modify(el, new ElementModifiers { CornerRadius = new Microsoft.UI.Xaml.CornerRadius(topLeft, topRight, bottomRight, bottomLeft) });
+
+    // ── Border brush/thickness (on Control and Border) ─────────────
+
+    public static T WithBorder<T>(this T el, string color, double thickness = 1) where T : Element =>
+        Modify(el, new ElementModifiers { BorderBrush = BrushHelper.Parse(color), BorderThickness = new Thickness(thickness) });
+
+    public static T WithBorder<T>(this T el, Brush brush, double thickness = 1) where T : Element =>
+        Modify(el, new ElementModifiers { BorderBrush = brush, BorderThickness = new Thickness(thickness) });
 
     // ── Stack sugar ─────────────────────────────────────────────────
 

@@ -92,6 +92,12 @@ public record ElementModifiers
     public Element? RichToolTip { get; init; }
     public Element? AttachedFlyout { get; init; }
     public Element? ContextFlyout { get; init; }
+    public Brush? Background { get; init; }
+    public Brush? Foreground { get; init; }
+    public bool? IsEnabled { get; init; }
+    public Microsoft.UI.Xaml.CornerRadius? CornerRadius { get; init; }
+    public Brush? BorderBrush { get; init; }
+    public Thickness? BorderThickness { get; init; }
     public string? AutomationName { get; init; }
     public ElementSoundMode? ElementSoundMode { get; init; }
     public Action<FrameworkElement>? OnMountAction { get; init; }
@@ -116,6 +122,12 @@ public record ElementModifiers
             RichToolTip = other.RichToolTip ?? RichToolTip,
             AttachedFlyout = other.AttachedFlyout ?? AttachedFlyout,
             ContextFlyout = other.ContextFlyout ?? ContextFlyout,
+            Background = other.Background ?? Background,
+            Foreground = other.Foreground ?? Foreground,
+            IsEnabled = other.IsEnabled ?? IsEnabled,
+            CornerRadius = other.CornerRadius ?? CornerRadius,
+            BorderBrush = other.BorderBrush ?? BorderBrush,
+            BorderThickness = other.BorderThickness ?? BorderThickness,
             AutomationName = other.AutomationName ?? AutomationName,
             ElementSoundMode = other.ElementSoundMode ?? ElementSoundMode,
             OnMountAction = other.OnMountAction ?? OnMountAction,

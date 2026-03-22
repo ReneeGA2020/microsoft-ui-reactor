@@ -90,10 +90,10 @@ public class ElementTests
     public void Button_Disabled_Extension_Toggles_IsEnabled()
     {
         var el = Button("Go").Disabled();
-        Assert.False(el.IsEnabled);
+        Assert.False(el.Modifiers!.IsEnabled);
 
         var el2 = Button("Go").Disabled(false);
-        Assert.True(el2.IsEnabled);
+        Assert.True(el2.Modifiers!.IsEnabled);
     }
 
     [Fact]
@@ -309,10 +309,10 @@ public class ElementTests
     [Fact]
     public void Border_Fluent_Extensions_CornerRadius_And_Thickness()
     {
-        // Test the non-WinUI parts of border fluent API
+        // CornerRadius is now stored on ElementModifiers (works on Control and Border)
         var el = Border(Text("x"))
             .CornerRadius(8);
-        Assert.Equal(8, el.CornerRadius);
+        Assert.Equal(new Microsoft.UI.Xaml.CornerRadius(8), el.Modifiers!.CornerRadius);
     }
 
     [Fact(Skip = "Requires WinUI activation for SolidColorBrush — covered by UI tests")]
