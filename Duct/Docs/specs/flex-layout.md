@@ -1,6 +1,6 @@
 # Flex Layout Spec (Yoga-backed FlexPanel)
 
-This document specifies a CSS Flexbox layout panel for WinUI3, powered by a pure C# port of Meta's [Yoga](https://github.com/nicklockwood/yoga) layout engine. The implementation is split into three layers: a standalone Yoga port, a standalone WinUI3 FlexPanel, and Duct integration.
+This document specifies a CSS Flexbox layout panel for WinUI3, powered by a pure C# port of Meta's [Yoga](https://github.com/facebook/yoga) layout engine. The implementation is split into three layers: a standalone Yoga port, a standalone WinUI3 FlexPanel, and Duct integration.
 
 ---
 
