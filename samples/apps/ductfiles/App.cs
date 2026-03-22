@@ -242,14 +242,14 @@ class DuctFilesApp : Component
         return Grid(
             ["*"],
             ["Auto", "*"],
-            Cell(toolbar, 0, 0),
-            Cell(Grid(
+            toolbar.Grid(row: 0, column: 0),
+            Grid(
                 ["280", "Auto", "*"],
                 ["*"],
-                Cell(tree, 0, 0),
-                Cell(splitter, 0, 1),
-                Cell(fileList, 0, 2)
-            ), 1, 0)
+                tree.Grid(row: 0, column: 0),
+                splitter.Grid(row: 0, column: 1),
+                fileList.Grid(row: 0, column: 2)
+            ).Grid(row: 1, column: 0)
         );
     }
 }

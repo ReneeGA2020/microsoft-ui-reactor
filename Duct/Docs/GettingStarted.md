@@ -93,13 +93,25 @@ Border(
     VStack(Text("Inside a card"))
 ).CornerRadius(8).Background("#f5f5f5").Padding(new Thickness(16, 16, 16, 16))
 
-// Grid
+// Grid — children use .Grid() attached property extension
 Grid(
     columns: ["*", "*"],
     rows: ["Auto", "*"],
-    Cell(Text("Top Left"), row: 0, column: 0),
-    Cell(Text("Top Right"), row: 0, column: 1),
-    Cell(Text("Bottom"), row: 1, column: 0, columnSpan: 2)
+    Text("Top Left").Grid(row: 0, column: 0),
+    Text("Top Right").Grid(row: 0, column: 1),
+    Text("Bottom").Grid(row: 1, column: 0, columnSpan: 2)
+)
+
+// Canvas — children use .Canvas() attached property extension
+Canvas(
+    Rectangle().Fill(redBrush).Size(100, 50).Canvas(left: 10, top: 20),
+    Ellipse().Fill(blueBrush).Size(80, 80).Canvas(left: 150, top: 30)
+)
+
+// RelativePanel — children use .RelativePanel() attached property extension
+RelativePanel(
+    Text("Title").RelativePanel(name: "title", alignLeftWithPanel: true),
+    Text("Subtitle").RelativePanel(name: "sub", below: "title")
 )
 ```
 
@@ -117,6 +129,62 @@ Text("Hello")
     .Opacity(0.8)
     .ToolTip("A greeting")
     .Visible(showGreeting)
+```
+
+### Generalized Modifiers
+
+These modifiers work on any element, applied at the WinUI hierarchy level they belong to:
+
+```csharp
+// Background — applies to Panel (StackPanel, Grid, Canvas), Control, Border
+VStack(children).Background("#f0f0f0")
+Button("Go", onClick).Background(myBrush)
+
+// Foreground — applies to Control, TextBlock
+Text("Red text").Foreground("#ff0000")
+Button("Go", onClick).Foreground(myBrush)
+
+// Disabled — applies to any Control
+Slider(val, 0, 100, setVal).Disabled()
+ComboBox(items, idx, setIdx).Disabled(isLoading)
+
+// CornerRadius — applies to Control, Border
+Button("Rounded", onClick).CornerRadius(8)
+VStack(children).Background("#fff").CornerRadius(12)  // via .Set() for non-Control panels
+
+// WithBorder — applies to Control, Border
+Button("Outlined", onClick).WithBorder("#ccc", 2)
+
+// Padding — applies to Control, Border
+VStack(children).Padding(16)
+Button("Padded", onClick).Padding(12, 8)
+
+// ApplyStyle — applies to any FrameworkElement
+Text("Styled").ApplyStyle("BodyTextBlockStyle")
+Button("Styled", onClick).ApplyStyle("AccentButtonStyle")
+
+// AutomationName — applies to any element
+Button("X", onClick).AutomationName("Close button")
+
+// ElementSoundMode — applies to any Control
+Button("Silent", onClick).SoundMode(ElementSoundMode.Off)
+```
+
+### Attached Properties
+
+Containers like Grid, Canvas, and RelativePanel use attached properties to position children.
+Instead of wrapper types, children use fluent `.Grid()`, `.Canvas()`, or `.RelativePanel()` extensions:
+
+```csharp
+// Grid attached properties
+Text("Header").Grid(row: 0, column: 0, columnSpan: 2)
+
+// Canvas attached properties
+Rectangle().Canvas(left: 50, top: 100)
+
+// RelativePanel attached properties
+Text("Label").RelativePanel(name: "label", alignLeftWithPanel: true)
+Text("Value").RelativePanel(name: "value", rightOf: "label")
 ```
 
 ## State Management

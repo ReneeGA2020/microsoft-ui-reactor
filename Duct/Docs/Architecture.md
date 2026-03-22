@@ -191,3 +191,20 @@ XAML adds a layer of indirection (markup ↔ codebehind) and requires tooling su
 
 ### Tag-based event handler pattern
 WinUI event handlers are wired once at mount time. To update closures (which capture state), the reconciler stores the current element in the control's `Tag` property. Event handlers read from `Tag` at invocation time, ensuring they always use the latest closure. This avoids re-subscribing events on every render.
+
+### Attached property system
+WinUI containers like `Grid`, `Canvas`, and `RelativePanel` use attached properties to position children (e.g., `Grid.SetRow(control, 1)`). In Duct, these are modeled via:
+
+1. **Attached data records** (`GridAttached`, `CanvasAttached`, `RelativePanelAttached`) — stored on `Element.Attached`, a type-keyed `IReadOnlyDictionary<Type, object>`.
+2. **Fluent extension methods** (`.Grid()`, `.Canvas()`, `.RelativePanel()`) — set the attached data on the element.
+3. **Reconciler reads** attached data during mount and calls the appropriate WinUI static setters.
+
+This replaces the earlier wrapper-type approach (`GridChild`, `CanvasChild`, `RelativePanelChild`) where children were wrapped in a data record containing both the element and its position. The attached property approach is more composable — any element can carry any set of attached properties, and they chain naturally with other modifiers:
+
+```csharp
+// Old: Cell(Text("hello"), row: 1, column: 2)
+// New: Text("hello").Grid(row: 1, column: 2)
+```
+
+### Generalized ElementModifiers
+Properties that exist on WinUI base types are applied generically via `ElementModifiers` in the reconciler's `ApplyModifiers` method, rather than being hardcoded per element type. This means a single `.Background()` modifier works on any element — the reconciler checks at runtime whether the control is a `Panel`, `Control`, or `Border` and sets the property accordingly. The same pattern applies to `Foreground`, `Padding`, `CornerRadius`, `BorderBrush`, `IsEnabled`, `ElementSoundMode`, and `AutomationProperties.Name`.

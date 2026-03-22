@@ -441,13 +441,13 @@ public sealed class TreeSerializer
         return element switch
         {
             StackElement stack => stack.Children,
-            GridElement grid => grid.Children.Select(c => c.Element).ToArray(),
+            GridElement grid => grid.Children,
             ScrollViewElement scroll => [scroll.Child],
             BorderElement border => [border.Child],
             ExpanderElement exp => [exp.Content],
             SplitViewElement sv => new[] { sv.Pane!, sv.Content! }.Where(e => e is not null).ToArray(),
             ViewboxElement vb => [vb.Child],
-            CanvasElement cvs => cvs.Children.Select(c => c.Element).ToArray(),
+            CanvasElement cvs => cvs.Children,
             ListViewElement lv => lv.Items,
             GridViewElement gv => gv.Items,
             FlipViewElement fv => fv.Items,

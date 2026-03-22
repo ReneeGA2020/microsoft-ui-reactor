@@ -46,11 +46,11 @@ internal sealed class FileListPane : Component<FileListPaneProps>
         var header = Grid(
             ["36", "2*", "*", "*", "*"],
             ["32"],
-            Cell(Text(""), 0, 0),
-            Cell(Text("Name").SemiBold(), 0, 1),
-            Cell(Text("Date modified").SemiBold(), 0, 2),
-            Cell(Text("Type").SemiBold(), 0, 3),
-            Cell(Text("Size").SemiBold(), 0, 4)
+            Text("").Grid(row: 0, column: 0),
+            Text("Name").SemiBold().Grid(row: 0, column: 1),
+            Text("Date modified").SemiBold().Grid(row: 0, column: 2),
+            Text("Type").SemiBold().Grid(row: 0, column: 3),
+            Text("Size").SemiBold().Grid(row: 0, column: 4)
         ).Set(g =>
         {
             g.Padding = new Thickness(4, 0, 4, 0);
@@ -67,8 +67,8 @@ internal sealed class FileListPane : Component<FileListPaneProps>
         return Grid(
             ["*"],
             ["Auto", "*"],
-            Cell(header, 0, 0),
-            Cell(list, 1, 0)
+            header.Grid(row: 0, column: 0),
+            list.Grid(row: 1, column: 0)
         );
     }
 
@@ -84,11 +84,11 @@ internal sealed class FileListPane : Component<FileListPaneProps>
         return Grid(
             ["36", "2*", "*", "*", "*"],
             ["32"],
-            Cell(icon.HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center), 0, 0),
-            Cell(Text(file.Name).VAlign(VerticalAlignment.Center), 0, 1),
-            Cell(Text(file.Modified.ToString("g")).VAlign(VerticalAlignment.Center), 0, 2),
-            Cell(Text(file.TypeDescription).VAlign(VerticalAlignment.Center), 0, 3),
-            Cell(Text(file.FormattedSize).HAlign(HorizontalAlignment.Right).VAlign(VerticalAlignment.Center), 0, 4)
+            icon.HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 0),
+            Text(file.Name).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 1),
+            Text(file.Modified.ToString("g")).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 2),
+            Text(file.TypeDescription).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 3),
+            Text(file.FormattedSize).HAlign(HorizontalAlignment.Right).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 4)
         ).Set(g =>
         {
             g.Padding = new Thickness(4, 0, 4, 0);

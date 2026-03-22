@@ -592,12 +592,16 @@ public sealed partial class Reconciler
         foreach (var row in grid.Definition.Rows) g.RowDefinitions.Add(ParseRowDef(row));
         foreach (var child in grid.Children)
         {
-            var ctrl = Mount(child.Element, requestRerender);
+            var ctrl = Mount(child, requestRerender);
             if (ctrl is null) continue;
-            WinUI.Grid.SetRow(ctrl as FrameworkElement, child.Row);
-            WinUI.Grid.SetColumn(ctrl as FrameworkElement, child.Column);
-            if (child.RowSpan > 1) WinUI.Grid.SetRowSpan(ctrl as FrameworkElement, child.RowSpan);
-            if (child.ColumnSpan > 1) WinUI.Grid.SetColumnSpan(ctrl as FrameworkElement, child.ColumnSpan);
+            var ga = child.GetAttached<GridAttached>();
+            if (ga is not null && ctrl is FrameworkElement fe)
+            {
+                WinUI.Grid.SetRow(fe, ga.Row);
+                WinUI.Grid.SetColumn(fe, ga.Column);
+                if (ga.RowSpan > 1) WinUI.Grid.SetRowSpan(fe, ga.RowSpan);
+                if (ga.ColumnSpan > 1) WinUI.Grid.SetColumnSpan(fe, ga.ColumnSpan);
+            }
             g.Children.Add(ctrl);
         }
         SetElementTag(g, grid);
@@ -680,10 +684,14 @@ public sealed partial class Reconciler
         if (cvs.Background is not null) canvas.Background = cvs.Background;
         foreach (var child in cvs.Children)
         {
-            var ctrl = Mount(child.Element, requestRerender);
+            var ctrl = Mount(child, requestRerender);
             if (ctrl is null) continue;
-            WinUI.Canvas.SetLeft(ctrl as FrameworkElement, child.Left);
-            WinUI.Canvas.SetTop(ctrl as FrameworkElement, child.Top);
+            var ca = child.GetAttached<CanvasAttached>();
+            if (ca is not null && ctrl is FrameworkElement fe)
+            {
+                WinUI.Canvas.SetLeft(fe, ca.Left);
+                WinUI.Canvas.SetTop(fe, ca.Top);
+            }
             canvas.Children.Add(ctrl);
         }
         SetElementTag(canvas, cvs);
@@ -1510,45 +1518,48 @@ public sealed partial class Reconciler
         // First pass: mount all children and register names
         foreach (var child in rp.Children)
         {
-            var ctrl = Mount(child.Element, requestRerender);
+            var ctrl = Mount(child, requestRerender);
             if (ctrl is null) continue;
-            if (ctrl is FrameworkElement fe) fe.Name = child.Name;
-            nameMap[child.Name] = ctrl;
+            var rpa = child.GetAttached<RelativePanelAttached>();
+            if (rpa is not null && ctrl is FrameworkElement fe) fe.Name = rpa.Name;
+            if (rpa is not null) nameMap[rpa.Name] = ctrl;
             panel.Children.Add(ctrl);
         }
 
         // Second pass: apply attached properties using name references
         foreach (var child in rp.Children)
         {
-            if (!nameMap.TryGetValue(child.Name, out var ctrl)) continue;
+            var rpa = child.GetAttached<RelativePanelAttached>();
+            if (rpa is null) continue;
+            if (!nameMap.TryGetValue(rpa.Name, out var ctrl)) continue;
 
-            if (child.RightOf is not null && nameMap.TryGetValue(child.RightOf, out var rightOf))
+            if (rpa.RightOf is not null && nameMap.TryGetValue(rpa.RightOf, out var rightOf))
                 WinUI.RelativePanel.SetRightOf(ctrl, rightOf);
-            if (child.Below is not null && nameMap.TryGetValue(child.Below, out var below))
+            if (rpa.Below is not null && nameMap.TryGetValue(rpa.Below, out var below))
                 WinUI.RelativePanel.SetBelow(ctrl, below);
-            if (child.LeftOf is not null && nameMap.TryGetValue(child.LeftOf, out var leftOf))
+            if (rpa.LeftOf is not null && nameMap.TryGetValue(rpa.LeftOf, out var leftOf))
                 WinUI.RelativePanel.SetLeftOf(ctrl, leftOf);
-            if (child.Above is not null && nameMap.TryGetValue(child.Above, out var above))
+            if (rpa.Above is not null && nameMap.TryGetValue(rpa.Above, out var above))
                 WinUI.RelativePanel.SetAbove(ctrl, above);
-            if (child.AlignLeftWith is not null && nameMap.TryGetValue(child.AlignLeftWith, out var alw))
+            if (rpa.AlignLeftWith is not null && nameMap.TryGetValue(rpa.AlignLeftWith, out var alw))
                 WinUI.RelativePanel.SetAlignLeftWith(ctrl, alw);
-            if (child.AlignRightWith is not null && nameMap.TryGetValue(child.AlignRightWith, out var arw))
+            if (rpa.AlignRightWith is not null && nameMap.TryGetValue(rpa.AlignRightWith, out var arw))
                 WinUI.RelativePanel.SetAlignRightWith(ctrl, arw);
-            if (child.AlignTopWith is not null && nameMap.TryGetValue(child.AlignTopWith, out var atw))
+            if (rpa.AlignTopWith is not null && nameMap.TryGetValue(rpa.AlignTopWith, out var atw))
                 WinUI.RelativePanel.SetAlignTopWith(ctrl, atw);
-            if (child.AlignBottomWith is not null && nameMap.TryGetValue(child.AlignBottomWith, out var abw))
+            if (rpa.AlignBottomWith is not null && nameMap.TryGetValue(rpa.AlignBottomWith, out var abw))
                 WinUI.RelativePanel.SetAlignBottomWith(ctrl, abw);
-            if (child.AlignHorizontalCenterWith is not null && nameMap.TryGetValue(child.AlignHorizontalCenterWith, out var ahcw))
+            if (rpa.AlignHorizontalCenterWith is not null && nameMap.TryGetValue(rpa.AlignHorizontalCenterWith, out var ahcw))
                 WinUI.RelativePanel.SetAlignHorizontalCenterWith(ctrl, ahcw);
-            if (child.AlignVerticalCenterWith is not null && nameMap.TryGetValue(child.AlignVerticalCenterWith, out var avcw))
+            if (rpa.AlignVerticalCenterWith is not null && nameMap.TryGetValue(rpa.AlignVerticalCenterWith, out var avcw))
                 WinUI.RelativePanel.SetAlignVerticalCenterWith(ctrl, avcw);
 
-            if (child.AlignLeftWithPanel) WinUI.RelativePanel.SetAlignLeftWithPanel(ctrl, true);
-            if (child.AlignRightWithPanel) WinUI.RelativePanel.SetAlignRightWithPanel(ctrl, true);
-            if (child.AlignTopWithPanel) WinUI.RelativePanel.SetAlignTopWithPanel(ctrl, true);
-            if (child.AlignBottomWithPanel) WinUI.RelativePanel.SetAlignBottomWithPanel(ctrl, true);
-            if (child.AlignHorizontalCenterWithPanel) WinUI.RelativePanel.SetAlignHorizontalCenterWithPanel(ctrl, true);
-            if (child.AlignVerticalCenterWithPanel) WinUI.RelativePanel.SetAlignVerticalCenterWithPanel(ctrl, true);
+            if (rpa.AlignLeftWithPanel) WinUI.RelativePanel.SetAlignLeftWithPanel(ctrl, true);
+            if (rpa.AlignRightWithPanel) WinUI.RelativePanel.SetAlignRightWithPanel(ctrl, true);
+            if (rpa.AlignTopWithPanel) WinUI.RelativePanel.SetAlignTopWithPanel(ctrl, true);
+            if (rpa.AlignBottomWithPanel) WinUI.RelativePanel.SetAlignBottomWithPanel(ctrl, true);
+            if (rpa.AlignHorizontalCenterWithPanel) WinUI.RelativePanel.SetAlignHorizontalCenterWithPanel(ctrl, true);
+            if (rpa.AlignVerticalCenterWithPanel) WinUI.RelativePanel.SetAlignVerticalCenterWithPanel(ctrl, true);
         }
 
         SetElementTag(panel, rp);

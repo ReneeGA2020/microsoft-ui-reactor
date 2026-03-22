@@ -161,20 +161,14 @@ public static class UI
 
     public static ViewboxElement Viewbox(Element child) => new(child);
 
-    public static CanvasElement Canvas(params CanvasChild[] children) => new(children);
-
-    public static CanvasChild CanvasItem(Element element, double left = 0, double top = 0) =>
-        new(element, left, top);
+    public static CanvasElement Canvas(params Element?[] children) => new(FilterChildren(children));
 
     // ── Grid ────────────────────────────────────────────────────────
 
     public static GridElement Grid(
         string[] columns, string[] rows,
-        params GridChild[] children) =>
-        new(new GridDefinition(columns, rows), children);
-
-    public static GridChild Cell(Element element, int row = 0, int column = 0, int rowSpan = 1, int columnSpan = 1) =>
-        new(element, row, column, rowSpan, columnSpan);
+        params Element?[] children) =>
+        new(new GridDefinition(columns, rows), FilterChildren(children));
 
     // ── Navigation ──────────────────────────────────────────────────
 
@@ -381,9 +375,7 @@ public static class UI
 
     // ── Additional layout ───────────────────────────────────────────
 
-    public static RelativePanelElement RelativePanel(params RelativePanelChild[] children) => new(children);
-
-    public static RelativePanelChild RPChild(string name, Element element) => new(name, element);
+    public static RelativePanelElement RelativePanel(params Element?[] children) => new(FilterChildren(children));
 
     // ── Additional media ────────────────────────────────────────────
 

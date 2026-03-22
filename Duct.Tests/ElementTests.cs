@@ -339,8 +339,8 @@ public class ElementTests
     {
         var el = Grid(
             ["*", "Auto"], ["*"],
-            Cell(Text("A"), 0, 0),
-            Cell(Text("B"), 0, 1)
+            Text("A").Grid(row: 0, column: 0),
+            Text("B").Grid(row: 0, column: 1)
         );
         Assert.Equal(2, el.Definition.Columns.Length);
         Assert.Single(el.Definition.Rows);

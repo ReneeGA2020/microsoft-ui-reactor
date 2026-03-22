@@ -34,6 +34,32 @@ public abstract record Element
     public ElementModifiers? Modifiers { get; init; }
 
     /// <summary>
+    /// Attached properties from parent containers (Grid.Row, Canvas.Left, etc.).
+    /// Set via fluent extension methods: Text("hi").Grid(row: 1, column: 2)
+    /// Stored as a type-keyed dictionary so each provider defines its own data record.
+    /// </summary>
+    public IReadOnlyDictionary<Type, object>? Attached { get; init; }
+
+    /// <summary>
+    /// Gets the attached property data of the specified type, or null if not set.
+    /// </summary>
+    internal T? GetAttached<T>() where T : class =>
+        Attached is not null && Attached.TryGetValue(typeof(T), out var val) ? (T)val : null;
+
+    /// <summary>
+    /// Returns a copy of this element with the given attached property data set.
+    /// Used by Grid/Canvas/RelativePanel extension methods.
+    /// </summary>
+    internal Element SetAttached(object data)
+    {
+        var dict = Attached is not null
+            ? new Dictionary<Type, object>(Attached)
+            : new Dictionary<Type, object>();
+        dict[data.GetType()] = data;
+        return this with { Attached = dict };
+    }
+
+    /// <summary>
     /// Convenience: implicitly convert a string to a TextElement.
     /// Allows writing: VStack("Hello", "World") instead of VStack(Text("Hello"), Text("World"))
     /// </summary>
@@ -146,9 +172,33 @@ public record ElementModifiers
 // ════════════════════════════════════════════════════════════════════════
 
 public record GridDefinition(string[] Columns, string[] Rows);
-public record GridChild(Element Element, int Row = 0, int Column = 0, int RowSpan = 1, int ColumnSpan = 1);
 
-public record CanvasChild(Element Element, double Left = 0, double Top = 0);
+/// <summary>Attached property data for Grid children. Set via .Grid(row:, column:) extension.</summary>
+public record GridAttached(int Row = 0, int Column = 0, int RowSpan = 1, int ColumnSpan = 1);
+
+/// <summary>Attached property data for Canvas children. Set via .Canvas(left:, top:) extension.</summary>
+public record CanvasAttached(double Left = 0, double Top = 0);
+
+/// <summary>Attached property data for RelativePanel children. Set via .RelativePanel(...) extension.</summary>
+public record RelativePanelAttached(string Name)
+{
+    public string? RightOf { get; init; }
+    public string? Below { get; init; }
+    public string? LeftOf { get; init; }
+    public string? Above { get; init; }
+    public string? AlignLeftWith { get; init; }
+    public string? AlignRightWith { get; init; }
+    public string? AlignTopWith { get; init; }
+    public string? AlignBottomWith { get; init; }
+    public string? AlignHorizontalCenterWith { get; init; }
+    public string? AlignVerticalCenterWith { get; init; }
+    public bool AlignLeftWithPanel { get; init; }
+    public bool AlignRightWithPanel { get; init; }
+    public bool AlignTopWithPanel { get; init; }
+    public bool AlignBottomWithPanel { get; init; }
+    public bool AlignHorizontalCenterWithPanel { get; init; }
+    public bool AlignVerticalCenterWithPanel { get; init; }
+}
 
 public record NavigationViewItemData(string Content, string? Icon = null, string? Tag = null)
 {
@@ -577,7 +627,7 @@ public record StackElement(
 
 public record GridElement(
     GridDefinition Definition,
-    GridChild[] Children
+    Element[] Children
 ) : Element
 {
     public double RowSpacing { get; init; }
@@ -636,7 +686,7 @@ public record ViewboxElement(Element Child) : Element
     internal Action<WinUI.Viewbox>[] Setters { get; init; } = [];
 }
 
-public record CanvasElement(CanvasChild[] Children) : Element
+public record CanvasElement(Element[] Children) : Element
 {
     public double? Width { get; init; }
     public double? Height { get; init; }
@@ -1057,29 +1107,9 @@ public record EllipseElement() : Element
 //  Additional layout elements
 // ════════════════════════════════════════════════════════════════════════
 
-public record RelativePanelElement(RelativePanelChild[] Children) : Element
+public record RelativePanelElement(Element[] Children) : Element
 {
     internal Action<WinUI.RelativePanel>[] Setters { get; init; } = [];
-}
-
-public record RelativePanelChild(string Name, Element Element)
-{
-    public string? RightOf { get; init; }
-    public string? Below { get; init; }
-    public string? LeftOf { get; init; }
-    public string? Above { get; init; }
-    public string? AlignLeftWith { get; init; }
-    public string? AlignRightWith { get; init; }
-    public string? AlignTopWith { get; init; }
-    public string? AlignBottomWith { get; init; }
-    public string? AlignHorizontalCenterWith { get; init; }
-    public string? AlignVerticalCenterWith { get; init; }
-    public bool AlignLeftWithPanel { get; init; }
-    public bool AlignRightWithPanel { get; init; }
-    public bool AlignTopWithPanel { get; init; }
-    public bool AlignBottomWithPanel { get; init; }
-    public bool AlignHorizontalCenterWithPanel { get; init; }
-    public bool AlignVerticalCenterWithPanel { get; init; }
 }
 
 // ════════════════════════════════════════════════════════════════════════

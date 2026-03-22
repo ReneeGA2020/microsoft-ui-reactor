@@ -198,9 +198,9 @@ class WordPuzzleApp : Component
         );
     }
 
-    static GridChild[] BuildCells(int[] tiles, bool showWin, Action<int> onTileClicked)
+    static Element[] BuildCells(int[] tiles, bool showWin, Action<int> onTileClicked)
     {
-        var cells = new List<GridChild>();
+        var cells = new List<Element>();
 
         for (int pos = 0; pos < TOTAL; pos++)
         {
@@ -223,9 +223,10 @@ class WordPuzzleApp : Component
                     b.VerticalContentAlignment = VerticalAlignment.Center;
                     b.CornerRadius = new CornerRadius(6);
                 })
-                .WithKey($"tile-{tileIndex}");
+                .WithKey($"tile-{tileIndex}")
+                .Grid(row: row, column: col);
 
-            cells.Add(Cell(tile, row, col));
+            cells.Add(tile);
         }
 
         return [.. cells];
