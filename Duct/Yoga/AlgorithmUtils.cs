@@ -52,12 +52,26 @@ internal static class AlignHelper
         _ => align,
     };
 
+    // NOTE: C++ has a TODO for justify-content: stretch support.
+    // Stretch is deliberately NOT included in the fallback here to match C++ behavior.
     public static YogaJustify FallbackAlignment(YogaJustify align) => align switch
     {
         YogaJustify.SpaceBetween => YogaJustify.FlexStart,
         YogaJustify.SpaceAround or YogaJustify.SpaceEvenly => YogaJustify.FlexStart,
         _ => align,
     };
+
+    /// <summary>
+    /// Resolves a child's justify-self value, falling back to the parent's justify-items
+    /// when the child specifies Auto. Used for grid containers.
+    /// Ported from C++ Align.h resolveChildJustification().
+    /// </summary>
+    public static YogaJustify ResolveChildJustification(YogaNode parent, YogaNode child)
+    {
+        return child.Style.JustifySelf == YogaJustify.Auto
+            ? parent.Style.JustifyItems
+            : child.Style.JustifySelf;
+    }
 }
 
 /// <summary>
@@ -136,9 +150,12 @@ internal static class BaselineHelper
     {
         if (node.HasBaselineFunc)
         {
-            return node.Baseline(
+            float result = node.Baseline(
                 node.Layout.GetMeasuredDimension(YogaDimension.Width),
                 node.Layout.GetMeasuredDimension(YogaDimension.Height));
+            if (float.IsNaN(result))
+                throw new InvalidOperationException("Baseline function returned NaN.");
+            return result;
         }
 
         YogaNode? baselineChild = null;
@@ -274,8 +291,8 @@ internal static class CacheHelper
             (YogaFloat.IsDefined(lastComputedWidth) && lastComputedWidth < 0))
             return false;
 
-        float pointScaleFactor = config.PointScaleFactor;
-        bool useRoundedComparison = pointScaleFactor != 0;
+        float pointScaleFactor = config?.PointScaleFactor ?? 0;
+        bool useRoundedComparison = config != null && pointScaleFactor != 0;
 
         float effectiveWidth = useRoundedComparison
             ? PixelGridHelper.RoundValueToPixelGrid(availableWidth, pointScaleFactor, false, false)

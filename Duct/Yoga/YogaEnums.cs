@@ -42,6 +42,11 @@ public enum YogaDisplay
     Flex = 0,
     None = 1,
     Contents = 2,
+    /// <summary>
+    /// Grid layout is not yet implemented in this C# port.
+    /// Setting this value will throw <see cref="NotImplementedException"/>.
+    /// </summary>
+    Grid = 3,
 }
 
 public enum YogaEdge

@@ -182,7 +182,17 @@ public sealed class YogaNode
     public YogaAlign AlignContent { get => _style.AlignContent; set { _style.AlignContent = value; MarkDirtyAndPropagate(); } }
     public YogaWrap FlexWrap { get => _style.FlexWrap; set { _style.FlexWrap = value; MarkDirtyAndPropagate(); } }
     public YogaPositionType PositionType { get => _style.PositionType; set { _style.PositionType = value; MarkDirtyAndPropagate(); } }
-    public YogaDisplay Display { get => _style.Display; set { _style.Display = value; MarkDirtyAndPropagate(); } }
+    public YogaDisplay Display
+    {
+        get => _style.Display;
+        set
+        {
+            if (value == YogaDisplay.Grid)
+                throw new NotImplementedException("Grid layout is not yet implemented in this C# port of Yoga.");
+            _style.Display = value;
+            MarkDirtyAndPropagate();
+        }
+    }
     public YogaOverflow Overflow { get => _style.Overflow; set { _style.Overflow = value; MarkDirtyAndPropagate(); } }
 
     public float FlexGrow { get => _style.FlexGrow; set { _style.FlexGrow = value; MarkDirtyAndPropagate(); } }

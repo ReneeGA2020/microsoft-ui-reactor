@@ -8,6 +8,12 @@ namespace Duct.Yoga;
 /// Stores all CSS-like style properties for a YogaNode.
 /// Simplified from C++ version: replaces StyleValuePool with direct fields.
 /// </summary>
+/// <remarks>
+/// NOTE: CSS Grid properties (gridTemplateColumns, gridTemplateRows, gridAutoColumns,
+/// gridAutoRows, gridColumnStart/End, gridRowStart/End) present in the C++ Yoga
+/// implementation are intentionally omitted — grid layout is not yet supported in
+/// this C# port.
+/// </remarks>
 internal sealed class YogaStyle
 {
     public const float DefaultFlexGrow = 0.0f;
@@ -306,9 +312,11 @@ internal sealed class YogaStyle
         if (BoxSizing == YogaBoxSizing.BorderBox)
             return value;
 
+        // Match C++ FloatOptional addition: always add padding+border in content-box mode,
+        // even when value is undefined — the padding+border itself forms a minimum.
         float paddingAndBorder = ComputePaddingAndBorderForDimension(direction, axis, ownerWidth);
         float pb = YogaFloat.IsDefined(paddingAndBorder) ? paddingAndBorder : 0;
-        return YogaFloat.IsDefined(value) ? value + pb : value;
+        return value + pb;
     }
 
     public float ResolvedMaxDimension(YogaDirection direction, YogaDimension axis, float referenceLength, float ownerWidth)
@@ -317,8 +325,9 @@ internal sealed class YogaStyle
         if (BoxSizing == YogaBoxSizing.BorderBox)
             return value;
 
+        // Match C++ FloatOptional addition: always add padding+border in content-box mode.
         float paddingAndBorder = ComputePaddingAndBorderForDimension(direction, axis, ownerWidth);
         float pb = YogaFloat.IsDefined(paddingAndBorder) ? paddingAndBorder : 0;
-        return YogaFloat.IsDefined(value) ? value + pb : value;
+        return value + pb;
     }
 }
