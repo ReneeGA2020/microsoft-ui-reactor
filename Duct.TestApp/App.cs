@@ -53,7 +53,7 @@ class DemoApp : Component
                     "DataTemplate" => Component<DataTemplateDemo>(),
                     _ => Text("Select a tab")
                 }
-            ).Padding(new Thickness(24)).Margin(16)
+            ).Padding(24).Margin(16)
         );
     }
 
@@ -211,7 +211,7 @@ class ConditionalDemo : Component
                                     Text("This sub-tree only exists when Feature A is checked."),
                                     Slider(50, 0, 100).Width(200)
                                 )
-                              ).CornerRadius(4).Background("#e8f5e9").Padding(new Thickness(12))
+                              ).CornerRadius(4).Background("#e8f5e9").Padding(12)
                             : null,
 
                         enableFeatureB
@@ -221,10 +221,10 @@ class ConditionalDemo : Component
                                     Text("This sub-tree only exists when Feature B is checked."),
                                     ToggleSwitch(false, null, onContent: "On", offContent: "Off")
                                 )
-                              ).CornerRadius(4).Background("#e3f2fd").Padding(new Thickness(12))
+                              ).CornerRadius(4).Background("#e3f2fd").Padding(12)
                             : null
                     )
-                  ).CornerRadius(8).Background("#f5f5f5").Padding(new Thickness(16))
+                  ).CornerRadius(8).Background("#f5f5f5").Padding(16)
                 : Text("Check the box above to reveal advanced options.").Opacity(0.6),
 
             // ── 2. Switch expression → completely different sub-trees ───
@@ -268,7 +268,7 @@ class ConditionalDemo : Component
                         Enumerable.Range(1, itemCount),
                         i => Border(
                             Text($"Custom item {i}")
-                        ).CornerRadius(4).Background("#fff3e0").Padding(new Thickness(8, 4, 8, 4))
+                        ).CornerRadius(4).Background("#fff3e0").Padding(8, 4)
                     )
                 ),
 
@@ -290,7 +290,7 @@ class ConditionalDemo : Component
                 When(showAdvanced && enableFeatureA && enableFeatureB,
                     () => Border(
                         Text("Warning: Both features enabled simultaneously may cause conflicts.")
-                    ).CornerRadius(4).Background("#fff9c4").Padding(new Thickness(12))
+                    ).CornerRadius(4).Background("#fff9c4").Padding(12)
                 )
             )
         ));
@@ -387,7 +387,7 @@ class DynamicListDemo : Component
                             Text($"Item {i + 1}"),
                             Text($"(created dynamically)").Opacity(0.5)
                         )
-                    ).CornerRadius(4).Background("#f0f0f0").Padding(new Thickness(12, 8, 12, 8))
+                    ).CornerRadius(4).Background("#f0f0f0").Padding(12, 8)
                 ).ToArray()
             ),
 
@@ -681,7 +681,7 @@ class PerfStressDemo : Component
             Border(bars)
                 .CornerRadius(8)
                 .Background("#1a1a2e")
-                .Padding(new Thickness(8)),
+                .Padding(8),
 
             // Performance stats
             When(renderTimes.Count > 0, () => VStack(4,
@@ -791,7 +791,7 @@ class VirtualizationDemo : Component
                             Text(item.Subtitle).FontSize(12).Opacity(0.6)
                         )
                     )
-                ).Padding(new Thickness(12, 8, 12, 8)).Margin(0, 0, 0, 1)
+                ).Padding(12, 8).Margin(0, 0, 0, 1)
             ),
 
             "ListView" => ListView(
@@ -805,10 +805,9 @@ class VirtualizationDemo : Component
                             Text(item.Subtitle).FontSize(12).Opacity(0.6)
                         )
                     )
-                ).Padding(new Thickness(12, 8, 12, 8))).ToArray()
+                ).Padding(12, 8)).ToArray()
             )
-            .Set(lv => lv.Height = 500)
-            .Set(lv => lv.SelectionMode = Microsoft.UI.Xaml.Controls.ListViewSelectionMode.Single),
+            .Set(lv => { lv.Height = 500; lv.SelectionMode = Microsoft.UI.Xaml.Controls.ListViewSelectionMode.Single; }),
 
             _ => Empty()
         };
@@ -897,7 +896,7 @@ class FlyoutDemo : Component
                         Text($"Timer tick: {tick}").FontSize(20),
                         Border(
                             Text($"Elapsed: {tick} seconds")
-                        ).CornerRadius(4).Background("#e3f2fd").Padding(new Thickness(12, 8, 12, 8)),
+                        ).CornerRadius(4).Background("#e3f2fd").Padding(12, 8),
                         HStack(8,
                             Enumerable.Range(0, Math.Min(tick % 10, 8)).Select(i =>
                                 (Element)Border(Empty())
@@ -988,7 +987,7 @@ class FlyoutDemo : Component
                     Text("Right-click me!").SemiBold(),
                     Text($"Color: {color} | Tick: {tick}")
                 )
-            ).CornerRadius(8).Background("#f5f5f5").Padding(new Thickness(24))
+            ).CornerRadius(8).Background("#f5f5f5").Padding(24)
              .WithContextFlyout(MenuItems(
                 MenuItem("Reset color", () => setColor("Red")),
                 MenuItem("Reset timer", () => updateTick(_ => 0)),
@@ -1132,7 +1131,7 @@ class DataTemplateDemo : Component
                                 Text(animal.Name).SemiBold().HAlign(HorizontalAlignment.Center),
                                 Text(animal.Species).FontSize(11).Opacity(0.6).HAlign(HorizontalAlignment.Center)
                             )
-                        ).CornerRadius(8).Background(bg).Padding(new Thickness(12)).Width(120).Height(120);
+                        ).CornerRadius(8).Background(bg).Padding(12).Width(120).Height(120);
                     }
                 ) with
                 {
@@ -1155,7 +1154,7 @@ class DataTemplateDemo : Component
                             Text(animal.Name).FontSize(24).SemiBold().HAlign(HorizontalAlignment.Center),
                             Text($"{animal.Species} (#{animal.Id})").Opacity(0.6).HAlign(HorizontalAlignment.Center)
                         ).HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
-                    ).Background("#f5f5f5").Padding(new Thickness(32))
+                    ).Background("#f5f5f5").Padding(32)
                 ) with
                 {
                     SelectedIndex = flipIndex,
@@ -1210,3 +1209,4 @@ class DataTemplateDemo : Component
         ));
     }
 }
+
