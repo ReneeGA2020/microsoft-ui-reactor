@@ -224,6 +224,101 @@ Text("Fixed").Flex(grow: 0, shrink: 0, basis: 200)
 Text("Overlay").Flex(position: FlexPositionType.Absolute, top: 0, right: 0)
 ```
 
+## Transitions and Animations
+
+Duct has first-class support for WinUI transitions. Transition configuration is stored declaratively on each element and applied by the reconciler — no `.Set()` or `.OnMount()` needed.
+
+### Implicit Transitions
+
+Implicit transitions automatically animate property changes. Chain them like any other modifier:
+
+```csharp
+// Animate opacity changes
+Rectangle()
+    .Size(50, 50)
+    .OpacityTransition()
+    .Opacity(isVisible ? 1.0 : 0.0)
+
+// Animate rotation changes
+Rectangle()
+    .Size(50, 50)
+    .RotationTransition()
+    .Set(rect => { rect.Rotation = angle; })
+
+// Animate scale with custom duration
+Rectangle()
+    .ScaleTransition()                                  // default: all axes
+    .Set(rect => { rect.Scale = new Vector3(scale); })
+
+// Animate scale on specific axes only
+Rectangle()
+    .ScaleTransition(new Vector3Transition
+    {
+        Components = Vector3TransitionComponents.X | Vector3TransitionComponents.Y
+    })
+    .Set(rect => { rect.Scale = new Vector3(scale); })
+
+// Animate translation
+Rectangle()
+    .TranslationTransition()
+    .Set(rect => { rect.Translation = new Vector3(x, y, 0); })
+
+// Animate background color changes (Grid, StackPanel, ContentPresenter)
+Grid(columns, rows, children)
+    .BackgroundTransition()
+    .Background(isDark ? "#333" : "#fff")
+```
+
+Available implicit transition modifiers:
+
+| Modifier | WinUI Property | Applies To |
+|----------|---------------|------------|
+| `.OpacityTransition()` | `UIElement.OpacityTransition` | Any element |
+| `.RotationTransition()` | `UIElement.RotationTransition` | Any element |
+| `.ScaleTransition(Vector3Transition?)` | `UIElement.ScaleTransition` | Any element |
+| `.TranslationTransition(Vector3Transition?)` | `UIElement.TranslationTransition` | Any element |
+| `.BackgroundTransition()` | `Panel.BackgroundTransition` | Grid, StackPanel, ContentPresenter |
+
+All accept an optional `TimeSpan? duration` parameter (or a pre-configured transition object for `Scale`/`Translation`).
+
+### Theme Transitions
+
+Theme transitions animate structural changes — items appearing, disappearing, or repositioning:
+
+```csharp
+// Entrance animation when children are added
+VStack(children)
+    .WithTransitions(new EntranceThemeTransition { IsStaggeringEnabled = true })
+
+// Reposition animation on a Grid
+Grid(columns, rows, children)
+    .WithTransitions(new RepositionThemeTransition())
+
+// Content transition on a Border
+Border(content)
+    .WithTransitions(new ContentThemeTransition())
+
+// Add/delete animation on a ListView
+ListView(items)
+    .ItemContainerTransitions(new AddDeleteThemeTransition())
+
+// Content refresh animation on a ListView
+ListView(items)
+    .ItemContainerTransitions(new ContentThemeTransition())
+```
+
+`.WithTransitions()` works on any element — the reconciler applies `ChildrenTransitions` on panels, `ChildTransitions` on borders, or `ContentTransitions` on content controls based on the control type.
+
+### How It Works
+
+Transitions are stored as data on the `Element` base class (alongside `Modifiers` and `Attached`). The reconciler applies them after mount/update, **after** `.Set()` callbacks run. This means you can safely combine transitions with `.Set()`:
+
+```csharp
+Rectangle()
+    .OpacityTransition()           // transition is ready...
+    .Set(rect => rect.Opacity = x) // ...when .Set() runs, the transition animates the change
+```
+
 ## State Management
 
 ### UseState

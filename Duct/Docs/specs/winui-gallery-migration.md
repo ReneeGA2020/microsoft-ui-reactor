@@ -595,7 +595,7 @@ Only needed once most pages are migrated and the shell itself is being converted
 
 - [x] **Proof of concept**: Migrate one simple control page (`ButtonPage`) end-to-end.
 - [x] **Build Duct ControlExample component**: Wrap the existing XAML `ControlExample` custom control using Feature 1, so migrated pages can reuse it.
-- [ ] **Migrate simple pages in batches**: Pages with 1-3 `ControlExample` sections and minimal interactivity (70/107 pages migrated).
+- [x] **Migrate simple pages in batches**: Pages with 1-3 `ControlExample` sections and minimal interactivity (105/107 pages migrated).
     - [x] AcrylicPage (3 examples, default/custom/luminosity acrylic brush)
     - [x] AnimatedVisualPlayerPage (1 example, Lottie animation with play/pause/stop/reverse)
     - [x] AnnotatedScrollBarPage (1 example, ScrollView + ItemsRepeater + label sections)
@@ -666,58 +666,89 @@ Only needed once most pages are migrated and the shell itself is being converted
     - [x] TreeViewPage (4 examples, drag-drop/multi-select/ItemsSource/template selector)
     - [x] VariableSizedWrapGridPage (1 example, orientation options)
     - [x] ViewboxPage (1 example, stretch/direction options)
-    - [ ] *(next batch — pick from remaining ~37 pages)*
+    - [x] AnimatedIconPage (2 examples, animated icon states + playback)
+    - [x] AppWindowPage (7 examples, window creation/sizing/positioning/presenter modes)
+    - [x] AppWindowTitleBarPage (3 examples, title bar customization + drag regions)
+    - [x] CaptureElementPreviewPage (1 example, camera capture + snapshot gallery)
+    - [x] ClipboardPage (6 examples, text/HTML/bitmap/file copy-paste)
+    - [x] CompactSizingPage (1 example, compact density Frame navigation)
+    - [x] ConnectedAnimationPage (3 examples, connected animation configurations)
+    - [x] ContentIslandPage (1 example, composition hosting + ChildSiteLink)
+    - [x] CreateMultipleWindowsPage (1 example, multi-window creation)
+    - [x] EasingFunctionPage (4 examples, easing curves with Storyboard animations)
+    - [x] GridViewPage (3 examples, basic/selection/drag-drop GridView)
+    - [x] ImplicitTransitionPage (6 examples, opacity/offset/rotation/scale/size/theme transitions)
+    - [x] ItemsRepeaterPage (6 examples, layouts + phased rendering + animated scrolling)
+    - [x] ItemsViewPage (3 examples, basic/swappable layouts/selection modes)
+    - [x] JumpListPage (2 examples, jump list group/task items)
+    - [x] LinePage (4 examples, line/polyline/path/polygon shapes)
+    - [x] ListViewPage (8 examples, basic/selection/drag-drop/grouped/filtered/messaging/images/context)
+    - [x] MapControlPage (1 example, interactive map control)
+    - [x] NavigationViewPage (8 examples, default/top/adaptive/tabs/data-binding/footer/hierarchical/API)
+    - [x] PageTransitionPage (1 example, Frame navigation transitions)
+    - [x] ParallaxViewPage (2 examples, parallax scrolling with ListView/image)
+    - [x] RichEditBoxPage (5 examples, formatting/spell-check/file-open/math-mode)
+    - [x] ScrollViewPage (3 examples, ScrollView zoom/scroll/anchoring)
+    - [x] ShapePage (3 examples, rectangle/ellipse/polygon shapes)
+    - [x] StandardUICommandPage (1 example, delete command with SwipeControl + ListView)
+    - [x] StoragePickersPage (4 examples, file/folder open/save pickers)
+    - [x] SwipeControlPage (5 examples, reveal/execute/ListView/gradient/custom icons)
+    - [x] SystemBackdropsPage (3 examples, Mica/MicaAlt/DesktopAcrylic backdrop windows)
+    - [x] TabViewPage (10 examples, basic/markup/data-bound/keyboard/header-footer/width/close/icons/accent/windowing)
+    - [x] TeachingTipPage (3 examples, targeted/non-targeted/hero content teaching tips)
+    - [x] ThemeTransitionPage (5 examples, reposition/add-delete/content/entrance/pane transitions)
+    - [x] TitleBarPage (2 examples, custom title bar configuration)
+    - [x] WebView2Page (1 example, basic WebView2 navigation)
+    - [x] XamlCompInteropPage (5 examples, composition animations + Spring/Expression)
+    - [x] XamlUICommandPage (1 example, XamlUICommand with KeyboardAccelerator)
 - [ ] **Migrate complex pages**: Pages with heavy state, custom controls, or responsive layouts (after Phase 2 features land).
 - [ ] **Migrate shell**: NavigationView, TitleBar, search (after Phase 3 features land).
 
 ---
 
-## Duct Framework Gaps (discovered during batch 2 migration)
+## Duct Framework Gaps (discovered during migration)
 
-These gaps were found during the migration of 40 pages and represent areas where the Duct DSL forced workarounds via `.Set()` or imperative construction. They are ordered by impact (how many pages were affected and how painful the workaround was).
+These gaps were found during the migration of 105 pages and represent areas where the Duct DSL forced workarounds via `.Set()`, `.OnMount()`, or full imperative construction. Gaps from earlier batches that have been fixed are removed. Ordered by impact.
 
 ### High Priority — Missing DSL elements (required full imperative construction)
 
 | Gap | Pages Affected | Workaround | Status |
 |-----|---------------|------------|--------|
-| **No Rectangle / Ellipse / Shape elements** | GridPage, CanvasPage, StackPanelPage, ViewboxPage, RadialGradientBrushPage, AcrylicPage | `Border(Empty()).Background(brush).Size(w,h)` — loses RadiusX/RadiusY, StrokeThickness | fixed |
-| **No RichTextBlock / Paragraph / Run / Hyperlink inlines** | RichTextBlockPage, MenuBarPage | Entire RichTextBlock built imperatively via `.Set()` — no way to express rich inline text | fixed |
-| **No RelativePanel element** | RelativePanelPage | Entire panel built natively — attached properties (RightOf, Below, AlignWith) are inherently element-referencing | fixed |
-| **No MediaPlayerElement** | MediaPlayerElementPage | Built imperatively — needs lifecycle management (play/pause on nav) | fixed |
-| **No SemanticZoom / CollectionViewSource** | SemanticZoomPage | Entire grouped zoom control built imperatively | fixed |
-| **No SelectorBar / SelectorBarItem** | SelectorBarPage | Built imperatively via `.Set()` | fixed |
-| **No AnimatedVisualPlayer** | AnimatedVisualPlayerPage | Built imperatively — Lottie animation playback | fixed |
-| **No Popup element** | PopupPage | Built imperatively via parent `.Set()` callback | fixed |
-| **No CalendarView element** | CalendarViewPage | Built imperatively via Loaded event | fixed |
-| **No ListBox element** | ListBoxPage | Built imperatively — different from ListView | fixed |
-| **No PipsPager element** | PipsPagerPage | Built imperatively | fixed |
-| **No RefreshContainer / RefreshVisualizer** | PullToRefreshPage | Built imperatively | fixed |
-| **No AnnotatedScrollBar** | AnnotatedScrollBarPage | Built imperatively | fixed |
-| **No CommandBarFlyout** | CommandBarFlyoutPage | Built imperatively inside `.Set()` | fixed |
+| **No SwipeControl / SwipeItem elements** | SwipeControlPage, StandardUICommandPage | Entire SwipeControl built imperatively via `.OnMount()` — items, icons, gesture modes all manual | Fixed |
+| **No ItemsView element** | ItemsViewPage | GridView used as stand-in; real ItemsView with LinedFlowLayout/UniformGridLayout not expressible | Fixed |
+| **No AnimatedIcon element** | AnimatedIconPage | Built imperatively — visual state transitions not expressible | Fixed |
+| **No ParallaxView element** | ParallaxViewPage | Built imperatively via `.Set()` | Fixed |
+| **No MapControl element** | MapControlPage | Added imperatively to parent StackPanel | Fixed |
+| **No Frame element** | ConnectedAnimationPage, CompactSizingPage, PageTransitionPage | Frame navigation built imperatively; blocks connected animation and page transition demos | Fixed |
+| **No ContentIsland / ChildSiteLink / composition hosting** | ContentIslandPage | Entire page is imperative — 3D model loading, composition tree | skip |
+| **No CaptureElement / MediaCapture** | CaptureElementPreviewPage | Camera capture + snapshot gallery entirely imperative | skip |
 
 ### Medium Priority — Missing DSL properties/modifiers
 
 | Gap | Pages Affected | Workaround | Status |
 |-----|---------------|------------|--------|
-| **No ToggleMenuFlyoutItem / RadioMenuFlyoutItem** | MenuFlyoutPage, MenuBarPage | Remove DSL items and replace imperatively | fixed |
-| **No MenuFlyoutSubItem (cascading menus)** | MenuFlyoutPage, MenuBarPage | Build entire flyout imperatively | fixed |
-| **No KeyboardAccelerator support** | MenuFlyoutPage, MenuBarPage, AppBarButtonPage, CommandBarPage | `.Set()` with `.KeyboardAccelerators.Add()` | fixed |
-| **No Icon types (BitmapIcon, FontIcon, PathIcon, ImageIcon)** as DSL elements | IconElementPage, AppBarButtonPage, AppBarToggleButtonPage, MenuFlyoutPage | `.Set()` to assign `.Icon` property | fixed |
-| **No DataTemplate declarative support** | FlipViewPage, TreeViewPage, SemanticZoomPage, SelectorBarPage | `XamlReader.Load` or imperative construction | fixed |
-| **No TextBox.Header / PlaceholderText in DSL** | TextBoxPage | `.Set(tb => { tb.Header = ...; tb.PlaceholderText = ...; })` | fixed |
-| **No ScrollView ZoomMode / ScrollMode** | ScrollViewerPage | `.Set()` for zoom/scroll configuration | fixed |
-| **No ThemeShadow / Translation modifier** | ThemeShadowPage | `.Set()` for shadow + Vector3 translation | fixed |
-| **No AcrylicBrush DSL** | AcrylicPage | Brush created imperatively | fixed |
-| **No FontStyle modifier** | TextBoxPage | `.Set(tb => tb.FontStyle = ...)` | fixed |
+| **No Storyboard / DoubleAnimation / EasingFunction DSL** | EasingFunctionPage | Animations built imperatively with TranslateTransform + Storyboard | skip |
+| **No TransitionCollection DSL** | ThemeTransitionPage, ImplicitTransitionPage | `.Set()` to attach RepositionThemeTransition, AddDeleteThemeTransition, etc. | Fixed |
+| **No Composition animation DSL (SpringVector3, ExpressionAnimation)** | XamlCompInteropPage | All composition animations + StartAnimation() imperative | |
+| **No ConnectedAnimationService DSL** | ConnectedAnimationPage | PrepareAnimationForConnectedAnimation / TryStartConnectedAnimation imperative | |
+| **No TabView.TabItemsSource / DataTemplate binding** | TabViewPage | Data-bound tab scenario uses XamlReader.Load for DataTemplate | |
+| **No TabView.TabStripHeader / TabStripFooter** | TabViewPage | `.Set()` to assign header/footer content | |
+| **No TabView.Resources for theme dictionaries** | TabViewPage | Accent-colored tab strip built imperatively with ResourceDictionary | |
+| **No NavigationView.FooterMenuItems in DSL** | NavigationViewPage | Footer items added imperatively via `.Set()` | |
+| **No NavigationView.MenuItemsSource / MenuItemTemplate** | NavigationViewPage | Data-binding scenario uses NavItem array instead | |
+| **No XamlUICommand / StandardUICommand DSL** | XamlUICommandPage, StandardUICommandPage | Command binding + KeyboardAccelerator entirely imperative | |
+| **No RichEditBox document API (ITextDocument)** | RichEditBoxPage, ClipboardPage | Formatting, file open/save, SetText/GetText all via `.Set()` | |
+| **No PointerEntered / PointerExited event DSL** | XamlCompInteropPage | Pointer events set imperatively; no declarative handler props | |
+| **No Polygon DSL element** | ShapePage, LinePage | Polygon/Polyline/Path built imperatively (Rectangle/Ellipse/Line exist) | |
+| **No WrapPanel layout element** | ContentIslandPage | Built imperatively | |
+| **No TeachingTip DSL element** | TeachingTipPage | TeachingTip created imperatively, attached to parent Grid via `.Set()` | |
 
 ### Low Priority — Nice-to-have improvements
 
 | Gap | Pages Affected | Notes | Status |
 |-----|---------------|-------|--------|
-| **AutomationProperties attached properties** | Many pages | Always requires `.Set()` — consider `.AutomationName()` modifier | fixed |
-| **No ElementSoundMode modifier** | SoundPage | Rarely needed | fixed |
-| **Event handler accumulation in .Set()** | Many pages | `.Set()` lambdas with `+=` can register duplicate handlers on re-render — need mount-only callback or dedup | fixed |
-| **ToggleSwitch.Header / OffContent / OnContent** | SplitViewPage, others | Not in DSL signature | fixed |
-| **ComboBox with typed ItemsSource** | Multiple pages | DSL only accepts `string[]` — typed enums require `.Set()` | fixed |
-| **TreeView drag-and-drop / multi-selection** | TreeViewPage | Not exposed in DSL | fixed |
 | **ContentDialog is inherently imperative** | ContentDialogPage | `ShowAsync()` doesn't fit declarative model | skip |
+| **StoragePicker needs XamlRoot access** | StoragePickersPage | `ContentIslandEnvironment.AppWindowId` requires imperative access via `.Set()` | |
+| **No ComboBox with ComboBoxItem children (Content + Tag)** | StoragePickersPage | Typed combo items with separate display/value require `.Set()` | |
+| **SplitView.PaneBackground / PanePlacement not in DSL** | SplitViewPage | Must use `.Set()` for these properties | |
+| **No ContextFlyout on TabViewItems** | TabViewPage | Requires imperative `.Set()` | |

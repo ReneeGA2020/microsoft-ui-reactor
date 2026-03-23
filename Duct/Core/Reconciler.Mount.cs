@@ -104,6 +104,11 @@ public sealed partial class Reconciler
             RefreshContainerElement rc => MountRefreshContainer(rc, requestRerender),
             CommandBarFlyoutElement cbf => MountCommandBarFlyout(cbf, requestRerender),
             CalendarViewElement cv => MountCalendarView(cv),
+            SwipeControlElement swipe => MountSwipeControl(swipe, requestRerender),
+            AnimatedIconElement ai => MountAnimatedIcon(ai),
+            ParallaxViewElement pv => MountParallaxView(pv, requestRerender),
+            MapControlElement mc => MountMapControl(mc),
+            FrameElement frame => MountFrame(frame),
             ComponentElement comp => MountComponent(comp, requestRerender),
             FuncElement func => MountFuncComponent(func, requestRerender),
             _ => null,
@@ -113,6 +118,10 @@ public sealed partial class Reconciler
         // Apply inline modifiers after mounting
         if (modifiers is not null && control is FrameworkElement fe)
             ApplyModifiers(fe, modifiers, requestRerender);
+
+        // Apply transitions after mounting (runs after .Set() callbacks)
+        if (control is not null && (element.ImplicitTransitions is not null || element.ThemeTransitions is not null))
+            ApplyTransitions(control, element.ImplicitTransitions, element.ThemeTransitions);
 
         return control;
     }
@@ -1779,5 +1788,95 @@ public sealed partial class Reconciler
             calendarView.Language = cv.Language;
         ApplySetters(cv.Setters, calendarView);
         return calendarView;
+    }
+
+    // ── SwipeControl ──────────────────────────────────────────────────
+
+    private WinUI.SwipeControl MountSwipeControl(SwipeControlElement swipe, Action requestRerender)
+    {
+        var sc = new WinUI.SwipeControl();
+        sc.Content = Mount(swipe.Content, requestRerender);
+
+        if (swipe.LeftItems is { Length: > 0 })
+        {
+            var leftItems = new SwipeItems { Mode = swipe.LeftItemsMode };
+            foreach (var item in swipe.LeftItems) leftItems.Add(CreateSwipeItem(item));
+            sc.LeftItems = leftItems;
+        }
+
+        if (swipe.RightItems is { Length: > 0 })
+        {
+            var rightItems = new SwipeItems { Mode = swipe.RightItemsMode };
+            foreach (var item in swipe.RightItems) rightItems.Add(CreateSwipeItem(item));
+            sc.RightItems = rightItems;
+        }
+
+        SetElementTag(sc, swipe);
+        ApplySetters(swipe.Setters, sc);
+        return sc;
+    }
+
+    private static SwipeItem CreateSwipeItem(SwipeItemData data)
+    {
+        var si = new SwipeItem
+        {
+            Text = data.Text,
+            BehaviorOnInvoked = data.BehaviorOnInvoked,
+        };
+        if (data.IconSource is not null) si.IconSource = data.IconSource;
+        if (data.Background is not null) si.Background = data.Background;
+        if (data.Foreground is not null) si.Foreground = data.Foreground;
+        if (data.OnInvoked is not null) si.Invoked += (s, e) => data.OnInvoked();
+        return si;
+    }
+
+    // ── AnimatedIcon ──────────────────────────────────────────────────
+
+    private WinUI.AnimatedIcon MountAnimatedIcon(AnimatedIconElement ai)
+    {
+        var icon = new WinUI.AnimatedIcon();
+        if (ai.Source is Microsoft.UI.Xaml.Controls.IAnimatedVisualSource2 src)
+            icon.Source = src;
+        if (ai.FallbackIconSource is not null) icon.FallbackIconSource = ai.FallbackIconSource;
+        ApplySetters(ai.Setters, icon);
+        return icon;
+    }
+
+    // ── ParallaxView ──────────────────────────────────────────────────
+
+    private WinUI.ParallaxView MountParallaxView(ParallaxViewElement pv, Action requestRerender)
+    {
+        var parallax = new WinUI.ParallaxView
+        {
+            VerticalShift = pv.VerticalShift,
+            HorizontalShift = pv.HorizontalShift,
+        };
+        parallax.Child = Mount(pv.Child, requestRerender) as UIElement;
+        ApplySetters(pv.Setters, parallax);
+        return parallax;
+    }
+
+    // ── MapControl ────────────────────────────────────────────────────
+
+    private WinUI.MapControl MountMapControl(MapControlElement mc)
+    {
+        var map = new WinUI.MapControl
+        {
+            ZoomLevel = mc.ZoomLevel,
+        };
+        if (mc.MapServiceToken is not null) map.MapServiceToken = mc.MapServiceToken;
+        ApplySetters(mc.Setters, map);
+        return map;
+    }
+
+    // ── Frame ─────────────────────────────────────────────────────────
+
+    private WinUI.Frame MountFrame(FrameElement frame)
+    {
+        var f = new WinUI.Frame();
+        if (frame.SourcePageType is not null)
+            f.Navigate(frame.SourcePageType, frame.NavigationParameter);
+        ApplySetters(frame.Setters, f);
+        return f;
     }
 }

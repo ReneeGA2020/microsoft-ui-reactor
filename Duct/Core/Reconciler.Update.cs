@@ -177,6 +177,16 @@ public sealed partial class Reconciler
                 => Mount(newEl, requestRerender),
             (CalendarViewElement, CalendarViewElement n, WinUI.CalendarView cv)
                 => UpdateCalendarView(n, cv),
+            (SwipeControlElement, SwipeControlElement, WinUI.SwipeControl)
+                => Mount(newEl, requestRerender),
+            (AnimatedIconElement, AnimatedIconElement n, WinUI.AnimatedIcon ai)
+                => UpdateAnimatedIcon(n, ai),
+            (ParallaxViewElement, ParallaxViewElement, WinUI.ParallaxView)
+                => Mount(newEl, requestRerender),
+            (MapControlElement, MapControlElement n, WinUI.MapControl mc)
+                => UpdateMapControl(n, mc),
+            (FrameElement, FrameElement n, WinUI.Frame f)
+                => UpdateFrame(n, f),
             (ComponentElement, ComponentElement, _)
                 => UpdateComponent(oldEl, newEl, control, requestRerender),
             (FuncElement, FuncElement, _)
@@ -189,6 +199,10 @@ public sealed partial class Reconciler
         var target = result ?? control;
         if (modifiers is not null && target is FrameworkElement fe)
             ApplyModifiers(fe, oldModifiers, modifiers, requestRerender);
+
+        // Apply transitions after update (re-applies when transition config changes)
+        if (newEl.ImplicitTransitions is not null || newEl.ThemeTransitions is not null)
+            ApplyTransitions(target, newEl.ImplicitTransitions, newEl.ThemeTransitions);
 
         return result;
     }
@@ -1093,6 +1107,30 @@ public sealed partial class Reconciler
         if (n.Language is not null && Windows.Globalization.Language.IsWellFormed(n.Language))
             cv.Language = n.Language;
         ApplySetters(n.Setters, cv);
+        return null;
+    }
+
+    private UIElement? UpdateAnimatedIcon(AnimatedIconElement n, WinUI.AnimatedIcon ai)
+    {
+        if (n.Source is Microsoft.UI.Xaml.Controls.IAnimatedVisualSource2 src)
+            ai.Source = src;
+        if (n.FallbackIconSource is not null) ai.FallbackIconSource = n.FallbackIconSource;
+        ApplySetters(n.Setters, ai);
+        return null;
+    }
+
+    private UIElement? UpdateMapControl(MapControlElement n, WinUI.MapControl mc)
+    {
+        mc.ZoomLevel = n.ZoomLevel;
+        if (n.MapServiceToken is not null) mc.MapServiceToken = n.MapServiceToken;
+        ApplySetters(n.Setters, mc);
+        return null;
+    }
+
+    private UIElement? UpdateFrame(FrameElement n, WinUI.Frame f)
+    {
+        // Frame navigation is inherently imperative — only apply setters on update
+        ApplySetters(n.Setters, f);
         return null;
     }
 

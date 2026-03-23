@@ -359,6 +359,53 @@ public sealed partial class Reconciler : IDisposable
         foreach (var setter in setters) setter(control);
     }
 
+    internal static void ApplyTransitions(UIElement uie, ImplicitTransitions? implicitT, ThemeTransitions? themeT)
+    {
+        if (implicitT is not null)
+        {
+            if (implicitT.Opacity is not null)
+                uie.OpacityTransition = implicitT.Opacity;
+            if (implicitT.Rotation is not null)
+                uie.RotationTransition = implicitT.Rotation;
+            if (implicitT.Scale is not null)
+                uie.ScaleTransition = implicitT.Scale;
+            if (implicitT.Translation is not null)
+                uie.TranslationTransition = implicitT.Translation;
+            if (implicitT.Background is not null)
+            {
+                switch (uie)
+                {
+                    case WinUI.Grid g: g.BackgroundTransition = implicitT.Background; break;
+                    case WinUI.StackPanel sp: sp.BackgroundTransition = implicitT.Background; break;
+                    case WinUI.ContentPresenter cp: cp.BackgroundTransition = implicitT.Background; break;
+                }
+            }
+        }
+
+        if (themeT?.Children is { Length: > 0 } children)
+        {
+            var tc = new Microsoft.UI.Xaml.Media.Animation.TransitionCollection();
+            foreach (var t in children) tc.Add(t);
+            switch (uie)
+            {
+                case WinUI.StackPanel sp: sp.ChildrenTransitions = tc; break;
+                case WinUI.Grid g: g.ChildrenTransitions = tc; break;
+                case WinUI.Canvas c: c.ChildrenTransitions = tc; break;
+                case WinUI.Border b: b.ChildTransitions = tc; break;
+                case WinUI.ContentPresenter cp: cp.ContentTransitions = tc; break;
+                case WinUI.ContentControl cc: cc.ContentTransitions = tc; break;
+            }
+        }
+
+        if (themeT?.ItemContainer is { Length: > 0 } itemTransitions)
+        {
+            var tc = new Microsoft.UI.Xaml.Media.Animation.TransitionCollection();
+            foreach (var t in itemTransitions) tc.Add(t);
+            if (uie is WinUI.ListViewBase lvb)
+                lvb.ItemContainerTransitions = tc;
+        }
+    }
+
     internal void ApplyModifiers(FrameworkElement fe, ElementModifiers m, Action requestRerender)
         => ApplyModifiers(fe, null, m, requestRerender);
 
