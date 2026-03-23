@@ -708,18 +708,25 @@ Only needed once most pages are migrated and the shell itself is being converted
     - [x] SearchResultsPage (multi-token search, filter NavigationView, dynamic results)
     - [x] SettingsPage (CommunityToolkit SettingsCard/SettingsExpander, theme/nav/sound settings)
     - [x] ItemPage (PageHeader embed, Frame navigation to control pages, theme toggle, reflection cleanup)
-- [ ] **Migrate shell**: NavigationView chrome, TitleBar, search box (after Phase 3 features land).
+- [x] **Migrate shell**: NavigationView chrome, TitleBar, search box.
+    - [x] ShellComponent renders NavigationView + Frame via Duct DSL
+    - [x] TitleBar stays in XAML (requires Window.SetTitleBar — inherently non-component)
+    - [x] Search box stays in XAML TitleBar, events bridge to ShellComponent
+    - [x] Dynamic control group items populated from ControlInfoDataSource
+    - [x] Navigation selection handling moved to ShellComponent
+    - [x] Test automation helpers preserved in XAML
 
 ---
 
 ## Duct Framework Gaps (discovered during migration)
 
-These gaps were found during the migration of 105 control pages and 6 shell pages, representing areas where the Duct DSL forced workarounds via `.Set()`, `.OnMount()`, or full imperative construction. Fixed gaps have been removed. Ordered by impact.
+These gaps were found during the migration of 105 control pages, 6 shell pages, and the NavigationView shell, representing areas where the Duct DSL forced workarounds via `.Set()`, `.OnMount()`, or full imperative construction. Fixed gaps have been removed. Ordered by impact.
 
 ### High Priority — Missing DSL elements (required full imperative construction)
 
 | Gap | Pages Affected | Workaround |
 |-----|---------------|------------|
+| **No TitleBar DSL element** | MainWindow shell | TitleBar must stay in XAML — `Window.SetTitleBar()` requires a real control reference; no component model equivalent |
 | **No ContentIsland / ChildSiteLink / composition hosting** | ContentIslandPage | Entire page is imperative — 3D model loading, composition tree (skip) |
 | **No CaptureElement / MediaCapture** | CaptureElementPreviewPage | Camera capture + snapshot gallery entirely imperative (skip) |
 | **No SettingsCard / SettingsExpander DSL elements** | SettingsPage | CommunityToolkit controls built entirely imperatively via Border + `.Set()` — header, description, icons, nested cards all manual |
@@ -729,26 +736,32 @@ These gaps were found during the migration of 105 control pages and 6 shell page
 
 | Gap | Pages Affected | Workaround |
 |-----|---------------|------------|
+| **NavigationViewItem icon only supports Symbol enum** | ShellComponent, NavigationViewPage | `NavItem` icon param takes `Symbol` — cannot use FontIcon glyphs (e.g. `"\uE8F1"`); must apply icons imperatively via `.Set()` |
+| **No NavigationViewItemHeader DSL element** | ShellComponent | "Controls" section header must be inserted imperatively into NavigationView.MenuItems |
+| **No NavigationView.DisplayModeChanged event in DSL** | ShellComponent | Pane toggle button visibility depends on display mode; requires imperative event wiring |
+| **No NavigationView.IsBackButtonVisible / IsPaneToggleButtonVisible in DSL** | ShellComponent | Must use `.Set()` for these NavigationView properties |
+| **No NavigationView.IsTabStop in DSL** | ShellComponent | Must use `.Set()` to prevent NavigationView from receiving keyboard focus |
+| **No NavigationView.FooterMenuItems in DSL** | NavigationViewPage | Footer items added imperatively via `.Set()` |
+| **No NavigationView.MenuItemsSource / MenuItemTemplate** | NavigationViewPage, SearchResultsPage, ShellComponent | Dynamic menu items from data require `.Set()`; no data-driven menu pattern |
+| **No ContextFlyout on NavigationViewItems in DSL** | ShellComponent | Copy-link flyouts on nav items require imperative construction |
+| **No AutomationProperties on NavigationViewItems in DSL** | ShellComponent | AutomationId/Name must be set via imperative loop after mount |
+| **No Frame.Navigated / Frame.Navigating events in DSL** | ShellComponent, ItemPage | Test automation and back button visibility require imperative Frame event handlers |
+| **No NavigationView.IsPaneOpen property change callback in DSL** | ShellComponent | Accessibility announcements for pane open/close require `RegisterPropertyChangedCallback()` imperatively |
 | **No Storyboard / DoubleAnimation / EasingFunction DSL** | EasingFunctionPage | Animations built imperatively (skip) |
 | **No Composition animation DSL (SpringVector3, ExpressionAnimation)** | XamlCompInteropPage | All composition animations + StartAnimation() imperative |
 | **No ConnectedAnimationService DSL** | ConnectedAnimationPage | PrepareAnimationForConnectedAnimation / TryStartConnectedAnimation imperative |
 | **No TabView.TabItemsSource / DataTemplate binding** | TabViewPage | Data-bound tab scenario uses XamlReader.Load for DataTemplate |
 | **No TabView.TabStripHeader / TabStripFooter** | TabViewPage | `.Set()` to assign header/footer content |
 | **No TabView.Resources for theme dictionaries** | TabViewPage | Accent-colored tab strip built imperatively with ResourceDictionary |
-| **No NavigationView.FooterMenuItems in DSL** | NavigationViewPage | Footer items added imperatively via `.Set()` |
-| **No NavigationView.MenuItemsSource / MenuItemTemplate** | NavigationViewPage, SearchResultsPage | Data-binding scenario uses NavItem array; dynamic menu items from list require `.Set()` |
 | **No XamlUICommand / StandardUICommand DSL** | XamlUICommandPage, StandardUICommandPage | Command binding + KeyboardAccelerator entirely imperative |
 | **No RichEditBox document API (ITextDocument)** | RichEditBoxPage, ClipboardPage | Formatting, file open/save, SetText/GetText all via `.Set()` |
 | **No PointerEntered / PointerExited event DSL** | XamlCompInteropPage | Pointer events set imperatively; no declarative handler props |
 | **No Polygon DSL element** | ShapePage, LinePage | Polygon/Polyline/Path built imperatively (Rectangle/Ellipse/Line exist) |
 | **No WrapPanel layout element** | ContentIslandPage | Built imperatively |
-| **No TeachingTip DSL element** | TeachingTipPage | TeachingTip created imperatively, attached to parent Grid via `.Set()` |
-| **No GridView IsItemClickEnabled / ItemClick in DSL** | AllControlsPage, SectionPage, HomePage, SearchResultsPage | `GridView<T>` doesn't expose click-to-navigate; must wire up `.Set(gv => gv.ItemClick += ...)` |
-| **No GridView ContainerContentChanging in DSL** | AllControlsPage, SectionPage, HomePage, SearchResultsPage | Needed for disabling items not included in build; requires `.Set()` |
+| **No GridView ContainerContentChanging in DSL** | AllControlsPage, SectionPage, HomePage, SearchResultsPage | Workaround: filter data before rendering; event still unavailable |
 | **No GridView ItemContainerStyle in DSL** | AllControlsPage, SectionPage | Custom item styles require `.Set()` on the GridView Resources |
 | **No implicit show/hide animations (Community Toolkit)** | HomePage | `animations:Implicit.ShowAnimations` / `HideAnimations` not expressible |
-| **No SwitchPresenter equivalent** | HomePage | CommunityToolkit SwitchPresenter replaced with conditional rendering (`If`/ternary) |
-| **No NavigationView.SelectedItem programmatic set** | SearchResultsPage, SectionPage | Must reach into App.MainWindow.NavigationView imperatively |
+| **No NavigationView.SelectedItem programmatic set** | SearchResultsPage, SectionPage, ShellComponent | Must reach into NavigationView imperatively |
 | **No visual tree traversal (GetDescendantsOfType)** | ItemPage | Theme toggle on SampleThemeListener descendants requires imperative tree walk |
 | **`.CornerRadius()` only accepts `double`, not `CornerRadius` struct** | ControlItemTemplateHelper | Cannot pass theme resource `CornerRadius` values; must use `.Set()` instead |
 | **`.WithBorder()` only accepts `(string, double)`, not `(Brush, Thickness)`** | ControlItemTemplateHelper | Cannot pass theme resource brushes; must use `.Set()` for border properties |
