@@ -41,6 +41,20 @@ public abstract record Element
     public IReadOnlyDictionary<Type, object>? Attached { get; init; }
 
     /// <summary>
+    /// Implicit transitions (opacity, scale, rotation, translation, background).
+    /// Set via fluent extension methods: Rectangle().WithOpacityTransition()
+    /// Applied by the reconciler after mount/update, so they are always present when
+    /// property values are set via .Set() callbacks.
+    /// </summary>
+    public ImplicitTransitions? ImplicitTransitions { get; init; }
+
+    /// <summary>
+    /// Theme transitions (children, item container).
+    /// Set via fluent extension methods: VStack(children).WithThemeTransitions(...)
+    /// </summary>
+    public ThemeTransitions? ThemeTransitions { get; init; }
+
+    /// <summary>
     /// Gets the attached property data of the specified type, or null if not set.
     /// </summary>
     internal T? GetAttached<T>() where T : class =>
@@ -160,6 +174,37 @@ public record ElementModifiers
         };
     }
 }
+
+// ════════════════════════════════════════════════════════════════════════
+//  Transition data records (stored on Element base, applied by Reconciler)
+// ════════════════════════════════════════════════════════════════════════
+
+/// <summary>
+/// Declarative implicit transition configuration for a UIElement.
+/// Each property maps to a WinUI implicit transition property on UIElement/Panel.
+/// Null means "don't set this transition".
+/// </summary>
+public record ImplicitTransitions
+{
+    public ScalarTransition? Opacity { get; init; }
+    public ScalarTransition? Rotation { get; init; }
+    public Vector3Transition? Scale { get; init; }
+    public Vector3Transition? Translation { get; init; }
+    public BrushTransition? Background { get; init; }
+}
+
+/// <summary>
+/// Declarative theme transition configuration.
+/// Children applies to Panel.ChildrenTransitions / Border.ChildTransitions / ContentControl.ContentTransitions.
+/// ItemContainer applies to ItemsControl.ItemContainerTransitions.
+/// The reconciler picks the correct property based on control type.
+/// </summary>
+public record ThemeTransitions
+{
+    public Microsoft.UI.Xaml.Media.Animation.Transition[]? Children { get; init; }
+    public Microsoft.UI.Xaml.Media.Animation.Transition[]? ItemContainer { get; init; }
+}
+// Note: Transition is in Microsoft.UI.Xaml.Media.Animation (not imported by default in Element.cs)
 
 // Duct reuses WinUI types directly — no shadow enums.
 // See: Microsoft.UI.Xaml (Thickness, HorizontalAlignment, VerticalAlignment)
@@ -1237,4 +1282,93 @@ public record CalendarViewElement() : Element
     public string? CalendarIdentifier { get; init; }
     public string? Language { get; init; }
     internal Action<WinUI.CalendarView>[] Setters { get; init; } = [];
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  SwipeControl
+// ════════════════════════════════════════════════════════════════════════
+
+public record SwipeItemData(
+    string Text,
+    Action? OnInvoked = null,
+    Microsoft.UI.Xaml.Controls.IconSource? IconSource = null,
+    Microsoft.UI.Xaml.Media.Brush? Background = null,
+    Microsoft.UI.Xaml.Media.Brush? Foreground = null,
+    Microsoft.UI.Xaml.Controls.SwipeBehaviorOnInvoked BehaviorOnInvoked = Microsoft.UI.Xaml.Controls.SwipeBehaviorOnInvoked.Auto);
+
+public record SwipeControlElement(Element Content) : Element
+{
+    public SwipeItemData[]? LeftItems { get; init; }
+    public SwipeItemData[]? RightItems { get; init; }
+    public Microsoft.UI.Xaml.Controls.SwipeMode LeftItemsMode { get; init; } = Microsoft.UI.Xaml.Controls.SwipeMode.Reveal;
+    public Microsoft.UI.Xaml.Controls.SwipeMode RightItemsMode { get; init; } = Microsoft.UI.Xaml.Controls.SwipeMode.Reveal;
+    internal Action<WinUI.SwipeControl>[] Setters { get; init; } = [];
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  AnimatedIcon
+// ════════════════════════════════════════════════════════════════════════
+
+public record AnimatedIconElement() : Element
+{
+    public object? Source { get; init; }
+    public IconSource? FallbackIconSource { get; init; }
+    internal Action<WinUI.AnimatedIcon>[] Setters { get; init; } = [];
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  ParallaxView
+// ════════════════════════════════════════════════════════════════════════
+
+public record ParallaxViewElement(Element Child) : Element
+{
+    public double VerticalShift { get; init; }
+    public double HorizontalShift { get; init; }
+    internal Action<WinUI.ParallaxView>[] Setters { get; init; } = [];
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  MapControl
+// ════════════════════════════════════════════════════════════════════════
+
+public record MapControlElement() : Element
+{
+    public string? MapServiceToken { get; init; }
+    public double ZoomLevel { get; init; } = 1;
+    internal Action<WinUI.MapControl>[] Setters { get; init; } = [];
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  Frame
+// ════════════════════════════════════════════════════════════════════════
+
+public record FrameElement() : Element
+{
+    public Type? SourcePageType { get; init; }
+    public object? NavigationParameter { get; init; }
+    internal Action<WinUI.Frame>[] Setters { get; init; } = [];
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  ItemsView
+// ════════════════════════════════════════════════════════════════════════
+
+public enum ItemsViewLayoutKind
+{
+    StackLayout,
+    LinedFlowLayout,
+    UniformGridLayout,
+}
+
+public record ItemsViewElement<T>(
+    IReadOnlyList<T> Items,
+    Func<T, string> KeySelector,
+    Func<T, int, Element> ViewBuilder
+) : Element
+{
+    public ItemsViewLayoutKind LayoutKind { get; init; } = ItemsViewLayoutKind.StackLayout;
+    public ItemsViewSelectionMode SelectionMode { get; init; } = ItemsViewSelectionMode.Single;
+    public bool IsItemInvokedEnabled { get; init; }
+    public Action<T>? OnItemInvoked { get; init; }
+    internal Action<WinUI.ItemsView>[] Setters { get; init; } = [];
 }

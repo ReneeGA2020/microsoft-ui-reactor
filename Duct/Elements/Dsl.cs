@@ -432,6 +432,39 @@ public static class UI
 
     public static CalendarViewElement CalendarView() => new();
 
+    // ── SwipeControl ────────────────────────────────────────────────
+
+    public static SwipeControlElement SwipeControl(Element content,
+        SwipeItemData[]? leftItems = null, SwipeItemData[]? rightItems = null) =>
+        new(content) { LeftItems = leftItems, RightItems = rightItems };
+
+    // ── AnimatedIcon ────────────────────────────────────────────────
+
+    public static AnimatedIconElement AnimatedIcon(object? source = null, IconSource? fallbackIconSource = null) =>
+        new() { Source = source, FallbackIconSource = fallbackIconSource };
+
+    // ── ParallaxView ────────────────────────────────────────────────
+
+    public static ParallaxViewElement ParallaxView(Element child, double verticalShift = 0, double horizontalShift = 0) =>
+        new(child) { VerticalShift = verticalShift, HorizontalShift = horizontalShift };
+
+    // ── MapControl ──────────────────────────────────────────────────
+
+    public static MapControlElement MapControl(string? mapServiceToken = null, double zoomLevel = 1) =>
+        new() { MapServiceToken = mapServiceToken, ZoomLevel = zoomLevel };
+
+    // ── Frame ───────────────────────────────────────────────────────
+
+    public static FrameElement Frame(Type? sourcePageType = null, object? navigationParameter = null) =>
+        new() { SourcePageType = sourcePageType, NavigationParameter = navigationParameter };
+
+    // ── ItemsView ───────────────────────────────────────────────────
+
+    public static ItemsViewElement<T> ItemsView<T>(
+        IReadOnlyList<T> items,
+        Func<T, string> keySelector,
+        Func<T, int, Element> viewBuilder) => new(items, keySelector, viewBuilder);
+
     // ── Rich text helpers ───────────────────────────────────────────
 
     public static RichTextBlockElement RichText(RichTextParagraph[] paragraphs) =>

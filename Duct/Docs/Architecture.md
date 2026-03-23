@@ -209,3 +209,17 @@ This replaces the earlier wrapper-type approach (`GridChild`, `CanvasChild`, `Re
 
 ### Generalized ElementModifiers
 Properties that exist on WinUI base types are applied generically via `ElementModifiers` in the reconciler's `ApplyModifiers` method, rather than being hardcoded per element type. This means a single `.Background()` modifier works on any element — the reconciler checks at runtime whether the control is a `Panel`, `Control`, or `Border` and sets the property accordingly. The same pattern applies to `Foreground`, `Padding`, `CornerRadius`, `BorderBrush`, `IsEnabled`, `ElementSoundMode`, and `AutomationProperties.Name`.
+
+### First-class transition support
+Transitions are stored as data on the `Element` base class via two properties — `ImplicitTransitions` and `ThemeTransitions` — following the same pattern as `Modifiers` and `Attached`. The reconciler applies transitions in `ApplyTransitions()`, which runs **after** both `ApplyModifiers` and `.Set()` callbacks during mount and update. This ordering is critical: implicit transitions (e.g., `OpacityTransition`) must be present on the native control before `.Set()` changes the animated property, otherwise no animation plays.
+
+```
+Element
+├── Key                  (string? — stable identity)
+├── Modifiers            (ElementModifiers? — margin, padding, size, etc.)
+├── Attached             (IReadOnlyDictionary? — Grid.Row, Canvas.Left, etc.)
+├── ImplicitTransitions  (ImplicitTransitions? — opacity, scale, rotation, etc.)
+└── ThemeTransitions     (ThemeTransitions? — children, item container)
+```
+
+Transitions store actual WinUI transition objects (`ScalarTransition`, `Vector3Transition`, `BrushTransition`, `Transition[]`) rather than shadow types. This keeps the API thin and avoids duplicating the WinUI type system.

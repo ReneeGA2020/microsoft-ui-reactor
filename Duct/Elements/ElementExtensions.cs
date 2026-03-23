@@ -1,3 +1,4 @@
+using System;
 using Duct.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -47,6 +48,9 @@ public static class ElementExtensions
 
     public static T Padding<T>(this T el, double horizontal, double vertical) where T : Element =>
         Modify(el, new ElementModifiers { Padding = new Thickness(horizontal, vertical, horizontal, vertical) });
+
+    public static T Padding<T>(this T el, double left, double top, double right, double bottom) where T : Element =>
+        Modify(el, new ElementModifiers { Padding = new Thickness(left, top, right, bottom) });
 
     public static T Width<T>(this T el, double width) where T : Element =>
         Modify(el, new ElementModifiers { Width = width });
@@ -519,6 +523,40 @@ public static class ElementExtensions
     public static CalendarViewElement Set(this CalendarViewElement el, Action<WinUI.CalendarView> configure) =>
         el with { Setters = [.. el.Setters, configure] };
 
+    // SwipeControl
+    public static SwipeControlElement Set(this SwipeControlElement el, Action<WinUI.SwipeControl> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    // AnimatedIcon
+    public static AnimatedIconElement Set(this AnimatedIconElement el, Action<WinUI.AnimatedIcon> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    // ParallaxView
+    public static ParallaxViewElement Set(this ParallaxViewElement el, Action<WinUI.ParallaxView> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    // MapControl
+    public static MapControlElement Set(this MapControlElement el, Action<WinUI.MapControl> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    // Frame
+    public static FrameElement Set(this FrameElement el, Action<WinUI.Frame> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    // ItemsView
+    public static ItemsViewElement<T> Set<T>(this ItemsViewElement<T> el, Action<WinUI.ItemsView> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    // Typed templated collections
+    public static TemplatedListViewElement<T> Set<T>(this TemplatedListViewElement<T> el, Action<WinUI.ListView> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    public static TemplatedGridViewElement<T> Set<T>(this TemplatedGridViewElement<T> el, Action<WinUI.GridView> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    public static TemplatedFlipViewElement<T> Set<T>(this TemplatedFlipViewElement<T> el, Action<WinUI.FlipView> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
     // ── Shape convenience modifiers ─────────────────────────────────
 
     public static RectangleElement Fill(this RectangleElement el, Brush brush) =>
@@ -550,53 +588,71 @@ public static class ElementExtensions
         el with { RepeaterSetters = [.. el.RepeaterSetters, configure] };
 
     // ════════════════════════════════════════════════════════════════
-    //  Transitions (Feature 8: Animation and Transition Support)
+    //  Transitions (first-class, applied by reconciler)
     // ════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Apply theme transitions to a StackPanel (VStack/HStack).
-    /// Usage: VStack(children).WithTransitions(new RepositionThemeTransition())
-    /// </summary>
-    public static StackElement WithTransitions(this StackElement el, params Transition[] transitions) =>
-        el.Set(sp =>
-        {
-            sp.ChildrenTransitions ??= new TransitionCollection();
-            sp.ChildrenTransitions.Clear();
-            foreach (var t in transitions) sp.ChildrenTransitions.Add(t);
-        });
+    // ── Theme transitions (ChildrenTransitions / ItemContainerTransitions) ──
 
     /// <summary>
-    /// Apply theme transitions to a Grid.
+    /// Sets theme transitions declaratively. The reconciler applies ChildrenTransitions
+    /// on panels, ChildTransitions on borders, ContentTransitions on content controls.
+    /// Works on any element type.
     /// </summary>
-    public static GridElement WithTransitions(this GridElement el, params Transition[] transitions) =>
-        el.Set(g =>
-        {
-            g.ChildrenTransitions ??= new TransitionCollection();
-            g.ChildrenTransitions.Clear();
-            foreach (var t in transitions) g.ChildrenTransitions.Add(t);
-        });
+    public static T WithTransitions<T>(this T el, params Transition[] transitions) where T : Element =>
+        el with { ThemeTransitions = (el.ThemeTransitions ?? new()) with { Children = transitions } };
 
     /// <summary>
-    /// Apply content transitions to a Border.
+    /// Sets ItemContainerTransitions declaratively on ListView, GridView, etc.
     /// </summary>
-    public static BorderElement WithTransitions(this BorderElement el, params Transition[] transitions) =>
-        el.Set(b =>
-        {
-            b.ChildTransitions ??= new TransitionCollection();
-            b.ChildTransitions.Clear();
-            foreach (var t in transitions) b.ChildTransitions.Add(t);
-        });
+    public static T ItemContainerTransitions<T>(this T el, params Transition[] transitions) where T : Element =>
+        el with { ThemeTransitions = (el.ThemeTransitions ?? new()) with { ItemContainer = transitions } };
+
+    // ── Implicit transitions (Opacity, Rotation, Scale, Translation, Background) ──
 
     /// <summary>
-    /// Apply content transitions to a Canvas.
+    /// Adds an implicit ScalarTransition on Opacity.
+    /// Applied by the reconciler after .Set() callbacks — always safe to combine.
     /// </summary>
-    public static CanvasElement WithTransitions(this CanvasElement el, params Transition[] transitions) =>
-        el.Set(c =>
-        {
-            c.ChildrenTransitions ??= new TransitionCollection();
-            c.ChildrenTransitions.Clear();
-            foreach (var t in transitions) c.ChildrenTransitions.Add(t);
-        });
+    public static T OpacityTransition<T>(this T el, TimeSpan? duration = null) where T : Element
+    {
+        var t = new ScalarTransition();
+        if (duration.HasValue) t.Duration = duration.Value;
+        return el with { ImplicitTransitions = (el.ImplicitTransitions ?? new()) with { Opacity = t } };
+    }
+
+    /// <summary>
+    /// Adds an implicit ScalarTransition on Rotation.
+    /// </summary>
+    public static T RotationTransition<T>(this T el, TimeSpan? duration = null) where T : Element
+    {
+        var t = new ScalarTransition();
+        if (duration.HasValue) t.Duration = duration.Value;
+        return el with { ImplicitTransitions = (el.ImplicitTransitions ?? new()) with { Rotation = t } };
+    }
+
+    /// <summary>
+    /// Adds an implicit Vector3Transition on Scale.
+    /// Pass a pre-configured transition to set Components for axis-specific animation.
+    /// </summary>
+    public static T ScaleTransition<T>(this T el, Vector3Transition? transition = null) where T : Element =>
+        el with { ImplicitTransitions = (el.ImplicitTransitions ?? new()) with { Scale = transition ?? new Vector3Transition() } };
+
+    /// <summary>
+    /// Adds an implicit Vector3Transition on Translation.
+    /// Pass a pre-configured transition to set Components for axis-specific animation.
+    /// </summary>
+    public static T TranslationTransition<T>(this T el, Vector3Transition? transition = null) where T : Element =>
+        el with { ImplicitTransitions = (el.ImplicitTransitions ?? new()) with { Translation = transition ?? new Vector3Transition() } };
+
+    /// <summary>
+    /// Adds an implicit BrushTransition on Background (Grid, StackPanel, ContentPresenter).
+    /// </summary>
+    public static T BackgroundTransition<T>(this T el, TimeSpan? duration = null) where T : Element
+    {
+        var t = new BrushTransition();
+        if (duration.HasValue) t.Duration = duration.Value;
+        return el with { ImplicitTransitions = (el.ImplicitTransitions ?? new()) with { Background = t } };
+    }
 
     // ════════════════════════════════════════════════════════════════
     //  ScrollView zoom/scroll modifiers
