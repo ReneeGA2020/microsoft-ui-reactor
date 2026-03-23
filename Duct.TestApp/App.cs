@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using Duct;
 using Duct.Core;
-using Duct.Yoga;
+using Duct.Flex;
 using Microsoft.UI.Xaml;
 using static Duct.UI;
 
@@ -1219,10 +1219,10 @@ class FlexPanelDemo : Component
 {
     public override Element Render()
     {
-        var (direction, setDirection) = UseState(YogaFlexDirection.Row);
-        var (wrap, setWrap) = UseState(YogaWrap.NoWrap);
-        var (justify, setJustify) = UseState(YogaJustify.FlexStart);
-        var (alignItems, setAlignItems) = UseState(YogaAlign.Stretch);
+        var (direction, setDirection) = UseState(FlexDirection.Row);
+        var (wrap, setWrap) = UseState(FlexWrap.NoWrap);
+        var (justify, setJustify) = UseState(FlexJustify.FlexStart);
+        var (alignItems, setAlignItems) = UseState(FlexAlign.Stretch);
 
         return ScrollView(VStack(16,
             Heading("FlexPanel"),
@@ -1232,41 +1232,41 @@ class FlexPanelDemo : Component
             HStack(8,
                 VStack(4,
                     Text("Direction").SemiBold(),
-                    Button("Row", () => setDirection(YogaFlexDirection.Row))
-                        .Disabled(direction == YogaFlexDirection.Row),
-                    Button("Column", () => setDirection(YogaFlexDirection.Column))
-                        .Disabled(direction == YogaFlexDirection.Column),
-                    Button("Row Reverse", () => setDirection(YogaFlexDirection.RowReverse))
-                        .Disabled(direction == YogaFlexDirection.RowReverse)
+                    Button("Row", () => setDirection(FlexDirection.Row))
+                        .Disabled(direction == FlexDirection.Row),
+                    Button("Column", () => setDirection(FlexDirection.Column))
+                        .Disabled(direction == FlexDirection.Column),
+                    Button("Row Reverse", () => setDirection(FlexDirection.RowReverse))
+                        .Disabled(direction == FlexDirection.RowReverse)
                 ),
                 VStack(4,
                     Text("Wrap").SemiBold(),
-                    Button("No Wrap", () => setWrap(YogaWrap.NoWrap))
-                        .Disabled(wrap == YogaWrap.NoWrap),
-                    Button("Wrap", () => setWrap(YogaWrap.Wrap))
-                        .Disabled(wrap == YogaWrap.Wrap)
+                    Button("No Wrap", () => setWrap(FlexWrap.NoWrap))
+                        .Disabled(wrap == FlexWrap.NoWrap),
+                    Button("Wrap", () => setWrap(FlexWrap.Wrap))
+                        .Disabled(wrap == FlexWrap.Wrap)
                 ),
                 VStack(4,
                     Text("Justify Content").SemiBold(),
-                    Button("Start", () => setJustify(YogaJustify.FlexStart))
-                        .Disabled(justify == YogaJustify.FlexStart),
-                    Button("Center", () => setJustify(YogaJustify.Center))
-                        .Disabled(justify == YogaJustify.Center),
-                    Button("Space Between", () => setJustify(YogaJustify.SpaceBetween))
-                        .Disabled(justify == YogaJustify.SpaceBetween),
-                    Button("Space Evenly", () => setJustify(YogaJustify.SpaceEvenly))
-                        .Disabled(justify == YogaJustify.SpaceEvenly)
+                    Button("Start", () => setJustify(FlexJustify.FlexStart))
+                        .Disabled(justify == FlexJustify.FlexStart),
+                    Button("Center", () => setJustify(FlexJustify.Center))
+                        .Disabled(justify == FlexJustify.Center),
+                    Button("Space Between", () => setJustify(FlexJustify.SpaceBetween))
+                        .Disabled(justify == FlexJustify.SpaceBetween),
+                    Button("Space Evenly", () => setJustify(FlexJustify.SpaceEvenly))
+                        .Disabled(justify == FlexJustify.SpaceEvenly)
                 ),
                 VStack(4,
                     Text("Align Items").SemiBold(),
-                    Button("Stretch", () => setAlignItems(YogaAlign.Stretch))
-                        .Disabled(alignItems == YogaAlign.Stretch),
-                    Button("Center", () => setAlignItems(YogaAlign.Center))
-                        .Disabled(alignItems == YogaAlign.Center),
-                    Button("Start", () => setAlignItems(YogaAlign.FlexStart))
-                        .Disabled(alignItems == YogaAlign.FlexStart),
-                    Button("End", () => setAlignItems(YogaAlign.FlexEnd))
-                        .Disabled(alignItems == YogaAlign.FlexEnd)
+                    Button("Stretch", () => setAlignItems(FlexAlign.Stretch))
+                        .Disabled(alignItems == FlexAlign.Stretch),
+                    Button("Center", () => setAlignItems(FlexAlign.Center))
+                        .Disabled(alignItems == FlexAlign.Center),
+                    Button("Start", () => setAlignItems(FlexAlign.FlexStart))
+                        .Disabled(alignItems == FlexAlign.FlexStart),
+                    Button("End", () => setAlignItems(FlexAlign.FlexEnd))
+                        .Disabled(alignItems == FlexAlign.FlexEnd)
                 )
             ),
 
@@ -1302,7 +1302,7 @@ class FlexPanelDemo : Component
                 ColorBox("1x", "#E8834A").Flex(grow: 1).Height(50),
             ])
             {
-                Direction = YogaFlexDirection.Row,
+                Direction = FlexDirection.Row,
                 ColumnGap = 8,
             },
 
@@ -1316,8 +1316,8 @@ class FlexPanelDemo : Component
                 ).ToArray()
             )
             {
-                Direction = YogaFlexDirection.Row,
-                Wrap = YogaWrap.Wrap,
+                Direction = FlexDirection.Row,
+                Wrap = FlexWrap.Wrap,
                 ColumnGap = 8,
                 RowGap = 8,
             }

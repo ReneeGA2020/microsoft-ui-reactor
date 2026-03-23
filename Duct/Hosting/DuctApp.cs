@@ -13,6 +13,7 @@ namespace Duct;
 internal record DuctAppOptions(
     Func<Component>? RootFactory = null,
     Func<RenderContext, Element>? RootRenderFunc = null,
+    Action<DuctHost>? Configure = null,
     string WindowTitle = "Duct App",
     int WindowWidth = 1024,
     int WindowHeight = 768);
@@ -24,12 +25,13 @@ public static class DuctApp
     internal static DuctAppOptions Options = new();
     public static DuctHost? ActiveHost;
 
-    public static void Run<TRoot>(string title = "Duct App", int width = 1024, int height = 768)
+    public static void Run<TRoot>(string title = "Duct App", int width = 1024, int height = 768, Action<DuctHost>? configure = null)
         where TRoot : Component, new()
     {
         WinRT.ComWrappersSupport.InitializeComWrappers();
         Options = new DuctAppOptions(
             RootFactory: () => new TRoot(),
+            Configure: configure,
             WindowTitle: title,
             WindowWidth: width,
             WindowHeight: height);
@@ -118,6 +120,8 @@ public class DuctApplication : Application, IXamlMetadataProvider
 
         var host = new DuctHost(window);
         DuctApp.ActiveHost = host;
+
+        opts.Configure?.Invoke(host);
 
         if (opts.RootFactory is not null)
         {

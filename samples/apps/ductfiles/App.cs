@@ -8,12 +8,10 @@ using Duct.Core;
 using DuctFiles.Components;
 using DuctFiles.Models;
 using DuctFiles.Services;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
 using static Duct.UI;
 
-DuctApp.Run<DuctFilesApp>("DuctFiles", width: 1200, height: 800);
+DuctApp.Run<DuctFilesApp>("DuctFiles", width: 1200, height: 800,
+    configure: host => CursorBorderRegistration.Register(host.Reconciler));
 
 // ─── Root component ───────────────────────────────────────────────────────────
 
@@ -212,44 +210,16 @@ class DuctFilesApp : Component
             OnItemActivated: OnItemActivated
         ));
 
-        // Splitter grip: a 4px border column that drags to resize the tree pane
-        var splitter = Border(Empty())
-            .Set(b =>
-            {
-                b.Width = 4;
-                b.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["DividerStrokeColorDefaultBrush"];
-                b.SetValue(UIElement.ManipulationModeProperty, ManipulationModes.TranslateX);
-                // Cursor hint: highlight on hover
-                b.PointerEntered += (s, _) =>
-                    ((Microsoft.UI.Xaml.Controls.Border)s!).Background =
-                        (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SubtleFillColorTertiaryBrush"];
-                b.PointerExited += (s, _) =>
-                    ((Microsoft.UI.Xaml.Controls.Border)s!).Background =
-                        (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["DividerStrokeColorDefaultBrush"];
-                b.ManipulationDelta += (s, e) =>
-                {
-                    var border = (Microsoft.UI.Xaml.Controls.Border)s!;
-                    var grid = border.Parent as Microsoft.UI.Xaml.Controls.Grid;
-                    if (grid is null) return;
-                    var col = grid.ColumnDefinitions[0];
-                    var newWidth = Math.Max(120, col.ActualWidth + e.Delta.Translation.X);
-                    col.Width = new GridLength(newWidth, GridUnitType.Pixel);
-                };
-            });
-
         // The outer VStack must not stretch — use a Grid so toolbar gets Auto height
         // and the content area fills remaining space.
         return Grid(
             ["*"],
             ["Auto", "*"],
             toolbar.Grid(row: 0, column: 0),
-            Grid(
-                ["280", "Auto", "*"],
-                ["*"],
-                tree.Grid(row: 0, column: 0),
-                splitter.Grid(row: 0, column: 1),
-                fileList.Grid(row: 0, column: 2)
-            ).Grid(row: 1, column: 0)
+            Component<SplitPanel, SplitPanelProps>(new SplitPanelProps(
+                Left: tree,
+                Right: fileList
+            )).Grid(row: 1, column: 0)
         );
     }
 }

@@ -36,6 +36,11 @@ public sealed class DuctHost
         set => _reconciler.Mode = value;
     }
 
+    /// <summary>
+    /// Provides access to the underlying reconciler for RegisterType calls.
+    /// </summary>
+    public Reconciler Reconciler => _reconciler;
+
     public DuctHost(Window window, IDuctLogger? logger = null)
     {
         _logger = logger ?? new DebugDuctLogger();
