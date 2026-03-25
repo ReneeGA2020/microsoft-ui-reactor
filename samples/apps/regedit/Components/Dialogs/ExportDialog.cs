@@ -1,0 +1,49 @@
+using Duct;
+using Duct.Core;
+using Microsoft.UI.Xaml;
+using static Duct.UI;
+
+namespace DuctRegedit.Components.Dialogs;
+
+internal sealed record ExportDialogProps(
+    bool IsOpen,
+    bool ExportAll,
+    string SelectedBranch,
+    Action<bool> OnExportAllChanged,
+    Action OnExport,
+    Action OnCancel
+);
+
+internal sealed class ExportDialog : Component<ExportDialogProps>
+{
+    public override Element Render()
+    {
+        return ContentDialog(
+            Strings.ExportTitle,
+            VStack(12,
+                VStack(4,
+                    Text(Strings.ExportRange),
+                    RadioButton(Strings.All,
+                        Props.ExportAll,
+                        _ => Props.OnExportAllChanged(true),
+                        "exportRange"),
+                    RadioButton(Strings.SelectedBranch,
+                        !Props.ExportAll,
+                        _ => Props.OnExportAllChanged(false),
+                        "exportRange")
+                ),
+                When(!Props.ExportAll, () =>
+                    TextField(Props.SelectedBranch, _ => { })
+                        .Set(tb => { tb.IsReadOnly = true; })
+                )
+            ).Width(400),
+            Strings.Export
+        ) with
+        {
+            IsOpen = Props.IsOpen,
+            SecondaryButtonText = Strings.Cancel,
+            DefaultButton = Microsoft.UI.Xaml.Controls.ContentDialogButton.Primary,
+            OnClosed = _ => Props.OnCancel(),
+        };
+    }
+}

@@ -1,0 +1,147 @@
+using Duct;
+using Duct.Core;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
+using StressPerf.Shared;
+using static Duct.UI;
+
+// Parse CLI args before WinUI starts
+var cliOptions = CliOptions.Parse(args);
+if (cliOptions.Headless)
+    ConsoleHelper.EnsureConsole();
+
+StockGridApp.CliOpts = cliOptions;
+DuctApp.Run<StockGridApp>("StressPerf.Duct", fullScreen: true);
+
+// ---------------------------------------------------------------------------
+
+class StockGridApp : Component
+{
+    private const string AppName = "StressPerf.Duct";
+
+    public static CliOptions CliOpts { get; set; } = new();
+
+    // Pre-compute column/row definition arrays once
+    private static readonly string[] Cols = Enumerable.Range(0, StockDataSource.Columns).Select(_ => "64").ToArray();
+    private static readonly string[] RowDefs = Enumerable.Range(0, StockDataSource.Rows).Select(_ => "18").ToArray();
+
+    public override Element Render()
+    {
+        // The data source is stored in a ref so it survives across renders without triggering re-render.
+        var sourceRef = UseRef<StockDataSource?>(null);
+        if (sourceRef.Current == null)
+            sourceRef.Current = new StockDataSource();
+        var source = sourceRef.Current;
+
+        // data is the snapshot array that drives the UI
+        var (data, setData) = UseState(source.Snapshot());
+
+        var (percent, setPercent) = UseState(CliOpts.Percent);
+        var (running, setRunning) = UseState(false);
+        var (fps, setFps) = UseState("FPS: --");
+        var (updateMs, setUpdateMs) = UseState("Update: -- ms");
+        var (mem, setMem) = UseState("Mem: -- MB");
+
+        var perfRef = UseRef<PerfTracker?>(null);
+        var timerRef = UseRef<DispatcherTimer?>(null);
+        var shutdownRef = UseRef<DispatcherTimer?>(null);
+
+        // Lazily create PerfTracker
+        if (perfRef.Current == null)
+            perfRef.Current = new PerfTracker();
+
+        // CompositionTarget.Rendering for FPS counting
+        var renderHooked = UseRef(false);
+        if (!renderHooked.Current)
+        {
+            renderHooked.Current = true;
+            var perf = perfRef.Current;
+            CompositionTarget.Rendering += (_, _) => perf.FrameRendered();
+        }
+
+        // Start/stop the update timer when `running` changes
+        UseEffect(() =>
+        {
+            if (running)
+            {
+                var src = sourceRef.Current!;
+                var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
+                timer.Tick += (_, _) =>
+                {
+                    var perf = perfRef.Current!;
+                    perf.BeginUpdate();
+
+                    src.Update(percent);
+                    setData(src.Snapshot());
+
+                    perf.EndUpdate();
+
+                    setFps($"FPS: {perf.CurrentFps:F0}");
+                    setUpdateMs($"Update: {perf.LastUpdateMs:F1} ms");
+                    setMem($"Mem: {perf.CurrentMemoryMB} MB");
+                };
+                timer.Start();
+                timerRef.Current = timer;
+            }
+            else
+            {
+                timerRef.Current?.Stop();
+                timerRef.Current = null;
+            }
+
+            return () =>
+            {
+                timerRef.Current?.Stop();
+                timerRef.Current = null;
+            };
+        }, running, percent);
+
+        // Headless auto-start
+        UseEffect(() =>
+        {
+            if (!CliOpts.Headless) return;
+            setPercent(CliOpts.Percent);
+            setRunning(true);
+
+            var shutdownTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(CliOpts.DurationSeconds) };
+            shutdownTimer.Tick += (_, _) =>
+            {
+                setRunning(false);
+                shutdownTimer.Stop();
+                perfRef.Current!.WriteReportFile(AppName, CliOpts.Percent);
+                Application.Current.Exit();
+            };
+            shutdownTimer.Start();
+            shutdownRef.Current = shutdownTimer;
+        }, Array.Empty<object>());
+
+        // --- Build element tree ---
+        var children = new Element[StockDataSource.TotalItems];
+        for (int i = 0; i < StockDataSource.TotalItems; i++)
+        {
+            int r = i / StockDataSource.Columns;
+            int c = i % StockDataSource.Columns;
+            ref readonly var item = ref data[i];
+            children[i] = Text(StockDataSource.FormatCell(in item))
+                .FontSize(8)
+                .Foreground(item.IsUp ? "Green" : "Red")
+                .Padding(2, 1, 2, 1)
+                .Grid(row: r, column: c);
+        }
+
+        return VStack(
+            HStack(12,
+                Button(running ? "Stop" : "Start", () => setRunning(!running)),
+                Text("Update %:").VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center),
+                Slider(percent, 0, 100, v => setPercent(v)).Width(200),
+                Text(fps).VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center).Width(100),
+                Text(updateMs).VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center).Width(120),
+                Text(mem).VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center).Width(120)
+            ).Padding(8),
+            ScrollView(
+                Grid(Cols, RowDefs, children)
+            )
+        );
+    }
+}

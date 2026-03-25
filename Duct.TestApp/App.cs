@@ -6,6 +6,8 @@ using Duct;
 using Duct.Core;
 using Duct.Flex;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using static Duct.UI;
 
 if (args.Contains("--self-test"))
@@ -37,7 +39,8 @@ class DemoApp : Component
                 TabButton("Virtualization", currentTab, setTab),
                 TabButton("Flyout", currentTab, setTab),
                 TabButton("DataTemplate", currentTab, setTab),
-                TabButton("FlexPanel", currentTab, setTab)
+                TabButton("FlexPanel", currentTab, setTab),
+                TabButton("Transitions", currentTab, setTab)
             ).Margin(16, 16, 16, 0),
 
             // Content area with padding
@@ -54,6 +57,7 @@ class DemoApp : Component
                     "Flyout" => Component<FlyoutDemo>(),
                     "DataTemplate" => Component<DataTemplateDemo>(),
                     "FlexPanel" => Component<FlexPanelDemo>(),
+                    "Transitions" => Component<TransitionsDemo>(),
                     _ => Text("Select a tab")
                 }
             ).Padding(24).Margin(16)
@@ -1328,5 +1332,161 @@ class FlexPanelDemo : Component
         Border(
             Text(label).Bold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
         ).Background(color).CornerRadius(4).Padding(8);
+}
+
+// ─── Transitions demo ─────────────────────────────────────────────────────────
+
+class TransitionsDemo : Component
+{
+    public override Element Render()
+    {
+        var (opacity, setOpacity) = UseState(1.0);
+        var (scale, setScale) = UseState(1.0);
+        var (xOffset, setXOffset) = UseState(0.0);
+        var (bgIndex, setBgIndex) = UseState(0);
+        var (showItems, setShowItems) = UseState(true);
+        var (itemCount, setItemCount) = UseState(3);
+        // Separate state for the combined section so it doesn't bleed into individual demos
+        var (comboOpacity, setComboOpacity) = UseState(1.0);
+        var (comboScale, setComboScale) = UseState(1.0);
+        var (comboBgIndex, setComboBgIndex) = UseState(0);
+
+        string[] colors = ["#4A90D9", "#E8834A", "#50C878", "#9B59B6", "#E74C3C"];
+        var currentBg = colors[bgIndex % colors.Length];
+        var comboBg = colors[comboBgIndex % colors.Length];
+
+        return ScrollView(VStack(16,
+            Heading("Transitions"),
+            Text("Demonstrates implicit and theme transitions in Duct.").Opacity(0.7),
+
+            // ── Section 1: Implicit opacity transition ──
+            SubHeading("Opacity Transition"),
+            Text("Drag the slider — the box fades smoothly via an implicit ScalarTransition."),
+            HStack(12,
+                Text("Opacity:"),
+                Slider(opacity, 0, 1, v => setOpacity(v)).Width(200),
+                Text($"{opacity:F2}")
+            ),
+            Border(
+                Text("Fade me").Bold()
+                    .HAlign(HorizontalAlignment.Center)
+                    .VAlign(VerticalAlignment.Center)
+            )
+                .Size(200, 80).Background("#4A90D9").CornerRadius(8).Padding(16)
+                .Opacity(opacity)
+                .OpacityTransition(TimeSpan.FromMilliseconds(300)),
+
+            // ── Section 2: Implicit scale transition ──
+            SubHeading("Scale Transition"),
+            Text("Click to toggle scale — animates via an implicit Vector3Transition."),
+            HStack(12,
+                Button(scale == 1.0 ? "Scale Up" : "Scale Down",
+                    () => setScale(scale == 1.0 ? 1.5 : 1.0))
+            ),
+            Border(
+                Text("Scale me").Bold()
+                    .HAlign(HorizontalAlignment.Center)
+                    .VAlign(VerticalAlignment.Center)
+            )
+                .Size(200, 80).Background("#E8834A").CornerRadius(8).Padding(16)
+                .Set(b => b.Scale = new System.Numerics.Vector3((float)scale, (float)scale, 1))
+                .ScaleTransition(),
+
+            // ── Section 3: Implicit translation transition ──
+            SubHeading("Translation Transition"),
+            Text("Drag the slider — the box slides via an implicit Vector3Transition."),
+            HStack(12,
+                Text("X Offset:"),
+                Slider(xOffset, -200, 200, v => setXOffset(v)).Width(300),
+                Text($"{xOffset:F0}px")
+            ),
+            Border(
+                Text("Slide me").Bold()
+                    .HAlign(HorizontalAlignment.Center)
+                    .VAlign(VerticalAlignment.Center)
+            )
+                .Size(200, 80).Background("#50C878").CornerRadius(8).Padding(16)
+                .Set(b => b.Translation = new System.Numerics.Vector3((float)xOffset, 0, 0))
+                .TranslationTransition(),
+
+            // ── Section 4: Implicit background transition ──
+            // BrushTransition only works on Panel types (Grid, StackPanel), not Border.
+            SubHeading("Background Transition"),
+            Text("Click to cycle colors — animates via an implicit BrushTransition on a Grid."),
+            Button("Next Color", () => setBgIndex(bgIndex + 1)),
+            Grid(["*"], ["80"],
+                Text(currentBg).Bold()
+                    .HAlign(HorizontalAlignment.Center)
+                    .VAlign(VerticalAlignment.Center)
+            )
+                .Width(200).CornerRadius(8)
+                .Set(g => g.Background = new SolidColorBrush(ColorFromHex(currentBg)))
+                .BackgroundTransition(TimeSpan.FromMilliseconds(500)),
+
+            // ── Section 5: Theme transitions (ChildrenTransitions) ──
+            SubHeading("Theme Transitions (ChildrenTransitions)"),
+            Text("Add/remove items — the panel animates children in/out with theme transitions."),
+            HStack(8,
+                Button("Add Item", () => setItemCount(Math.Min(itemCount + 1, 8))),
+                Button("Remove Item", () => setItemCount(Math.Max(itemCount - 1, 0))),
+                Button(showItems ? "Hide All" : "Show All",
+                    () => setShowItems(!showItems))
+            ),
+            showItems
+                ? VStack(8,
+                    Enumerable.Range(0, itemCount).Select(i =>
+                        Border(
+                            Text($"Item {i + 1}").Bold()
+                                .HAlign(HorizontalAlignment.Center)
+                                .VAlign(VerticalAlignment.Center)
+                        )
+                            .Height(50).Background(colors[i % colors.Length])
+                            .CornerRadius(6).Padding(12)
+                            .WithKey($"transition-item-{i}")
+                    ).ToArray()
+                ).WithTransitions(
+                    new EntranceThemeTransition(),
+                    new AddDeleteThemeTransition()
+                )
+                : Text("(hidden)").Opacity(0.5),
+
+            // ── Section 6: Combined transitions ──
+            // Uses its own state so toggling doesn't affect the sections above.
+            SubHeading("Combined: Opacity + Scale + Background"),
+            Text("Multiple implicit transitions on one element — all animate independently."),
+            HStack(8,
+                Button("Toggle", () =>
+                {
+                    setComboOpacity(comboOpacity < 0.5 ? 1.0 : 0.3);
+                    setComboScale(comboScale == 1.0 ? 1.3 : 1.0);
+                    setComboBgIndex(comboBgIndex + 1);
+                })
+            ),
+            Grid(["*"], ["80"],
+                Text("All at once").Bold()
+                    .HAlign(HorizontalAlignment.Center)
+                    .VAlign(VerticalAlignment.Center)
+            )
+                .Width(200).CornerRadius(8)
+                .Opacity(comboOpacity)
+                .Set(g =>
+                {
+                    g.Background = new SolidColorBrush(ColorFromHex(comboBg));
+                    g.Scale = new System.Numerics.Vector3((float)comboScale, (float)comboScale, 1);
+                })
+                .OpacityTransition(TimeSpan.FromMilliseconds(400))
+                .ScaleTransition()
+                .BackgroundTransition(TimeSpan.FromMilliseconds(400))
+        ));
+    }
+
+    static Windows.UI.Color ColorFromHex(string hex)
+    {
+        hex = hex.TrimStart('#');
+        return Windows.UI.Color.FromArgb(255,
+            byte.Parse(hex[0..2], System.Globalization.NumberStyles.HexNumber),
+            byte.Parse(hex[2..4], System.Globalization.NumberStyles.HexNumber),
+            byte.Parse(hex[4..6], System.Globalization.NumberStyles.HexNumber));
+    }
 }
 

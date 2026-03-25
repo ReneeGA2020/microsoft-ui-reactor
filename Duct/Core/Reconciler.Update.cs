@@ -26,6 +26,12 @@ public sealed partial class Reconciler
             newEl = newMod.Inner;
         }
 
+        // Short-circuit: if old and new elements are structurally identical,
+        // skip all WinUI property access. This is the critical optimization for
+        // large grids where only a fraction of elements change each frame.
+        if (Element.ShallowEquals(oldEl, newEl))
+            return null; // null = keep existing control as-is
+
         UIElement? result;
 
         // Registered types checked first
@@ -211,9 +217,9 @@ public sealed partial class Reconciler
     {
         if (tb.Text != n.Content) tb.Text = n.Content;
         if (n.FontSize.HasValue && tb.FontSize != n.FontSize.Value) tb.FontSize = n.FontSize.Value;
-        if (n.Weight.HasValue) tb.FontWeight = n.Weight.Value;
-        if (n.FontStyle.HasValue) tb.FontStyle = n.FontStyle.Value;
-        if (n.HorizontalAlignment.HasValue) tb.HorizontalAlignment = n.HorizontalAlignment.Value;
+        if (n.Weight.HasValue && tb.FontWeight.Weight != n.Weight.Value.Weight) tb.FontWeight = n.Weight.Value;
+        if (n.FontStyle.HasValue && tb.FontStyle != n.FontStyle.Value) tb.FontStyle = n.FontStyle.Value;
+        if (n.HorizontalAlignment.HasValue && tb.HorizontalAlignment != n.HorizontalAlignment.Value) tb.HorizontalAlignment = n.HorizontalAlignment.Value;
         ApplySetters(n.Setters, tb);
         return null;
     }
@@ -794,8 +800,8 @@ public sealed partial class Reconciler
 
     private UIElement? UpdateGrid(Core.GridElement o, Core.GridElement n, WinUI.Grid g, Action requestRerender)
     {
-        g.RowSpacing = n.RowSpacing;
-        g.ColumnSpacing = n.ColumnSpacing;
+        if (o.RowSpacing != n.RowSpacing) g.RowSpacing = n.RowSpacing;
+        if (o.ColumnSpacing != n.ColumnSpacing) g.ColumnSpacing = n.ColumnSpacing;
 
         // Reconcile children positionally
         int oldCount = o.Children.Length;
@@ -812,9 +818,10 @@ public sealed partial class Reconciler
             {
                 g.Children[i] = replacement;
             }
-            // Update grid placement
+            // Update grid placement — only if changed
+            var oldGa = oldChild.GetAttached<GridAttached>();
             var ga = newChild.GetAttached<GridAttached>();
-            if (ga is not null && g.Children[i] is FrameworkElement ctrl)
+            if (ga is not null && ga != oldGa && g.Children[i] is FrameworkElement ctrl)
             {
                 WinUI.Grid.SetRow(ctrl, ga.Row);
                 WinUI.Grid.SetColumn(ctrl, ga.Column);

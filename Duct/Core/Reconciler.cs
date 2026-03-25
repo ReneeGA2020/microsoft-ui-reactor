@@ -411,22 +411,26 @@ public sealed partial class Reconciler : IDisposable
 
     internal void ApplyModifiers(FrameworkElement fe, ElementModifiers? oldM, ElementModifiers m, Action requestRerender)
     {
-        if (m.Margin.HasValue) fe.Margin = m.Margin.Value;
-        if (m.Padding.HasValue)
+        // Guard each property: only call into WinUI when the value actually changed.
+        // Each WinUI property set is a managed→native interop call, so avoiding
+        // unnecessary sets is critical for large element counts.
+
+        if (m.Margin.HasValue && m.Margin != oldM?.Margin) fe.Margin = m.Margin.Value;
+        if (m.Padding.HasValue && m.Padding != oldM?.Padding)
         {
             if (fe is WinUI.Control padCtrl) padCtrl.Padding = m.Padding.Value;
             else if (fe is WinUI.Border padBdr) padBdr.Padding = m.Padding.Value;
         }
-        if (m.Width.HasValue) fe.Width = m.Width.Value;
-        if (m.Height.HasValue) fe.Height = m.Height.Value;
-        if (m.MinWidth.HasValue) fe.MinWidth = m.MinWidth.Value;
-        if (m.MinHeight.HasValue) fe.MinHeight = m.MinHeight.Value;
-        if (m.MaxWidth.HasValue) fe.MaxWidth = m.MaxWidth.Value;
-        if (m.MaxHeight.HasValue) fe.MaxHeight = m.MaxHeight.Value;
-        if (m.HorizontalAlignment.HasValue) fe.HorizontalAlignment = m.HorizontalAlignment.Value;
-        if (m.VerticalAlignment.HasValue) fe.VerticalAlignment = m.VerticalAlignment.Value;
-        if (m.Opacity.HasValue) fe.Opacity = m.Opacity.Value;
-        if (m.IsVisible.HasValue)
+        if (m.Width.HasValue && m.Width != oldM?.Width) fe.Width = m.Width.Value;
+        if (m.Height.HasValue && m.Height != oldM?.Height) fe.Height = m.Height.Value;
+        if (m.MinWidth.HasValue && m.MinWidth != oldM?.MinWidth) fe.MinWidth = m.MinWidth.Value;
+        if (m.MinHeight.HasValue && m.MinHeight != oldM?.MinHeight) fe.MinHeight = m.MinHeight.Value;
+        if (m.MaxWidth.HasValue && m.MaxWidth != oldM?.MaxWidth) fe.MaxWidth = m.MaxWidth.Value;
+        if (m.MaxHeight.HasValue && m.MaxHeight != oldM?.MaxHeight) fe.MaxHeight = m.MaxHeight.Value;
+        if (m.HorizontalAlignment.HasValue && m.HorizontalAlignment != oldM?.HorizontalAlignment) fe.HorizontalAlignment = m.HorizontalAlignment.Value;
+        if (m.VerticalAlignment.HasValue && m.VerticalAlignment != oldM?.VerticalAlignment) fe.VerticalAlignment = m.VerticalAlignment.Value;
+        if (m.Opacity.HasValue && m.Opacity != oldM?.Opacity) fe.Opacity = m.Opacity.Value;
+        if (m.IsVisible.HasValue && m.IsVisible != oldM?.IsVisible)
             fe.Visibility = m.IsVisible.Value ? Visibility.Visible : Visibility.Collapsed;
         if (m.RichToolTip is not null)
         {
@@ -443,7 +447,7 @@ public sealed partial class Reconciler : IDisposable
                 WinUI.ToolTipService.SetToolTip(fe, Mount(m.RichToolTip, requestRerender));
             }
         }
-        else if (m.ToolTip is not null)
+        else if (m.ToolTip is not null && m.ToolTip != oldM?.ToolTip)
             WinUI.ToolTipService.SetToolTip(fe, m.ToolTip);
 
         if (m.AttachedFlyout is not null)
@@ -459,30 +463,30 @@ public sealed partial class Reconciler : IDisposable
         }
 
         // IsEnabled (on Control)
-        if (m.IsEnabled.HasValue && fe is WinUI.Control enCtrl)
+        if (m.IsEnabled.HasValue && m.IsEnabled != oldM?.IsEnabled && fe is WinUI.Control enCtrl)
             enCtrl.IsEnabled = m.IsEnabled.Value;
 
         // CornerRadius (on Control and Border)
-        if (m.CornerRadius.HasValue)
+        if (m.CornerRadius.HasValue && m.CornerRadius != oldM?.CornerRadius)
         {
             if (fe is WinUI.Control crCtrl) crCtrl.CornerRadius = m.CornerRadius.Value;
             else if (fe is WinUI.Border crBdr) crBdr.CornerRadius = m.CornerRadius.Value;
         }
 
         // BorderBrush / BorderThickness (on Control and Border)
-        if (m.BorderBrush is not null)
+        if (m.BorderBrush is not null && !ReferenceEquals(m.BorderBrush, oldM?.BorderBrush))
         {
             if (fe is WinUI.Control bbCtrl) bbCtrl.BorderBrush = m.BorderBrush;
             else if (fe is WinUI.Border bbBdr) bbBdr.BorderBrush = m.BorderBrush;
         }
-        if (m.BorderThickness.HasValue)
+        if (m.BorderThickness.HasValue && m.BorderThickness != oldM?.BorderThickness)
         {
             if (fe is WinUI.Control btCtrl) btCtrl.BorderThickness = m.BorderThickness.Value;
             else if (fe is WinUI.Border btBdr) btBdr.BorderThickness = m.BorderThickness.Value;
         }
 
         // Background (Panel, Control, or Border)
-        if (m.Background is not null)
+        if (m.Background is not null && !ReferenceEquals(m.Background, oldM?.Background))
         {
             if (fe is WinUI.Panel panel) panel.Background = m.Background;
             else if (fe is WinUI.Control ctrl2) ctrl2.Background = m.Background;
@@ -490,18 +494,18 @@ public sealed partial class Reconciler : IDisposable
         }
 
         // Foreground (Control or TextBlock)
-        if (m.Foreground is not null)
+        if (m.Foreground is not null && !ReferenceEquals(m.Foreground, oldM?.Foreground))
         {
             if (fe is WinUI.Control fgCtrl) fgCtrl.Foreground = m.Foreground;
             else if (fe is TextBlock fgTb) fgTb.Foreground = m.Foreground;
         }
 
         // AutomationProperties.Name
-        if (m.AutomationName is not null)
+        if (m.AutomationName is not null && m.AutomationName != oldM?.AutomationName)
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(fe, m.AutomationName);
 
         // ElementSoundMode (on Control, not FrameworkElement)
-        if (m.ElementSoundMode.HasValue && fe is WinUI.Control ctrl)
+        if (m.ElementSoundMode.HasValue && m.ElementSoundMode != oldM?.ElementSoundMode && fe is WinUI.Control ctrl)
             ctrl.ElementSoundMode = m.ElementSoundMode.Value;
 
         // OnMountAction — only run on initial mount (oldM is null)

@@ -78,6 +78,113 @@ public abstract record Element
     /// Allows writing: VStack("Hello", "World") instead of VStack(Text("Hello"), Text("World"))
     /// </summary>
     public static implicit operator Element(string text) => new TextElement(text);
+
+    // ════════════════════════════════════════════════════════════════════════
+    //  Fast structural comparison for reconciler short-circuit
+    // ════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Fast structural comparison that avoids the pitfalls of record Equals
+    /// (Dictionary reference equality, Action[] reference equality, delegate equality).
+    /// Returns true only when the two elements are provably identical for rendering purposes.
+    /// Conservative: returns false for unknown element types.
+    /// </summary>
+    internal static bool ShallowEquals(Element a, Element b)
+    {
+        if (ReferenceEquals(a, b)) return true;
+        if (a.GetType() != b.GetType()) return false;
+        if (!ModifiersEqual(a.Modifiers, b.Modifiers)) return false;
+        if (!AttachedEqual(a.Attached, b.Attached)) return false;
+
+        return (a, b) switch
+        {
+            (TextElement ta, TextElement tb) =>
+                ta.Content == tb.Content
+                && ta.FontSize == tb.FontSize
+                && ta.Weight == tb.Weight
+                && ta.FontStyle == tb.FontStyle
+                && ta.HorizontalAlignment == tb.HorizontalAlignment
+                && ta.Setters.Length == 0 && tb.Setters.Length == 0,
+
+            (ButtonElement ba, ButtonElement bb) =>
+                ba.Label == bb.Label
+                && ba.IsEnabled == bb.IsEnabled
+                && ReferenceEquals(ba.OnClick, bb.OnClick)
+                && ba.Setters.Length == 0 && bb.Setters.Length == 0,
+
+            (ImageElement ia, ImageElement ib) =>
+                ia.Source == ib.Source
+                && ia.Setters.Length == 0 && ib.Setters.Length == 0,
+
+            (RectangleElement ra, RectangleElement rb) =>
+                ra.Setters.Length == 0 && rb.Setters.Length == 0,
+
+            (EllipseElement ea, EllipseElement eb) =>
+                ea.Setters.Length == 0 && eb.Setters.Length == 0,
+
+            (EmptyElement, EmptyElement) => true,
+
+            // Conservative: unknown element types always update
+            _ => false,
+        };
+    }
+
+    /// <summary>
+    /// Compare two ElementModifiers for rendering equivalence.
+    /// Uses ReferenceEquals for Brush properties (BrushHelper.Parse caches instances).
+    /// Ignores OnMountAction (only runs at mount time, not during update).
+    /// </summary>
+    internal static bool ModifiersEqual(ElementModifiers? a, ElementModifiers? b)
+    {
+        if (ReferenceEquals(a, b)) return true;
+        if (a is null || b is null) return false;
+
+        return a.Margin == b.Margin
+            && a.Padding == b.Padding
+            && a.Width == b.Width
+            && a.Height == b.Height
+            && a.MinWidth == b.MinWidth
+            && a.MinHeight == b.MinHeight
+            && a.MaxWidth == b.MaxWidth
+            && a.MaxHeight == b.MaxHeight
+            && a.HorizontalAlignment == b.HorizontalAlignment
+            && a.VerticalAlignment == b.VerticalAlignment
+            && a.Opacity == b.Opacity
+            && a.IsVisible == b.IsVisible
+            && a.IsEnabled == b.IsEnabled
+            && a.CornerRadius == b.CornerRadius
+            && a.BorderThickness == b.BorderThickness
+            && a.ElementSoundMode == b.ElementSoundMode
+            && a.ToolTip == b.ToolTip
+            && a.AutomationName == b.AutomationName
+            && ReferenceEquals(a.Background, b.Background)
+            && ReferenceEquals(a.Foreground, b.Foreground)
+            && ReferenceEquals(a.BorderBrush, b.BorderBrush)
+            // Skip OnMountAction — only runs at mount time
+            // Skip RichToolTip, AttachedFlyout, ContextFlyout — rare, conservative false
+            && a.RichToolTip is null && b.RichToolTip is null
+            && a.AttachedFlyout is null && b.AttachedFlyout is null
+            && a.ContextFlyout is null && b.ContextFlyout is null;
+    }
+
+    /// <summary>
+    /// Compare two Attached property dictionaries by content.
+    /// Common case: both have a single GridAttached entry (a record with structural equality).
+    /// </summary>
+    internal static bool AttachedEqual(IReadOnlyDictionary<Type, object>? a, IReadOnlyDictionary<Type, object>? b)
+    {
+        if (ReferenceEquals(a, b)) return true;
+        if (a is null && b is null) return true;
+        if (a is null || b is null) return false;
+        if (a.Count != b.Count) return false;
+
+        foreach (var (key, valA) in a)
+        {
+            if (!b.TryGetValue(key, out var valB)) return false;
+            if (!Equals(valA, valB)) return false; // GridAttached is a record — Equals works
+        }
+        return true;
+    }
 }
 
 /// <summary>

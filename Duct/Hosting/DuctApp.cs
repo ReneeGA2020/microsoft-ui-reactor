@@ -16,7 +16,8 @@ internal record DuctAppOptions(
     Action<DuctHost>? Configure = null,
     string WindowTitle = "Duct App",
     int WindowWidth = 1024,
-    int WindowHeight = 768);
+    int WindowHeight = 768,
+    bool FullScreen = false);
 
 public static class DuctApp
 {
@@ -25,7 +26,7 @@ public static class DuctApp
     internal static DuctAppOptions Options = new();
     public static DuctHost? ActiveHost;
 
-    public static void Run<TRoot>(string title = "Duct App", int width = 1024, int height = 768, Action<DuctHost>? configure = null)
+    public static void Run<TRoot>(string title = "Duct App", int width = 1024, int height = 768, bool fullScreen = false, Action<DuctHost>? configure = null)
         where TRoot : Component, new()
     {
         WinRT.ComWrappersSupport.InitializeComWrappers();
@@ -34,7 +35,8 @@ public static class DuctApp
             Configure: configure,
             WindowTitle: title,
             WindowWidth: width,
-            WindowHeight: height);
+            WindowHeight: height,
+            FullScreen: fullScreen);
 
         Application.Start(_ =>
         {
@@ -44,14 +46,15 @@ public static class DuctApp
         });
     }
 
-    public static void Run(string title, Func<RenderContext, Element> rootRender, int width = 1024, int height = 768)
+    public static void Run(string title, Func<RenderContext, Element> rootRender, int width = 1024, int height = 768, bool fullScreen = false)
     {
         WinRT.ComWrappersSupport.InitializeComWrappers();
         Options = new DuctAppOptions(
             RootRenderFunc: rootRender,
             WindowTitle: title,
             WindowWidth: width,
-            WindowHeight: height);
+            WindowHeight: height,
+            FullScreen: fullScreen);
 
         Application.Start(_ =>
         {
@@ -116,7 +119,10 @@ public class DuctApplication : Application, IXamlMetadataProvider
 
         var opts = DuctApp.Options;
         var window = new Window { Title = opts.WindowTitle };
-        window.AppWindow.Resize(new Windows.Graphics.SizeInt32(opts.WindowWidth, opts.WindowHeight));
+        if (opts.FullScreen)
+            window.AppWindow.SetPresenter(Microsoft.UI.Windowing.AppWindowPresenterKind.FullScreen);
+        else
+            window.AppWindow.Resize(new Windows.Graphics.SizeInt32(opts.WindowWidth, opts.WindowHeight));
 
         var host = new DuctHost(window);
         DuctApp.ActiveHost = host;
