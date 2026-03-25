@@ -41,6 +41,12 @@ public sealed class DuctHost
     /// </summary>
     public Reconciler Reconciler => _reconciler;
 
+    /// <summary>
+    /// The WinUI Window hosting this Duct tree.
+    /// Useful for obtaining the HWND (e.g., for file pickers in unpackaged apps).
+    /// </summary>
+    public Window Window => _window;
+
     public DuctHost(Window window, IDuctLogger? logger = null)
     {
         _logger = logger ?? new DebugDuctLogger();

@@ -274,6 +274,13 @@ public static class UI
 
     public static WebView2Element WebView2(Uri? source = null) => new(source);
 
+    public static MonacoEditorElement MonacoEditor(
+        string text = "",
+        Action<string>? onTextChanged = null,
+        string language = "plaintext",
+        string theme = "vs") =>
+        new(text, onTextChanged) { Language = language, Theme = theme };
+
     // ── Components ──────────────────────────────────────────────────
 
     /// <summary>

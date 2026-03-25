@@ -749,6 +749,20 @@ public record WebView2Element(Uri? Source = null) : Element
     internal Action<WinUI.WebView2>[] Setters { get; init; } = [];
 }
 
+public record MonacoEditorElement(
+    string Text = "",
+    Action<string>? OnTextChanged = null
+) : Element
+{
+    public string Language { get; init; } = "plaintext";
+    public string Theme { get; init; } = "vs";
+    public bool IsReadOnly { get; init; }
+    public double FontSize { get; init; } = 14;
+    public bool WordWrap { get; init; }
+    public bool MinimapEnabled { get; init; } = true;
+    internal Action<Monaco.MonacoEditor>[] Setters { get; init; } = [];
+}
+
 // ════════════════════════════════════════════════════════════════════════
 //  Rich text elements
 // ════════════════════════════════════════════════════════════════════════

@@ -394,6 +394,22 @@ public static class ElementExtensions
     public static WebView2Element Set(this WebView2Element el, Action<WinUI.WebView2> configure) =>
         el with { Setters = [.. el.Setters, configure] };
 
+    // Monaco Editor
+    public static MonacoEditorElement Set(this MonacoEditorElement el, Action<Monaco.MonacoEditor> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
+    public static MonacoEditorElement ReadOnly(this MonacoEditorElement el) =>
+        el with { IsReadOnly = true };
+
+    public static MonacoEditorElement EditorFontSize(this MonacoEditorElement el, double size) =>
+        el with { FontSize = size };
+
+    public static MonacoEditorElement EditorWordWrap(this MonacoEditorElement el, bool wrap = true) =>
+        el with { WordWrap = wrap };
+
+    public static MonacoEditorElement Minimap(this MonacoEditorElement el, bool enabled) =>
+        el with { MinimapEnabled = enabled };
+
     // Layout / Containers
     public static WrapGridElement Set(this WrapGridElement el, Action<WinUI.VariableSizedWrapGrid> configure) =>
         el with { Setters = [.. el.Setters, configure] };
