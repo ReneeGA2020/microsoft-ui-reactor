@@ -466,11 +466,15 @@ public record RichTextRun(string Text) : RichTextInline
 {
     public bool IsBold { get; init; }
     public bool IsItalic { get; init; }
+    public bool IsStrikethrough { get; init; }
     public double? FontSize { get; init; }
+    public string? FontFamily { get; init; }
     public Brush? Foreground { get; init; }
 }
 
 public record RichTextHyperlink(string Text, Uri NavigateUri) : RichTextInline;
+
+public record RichTextLineBreak() : RichTextInline;
 
 // ════════════════════════════════════════════════════════════════════════
 //  Button elements

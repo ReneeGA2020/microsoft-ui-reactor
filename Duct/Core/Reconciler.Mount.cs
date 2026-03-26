@@ -156,7 +156,9 @@ public sealed partial class Reconciler
                             var r = new Microsoft.UI.Xaml.Documents.Run { Text = run.Text };
                             if (run.IsBold) r.FontWeight = Microsoft.UI.Text.FontWeights.Bold;
                             if (run.IsItalic) r.FontStyle = Windows.UI.Text.FontStyle.Italic;
+                            if (run.IsStrikethrough) r.TextDecorations = Windows.UI.Text.TextDecorations.Strikethrough;
                             if (run.FontSize.HasValue) r.FontSize = run.FontSize.Value;
+                            if (run.FontFamily is not null) r.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(run.FontFamily);
                             if (run.Foreground is not null) r.Foreground = run.Foreground;
                             p.Inlines.Add(r);
                             break;
@@ -164,6 +166,9 @@ public sealed partial class Reconciler
                             var hl = new Microsoft.UI.Xaml.Documents.Hyperlink { NavigateUri = link.NavigateUri };
                             hl.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = link.Text });
                             p.Inlines.Add(hl);
+                            break;
+                        case RichTextLineBreak:
+                            p.Inlines.Add(new Microsoft.UI.Xaml.Documents.LineBreak());
                             break;
                     }
                 }

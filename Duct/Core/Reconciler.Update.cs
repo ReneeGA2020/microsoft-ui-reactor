@@ -45,8 +45,8 @@ public sealed partial class Reconciler
         {
             (TextElement, TextElement n, TextBlock tb)
                 => UpdateText(n, tb),
-            (RichTextBlockElement, RichTextBlockElement n, WinUI.RichTextBlock rtb)
-                => UpdateRichTextBlock(n, rtb),
+            (RichTextBlockElement o, RichTextBlockElement n, WinUI.RichTextBlock rtb)
+                => UpdateRichTextBlock(o, n, rtb),
             (ButtonElement, ButtonElement n, WinUI.Button b)
                 => UpdateButton(n, b),
             (HyperlinkButtonElement, HyperlinkButtonElement n, WinUI.HyperlinkButton hb)
@@ -226,15 +226,189 @@ public sealed partial class Reconciler
         return null;
     }
 
-    private UIElement? UpdateRichTextBlock(RichTextBlockElement n, WinUI.RichTextBlock rtb)
+    private UIElement? UpdateRichTextBlock(RichTextBlockElement o, RichTextBlockElement n, WinUI.RichTextBlock rtb)
     {
-        rtb.Blocks.Clear();
-        var p = new Microsoft.UI.Xaml.Documents.Paragraph();
-        p.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = n.Text });
-        rtb.Blocks.Add(p);
+        rtb.IsTextSelectionEnabled = n.IsTextSelectionEnabled;
         if (n.FontSize.HasValue) rtb.FontSize = n.FontSize.Value;
+
+        var oldParas = o.Paragraphs;
+        var newParas = n.Paragraphs;
+
+        // Both use simple text (no Paragraphs) — fast path.
+        if (oldParas is null && newParas is null)
+        {
+            if (o.Text != n.Text && rtb.Blocks.Count > 0 &&
+                rtb.Blocks[0] is Microsoft.UI.Xaml.Documents.Paragraph p0 &&
+                p0.Inlines.Count > 0 &&
+                p0.Inlines[0] is Microsoft.UI.Xaml.Documents.Run r0)
+            {
+                r0.Text = n.Text;
+            }
+            ApplySetters(n.Setters, rtb);
+            return null;
+        }
+
+        // Structural mismatch (one has Paragraphs, other doesn't) — full rebuild.
+        if (oldParas is null || newParas is null)
+        {
+            RebuildRichTextBlocks(n, rtb);
+            ApplySetters(n.Setters, rtb);
+            return null;
+        }
+
+        // Both have Paragraphs — diff incrementally.
+        int oldCount = oldParas.Length;
+        int newCount = newParas.Length;
+        int commonCount = Math.Min(oldCount, newCount);
+
+        // Update existing paragraphs in place.
+        for (int pi = 0; pi < commonCount; pi++)
+        {
+            var oldPara = oldParas[pi];
+            var newPara = newParas[pi];
+            if (rtb.Blocks.Count <= pi) break;
+            var winPara = (Microsoft.UI.Xaml.Documents.Paragraph)rtb.Blocks[pi];
+
+            DiffParagraphInlines(oldPara, newPara, winPara);
+        }
+
+        // Remove excess paragraphs.
+        while (rtb.Blocks.Count > newCount)
+            rtb.Blocks.RemoveAt(rtb.Blocks.Count - 1);
+
+        // Add new paragraphs.
+        for (int pi = oldCount; pi < newCount; pi++)
+            rtb.Blocks.Add(MountParagraph(newParas[pi]));
+
         ApplySetters(n.Setters, rtb);
         return null;
+    }
+
+    private static void DiffParagraphInlines(RichTextParagraph oldPara, RichTextParagraph newPara,
+        Microsoft.UI.Xaml.Documents.Paragraph winPara)
+    {
+        var oldInlines = oldPara.Inlines;
+        var newInlines = newPara.Inlines;
+        int oldCount = oldInlines.Length;
+        int newCount = newInlines.Length;
+        int commonCount = Math.Min(oldCount, newCount);
+
+        // Update existing inlines in place where types match.
+        for (int i = 0; i < commonCount; i++)
+        {
+            var oldInl = oldInlines[i];
+            var newInl = newInlines[i];
+
+            if (oldInl.GetType() != newInl.GetType())
+            {
+                // Type changed — replace this inline.
+                winPara.Inlines.RemoveAt(i);
+                winPara.Inlines.Insert(i, MountInline(newInl));
+                continue;
+            }
+
+            switch (newInl)
+            {
+                case RichTextRun newRun:
+                    var oldRun = (RichTextRun)oldInl;
+                    if (winPara.Inlines[i] is Microsoft.UI.Xaml.Documents.Run winRun)
+                        UpdateRun(oldRun, newRun, winRun);
+                    break;
+                case RichTextHyperlink newLink:
+                    var oldLink = (RichTextHyperlink)oldInl;
+                    if (winPara.Inlines[i] is Microsoft.UI.Xaml.Documents.Hyperlink winHl)
+                        UpdateHyperlink(oldLink, newLink, winHl);
+                    break;
+                case RichTextLineBreak:
+                    // Nothing to update on a LineBreak.
+                    break;
+            }
+        }
+
+        // Remove excess inlines.
+        while (winPara.Inlines.Count > newCount)
+            winPara.Inlines.RemoveAt(winPara.Inlines.Count - 1);
+
+        // Add new inlines.
+        for (int i = oldCount; i < newCount; i++)
+            winPara.Inlines.Add(MountInline(newInlines[i]));
+    }
+
+    private static void UpdateRun(RichTextRun oldRun, RichTextRun newRun,
+        Microsoft.UI.Xaml.Documents.Run winRun)
+    {
+        if (oldRun.Text != newRun.Text)
+            winRun.Text = newRun.Text;
+        if (oldRun.IsBold != newRun.IsBold)
+            winRun.FontWeight = newRun.IsBold ? Microsoft.UI.Text.FontWeights.Bold : Microsoft.UI.Text.FontWeights.Normal;
+        if (oldRun.IsItalic != newRun.IsItalic)
+            winRun.FontStyle = newRun.IsItalic ? Windows.UI.Text.FontStyle.Italic : Windows.UI.Text.FontStyle.Normal;
+        if (oldRun.IsStrikethrough != newRun.IsStrikethrough)
+            winRun.TextDecorations = newRun.IsStrikethrough ? Windows.UI.Text.TextDecorations.Strikethrough : Windows.UI.Text.TextDecorations.None;
+        if (oldRun.FontSize != newRun.FontSize)
+            winRun.FontSize = newRun.FontSize ?? (double)Microsoft.UI.Xaml.DependencyProperty.UnsetValue;
+        if (oldRun.FontFamily != newRun.FontFamily)
+            winRun.FontFamily = newRun.FontFamily is not null ? new Microsoft.UI.Xaml.Media.FontFamily(newRun.FontFamily) : null;
+        if (!ReferenceEquals(oldRun.Foreground, newRun.Foreground))
+            winRun.Foreground = newRun.Foreground;
+    }
+
+    private static void UpdateHyperlink(RichTextHyperlink oldLink, RichTextHyperlink newLink,
+        Microsoft.UI.Xaml.Documents.Hyperlink winHl)
+    {
+        if (oldLink.NavigateUri != newLink.NavigateUri)
+            winHl.NavigateUri = newLink.NavigateUri;
+        if (oldLink.Text != newLink.Text && winHl.Inlines.Count > 0 &&
+            winHl.Inlines[0] is Microsoft.UI.Xaml.Documents.Run hlRun)
+            hlRun.Text = newLink.Text;
+    }
+
+    private static Microsoft.UI.Xaml.Documents.Inline MountInline(RichTextInline inline)
+    {
+        switch (inline)
+        {
+            case RichTextRun run:
+                var r = new Microsoft.UI.Xaml.Documents.Run { Text = run.Text };
+                if (run.IsBold) r.FontWeight = Microsoft.UI.Text.FontWeights.Bold;
+                if (run.IsItalic) r.FontStyle = Windows.UI.Text.FontStyle.Italic;
+                if (run.IsStrikethrough) r.TextDecorations = Windows.UI.Text.TextDecorations.Strikethrough;
+                if (run.FontSize.HasValue) r.FontSize = run.FontSize.Value;
+                if (run.FontFamily is not null) r.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(run.FontFamily);
+                if (run.Foreground is not null) r.Foreground = run.Foreground;
+                return r;
+            case RichTextHyperlink link:
+                var hl = new Microsoft.UI.Xaml.Documents.Hyperlink { NavigateUri = link.NavigateUri };
+                hl.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = link.Text });
+                return hl;
+            case RichTextLineBreak:
+                return new Microsoft.UI.Xaml.Documents.LineBreak();
+            default:
+                return new Microsoft.UI.Xaml.Documents.Run { Text = "" };
+        }
+    }
+
+    private static Microsoft.UI.Xaml.Documents.Paragraph MountParagraph(RichTextParagraph para)
+    {
+        var p = new Microsoft.UI.Xaml.Documents.Paragraph();
+        foreach (var inline in para.Inlines)
+            p.Inlines.Add(MountInline(inline));
+        return p;
+    }
+
+    private static void RebuildRichTextBlocks(RichTextBlockElement n, WinUI.RichTextBlock rtb)
+    {
+        rtb.Blocks.Clear();
+        if (n.Paragraphs is not null)
+        {
+            foreach (var para in n.Paragraphs)
+                rtb.Blocks.Add(MountParagraph(para));
+        }
+        else
+        {
+            var p = new Microsoft.UI.Xaml.Documents.Paragraph();
+            p.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = n.Text });
+            rtb.Blocks.Add(p);
+        }
     }
 
     private UIElement? UpdateButton(ButtonElement n, WinUI.Button b)

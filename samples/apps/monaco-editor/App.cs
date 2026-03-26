@@ -139,43 +139,59 @@ class EditorApp : Component
             ? $"{Path.GetFileName(filePath)}{(isDirty ? " *" : "")}"
             : isDirty ? "Untitled *" : "Untitled";
 
-        return Grid(["*"], ["Auto", "*", "Auto"],
-            // ── Toolbar ──
-            (FlexRow(
-                Button("New", OnNew),
-                Button("Open...", OnOpen),
-                Button("Save", OnSave),
-                Button("Save As...", OnSaveAs),
-                Text("").Flex(grow: 1),
-                Text("Language:").VAlign(VerticalAlignment.Center),
-                ComboBox(
-                    Languages.Select(l => l.Label).ToArray(),
-                    langIndex,
-                    i => setLangIndex(i)
-                ).Width(160),
-                Text("").Width(8),
-                Text("Theme:").VAlign(VerticalAlignment.Center),
-                ComboBox(
-                    ["Light", "Dark", "High Contrast"],
-                    theme switch { "vs" => 0, "vs-dark" => 1, "hc-black" => 2, _ => 1 },
-                    i => setTheme(i switch { 0 => "vs", 1 => "vs-dark", 2 => "hc-black", _ => "vs-dark" })
-                ).Width(140)
-            ) with { AlignItems = FlexAlign.Center, ColumnGap = 6 })
-            .Padding(8)
-            .Grid(row: 0),
+        bool showPreview = language == "markdown";
+        string[] columns = showPreview ? ["*", "Auto", "*"] : ["*"];
 
-            // ── Editor ──
-            MonacoEditor(text, OnTextChanged, language, theme)
-                .Grid(row: 1),
+        var toolbar = (FlexRow(
+            Button("New", OnNew),
+            Button("Open...", OnOpen),
+            Button("Save", OnSave),
+            Button("Save As...", OnSaveAs),
+            Text("").Flex(grow: 1),
+            Text("Language:").VAlign(VerticalAlignment.Center),
+            ComboBox(
+                Languages.Select(l => l.Label).ToArray(),
+                langIndex,
+                i => setLangIndex(i)
+            ).Width(160),
+            Text("").Width(8),
+            Text("Theme:").VAlign(VerticalAlignment.Center),
+            ComboBox(
+                ["Light", "Dark", "High Contrast"],
+                theme switch { "vs" => 0, "vs-dark" => 1, "hc-black" => 2, _ => 1 },
+                i => setTheme(i switch { 0 => "vs", 1 => "vs-dark", 2 => "hc-black", _ => "vs-dark" })
+            ).Width(140)
+        ) with { AlignItems = FlexAlign.Center, ColumnGap = 6 })
+        .Padding(8)
+        .Grid(row: 0, columnSpan: columns.Length);
 
-            // ── Status bar ──
-            (FlexRow(
-                Text(title).FontSize(12),
-                Text("").Flex(grow: 1),
-                Text(status).FontSize(12).Opacity(0.7)
-            ) with { ColumnGap = 12 })
-            .Padding(8, 4)
-            .Grid(row: 2)
+        var statusBar = (FlexRow(
+            Text(title).FontSize(12),
+            Text("").Flex(grow: 1),
+            Text(status).FontSize(12).Opacity(0.7)
+        ) with { ColumnGap = 12 })
+        .Padding(8, 4)
+        .Grid(row: 2, columnSpan: columns.Length);
+
+        var editor = MonacoEditor(text, OnTextChanged, language, theme)
+            .Grid(row: 1, column: 0);
+
+        if (!showPreview)
+        {
+            return Grid(columns, ["Auto", "*", "Auto"],
+                toolbar, editor, statusBar
+            );
+        }
+
+        var previewPane = ScrollView(
+            Markdown(text).Padding(16).Foreground("#D4D4D4")
+        ).Set(sv => sv.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled)
+         .Background("White");
+
+        return FlexColumn(
+            VStack(toolbar).Flex(shrink:0),
+            FlexRow(editor.Flex(grow:1, basis:0), previewPane.Flex(grow: 1, basis:0)).Flex(grow:1, basis:0),
+            VStack(statusBar).Flex(shrink:0)
         );
     }
 

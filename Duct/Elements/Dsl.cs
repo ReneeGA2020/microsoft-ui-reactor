@@ -1,4 +1,5 @@
 using Duct.Core;
+using Duct.Markdown;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -482,6 +483,20 @@ public static class UI
     public static RichTextRun Run(string text) => new(text);
 
     public static RichTextHyperlink Hyperlink(string text, Uri navigateUri) => new(text, navigateUri);
+
+    // ── Markdown ─────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Render a markdown string as a Duct element tree.
+    /// </summary>
+    public static Element Markdown(string markdown) =>
+        MarkdownBuilder.Build(markdown, null);
+
+    /// <summary>
+    /// Render a markdown string as a Duct element tree with custom rendering options.
+    /// </summary>
+    public static Element Markdown(string markdown, MarkdownOptions options) =>
+        MarkdownBuilder.Build(markdown, options);
 
     // ── Icons ────────────────────────────────────────────────────────
 
