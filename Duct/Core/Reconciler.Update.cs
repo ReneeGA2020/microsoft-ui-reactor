@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using WinUI = Microsoft.UI.Xaml.Controls;
 using WinPrim = Microsoft.UI.Xaml.Controls.Primitives;
 using WinShapes = Microsoft.UI.Xaml.Shapes;
+using Windows.UI.WebUI;
 
 namespace Duct.Core;
 
@@ -357,7 +358,11 @@ public sealed partial class Reconciler
         Microsoft.UI.Xaml.Documents.Hyperlink winHl)
     {
         if (oldLink.NavigateUri != newLink.NavigateUri)
-            winHl.NavigateUri = newLink.NavigateUri;
+        {
+            try { winHl.NavigateUri = newLink.NavigateUri; }
+            catch (Exception) { winHl.NavigateUri = new Uri("about:error"); }
+            
+        }
         if (oldLink.Text != newLink.Text && winHl.Inlines.Count > 0 &&
             winHl.Inlines[0] is Microsoft.UI.Xaml.Documents.Run hlRun)
             hlRun.Text = newLink.Text;
@@ -377,8 +382,10 @@ public sealed partial class Reconciler
                 if (run.Foreground is not null) r.Foreground = run.Foreground;
                 return r;
             case RichTextHyperlink link:
-                var hl = new Microsoft.UI.Xaml.Documents.Hyperlink { NavigateUri = link.NavigateUri };
-                hl.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = link.Text });
+                var l = link?.NavigateUri ?? new Uri("about:blank");
+                l = l.ToString().Length < 1 ? l = new Uri("about:blank") : l;
+                var hl = new Microsoft.UI.Xaml.Documents.Hyperlink { NavigateUri = l };
+                hl.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = link?.Text ?? ""});
                 return hl;
             case RichTextLineBreak:
                 return new Microsoft.UI.Xaml.Documents.LineBreak();
