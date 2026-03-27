@@ -195,11 +195,13 @@ public sealed partial class Reconciler : IDisposable
             // If Update returned a completely new control (full remount path),
             // unmount the old control to clean up event handlers and component state.
             if (replacement is not null && replacement != existingControl)
-                Unmount(existingControl);
+                UnmountAndPool(existingControl);
             return replacement ?? existingControl;
         }
 
-        Unmount(existingControl);
+        // Type changed — unmount+pool old tree, then mount new tree
+        // (so pooled controls are available for rent during mount).
+        UnmountAndPool(existingControl);
         return Mount(newElement, requestRerender);
     }
 
@@ -296,6 +298,11 @@ public sealed partial class Reconciler : IDisposable
 
     private void Unmount(UIElement control)
     {
+        UnmountRecursive(control);
+    }
+
+    private void UnmountRecursive(UIElement control)
+    {
         if (_componentNodes.TryGetValue(control, out var node))
         {
             node.Component?.Context.RunCleanups();
@@ -314,27 +321,77 @@ public sealed partial class Reconciler : IDisposable
         if (control is WinUI.Panel panel)
         {
             foreach (var child in panel.Children)
-                Unmount(child);
+                UnmountRecursive(child);
         }
         else if (control is WinUI.Border border && border.Child is not null)
         {
-            Unmount(border.Child);
+            UnmountRecursive(border.Child);
         }
         else if (control is WinUI.ScrollViewer sv && sv.Content is UIElement svChild)
         {
-            Unmount(svChild);
+            UnmountRecursive(svChild);
+        }
+        else if (control is WinUI.UserControl uc && uc.Content is UIElement ucChild)
+        {
+            UnmountRecursive(ucChild);
         }
     }
 
     /// <summary>
-    /// Unmounts and returns the element to the pool.
-    /// Only call after the element has been detached from the visual tree.
+    /// Unmounts and returns all descendants + root to the pool.
+    /// Call AFTER the root has been detached from the visual tree.
+    /// Collects all controls first, then pools bottom-up so DetachFromParent
+    /// removes children before parents clear their collections.
     /// </summary>
     internal void UnmountAndPool(UIElement control)
     {
-        Unmount(control);
-        if (control is FrameworkElement fe)
-            _pool.Return(fe);
+        var toPool = new List<FrameworkElement>();
+        UnmountAndCollect(control, toPool);
+
+        // Pool top-down: parent's CleanElement calls Children.Clear() which
+        // detaches children, so by the time children are pooled they're parentless.
+        for (int i = 0; i < toPool.Count; i++)
+            _pool.Return(toPool[i]);
+    }
+
+    private void UnmountAndCollect(UIElement control, List<FrameworkElement> toPool)
+    {
+        // Run cleanup logic (component teardown, etc.)
+        if (_componentNodes.TryGetValue(control, out var node))
+        {
+            node.Component?.Context.RunCleanups();
+            node.Context?.RunCleanups();
+            _componentNodes.Remove(control);
+        }
+
+        if (control is FrameworkElement fe && fe.Tag is Element tagEl
+            && _typeRegistry.TryGetValue(tagEl.GetType(), out var reg) && reg.HasUnmount)
+        {
+            reg.Unmount(control, this);
+            // Still collect for pooling even if registered handler ran.
+        }
+
+        // Recurse into children.
+        if (control is WinUI.Panel panel)
+        {
+            foreach (var child in panel.Children)
+                UnmountAndCollect(child, toPool);
+        }
+        else if (control is WinUI.Border border && border.Child is not null)
+        {
+            UnmountAndCollect(border.Child, toPool);
+        }
+        else if (control is WinUI.ScrollViewer sv && sv.Content is UIElement svChild)
+        {
+            UnmountAndCollect(svChild, toPool);
+        }
+        else if (control is WinUI.UserControl uc && uc.Content is UIElement ucChild)
+        {
+            UnmountAndCollect(ucChild, toPool);
+        }
+
+        if (control is FrameworkElement poolCandidate)
+            toPool.Add(poolCandidate);
     }
 
     // ════════════════════════════════════════════════════════════════════

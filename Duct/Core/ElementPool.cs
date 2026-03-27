@@ -26,6 +26,7 @@ public sealed class ElementPool
         typeof(WinUI.ProgressRing),
         typeof(WinUI.Image),
         typeof(WinUI.InfoBadge),
+        typeof(Monaco.MonacoEditor),
     };
 
     private readonly Dictionary<Type, Stack<FrameworkElement>> _pools = new();
@@ -36,9 +37,11 @@ public sealed class ElementPool
     /// </summary>
     public FrameworkElement? TryRent(Type type)
     {
-        if (!PoolableTypes.Contains(type)) return null;
-        if (!_pools.TryGetValue(type, out var stack) || stack.Count == 0) return null;
-        return stack.Pop();
+        if (!PoolableTypes.Contains(type)) { System.Diagnostics.Debug.WriteLine($"[Pool] TryRent({type.Name}) — not poolable"); return null; }
+        if (!_pools.TryGetValue(type, out var stack) || stack.Count == 0) { System.Diagnostics.Debug.WriteLine($"[Pool] TryRent({type.Name}) — pool empty"); return null; }
+        var item = stack.Pop();
+        System.Diagnostics.Debug.WriteLine($"[Pool] TryRent({type.Name}) — GOT {item.GetHashCode()}, {stack.Count} remaining");
+        return item;
     }
 
     /// <summary>
@@ -48,7 +51,7 @@ public sealed class ElementPool
     public void Return(FrameworkElement element)
     {
         var type = element.GetType();
-        if (!PoolableTypes.Contains(type)) return;
+        if (!PoolableTypes.Contains(type)) { System.Diagnostics.Debug.WriteLine($"[Pool] Return({type.Name} {element.GetHashCode()}) — not poolable, DROPPED"); return; }
 
         if (!_pools.TryGetValue(type, out var stack))
         {
@@ -56,10 +59,43 @@ public sealed class ElementPool
             _pools[type] = stack;
         }
 
-        if (stack.Count >= MaxPerType) return;
+        if (stack.Count >= MaxPerType) { System.Diagnostics.Debug.WriteLine($"[Pool] Return({type.Name} {element.GetHashCode()}) — pool full, DROPPED"); return; }
 
+        // Detach from parent before pooling — WinUI doesn't allow an element in two parents.
+        // Use FrameworkElement.Parent (works even for detached trees, unlike VisualTreeHelper).
+        DetachFromParent(element);
+
+        System.Diagnostics.Debug.WriteLine($"[Pool] Return({type.Name} {element.GetHashCode()}) — POOLED, {stack.Count + 1} in pool");
         CleanElement(element);
         stack.Push(element);
+    }
+
+    /// <summary>
+    /// Remove an element from its current parent so it can be safely re-parented.
+    /// Uses FrameworkElement.Parent which works even for detached trees
+    /// (unlike VisualTreeHelper.GetParent which requires a live visual tree).
+    /// </summary>
+    private static void DetachFromParent(FrameworkElement element)
+    {
+        var parent = element.Parent;
+        switch (parent)
+        {
+            case WinUI.Panel panel:
+                panel.Children.Remove(element);
+                break;
+            case WinUI.Border border when ReferenceEquals(border.Child, element):
+                border.Child = null;
+                break;
+            case WinUI.ScrollViewer sv when ReferenceEquals(sv.Content, element):
+                sv.Content = null;
+                break;
+            case WinUI.ContentControl cc when ReferenceEquals(cc.Content, element):
+                cc.Content = null;
+                break;
+            case WinUI.UserControl uc when ReferenceEquals(uc.Content, element):
+                uc.Content = null;
+                break;
+        }
     }
 
     /// <summary>
@@ -129,6 +165,10 @@ public sealed class ElementPool
                 break;
             case WinUI.InfoBadge badge:
                 badge.Value = -1; // WinUI default (hidden)
+                break;
+            case Monaco.MonacoEditor:
+                // Keep the WebView2 alive — just clear the tag.
+                // Properties will be updated on next mount via dependency properties.
                 break;
         }
     }

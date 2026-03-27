@@ -20,6 +20,7 @@ public sealed class MonacoEditor : UserControl
 
     public MonacoEditor()
     {
+        System.Diagnostics.Debug.WriteLine($"[MonacoEditor] CONSTRUCTOR called — new instance {GetHashCode()}");
         _webView = new WebView2();
         Content = _webView;
         _webView.CoreWebView2Initialized += OnCoreWebView2Initialized;
@@ -109,7 +110,20 @@ public sealed class MonacoEditor : UserControl
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        if (_webView?.CoreWebView2 is not null) return; // already initialized
+        System.Diagnostics.Debug.WriteLine($"[MonacoEditor] OnLoaded {GetHashCode()} — CoreWebView2={_webView?.CoreWebView2 is not null}, _isEditorReady={_isEditorReady}");
+        if (_webView?.CoreWebView2 is not null)
+        {
+            System.Diagnostics.Debug.WriteLine($"[MonacoEditor] RECYCLED {GetHashCode()} — reattaching handler and pushing state");
+            _webView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
+            if (_isEditorReady)
+            {
+                DispatcherQueue.TryEnqueue(async () =>
+                {
+                    await PushAllStateAsync();
+                });
+            }
+            return;
+        }
 
         // Defer WebView2 init to avoid COM threading issues when called during Duct's render pass.
         DispatcherQueue.TryEnqueue(async () =>
@@ -166,6 +180,7 @@ public sealed class MonacoEditor : UserControl
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
+        System.Diagnostics.Debug.WriteLine($"[MonacoEditor] OnUnloaded {GetHashCode()}");
         if (_webView?.CoreWebView2 is not null)
         {
             _webView.CoreWebView2.WebMessageReceived -= OnWebMessageReceived;
@@ -207,6 +222,23 @@ public sealed class MonacoEditor : UserControl
                     root.GetProperty("column").GetInt32()));
                 break;
         }
+    }
+
+    /// <summary>
+    /// Push all current property values to the already-initialized editor.
+    /// Used when a pooled MonacoEditor is re-attached to the visual tree.
+    /// </summary>
+    private async Task PushAllStateAsync()
+    {
+        var text = Text ?? "";
+        _lastKnownText = text;
+        await ExecuteScriptAsync($"monacoSetValue({JsonSerializer.Serialize(text)})");
+        await ExecuteScriptAsync($"monacoSetLanguage({JsonSerializer.Serialize(EditorLanguage ?? "plaintext")})");
+        await ExecuteScriptAsync($"monacoSetTheme({JsonSerializer.Serialize(Theme ?? "vs")})");
+        await ExecuteScriptAsync($"monacoSetReadOnly({IsReadOnly.ToString().ToLowerInvariant()})");
+        await ExecuteScriptAsync($"monacoSetFontSize({EditorFontSize})");
+        await ExecuteScriptAsync($"monacoSetWordWrap({WordWrap.ToString().ToLowerInvariant()})");
+        await ExecuteScriptAsync($"monacoSetMinimap({MinimapEnabled.ToString().ToLowerInvariant()})");
     }
 
     // ── DP change callbacks ───────────────────────────────────────────

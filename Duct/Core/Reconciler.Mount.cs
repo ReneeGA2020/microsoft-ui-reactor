@@ -546,7 +546,24 @@ public sealed partial class Reconciler
 
     private Monaco.MonacoEditor MountMonacoEditor(MonacoEditorElement monaco)
     {
-        var editor = new Monaco.MonacoEditor
+        // Try to reuse a pooled MonacoEditor (avoids expensive WebView2 re-initialization).
+        var editor = _pool.TryRent(typeof(Monaco.MonacoEditor)) as Monaco.MonacoEditor;
+        if (editor is not null)
+        {
+            // Recycle: just update properties on the existing instance.
+            editor.Text = monaco.Text;
+            editor.EditorLanguage = monaco.Language;
+            editor.Theme = monaco.Theme;
+            editor.IsReadOnly = monaco.IsReadOnly;
+            editor.EditorFontSize = monaco.FontSize;
+            editor.WordWrap = monaco.WordWrap;
+            editor.MinimapEnabled = monaco.MinimapEnabled;
+            SetElementTag(editor, monaco);
+            ApplySetters(monaco.Setters, editor);
+            return editor;
+        }
+
+        editor = new Monaco.MonacoEditor
         {
             Text = monaco.Text,
             EditorLanguage = monaco.Language,

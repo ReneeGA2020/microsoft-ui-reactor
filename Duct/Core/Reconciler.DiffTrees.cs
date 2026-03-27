@@ -86,7 +86,7 @@ public sealed partial class Reconciler
 
         if (newSerialized.Nodes.Length == 0)
         {
-            Unmount(existingControl);
+            UnmountAndPool(existingControl);
             _cachedOldSerialization = null;
             _cachedOldControls = null;
             return null;
@@ -175,7 +175,7 @@ public sealed partial class Reconciler
                 if (newCtrl is not null)
                 {
                     SwapControlInParent(control, newCtrl);
-                    Unmount(control);
+                    UnmountAndPool(control);
                     oldControls[i] = newCtrl;
                 }
             }
@@ -260,7 +260,7 @@ public sealed partial class Reconciler
                 if (newCtrl is not null)
                 {
                     SwapControlInParent(control, newCtrl);
-                    Unmount(control);
+                    UnmountAndPool(control);
                     oldControls[idx] = newCtrl;
                     if (idx == 0) rootControl = newCtrl;
                 }
@@ -283,7 +283,7 @@ public sealed partial class Reconciler
                     if (newCtrl is not null)
                     {
                         SwapControlInParent(oldCtrl, newCtrl);
-                        Unmount(oldCtrl);
+                        UnmountAndPool(oldCtrl);
                         oldControls[oldIdx] = newCtrl;
                         if (oldIdx == 0) rootControl = newCtrl;
                     }
