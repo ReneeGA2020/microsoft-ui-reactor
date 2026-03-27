@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using WinUI = Microsoft.UI.Xaml.Controls;
 using WinPrim = Microsoft.UI.Xaml.Controls.Primitives;
 using WinShapes = Microsoft.UI.Xaml.Shapes;
+using System.Security.Cryptography;
 
 namespace Duct.Core;
 
@@ -163,7 +164,9 @@ public sealed partial class Reconciler
                             p.Inlines.Add(r);
                             break;
                         case RichTextHyperlink link:
-                            var hl = new Microsoft.UI.Xaml.Documents.Hyperlink { NavigateUri = link.NavigateUri };
+                            var hl = new Microsoft.UI.Xaml.Documents.Hyperlink();
+                            try { hl.NavigateUri = link.NavigateUri; }
+                            catch { hl.NavigateUri = new Uri("about:error"); }
                             hl.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = link.Text });
                             p.Inlines.Add(hl);
                             break;

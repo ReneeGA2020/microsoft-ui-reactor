@@ -184,7 +184,7 @@ class EditorApp : Component
         }
 
         var previewPane = ScrollView(
-            Markdown(text).Padding(16).Foreground("#D4D4D4")
+            Markdown(text).Margin(16).Foreground("#D4D4D4")
         ).Set(sv => sv.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled)
          .Background("White");
 
