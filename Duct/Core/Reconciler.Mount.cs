@@ -159,7 +159,7 @@ public sealed partial class Reconciler
                             if (run.IsItalic) r.FontStyle = Windows.UI.Text.FontStyle.Italic;
                             if (run.IsStrikethrough) r.TextDecorations = Windows.UI.Text.TextDecorations.Strikethrough;
                             if (run.FontSize.HasValue) r.FontSize = run.FontSize.Value;
-                            if (run.FontFamily is not null) r.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(run.FontFamily);
+                            if (run.FontFamily is not null) r.FontFamily = WinRTCache.GetFontFamily(run.FontFamily);
                             if (run.Foreground is not null) r.Foreground = run.Foreground;
                             p.Inlines.Add(r);
                             break;
@@ -1492,7 +1492,7 @@ public sealed partial class Reconciler
     private static WinUI.FontIcon CreateFontIcon(FontIconData fi)
     {
         var icon = new WinUI.FontIcon { Glyph = fi.Glyph };
-        if (fi.FontFamily is not null) icon.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(fi.FontFamily);
+        if (fi.FontFamily is not null) icon.FontFamily = WinRTCache.GetFontFamily(fi.FontFamily);
         if (fi.FontSize.HasValue) icon.FontSize = fi.FontSize.Value;
         return icon;
     }

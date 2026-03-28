@@ -238,12 +238,17 @@ public sealed partial class Reconciler
         // Both use simple text (no Paragraphs) — fast path.
         if (oldParas is null && newParas is null)
         {
-            if (o.Text != n.Text && rtb.Blocks.Count > 0 &&
-                rtb.Blocks[0] is Microsoft.UI.Xaml.Documents.Paragraph p0 &&
-                p0.Inlines.Count > 0 &&
-                p0.Inlines[0] is Microsoft.UI.Xaml.Documents.Run r0)
+            if (o.Text != n.Text)
             {
-                r0.Text = n.Text;
+                // Cache the WinRT collection reference to avoid repeated interop calls.
+                var blocks = rtb.Blocks;
+                if (blocks.Count > 0 &&
+                    blocks[0] is Microsoft.UI.Xaml.Documents.Paragraph p0)
+                {
+                    var inlines = p0.Inlines;
+                    if (inlines.Count > 0 && inlines[0] is Microsoft.UI.Xaml.Documents.Run r0)
+                        r0.Text = n.Text;
+                }
             }
             ApplySetters(n.Setters, rtb);
             return null;
@@ -262,24 +267,31 @@ public sealed partial class Reconciler
         int newCount = newParas.Length;
         int commonCount = Math.Min(oldCount, newCount);
 
+        // Cache the WinRT Blocks collection to avoid repeated interop calls.
+        var rtbBlocks = rtb.Blocks;
+
         // Update existing paragraphs in place.
         for (int pi = 0; pi < commonCount; pi++)
         {
             var oldPara = oldParas[pi];
             var newPara = newParas[pi];
-            if (rtb.Blocks.Count <= pi) break;
-            var winPara = (Microsoft.UI.Xaml.Documents.Paragraph)rtb.Blocks[pi];
+
+            // Skip paragraphs whose element trees are identical (reference equal records).
+            if (oldPara == newPara) continue;
+
+            if (rtbBlocks.Count <= pi) break;
+            var winPara = (Microsoft.UI.Xaml.Documents.Paragraph)rtbBlocks[pi];
 
             DiffParagraphInlines(oldPara, newPara, winPara);
         }
 
         // Remove excess paragraphs.
-        while (rtb.Blocks.Count > newCount)
-            rtb.Blocks.RemoveAt(rtb.Blocks.Count - 1);
+        while (rtbBlocks.Count > newCount)
+            rtbBlocks.RemoveAt(rtbBlocks.Count - 1);
 
         // Add new paragraphs.
         for (int pi = oldCount; pi < newCount; pi++)
-            rtb.Blocks.Add(MountParagraph(newParas[pi]));
+            rtbBlocks.Add(MountParagraph(newParas[pi]));
 
         ApplySetters(n.Setters, rtb);
         return null;
@@ -294,45 +306,51 @@ public sealed partial class Reconciler
         int newCount = newInlines.Length;
         int commonCount = Math.Min(oldCount, newCount);
 
+        // Cache the WinRT InlineCollection once — each .Inlines access is a managed→WinRT
+        // interop call, and each indexed get (winInlines[i]) is another. For documents with
+        // hundreds of inlines this was the dominant cost in the profile (~14% self CPU).
+        var winInlines = winPara.Inlines;
+
         // Update existing inlines in place where types match.
         for (int i = 0; i < commonCount; i++)
         {
             var oldInl = oldInlines[i];
             var newInl = newInlines[i];
 
+            // Skip inlines that are record-equal (no changes).
+            if (oldInl == newInl) continue;
+
             if (oldInl.GetType() != newInl.GetType())
             {
                 // Type changed — replace this inline.
-                winPara.Inlines.RemoveAt(i);
-                winPara.Inlines.Insert(i, MountInline(newInl));
+                winInlines.RemoveAt(i);
+                winInlines.Insert(i, MountInline(newInl));
                 continue;
             }
 
+            var winInline = winInlines[i];
             switch (newInl)
             {
                 case RichTextRun newRun:
-                    var oldRun = (RichTextRun)oldInl;
-                    if (winPara.Inlines[i] is Microsoft.UI.Xaml.Documents.Run winRun)
-                        UpdateRun(oldRun, newRun, winRun);
+                    if (winInline is Microsoft.UI.Xaml.Documents.Run winRun)
+                        UpdateRun((RichTextRun)oldInl, newRun, winRun);
                     break;
                 case RichTextHyperlink newLink:
-                    var oldLink = (RichTextHyperlink)oldInl;
-                    if (winPara.Inlines[i] is Microsoft.UI.Xaml.Documents.Hyperlink winHl)
-                        UpdateHyperlink(oldLink, newLink, winHl);
+                    if (winInline is Microsoft.UI.Xaml.Documents.Hyperlink winHl)
+                        UpdateHyperlink((RichTextHyperlink)oldInl, newLink, winHl);
                     break;
                 case RichTextLineBreak:
-                    // Nothing to update on a LineBreak.
                     break;
             }
         }
 
         // Remove excess inlines.
-        while (winPara.Inlines.Count > newCount)
-            winPara.Inlines.RemoveAt(winPara.Inlines.Count - 1);
+        while (winInlines.Count > newCount)
+            winInlines.RemoveAt(winInlines.Count - 1);
 
         // Add new inlines.
         for (int i = oldCount; i < newCount; i++)
-            winPara.Inlines.Add(MountInline(newInlines[i]));
+            winInlines.Add(MountInline(newInlines[i]));
     }
 
     private static void UpdateRun(RichTextRun oldRun, RichTextRun newRun,
@@ -349,7 +367,12 @@ public sealed partial class Reconciler
         if (oldRun.FontSize != newRun.FontSize)
             winRun.FontSize = newRun.FontSize ?? (double)Microsoft.UI.Xaml.DependencyProperty.UnsetValue;
         if (oldRun.FontFamily != newRun.FontFamily)
-            winRun.FontFamily = newRun.FontFamily is not null ? new Microsoft.UI.Xaml.Media.FontFamily(newRun.FontFamily) : null;
+        {
+            if (newRun.FontFamily is not null)
+                winRun.FontFamily = WinRTCache.GetFontFamily(newRun.FontFamily);
+            else
+                winRun.ClearValue(Microsoft.UI.Xaml.Documents.TextElement.FontFamilyProperty);
+        }
         if (!ReferenceEquals(oldRun.Foreground, newRun.Foreground))
             winRun.Foreground = newRun.Foreground;
     }
@@ -378,7 +401,7 @@ public sealed partial class Reconciler
                 if (run.IsItalic) r.FontStyle = Windows.UI.Text.FontStyle.Italic;
                 if (run.IsStrikethrough) r.TextDecorations = Windows.UI.Text.TextDecorations.Strikethrough;
                 if (run.FontSize.HasValue) r.FontSize = run.FontSize.Value;
-                if (run.FontFamily is not null) r.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(run.FontFamily);
+                if (run.FontFamily is not null) r.FontFamily = WinRTCache.GetFontFamily(run.FontFamily);
                 if (run.Foreground is not null) r.Foreground = run.Foreground;
                 return r;
             case RichTextHyperlink link:

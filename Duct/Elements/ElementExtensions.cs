@@ -128,10 +128,10 @@ public static class ElementExtensions
     // ── Text sugar ──────────────────────────────────────────────────
 
     public static TextElement Bold(this TextElement el) =>
-        el with { Weight = new Windows.UI.Text.FontWeight { Weight = 700 } };
+        el with { Weight = Microsoft.UI.Text.FontWeights.Bold };
 
     public static TextElement SemiBold(this TextElement el) =>
-        el with { Weight = new Windows.UI.Text.FontWeight { Weight = 600 } };
+        el with { Weight = Microsoft.UI.Text.FontWeights.SemiBold };
 
     public static TextElement FontSize(this TextElement el, double size) =>
         el with { FontSize = size };
