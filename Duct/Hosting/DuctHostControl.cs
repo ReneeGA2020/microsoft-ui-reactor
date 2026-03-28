@@ -43,15 +43,6 @@ public sealed class DuctHostControl : ContentControl, IDisposable
     /// </summary>
     public Reconciler Reconciler => _reconciler;
 
-    /// <summary>
-    /// Controls which diffing engine is used. Set to CSharpFallback or NativeDiffTree for A/B testing.
-    /// </summary>
-    public ReconcileMode ReconcileMode
-    {
-        get => _reconciler.Mode;
-        set => _reconciler.Mode = value;
-    }
-
     public DuctHostControl(IDuctLogger? logger = null)
     {
         _logger = logger ?? new DebugDuctLogger();

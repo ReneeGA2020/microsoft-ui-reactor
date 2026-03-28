@@ -422,7 +422,6 @@ class PerfStressDemo : Component
     public override Element Render()
     {
         var (elementCount, setElementCount) = UseState(100);
-        var (useNative, setUseNative) = UseState(true);
         var (running, setRunning) = UseState(false);
         var (sortState, setSortState) = UseReducer<SortState?>(null);
         var (renderTimes, setRenderTimes) = UseReducer(new List<double>());
@@ -432,15 +431,6 @@ class PerfStressDemo : Component
         var (showBorders, setShowBorders) = UseState(true);
         var (tickMs, setTickMs) = UseState(16);
         var (totalSortMs, setTotalSortMs) = UseState(0.0);
-
-        // Apply reconcile mode to the host
-        UseEffect(() =>
-        {
-            if (DuctApp.ActiveHost is not null)
-                DuctApp.ActiveHost.ReconcileMode = useNative
-                    ? ReconcileMode.NativeDiffTree
-                    : ReconcileMode.CSharpFallback;
-        }, [useNative]);
 
         void StartSort()
         {
@@ -657,10 +647,6 @@ class PerfStressDemo : Component
             ),
 
             HStack(12,
-                CheckBox(useNative, v =>
-                {
-                    if (!running) setUseNative(v);
-                }, label: $"Use Rust DiffTrees (currently: {(useNative ? "Rust" : "C#")})"),
                 CheckBox(showLabels, v => setShowLabels(v), label: "Show value labels"),
                 CheckBox(showBorders, v => setShowBorders(v), label: "Show bar gaps")
             ),
@@ -694,10 +680,6 @@ class PerfStressDemo : Component
             When(renderTimes.Count > 0, () => VStack(4,
                 SubHeading("Render Performance"),
                 HStack(16,
-                    VStack(2,
-                        Text("Mode").SemiBold(),
-                        Text(useNative ? "Rust DiffTrees" : "C# Imperative")
-                    ),
                     VStack(2,
                         Text("Elements").SemiBold(),
                         Text($"{elementCount}")

@@ -5,7 +5,6 @@ namespace Duct.Core;
 
 /// <summary>
 /// Keyed child reconciliation using Longest Increasing Subsequence (LIS).
-/// Ported from the Rust diffing engine in winui-declarative-dsl.
 ///
 /// Strategies:
 ///   1. Unkeyed children: positional reconciliation (match by index)
@@ -15,15 +14,12 @@ internal static class ChildReconciler
 {
     /// <summary>
     /// Reconciles old and new child element arrays against a Panel's Children collection.
-    /// When a native ViewDiffer is available, uses Rust's LIS-based key reconciliation.
-    /// Falls back to pure C# implementation when the native DLL is not present.
     /// </summary>
     internal static void Reconcile(
         Element[] oldChildren,
         Element[] newChildren,
         IChildCollection children,
         Reconciler reconciler,
-        ViewDiffer? differ,
         Action requestRerender)
     {
         // Filter out nulls and EmptyElements
@@ -33,7 +29,7 @@ internal static class ChildReconciler
         bool hasKeys = HasAnyKeys(oldFiltered) || HasAnyKeys(newFiltered);
 
         if (hasKeys)
-            ReconcileKeyed(oldFiltered, newFiltered, children, reconciler, differ, requestRerender);
+            ReconcileKeyed(oldFiltered, newFiltered, children, reconciler, requestRerender);
         else
             ReconcilePositional(oldFiltered, newFiltered, children, reconciler, requestRerender);
     }
@@ -96,14 +92,12 @@ internal static class ChildReconciler
     /// <summary>
     /// Keyed reconciliation using prefix/suffix stripping + LIS.
     /// Minimizes DOM operations for reordered lists.
-    /// When a native ViewDiffer is available, delegates the middle section to Rust.
     /// </summary>
     private static void ReconcileKeyed(
         Element[] oldChildren,
         Element[] newChildren,
         IChildCollection children,
         Reconciler reconciler,
-        ViewDiffer? differ,
         Action requestRerender)
     {
         int oldLen = oldChildren.Length;
@@ -190,177 +184,14 @@ internal static class ChildReconciler
         }
 
         // Middle section requires key mapping + LIS
-        if (differ is not null)
-            ReconcileKeyedMiddleNative(oldChildren, newChildren, oldStart, oldMidLen, newStart, newMidLen,
-                prefixLen, suffixLen, children, reconciler, differ, requestRerender);
-        else
-            ReconcileKeyedMiddleFallback(oldChildren, newChildren, oldStart, oldMidLen, newStart, newMidLen,
-                prefixLen, suffixLen, children, reconciler, requestRerender);
+        ReconcileKeyedMiddle(oldChildren, newChildren, oldStart, oldMidLen, newStart, newMidLen,
+            prefixLen, suffixLen, children, reconciler, requestRerender);
     }
 
     /// <summary>
-    /// Native Rust-backed keyed middle section reconciliation.
-    /// Uses the Rust differ's ReconcileKeys for LIS-based move minimization,
-    /// then applies the resulting patches to the WinUI control tree.
+    /// Keyed middle section reconciliation using LIS for minimal moves.
     /// </summary>
-    private static void ReconcileKeyedMiddleNative(
-        Element[] oldChildren, Element[] newChildren,
-        int oldStart, int oldMidLen, int newStart, int newMidLen,
-        int prefixLen, int suffixLen,
-        IChildCollection children,
-        Reconciler reconciler,
-        ViewDiffer differ,
-        Action requestRerender)
-    {
-        // Build old key → index map
-        var oldKeyMap = new Dictionary<string, int>(oldMidLen);
-        for (int i = 0; i < oldMidLen; i++)
-        {
-            var key = GetKey(oldChildren[oldStart + i], oldStart + i);
-            oldKeyMap[key] = i;
-        }
-
-        // Map new keys to old indices (needed for UpdateChild calls and CanUpdate checks)
-        var newToOld = new int[newMidLen];
-        for (int i = 0; i < newMidLen; i++)
-        {
-            var key = GetKey(newChildren[newStart + i], newStart + i);
-            if (oldKeyMap.TryGetValue(key, out int oldIdx) &&
-                reconciler.CanUpdate(oldChildren[oldStart + oldIdx], newChildren[newStart + i]))
-            {
-                newToOld[i] = oldIdx;
-            }
-            else
-            {
-                newToOld[i] = -1;
-            }
-        }
-
-        // Build i64 key arrays for the Rust differ.
-        // Matched pairs get the same hash; unmatched new items get a unique key
-        // so Rust correctly emits Insert (not a false match against an old key).
-        var oldKeys = new long[oldMidLen];
-        var newKeys = new long[newMidLen];
-
-        for (int i = 0; i < oldMidLen; i++)
-        {
-            var key = GetKey(oldChildren[oldStart + i], oldStart + i);
-            oldKeys[i] = (long)ViewDiffer.HashString(key);
-        }
-
-        long uniqueCounter = long.MinValue;
-        for (int i = 0; i < newMidLen; i++)
-        {
-            if (newToOld[i] >= 0)
-            {
-                // Matched: use the same hash as the old item
-                newKeys[i] = oldKeys[newToOld[i]];
-            }
-            else
-            {
-                // Unmatched: unique key that won't collide with any hash
-                newKeys[i] = uniqueCounter++;
-            }
-        }
-
-        // Call Rust ReconcileKeys
-        ReadOnlySpan<ViewPatch> patches = differ.ReconcileKeys(oldKeys, newKeys);
-
-        // Categorize patches for ordered application
-        var removedOldIndices = new HashSet<int>();
-        var insertedNewIndices = new HashSet<int>();
-        var movedItems = new Dictionary<int, int>(); // new_position → old_index
-
-        foreach (var patch in patches)
-        {
-            switch (patch.Op)
-            {
-                case ViewPatchOp.Remove:
-                    removedOldIndices.Add((int)patch.NodeIndex);
-                    break;
-                case ViewPatchOp.Insert:
-                    insertedNewIndices.Add((int)patch.NodeIndex);
-                    break;
-                case ViewPatchOp.Move:
-                    movedItems[(int)patch.TargetIndex] = (int)patch.NodeIndex;
-                    break;
-            }
-        }
-
-        // Step 1: Remove unmatched old items (reverse order for stable indices)
-        for (int i = oldMidLen - 1; i >= 0; i--)
-        {
-            if (removedOldIndices.Contains(i))
-            {
-                int panelIdx = prefixLen + i;
-                if (panelIdx < children.Count)
-                {
-                    var old = children.Get(panelIdx);
-                    children.RemoveAt(panelIdx);
-                    reconciler.UnmountAndPool(old);
-                }
-            }
-        }
-
-        // Step 2: Process new positions left to right
-        for (int i = 0; i < newMidLen; i++)
-        {
-            int targetPanelIdx = prefixLen + i;
-
-            if (insertedNewIndices.Contains(i))
-            {
-                // New item — mount and insert
-                var ctrl = reconciler.Mount(newChildren[newStart + i], requestRerender);
-                if (ctrl is not null)
-                    children.Insert(targetPanelIdx, ctrl);
-            }
-            else if (movedItems.TryGetValue(i, out int oldRelIdx))
-            {
-                // Moved item — find current position, move, then update props
-                int currentPos = FindItemByOldIndex(children, oldChildren, oldStart + oldRelIdx, prefixLen, children.Count - suffixLen, reconciler);
-                if (currentPos >= 0 && currentPos != targetPanelIdx)
-                {
-                    children.Move(currentPos, targetPanelIdx);
-                }
-                if (targetPanelIdx < children.Count)
-                {
-                    var replacement = reconciler.UpdateChild(
-                        oldChildren[oldStart + oldRelIdx],
-                        newChildren[newStart + i],
-                        children.Get(targetPanelIdx),
-                        requestRerender);
-                    if (replacement is not null)
-                    {
-                        reconciler.UnmountChild(children.Get(targetPanelIdx));
-                        children.Replace(targetPanelIdx, replacement);
-                    }
-                }
-            }
-            else
-            {
-                // LIS item — already in correct relative position, just update props
-                if (targetPanelIdx < children.Count && newToOld[i] >= 0)
-                {
-                    var replacement = reconciler.UpdateChild(
-                        oldChildren[oldStart + newToOld[i]],
-                        newChildren[newStart + i],
-                        children.Get(targetPanelIdx),
-                        requestRerender);
-                    if (replacement is not null)
-                    {
-                        reconciler.UnmountChild(children.Get(targetPanelIdx));
-                        children.Replace(targetPanelIdx, replacement);
-                    }
-                }
-            }
-        }
-    }
-
-    /// <summary>
-    /// Pure C# fallback for keyed middle section reconciliation.
-    /// Used when the native Rust differ is not available.
-    /// </summary>
-    private static void ReconcileKeyedMiddleFallback(
+    private static void ReconcileKeyedMiddle(
         Element[] oldChildren, Element[] newChildren,
         int oldStart, int oldMidLen, int newStart, int newMidLen,
         int prefixLen, int suffixLen,

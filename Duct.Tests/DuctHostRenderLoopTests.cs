@@ -14,14 +14,6 @@ public class DuctHostRenderLoopTests
     // ── DuctHostControl API surface ──────────────────────────────
 
     [Fact]
-    public void DuctHostControl_Has_ReconcileMode_Property()
-    {
-        var prop = typeof(DuctHostControl).GetProperty("ReconcileMode");
-        Assert.NotNull(prop);
-        Assert.Equal(typeof(ReconcileMode), prop!.PropertyType);
-    }
-
-    [Fact]
     public void DuctHostControl_Constructor_Accepts_Logger()
     {
         var ctor = typeof(DuctHostControl).GetConstructor([typeof(IDuctLogger)]);
@@ -40,14 +32,6 @@ public class DuctHostRenderLoopTests
     }
 
     // ── DuctHost API surface ─────────────────────────────────────
-
-    [Fact]
-    public void DuctHost_Has_ReconcileMode_Property()
-    {
-        var prop = typeof(DuctHost).GetProperty("ReconcileMode");
-        Assert.NotNull(prop);
-        Assert.Equal(typeof(ReconcileMode), prop!.PropertyType);
-    }
 
     [Fact]
     public void DuctHost_Has_Mount_Component_Method()
@@ -74,26 +58,11 @@ public class DuctHostRenderLoopTests
     // ── Reconciler used by hosts ─────────────────────────────────
 
     [Fact]
-    public void Reconciler_Default_Mode_Is_Auto()
-    {
-        var reconciler = new Reconciler();
-        Assert.Equal(ReconcileMode.Auto, reconciler.Mode);
-    }
-
-    [Fact]
     public void Reconciler_Accepts_Logger()
     {
         var logger = new NullDuctLogger();
         var reconciler = new Reconciler(logger);
         Assert.NotNull(reconciler);
-    }
-
-    [Fact]
-    public void Reconciler_Mode_Can_Be_Changed()
-    {
-        var reconciler = new Reconciler();
-        reconciler.Mode = ReconcileMode.CSharpFallback;
-        Assert.Equal(ReconcileMode.CSharpFallback, reconciler.Mode);
     }
 
     // ── Render loop limit constant ───────────────────────────────
