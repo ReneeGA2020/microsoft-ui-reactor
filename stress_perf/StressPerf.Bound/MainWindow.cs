@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
@@ -14,6 +15,12 @@ public sealed class MainWindow : Window
     private readonly PerfTracker _perf = new();
     private readonly CliOptions _options;
     private readonly StockItemViewModel[] _viewModels = new StockItemViewModel[StockDataSource.TotalItems];
+
+    // Phase timing
+    private readonly Stopwatch _phaseSw = new();
+    private double _mutateSum, _vmSetSum;
+    private int _tickCount;
+    private readonly Stopwatch _reportClock = Stopwatch.StartNew();
 
     private DispatcherTimer? _updateTimer;
     private DispatcherTimer? _shutdownTimer;
@@ -155,9 +162,12 @@ public sealed class MainWindow : Window
     {
         _perf.BeginUpdate();
 
+        _phaseSw.Restart();
         double pct = _percentSlider!.Value;
         var changed = _source.Update(pct);
+        double mutateMs = _phaseSw.Elapsed.TotalMilliseconds;
 
+        _phaseSw.Restart();
         // Data-bound update: set ViewModel properties; binding engine pushes to UI
         var items = _source.Items;
         foreach (int idx in changed)
@@ -165,8 +175,20 @@ public sealed class MainWindow : Window
             ref readonly var item = ref items[idx];
             _viewModels[idx].Update(item.Symbol, item.CurrentPrice, item.IsUp);
         }
+        double vmSetMs = _phaseSw.Elapsed.TotalMilliseconds;
 
         _perf.EndUpdate();
+
+        _mutateSum += mutateMs;
+        _vmSetSum += vmSetMs;
+        _tickCount++;
+        if (_reportClock.Elapsed.TotalSeconds >= 1.0 && _tickCount > 0)
+        {
+            try { File.AppendAllText(@"C:\temp\bound_perf_phases.log",
+                $"PERF [{_tickCount} ticks]: mutate={_mutateSum / _tickCount:F2}ms  vmSet={_vmSetSum / _tickCount:F2}ms  total={(_mutateSum + _vmSetSum) / _tickCount:F2}ms\n"); } catch { }
+            _mutateSum = 0; _vmSetSum = 0; _tickCount = 0;
+            _reportClock.Restart();
+        }
 
         // Update stats display
         _fpsText!.Text = $"FPS: {_perf.CurrentFps:F0}";

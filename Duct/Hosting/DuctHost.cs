@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Duct.Core;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -26,6 +27,14 @@ public sealed class DuctHost
     private bool _renderPending;
     private bool _isRendering;
     private bool _needsRerender;
+
+    // Render phase timing instrumentation
+    private readonly Stopwatch _phaseSw = new();
+    private double _treeBuildSum;
+    private double _reconcileSum;
+    private double _effectsSum;
+    private int _renderCount;
+    private readonly Stopwatch _reportClock = Stopwatch.StartNew();
 
     /// <summary>
     /// Provides access to the underlying reconciler for RegisterType calls.
@@ -107,6 +116,8 @@ public sealed class DuctHost
         {
             Element? newTree = null;
 
+            _phaseSw.Restart();
+
             if (_rootComponent is not null)
             {
                 _rootComponent.Context.BeginRender(RequestRender);
@@ -120,7 +131,6 @@ public sealed class DuctHost
                     ShowErrorFallback(ex);
                     return;
                 }
-                _rootComponent.Context.FlushEffects();
             }
             else if (_rootRenderFunc is not null && _funcContext is not null)
             {
@@ -135,10 +145,13 @@ public sealed class DuctHost
                     ShowErrorFallback(ex);
                     return;
                 }
-                _funcContext.FlushEffects();
             }
 
+            double treeBuildMs = _phaseSw.Elapsed.TotalMilliseconds;
+
             if (newTree is null) return;
+
+            _phaseSw.Restart();
 
             var newControl = _reconciler.Reconcile(
                 _currentTree,
@@ -154,6 +167,35 @@ public sealed class DuctHost
 
             _currentControl = newControl;
             _currentTree = newTree;
+
+            double reconcileMs = _phaseSw.Elapsed.TotalMilliseconds;
+
+            _phaseSw.Restart();
+
+            if (_rootComponent is not null)
+                _rootComponent.Context.FlushEffects();
+            else if (_funcContext is not null)
+                _funcContext.FlushEffects();
+
+            double effectsMs = _phaseSw.Elapsed.TotalMilliseconds;
+
+            // Accumulate and report every ~1 second
+            _treeBuildSum += treeBuildMs;
+            _reconcileSum += reconcileMs;
+            _effectsSum += effectsMs;
+            _renderCount++;
+
+            if (_reportClock.Elapsed.TotalSeconds >= 1.0 && _renderCount > 0)
+            {
+                var line = $"PERF [{_renderCount} renders]: tree={_treeBuildSum / _renderCount:F2}ms  reconcile={_reconcileSum / _renderCount:F2}ms  effects={_effectsSum / _renderCount:F2}ms  total={(_treeBuildSum + _reconcileSum + _effectsSum) / _renderCount:F2}ms";
+                System.Diagnostics.Debug.WriteLine(line);
+                try { File.AppendAllText(@"C:\temp\duct_perf_phases.log", line + "\n"); } catch { }
+                _treeBuildSum = 0;
+                _reconcileSum = 0;
+                _effectsSum = 0;
+                _renderCount = 0;
+                _reportClock.Restart();
+            }
         }
         catch (Exception ex)
         {
