@@ -22,7 +22,9 @@ xaml::UIElement Reconciler::reconcile(
 
     // Both exist — try to update
     if (can_update(*old_el, new_el)) {
+#ifdef DUCT_DEBUG_LOG
         OutputDebugStringA(("RECONCILE: update in place (variant=" + std::to_string(new_el.data.index()) + ")\n").c_str());
+#endif
         auto replacement = update(*old_el, new_el, old_control, request_rerender);
         if (replacement && replacement != old_control) {
             unmount(old_control);
@@ -31,7 +33,9 @@ xaml::UIElement Reconciler::reconcile(
     }
 
     // Type changed — unmount old, mount new
+#ifdef DUCT_DEBUG_LOG
     OutputDebugStringA(("RECONCILE: type changed " + std::to_string(old_el->data.index()) + " -> " + std::to_string(new_el.data.index()) + ", remount\n").c_str());
+#endif
     unmount(old_control);
     return mount(new_el, request_rerender);
 }

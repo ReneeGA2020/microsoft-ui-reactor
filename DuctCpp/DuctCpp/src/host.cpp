@@ -42,18 +42,26 @@ void DuctHost::mount(std::function<Element(RenderContext&)> render_func) {
 void DuctHost::request_render() {
     needs_rerender_ = true;
     if (render_scheduled_) {
+#ifdef DUCT_DEBUG_LOG
         OutputDebugStringA("REQUEST_RENDER: already scheduled\n");
+#endif
         return;
     }
     render_scheduled_ = true;
 
+#ifdef DUCT_DEBUG_LOG
     OutputDebugStringA("REQUEST_RENDER: enqueueing\n");
+#endif
     bool ok = dispatcher_.TryEnqueue([this]() {
+#ifdef DUCT_DEBUG_LOG
         OutputDebugStringA("REQUEST_RENDER: dispatch callback fired\n");
+#endif
         render_scheduled_ = false;
         render_loop();
     });
+#ifdef DUCT_DEBUG_LOG
     OutputDebugStringA(ok ? "REQUEST_RENDER: enqueue OK\n" : "REQUEST_RENDER: enqueue FAILED\n");
+#endif
 }
 
 void DuctHost::render_loop() {
@@ -65,7 +73,9 @@ void DuctHost::render_loop() {
 }
 
 void DuctHost::render() {
+#ifdef DUCT_DEBUG_LOG
     OutputDebugStringA("RENDER: starting\n");
+#endif
     try {
         Element new_tree;
 
@@ -111,6 +121,7 @@ void DuctHost::render() {
         previous_tree_ = std::move(current_tree_);
         current_tree_ = std::move(new_tree);
 
+#ifdef DUCT_DEBUG_LOG
         // Accumulate timing and report every ~1 second
         g_tree_build_sum += (t1 - t0);
         g_reconcile_sum += (t2 - t1);
@@ -141,6 +152,7 @@ void DuctHost::render() {
             g_render_count = 0;
             s_last_report = now_s;
         }
+#endif
 
     } catch (const winrt::hresult_error& e) {
         show_error(e.message());
