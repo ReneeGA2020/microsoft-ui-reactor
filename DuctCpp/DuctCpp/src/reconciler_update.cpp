@@ -42,7 +42,9 @@ xaml::UIElement Reconciler::update(
             auto tb = control.as<controls::TextBlock>();
             auto& old_data = std::get<TextElement>(old_el.data);
             if (old_data.content != new_data.content) {
+#ifdef DUCT_DEBUG_LOG
                 OutputDebugStringW((L"UPDATE text: '" + old_data.content + L"' -> '" + new_data.content + L"'\n").c_str());
+#endif
                 tb.Text(to_hstring(new_data.content));
             }
             if (old_data.font_size != new_data.font_size && new_data.font_size) tb.FontSize(*new_data.font_size);
@@ -221,7 +223,9 @@ xaml::UIElement Reconciler::update(
             auto it = key ? component_nodes_.find(key) : component_nodes_.end();
             if (it != component_nodes_.end()) {
                 auto& node = it->second;
+#ifdef DUCT_DEBUG_LOG
                 OutputDebugStringA("UPDATE component: re-rendering\n");
+#endif
                 node.component->begin_render();
                 node.component->context().set_request_render(request_rerender);
                 auto new_child_element = node.component->render();
@@ -231,16 +235,23 @@ xaml::UIElement Reconciler::update(
                 auto existing_child = border.Child();
                 auto new_child_control = reconcile(&node.rendered_element, new_child_element, existing_child, request_rerender);
                 if (new_child_control != existing_child) {
+#ifdef DUCT_DEBUG_LOG
                     OutputDebugStringA("UPDATE component: child control REPLACED\n");
+#endif
                     border.Child(new_child_control);
-                } else {
+                }
+#ifdef DUCT_DEBUG_LOG
+                else {
                     OutputDebugStringA("UPDATE component: child control unchanged (updated in place)\n");
                 }
+#endif
 
                 node.rendered_element = std::move(new_child_element);
                 node.rendered_control = new_child_control;
             } else {
+#ifdef DUCT_DEBUG_LOG
                 OutputDebugStringA("UPDATE component: WARNING node not found!\n");
+#endif
             }
         }
         else if constexpr (std::is_same_v<T, FuncElement>) {
@@ -299,8 +310,21 @@ xaml::UIElement Reconciler::update(
             auto& old_data = std::get<FlyoutButtonElement>(old_el.data);
             if (old_data.label != new_data.label)
                 btn.Content(winrt::box_value(to_hstring(new_data.label)));
-            // Flyout content: rebuild if changed (for simplicity)
-            // A smarter approach would reconcile the flyout content tree
+            // Rebuild flyout content from scratch
+            if (auto flyout = btn.Flyout().try_as<controls::Flyout>()) {
+                if (new_data.flyout_children.size() == 1) {
+                    auto child_control = mount(new_data.flyout_children[0], request_rerender);
+                    if (child_control) flyout.Content(child_control);
+                } else {
+                    controls::StackPanel sp;
+                    sp.Spacing(8);
+                    for (const auto& child : new_data.flyout_children) {
+                        auto child_control = mount(child, request_rerender);
+                        if (child_control) sp.Children().Append(child_control);
+                    }
+                    flyout.Content(sp);
+                }
+            }
         }
         else if constexpr (std::is_same_v<T, MenuFlyoutButtonElement>) {
             auto btn = control.as<controls::Button>();

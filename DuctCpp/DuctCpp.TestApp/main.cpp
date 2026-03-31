@@ -952,65 +952,92 @@ public:
 class FlyoutDemo : public Component {
 public:
     Element render() override {
-        auto [tick, set_tick] = use_state(0);
+        auto [tick, update_tick] = use_reducer(0);
         auto [color, set_color] = use_state<std::wstring>(L"Red");
-        auto [last_action, set_last_action] = use_state<std::wstring>(L"None");
 
-        auto color_hex = [&]() -> std::wstring {
-            if (color == L"Red") return L"#e57373";
-            if (color == L"Orange") return L"#ffb74d";
-            if (color == L"Yellow") return L"#fff176";
-            if (color == L"Green") return L"#81c784";
-            if (color == L"Blue") return L"#64b5f6";
-            if (color == L"Purple") return L"#ba68c8";
+        // Timer ticks every second to test dynamic flyout content.
+        use_effect([=]() -> std::function<void()> {
+            auto queue = winrt::Microsoft::UI::Dispatching::DispatcherQueue::GetForCurrentThread();
+            if (!queue) return nullptr;
+
+            auto timer = queue.CreateTimer();
+            timer.Interval(std::chrono::seconds(1));
+            timer.IsRepeating(true);
+            timer.Tick([=](auto, auto) {
+                update_tick([](int t) { return t + 1; });
+            });
+            timer.Start();
+
+            return [timer]() { timer.Stop(); };
+        }, deps());
+
+        static const std::wstring color_names[] = { L"Red", L"Orange", L"Yellow", L"Green", L"Blue", L"Purple" };
+        auto color_hex = [](const std::wstring& c) -> std::wstring {
+            if (c == L"Red") return L"#e57373";
+            if (c == L"Orange") return L"#ffb74d";
+            if (c == L"Yellow") return L"#fff176";
+            if (c == L"Green") return L"#81c784";
+            if (c == L"Blue") return L"#64b5f6";
+            if (c == L"Purple") return L"#ba68c8";
             return L"#e0e0e0";
-        }();
+        };
+
+        // Build dynamic color swatches (grows with tick, wraps at 8)
+        std::vector<Element> color_swatches;
+        int swatch_count = std::min(tick % 10, 8);
+        for (int i = 0; i < swatch_count; i++) {
+            color_swatches.push_back(
+                border(empty()).background(color_hex(color_names[i % 6])).corner_radius(4).size(24, 24)
+            );
+        }
 
         return scroll_view(vstack(16, {
             heading(L"Flyout Attachments"),
-            text(L"Flyout and MenuFlyout element types."),
-            text(std::format(L"Timer tick: {}", tick)).opacity(0.6),
+            text(L"Tests declarative flyout_button, menu_flyout_button, and .context_menu() modifiers."),
+            text(std::format(L"Timer tick: {} (flyout content updates every second)", tick)).opacity(0.6),
 
-            sub_heading(L"1. Content Flyout (Color Picker)"),
-            flyout_button(L"Pick Color", {
-                text(L"Choose a color:").semi_bold(),
-                hstack(8, {
-                    button(L"Red", [=] { set_color(L"Red"); }),
-                    button(L"Orange", [=] { set_color(L"Orange"); }),
-                    button(L"Yellow", [=] { set_color(L"Yellow"); })
-                }),
-                hstack(8, {
-                    button(L"Green", [=] { set_color(L"Green"); }),
-                    button(L"Blue", [=] { set_color(L"Blue"); }),
-                    button(L"Purple", [=] { set_color(L"Purple"); })
-                })
+            // 1. ContentFlyout on a Button (dynamic content)
+            sub_heading(L"1. Button with ContentFlyout (dynamic content)"),
+            text(L"Click the button to see a flyout with a live-updating counter."),
+            flyout_button(L"Open Flyout", {
+                text(L"Dynamic Flyout Content").semi_bold(),
+                text(std::format(L"Timer tick: {}", tick)).font_size(20),
+                border(
+                    text(std::format(L"Elapsed: {} seconds", tick))
+                ).corner_radius(4).background(L"#e3f2fd").padding(12, 8),
+                hstack(8, std::move(color_swatches))
             }),
 
+            // 2. Menu Flyout
+            sub_heading(L"2. Button with MenuItems"),
+            text(L"A button with a declarative menu flyout."),
+            menu_flyout_button(L"Pick a color", {
+                {L"Red",    [=] { set_color(L"Red"); }},
+                {L"Orange", [=] { set_color(L"Orange"); }},
+                {L"Yellow", [=] { set_color(L"Yellow"); }},
+                {L"Green",  [=] { set_color(L"Green"); }},
+                {L"Blue",   [=] { set_color(L"Blue"); }},
+                {L"Purple", [=] { set_color(L"Purple"); }}
+            }),
             hstack(8, {
                 text(std::format(L"Selected: {}", color)),
-                border(empty()).background(color_hex).corner_radius(4).size(24, 24)
+                border(empty()).background(color_hex(color)).corner_radius(4).size(24, 24)
             }),
 
-            sub_heading(L"2. Menu Flyout"),
-            menu_flyout_button(L"File Menu", {
-                {L"New",  [=] { set_last_action(L"New file"); }},
-                {L"Open", [=] { set_last_action(L"Open file"); }},
-                {L"Save", [=] { set_last_action(L"Save file"); }},
-                {L"Exit", [=] { set_last_action(L"Exit"); }}
-            }),
-            text(std::format(L"Last action: {}", last_action)).opacity(0.7),
-
-            sub_heading(L"3. Context Menu (right-click)"),
+            // 3. ContextFlyout (right-click menu)
+            sub_heading(L"3. ContextFlyout (right-click menu)"),
+            text(L"Right-click the box below to see a context menu."),
             border(
                 vstack(8, {
-                    text(L"Right-click this area for context menu").semi_bold(),
-                    text(std::format(L"Color: {} | Action: {}", color, last_action))
+                    text(L"Right-click me!").semi_bold(),
+                    text(std::format(L"Color: {} | Tick: {}", color, tick))
                 })
             ).corner_radius(8).background(L"#f5f5f5").padding(24)
              .context_menu({
-                {L"Cut",   [=] { set_last_action(L"Cut"); }},
-                {L"Copy",  [=] { set_last_action(L"Copy"); }},
-                {L"Paste", [=] { set_last_action(L"Paste"); }}
+                {L"Reset color", [=] { set_color(L"Red"); }},
+                {L"Reset timer", [=] { update_tick([](int) { return 0; }); }},
+                {L"Set Blue",    [=] { set_color(L"Blue"); }},
+                {L"Set Green",   [=] { set_color(L"Green"); }}
              })
         }));
     }
