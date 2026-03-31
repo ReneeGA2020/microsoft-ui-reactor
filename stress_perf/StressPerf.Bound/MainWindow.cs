@@ -113,9 +113,10 @@ public sealed class MainWindow : Window
                 FontSize = 8,
                 Padding = new Thickness(2, 1, 2, 1),
                 TextTrimming = TextTrimming.CharacterEllipsis,
+                Text = vm.DisplayText,
+                Foreground = vm.PriceBrush,
             };
 
-            // Set up OneWay bindings to the ViewModel
             tb.SetBinding(TextBlock.TextProperty, new Binding
             {
                 Source = vm,

@@ -2,11 +2,11 @@ using System.Runtime.InteropServices;
 
 namespace StressPerf.Shared;
 
-public static class ConsoleHelper
+public static partial class ConsoleHelper
 {
-    [DllImport("kernel32.dll", SetLastError = true)]
+    [LibraryImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool AttachConsole(int dwProcessId);
+    private static partial bool AttachConsole(int dwProcessId);
 
     private const int ATTACH_PARENT_PROCESS = -1;
 
