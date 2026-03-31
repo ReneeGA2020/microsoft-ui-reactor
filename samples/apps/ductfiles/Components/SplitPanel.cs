@@ -25,7 +25,7 @@ internal record CursorBorderElement(Element Child, InputSystemCursorShape Cursor
 /// render background without a template. Grid supports Background natively and
 /// is not sealed.
 /// </summary>
-internal sealed class CursorPanel : Grid
+internal sealed partial class CursorPanel : Grid
 {
     public CursorPanel(InputSystemCursorShape shape)
     {

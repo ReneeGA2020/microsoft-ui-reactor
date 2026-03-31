@@ -9,7 +9,7 @@ namespace Duct.Monaco;
 /// A standalone WinUI 3 control that hosts the Monaco code editor inside a WebView2.
 /// Can be used directly in XAML without any Duct dependency.
 /// </summary>
-public sealed class MonacoEditor : UserControl
+public sealed partial class MonacoEditor : UserControl
 {
     private WebView2? _webView;
     private bool _isEditorReady;
@@ -161,17 +161,17 @@ public sealed class MonacoEditor : UserControl
         coreWv.Settings.AreDevToolsEnabled = true;
 
         // Build the initial config and navigate via virtual host URL
-        var config = new Dictionary<string, object>
+        var config = new MonacoInitConfig
         {
-            ["value"] = Text ?? "",
-            ["language"] = EditorLanguage ?? "plaintext",
-            ["theme"] = Theme ?? "vs",
-            ["readOnly"] = IsReadOnly,
-            ["fontSize"] = EditorFontSize,
-            ["wordWrap"] = WordWrap,
-            ["minimap"] = MinimapEnabled,
+            Value = Text ?? "",
+            Language = EditorLanguage ?? "plaintext",
+            Theme = Theme ?? "vs",
+            ReadOnly = IsReadOnly,
+            FontSize = EditorFontSize,
+            WordWrap = WordWrap,
+            Minimap = MinimapEnabled,
         };
-        var configJson = JsonSerializer.Serialize(config);
+        var configJson = JsonSerializer.Serialize(config, MonacoJsonContext.Default.MonacoInitConfig);
         var encodedConfig = Uri.EscapeDataString(configJson);
 
         // Navigate to the HTML via virtual host (same origin as JS assets)
@@ -232,9 +232,9 @@ public sealed class MonacoEditor : UserControl
     {
         var text = Text ?? "";
         _lastKnownText = text;
-        await ExecuteScriptAsync($"monacoSetValue({JsonSerializer.Serialize(text)})");
-        await ExecuteScriptAsync($"monacoSetLanguage({JsonSerializer.Serialize(EditorLanguage ?? "plaintext")})");
-        await ExecuteScriptAsync($"monacoSetTheme({JsonSerializer.Serialize(Theme ?? "vs")})");
+        await ExecuteScriptAsync($"monacoSetValue({JsonSerializer.Serialize(text, MonacoJsonContext.Default.String)})");
+        await ExecuteScriptAsync($"monacoSetLanguage({JsonSerializer.Serialize(EditorLanguage ?? "plaintext", MonacoJsonContext.Default.String)})");
+        await ExecuteScriptAsync($"monacoSetTheme({JsonSerializer.Serialize(Theme ?? "vs", MonacoJsonContext.Default.String)})");
         await ExecuteScriptAsync($"monacoSetReadOnly({IsReadOnly.ToString().ToLowerInvariant()})");
         await ExecuteScriptAsync($"monacoSetFontSize({EditorFontSize})");
         await ExecuteScriptAsync($"monacoSetWordWrap({WordWrap.ToString().ToLowerInvariant()})");
@@ -250,19 +250,19 @@ public sealed class MonacoEditor : UserControl
         // Skip if this update came from JS (the editor already has this text)
         if (newText == editor._lastKnownText) return;
         editor._lastKnownText = newText;
-        editor.EnqueueCommand(() => editor.ExecuteScriptAsync($"monacoSetValue({JsonSerializer.Serialize(newText)})"));
+        editor.EnqueueCommand(() => editor.ExecuteScriptAsync($"monacoSetValue({JsonSerializer.Serialize(newText, MonacoJsonContext.Default.String)})"));
     }
 
     private static void OnLanguageChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var editor = (MonacoEditor)d;
-        editor.EnqueueCommand(() => editor.ExecuteScriptAsync($"monacoSetLanguage({JsonSerializer.Serialize((string)e.NewValue)})"));
+        editor.EnqueueCommand(() => editor.ExecuteScriptAsync($"monacoSetLanguage({JsonSerializer.Serialize((string)e.NewValue, MonacoJsonContext.Default.String)})"));
     }
 
     private static void OnThemeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var editor = (MonacoEditor)d;
-        editor.EnqueueCommand(() => editor.ExecuteScriptAsync($"monacoSetTheme({JsonSerializer.Serialize((string)e.NewValue)})"));
+        editor.EnqueueCommand(() => editor.ExecuteScriptAsync($"monacoSetTheme({JsonSerializer.Serialize((string)e.NewValue, MonacoJsonContext.Default.String)})"));
     }
 
     private static void OnIsReadOnlyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -338,7 +338,7 @@ public sealed class MonacoEditor : UserControl
     /// Sends arbitrary Monaco editor options as a JSON string.
     /// </summary>
     public void UpdateOptions(string optionsJson) =>
-        EnqueueCommand(() => ExecuteScriptAsync($"monacoUpdateOptions({JsonSerializer.Serialize(optionsJson)})"));
+        EnqueueCommand(() => ExecuteScriptAsync($"monacoUpdateOptions({JsonSerializer.Serialize(optionsJson, MonacoJsonContext.Default.String)})"));
 }
 
 // ── Event args ────────────────────────────────────────────────────────

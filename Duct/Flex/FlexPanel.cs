@@ -13,7 +13,7 @@ namespace Duct.Flex;
 /// A WinUI3 Panel that implements CSS Flexbox layout using the Yoga layout engine.
 /// Can be used standalone in XAML or through the Duct framework.
 /// </summary>
-public class FlexPanel : Panel
+public partial class FlexPanel : Panel
 {
     // ── Yoga node cache: one YogaNode per UIElement child ──
     private readonly Dictionary<UIElement, YogaNode> _nodeCache = new();

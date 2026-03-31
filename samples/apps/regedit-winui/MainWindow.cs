@@ -24,7 +24,7 @@ using WinRT.Interop;
 
 namespace RegeditWinUI;
 
-public sealed class MainWindow : Window
+public sealed partial class MainWindow : Window
 {
     // UI elements
     private TreeView _treeView = null!;
@@ -1147,7 +1147,7 @@ public sealed class MainWindow : Window
 
     // ── Splitter Control ────────────────────────────────────────────────
 
-    private sealed class SplitterGrid : Grid
+    private sealed partial class SplitterGrid : Grid
     {
         private readonly Grid _parentGrid;
         private bool _dragging;

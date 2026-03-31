@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -205,7 +206,10 @@ public record ModifiedElement(Element Inner, ElementModifiers WrappedModifiers) 
 /// Wraps a Component class so it can participate in the element tree.
 /// Created automatically by Component&lt;T&gt;() factory method.
 /// </summary>
-public record ComponentElement(Type ComponentType, object? Props = null) : Element
+public record ComponentElement(
+    [property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+    Type ComponentType,
+    object? Props = null) : Element
 {
     // Factory creates the component instance without reflection. Stored as a field
     // so it does not participate in record equality (two ComponentElements for the

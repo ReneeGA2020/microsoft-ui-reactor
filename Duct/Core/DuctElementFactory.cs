@@ -7,7 +7,7 @@ namespace Duct.Core;
 /// Bridges WinUI's ItemsRepeater/ElementFactory to Duct's Reconciler.
 /// GetElementCore calls the view builder then mounts; RecycleElementCore unmounts.
 /// </summary>
-public sealed class DuctElementFactory<T> : ElementFactory
+public sealed partial class DuctElementFactory<T> : ElementFactory
 {
     private readonly IReadOnlyList<T> _items;
     private readonly Func<T, int, Element> _viewBuilder;

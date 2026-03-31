@@ -73,7 +73,7 @@ public static class DuctApp
 /// built-in provider so that custom control types (TextCommandBarFlyout, etc.)
 /// can be instantiated from XBF theme resources.
 /// </summary>
-public class DuctApplication : Application, IXamlMetadataProvider
+public partial class DuctApplication : Application, IXamlMetadataProvider
 {
     private IXamlMetadataProvider? _controlsProvider;
 

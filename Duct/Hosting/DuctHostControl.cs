@@ -10,7 +10,7 @@ namespace Duct;
 /// Place this inside any XAML page to embed Duct-rendered UI.
 /// Each instance owns its own Reconciler and render loop.
 /// </summary>
-public sealed class DuctHostControl : ContentControl, IDisposable
+public sealed partial class DuctHostControl : ContentControl, IDisposable
 {
     private readonly Reconciler _reconciler;
     private readonly DispatcherQueue _dispatcherQueue;
