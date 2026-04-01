@@ -1,7 +1,6 @@
 using Duct.Core;
 using Duct.D3;
 using Duct.D3.Charts;
-using Microsoft.UI.Xaml;
 using static Duct.D3.Charts.D3;
 using static Duct.UI;
 
@@ -44,15 +43,12 @@ public sealed class BubbleChartSample : GallerySample
         var ys = new LinearScale([0, 100], [top + ph, top]).Nice();
         var rs = new LinearScale([5, 45], [3, 20]);
 
-        var bubbles = new Element[points.Length];
-        for (int i = 0; i < points.Length; i++)
-        {
-            var p = points[i];
-            int ci = i % Palette.Length;
-            var fill = Brush(Palette[ci], opacity: 0.45);
-            var stroke = Brush(Palette[ci]);
-            bubbles[i] = D3Circle(xs.Map(p.x), ys.Map(p.y), rs.Map(p.size)) with { Fill = fill, Stroke = stroke };
-        }
+        var bubbles = points.Select((p, i) =>
+            D3Circle(xs.Map(p.x), ys.Map(p.y), rs.Map(p.size)) with
+            {
+                Fill = Brush(Palette[i % Palette.Length], opacity: 0.45),
+                Stroke = Brush(Palette[i % Palette.Length]),
+            });
 
         return D3Canvas(width, height,
             [.. D3Grid(ys, left, pw),

@@ -104,21 +104,13 @@ public sealed class IndentedTreeSample : GallerySample
                     bool isFolder = node.Data.Type == "folder";
                     var nameColor = isFolder ? Brush(Palette[0]) : Gray(50);
 
-                    Element indicator;
-                    if (hasChildren)
-                    {
-                        var pb = new PathBuilder(1);
-                        double tx = indent - 12, ty = y + 6;
-                        pb.MoveTo(tx, ty);
-                        pb.LineTo(tx + 8, ty);
-                        pb.LineTo(tx + 4, ty + 6);
-                        pb.ClosePath();
-                        indicator = D3Path(pb.ToString(), null, Gray(120), 0);
-                    }
-                    else
-                    {
-                        indicator = D3Circle(indent - 8, y + 9, 2.5) with { Fill = Gray(180) };
-                    }
+                    var indicator = hasChildren
+                        ? D3Path(new PathBuilder(1)
+                            .MoveTo(indent - 12, y + 6)
+                            .LineTo(indent - 4, y + 6)
+                            .LineTo(indent - 8, y + 12)
+                            .ClosePath().ToString(), null, Gray(120), 0)
+                        : (Element)(D3Circle(indent - 8, y + 9, r: 2.5) with { Fill = Gray(180) });
 
                     return (Element[])
                     [

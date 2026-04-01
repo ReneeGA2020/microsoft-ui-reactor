@@ -2,7 +2,6 @@ using Duct;
 using Duct.Core;
 using Duct.D3;
 using Duct.D3.Charts;
-using Microsoft.UI.Xaml;
 using static Duct.D3.Charts.D3;
 using static Duct.UI;
 
@@ -110,8 +109,7 @@ public sealed class ClusterDendrogramSample : GallerySample
                 Element label = isLeaf
                     ? D3Text(node.X + 7, node.Y - 7, node.Data.Name, 8.5, Gray(50))
                     : node.Parent == null
-                        ? D3Text(node.X - 4, node.Y - 18, node.Data.Name, 11, Brush("#222222"))
-                            .Set(tb => tb.TextAlignment = TextAlignment.Center)
+                        ? D3TextCenter(node.X - 40, node.Y - 18, node.Data.Name, 80, 11, Brush("#222222"))
                         : D3Text(node.X - 4, node.Y - 16, node.Data.Name, 9, Gray(80));
 
                 return new Element[]

@@ -2,8 +2,6 @@ using Duct;
 using Duct.Core;
 using Duct.D3;
 using Duct.D3.Charts;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using static Duct.D3.Charts.D3;
 using static Duct.UI;
 
@@ -58,10 +56,8 @@ public class SlopeChart : GallerySample
 
         return D3Canvas(canvasW, canvasH,
             [// Column headers
-             D3Text(xLeft - 30, top - 30, "Before", 13, Gray(60)).Width(60)
-                 .Set(tb => tb.TextAlignment = TextAlignment.Center),
-             D3Text(xRight - 30, top - 30, "After", 13, Gray(60)).Width(60)
-                 .Set(tb => tb.TextAlignment = TextAlignment.Center),
+             D3TextCenter(xLeft - 30, top - 30, "Before", 60, 13, Gray(60)),
+             D3TextCenter(xRight - 30, top - 30, "After", 60, 13, Gray(60)),
 
              // Grid lines + tick labels
              .. ys.Ticks(6).SelectMany(t => new Element[]
@@ -91,10 +87,7 @@ public class SlopeChart : GallerySample
              }),
 
              // Legend
-             D3Rect(canvasW / 2 - 80, canvasH - 22, 12, 12) with { Fill = Brush(Palette[2]), RadiusX = 2, RadiusY = 2 },
-             D3Text(canvasW / 2 - 64, canvasH - 22, "Improved", 10, Gray(80)),
-             D3Rect(canvasW / 2 + 10, canvasH - 22, 12, 12) with { Fill = Brush(Palette[3]), RadiusX = 2, RadiusY = 2 },
-             D3Text(canvasW / 2 + 26, canvasH - 22, "Declined", 10, Gray(80)),
+             .. D3Legend(canvasW / 2 - 80, canvasH - 22, [("Improved", Brush(Palette[2])), ("Declined", Brush(Palette[3]))]),
             ]
         );
     }

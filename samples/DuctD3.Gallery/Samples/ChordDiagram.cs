@@ -2,7 +2,6 @@ using Duct;
 using Duct.Core;
 using Duct.D3;
 using Duct.D3.Charts;
-using Microsoft.UI.Xaml;
 using static Duct.D3.Charts.D3;
 using static Duct.UI;
 
@@ -26,8 +25,7 @@ public sealed class ChordDiagramSample : GallerySample
             pb.ClosePath();
             return new[] {
                 D3Path(pb.ToString(), fill: fill),
-                D3Text(lx - 35, ly - 7, label, 10, brush)
-                    .Width(70).Set(tb => tb.TextAlignment = TextAlignment.Center)
+                D3TextCenter(lx - 35, ly - 7, label, 70, 10, brush)
             };
         });
         var ribbons = data.Chords.Select(c =>
@@ -79,8 +77,7 @@ public sealed class ChordDiagramSample : GallerySample
                 return new Element[]
                 {
                     D3Path(pb.ToString(), fill: fill),
-                    D3Text(lx - labelW / 2, ly - 7, regions[g.Index], 10, Brush(color))
-                        .Width(labelW).Set(tb => tb.TextAlignment = TextAlignment.Center),
+                    D3TextCenter(lx - labelW / 2, ly - 7, regions[g.Index], labelW, 10, Brush(color)),
                 };
             }),
             .. data.Chords

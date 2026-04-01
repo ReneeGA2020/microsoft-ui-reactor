@@ -1,6 +1,5 @@
 using Duct.Core;
 using Duct.D3;
-using Microsoft.UI.Xaml;
 using static Duct.D3.Charts.D3;
 using static Duct.UI;
 
@@ -65,8 +64,8 @@ D3Canvas(W, H,
         var greenPts = data.Select((d, i) => (x: (double)i, y0: Math.Min(d.A, d.B), y1: d.A)).ToArray();
         var redPts = data.Select((d, i) => (x: (double)i, y0: Math.Min(d.A, d.B), y1: d.B)).ToArray();
 
-        var greenBrush = Brush(D3Color.Parse("#2ca02c"));
-        var redBrush = Brush(D3Color.Parse("#d62728"));
+        var greenBrush = Brush("#2ca02c");
+        var redBrush = Brush("#d62728");
 
         // Legend
         double lx = marginLeft + plotW - 130;
@@ -76,14 +75,14 @@ D3Canvas(W, H,
             .. grid,
             .. axes,
             D3AreaPath(greenPts, x: d => xScale.Map(d.x), y0: d => yScale.Map(d.y0), y1: d => yScale.Map(d.y1),
-                fill: Brush(D3Color.Parse("#2ca02c"), opacity: 0.35)),
+                fill: Brush("#2ca02c", opacity: 0.35)),
             D3AreaPath(redPts, x: d => xScale.Map(d.x), y0: d => yScale.Map(d.y0), y1: d => yScale.Map(d.y1),
-                fill: Brush(D3Color.Parse("#d62728"), opacity: 0.35)),
+                fill: Brush("#d62728", opacity: 0.35)),
             D3LinePath(data, x: d => xScale.Map(d.X), y: d => yScale.Map(d.A),
                 stroke: greenBrush, strokeWidth: 2, curve: D3Curve.MonotoneX),
             D3LinePath(data, x: d => xScale.Map(d.X), y: d => yScale.Map(d.B),
                 stroke: redBrush, strokeWidth: 2, curve: D3Curve.MonotoneX),
-            .. D3Legend(lx, marginTop + 6, [("Revenue", Brush(D3Color.Parse("#2ca02c"))), ("Expenses", Brush(D3Color.Parse("#d62728")))]),
+            .. D3Legend(lx, marginTop + 6, [("Revenue", greenBrush), ("Expenses", redBrush)]),
             D3Text(marginLeft, 4, "Difference Chart (Revenue vs Expenses)", 14, Gray(40)),
         ]);
     }

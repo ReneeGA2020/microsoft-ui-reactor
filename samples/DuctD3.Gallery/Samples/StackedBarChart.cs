@@ -1,7 +1,6 @@
 using Duct.Core;
 using Duct.D3;
 using Duct.D3.Charts;
-using Microsoft.UI.Xaml;
 using static Duct.D3.Charts.D3;
 using static Duct.UI;
 
@@ -14,28 +13,20 @@ public class StackedBarChartSample : GallerySample
     public override string Category => "Bars";
 
     public override string SourceCode => """
-        var stack = StackGenerator.Create<Dictionary<string, double>>()
-            .SetKeys(keys)
-            .SetValue((row, key) => row[key]);
         var series = stack.Generate(data);
-
-        var ys = new LinearScale([0, maxVal], [plotH, 0]).Nice();
+        var ys = new LinearScale([0, maxVal], [top + plotH, top]).Nice();
         var band = BandScale.Create(months)
             .SetRange(0, plotW).SetPaddingInner(0.2).SetPaddingOuter(0.1);
 
-        for (int si = 0; si < series.Length; si++)
-        {
+        series.SelectMany((s, si) => {
             var fill = Brush(Palette[si]);
-            for (int j = 0; j < months.Length; j++)
-            {
-                var pt = series[si].Points[j];
-                double y0Screen = top + ys.Map(pt.Y0);
-                double y1Screen = top + ys.Map(pt.Y1);
-                double x = left + band.Map(months[j]);
-                D3Rect(x, y1Screen, band.Bandwidth, y0Screen - y1Screen)
-                    with { Fill = fill, RadiusX = 1, RadiusY = 1 };
-            }
-        }
+            return months.Select((month, j) => {
+                var pt = s.Points[j];
+                return D3Rect(left + band.Map(month), ys.Map(pt.Y1),
+                    band.Bandwidth, ys.Map(pt.Y0) - ys.Map(pt.Y1))
+                    with { Fill = fill };
+            });
+        })
         """;
 
     public override Element Render()
@@ -67,9 +58,8 @@ public class StackedBarChartSample : GallerySample
         double maxVal = series.SelectMany(s => s.Points).Max(p => p.Y1);
 
         // Scales
-        var ys = new LinearScale([0, maxVal], [plotH, 0]).Nice();
+        var ys = new LinearScale([0, maxVal], [top + plotH, top]).Nice();
         var band = BandScale.Create(months).SetRange(0, plotW).SetPaddingInner(0.2).SetPaddingOuter(0.1);
-        var ysScreen = new LinearScale(ys.Domain, [top + plotH, top]);
 
         // Axes
         var axisBrush = Gray(100, alpha: 180);
@@ -77,7 +67,7 @@ public class StackedBarChartSample : GallerySample
         double legendY = top + 10;
 
         return D3Canvas(W, H,
-            [.. D3Grid(ysScreen, left, plotW),
+            [.. D3Grid(ys, left, plotW),
 
              // Stacked bars
              .. series.SelectMany((s, si) =>
@@ -86,17 +76,15 @@ public class StackedBarChartSample : GallerySample
                  return months.Select((month, j) =>
                  {
                      var pt = s.Points[j];
-                     double y0Screen = top + ys.Map(pt.Y0);
-                     double y1Screen = top + ys.Map(pt.Y1);
                      double x = left + band.Map(month);
-                     return D3Rect(x, y1Screen, band.Bandwidth, y0Screen - y1Screen) with { Fill = fill, RadiusX = 1, RadiusY = 1 };
+                     return D3Rect(x, ys.Map(pt.Y1), band.Bandwidth, ys.Map(pt.Y0) - ys.Map(pt.Y1)) with { Fill = fill, RadiusX = 1, RadiusY = 1 };
                  });
              }),
 
              D3Line(left, top + plotH, left + plotW, top + plotH) with { Stroke = axisBrush, StrokeThickness = 1 },
              D3Line(left, top, left, top + plotH) with { Stroke = axisBrush, StrokeThickness = 1 },
-             .. ysScreen.Ticks(5).Select(t =>
-                 D3TextRight(0, ysScreen.Map(t) - 7, Fmt(t), left - 6, 10, axisBrush)),
+             .. ys.Ticks(5).Select(t =>
+                 D3TextRight(0, ys.Map(t) - 7, Fmt(t), left - 6, 10, axisBrush)),
 
              // X axis labels
              .. months.Select((month, i) =>

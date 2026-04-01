@@ -1,8 +1,6 @@
 using Duct.Core;
 using Duct.D3;
 using Duct.D3.Charts;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using static Duct.D3.Charts.D3;
 using static Duct.UI;
 
@@ -15,14 +13,14 @@ public class BarChartSample : GallerySample
     public override string Category => "Bars";
 
     public override string SourceCode => """
-        var ys = new LinearScale([0, maxVal], [plotH, 0]).Nice();
+        var ys = new LinearScale([0, maxVal], [top + plotH, top]).Nice();
         var band = BandScale.Create(months)
             .SetRange(0, plotW).SetPaddingInner(0.2).SetPaddingOuter(0.1);
 
         D3Canvas(W, H,
-            ..D3Grid(ysScreen, left, plotW),
+            ..D3Grid(ys, left, plotW),
             ..bars,
-            ..D3Axes(xs, ys, left, top, plotW, plotH)
+            ..xLabels
         )
         """;
 
@@ -39,9 +37,8 @@ public class BarChartSample : GallerySample
 
         double maxVal = revenue.Max();
 
-        var ys = new LinearScale([0, maxVal], [plotH, 0]).Nice();
+        var ys = new LinearScale([0, maxVal], [top + plotH, top]).Nice();
         var band = BandScale.Create(months).SetRange(0, plotW).SetPaddingInner(0.2).SetPaddingOuter(0.1);
-        var ysScreen = new LinearScale(ys.Domain, [top + plotH, top]);
 
         var fill = Brush(Palette[0]);
         var axisBrush = Gray(100, alpha: 180);
@@ -49,8 +46,8 @@ public class BarChartSample : GallerySample
         var bars =
             from i in Enumerable.Range(0, months.Length)
             let x = left + band.Map(months[i])
-            let barH = plotH - ys.Map(revenue[i])
-            let y = top + ys.Map(revenue[i])
+            let y = ys.Map(revenue[i])
+            let barH = ys.Map(0) - y
             select D3Rect(x, y, band.Bandwidth, barH) with { Fill = fill, RadiusX = 2, RadiusY = 2 };
 
         var xLabels =
@@ -59,12 +56,12 @@ public class BarChartSample : GallerySample
             select D3Text(cx - 14, top + plotH + 8, month, 10, axisBrush);
 
         return D3Canvas(W, H,
-            [.. D3Grid(ysScreen, left, plotW),
+            [.. D3Grid(ys, left, plotW),
              .. bars,
              D3Line(left, top + plotH, left + plotW, top + plotH) with { Stroke = axisBrush, StrokeThickness = 1 },
              D3Line(left, top, left, top + plotH) with { Stroke = axisBrush, StrokeThickness = 1 },
-             .. ysScreen.Ticks(5).Select(t =>
-                 D3TextRight(0, ysScreen.Map(t) - 7, Fmt(t) + "k", left - 6, 10, axisBrush)),
+             .. ys.Ticks(5).Select(t =>
+                 D3TextRight(0, ys.Map(t) - 7, Fmt(t) + "k", left - 6, 10, axisBrush)),
              .. xLabels,
              D3Text(left, 4, "Monthly Revenue ($k)", 13, Gray(40))]
         );

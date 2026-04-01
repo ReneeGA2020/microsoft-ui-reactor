@@ -57,24 +57,22 @@ public sealed class DonutMixerSample : GallerySample
             double total = values.Sum();
 
             var sliders = Labels.Select((label, i) =>
-            {
-                int idx = i;
-                return (Element)HStack(8,
+                (Element)HStack(8,
                     D3Rect(0, 0, 12, 12) with
                     {
-                        Fill = Brush(Palette[idx % Palette.Length]),
+                        Fill = Brush(Palette[i % Palette.Length]),
                         RadiusX = 2, RadiusY = 2,
                     },
                     (Text(label) with { FontSize = 11 }).Width(70),
-                    Slider(values[idx], 10, 200, v =>
+                    Slider(values[i], 10, 200, v =>
                     {
                         var copy = values.ToArray();
-                        copy[idx] = v;
+                        copy[i] = v;
                         setValues(copy);
                     }).StepFrequency(5).Width(140),
-                    (Text($"{values[idx] / total * 100:F0}%") with { FontSize = 11 }).Width(36)
-                ).VAlign(VerticalAlignment.Center);
-            }).ToArray();
+                    (Text($"{values[i] / total * 100:F0}%") with { FontSize = 11 }).Width(36)
+                ).VAlign(VerticalAlignment.Center)
+            ).ToArray();
 
             var chart = D3Canvas(chartW, chartH,
             [

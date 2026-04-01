@@ -34,6 +34,9 @@ public static class D3
     public static SolidColorBrush Brush(D3Color c, double opacity)
         => new(Windows.UI.Color.FromArgb((byte)(opacity * 255), c.R, c.G, c.B));
 
+    public static SolidColorBrush Brush(string color, double opacity)
+        => Brush(D3Color.Parse(color), opacity);
+
     public static SolidColorBrush Gray(byte v, byte alpha = 255)
         => new(Windows.UI.Color.FromArgb(alpha, v, v, v));
 

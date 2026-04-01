@@ -16,28 +16,21 @@ public class StreamgraphChart : GallerySample
     public override string Category => "Areas";
 
     public override string SourceCode => @"
-// Stack normally, then center (wiggle-like offset)
 StackSeries[] series = stack.Generate(rows);
 
-// Compute total per column and shift to center
-for (int j = 0; j < n; j++)
-{
-    double total = series[^1].Points[j].Y1;
-    double offset = -total / 2;
-    foreach (var s in series)
-    {
-        s.Points[j] = new StackPoint(
-            s.Points[j].Y0 + offset,
-            s.Points[j].Y1 + offset);
-    }
-}
+// Centering offsets (wiggle-like) — no mutation
+var offsets = Enumerable.Range(0, n)
+    .Select(j => -series[^1].Points[j].Y1 / 2.0).ToArray();
 
-return D3Canvas(W, H,
-    [D3Line(...) with { Stroke = Gray(200), StrokeThickness = 1 },
-     ..layers,
-     ..legend,
-     D3Text(..., ""Streamgraph (Centered Stack)"", 14, Gray(40))]
-);";
+series.Select((s, si) => {
+    var pts = Enumerable.Range(0, n)
+        .Select(j => (x: (double)j,
+            y0: s.Points[j].Y0 + offsets[j],
+            y1: s.Points[j].Y1 + offsets[j])).ToArray();
+    return D3AreaPath(pts, x: d => xScale.Map(d.x),
+        y0: d => yScale.Map(d.y0), y1: d => yScale.Map(d.y1),
+        fill: Brush(Palette[si], opacity: 0.8));
+})";
 
     public override Element Render()
     {
@@ -72,22 +65,13 @@ return D3Canvas(W, H,
             .SetValue((d, key) => d[key]);
         StackSeries[] series = stack.Generate(rows);
 
-        // Center the stack (wiggle-like offset)
-        for (int j = 0; j < n; j++)
-        {
-            double total = series[^1].Points[j].Y1;
-            double offset = -total / 2.0;
-            foreach (var s in series)
-            {
-                s.Points[j] = new StackPoint(
-                    s.Points[j].Y0 + offset,
-                    s.Points[j].Y1 + offset);
-            }
-        }
+        // Centering offsets (wiggle-like) — no mutation of series data
+        var offsets = Enumerable.Range(0, n)
+            .Select(j => -series[^1].Points[j].Y1 / 2.0)
+            .ToArray();
 
-        var allPts = series.SelectMany(s => s.Points);
-        double yMin = allPts.Min(p => p.Y0);
-        double yMax = allPts.Max(p => p.Y1);
+        double yMin = series.SelectMany(s => s.Points.Select((p, j) => p.Y0 + offsets[j])).Min();
+        double yMax = series.SelectMany(s => s.Points.Select((p, j) => p.Y1 + offsets[j])).Max();
 
         var xScale = new LinearScale([0, n - 1], [marginLeft, marginLeft + plotW]);
         var yScale = new LinearScale([yMin * 1.1, yMax * 1.1], [marginTop + plotH, marginTop]);
@@ -98,7 +82,7 @@ return D3Canvas(W, H,
              .. series.Select((s, si) =>
                 {
                     var pts = Enumerable.Range(0, n)
-                        .Select(j => (x: (double)j, y0: s.Points[j].Y0, y1: s.Points[j].Y1))
+                        .Select(j => (x: (double)j, y0: s.Points[j].Y0 + offsets[j], y1: s.Points[j].Y1 + offsets[j]))
                         .ToArray();
                     return (Element)D3AreaPath(pts, x: d => xScale.Map(d.x), y0: d => yScale.Map(d.y0), y1: d => yScale.Map(d.y1),
                         fill: Brush(Palette[si], opacity: 0.8));
