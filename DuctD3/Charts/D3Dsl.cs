@@ -34,8 +34,8 @@ public static class D3
     public static SolidColorBrush Brush(D3Color c, double opacity)
         => new(Windows.UI.Color.FromArgb((byte)(opacity * 255), c.R, c.G, c.B));
 
-    public static SolidColorBrush Gray(byte v, byte a = 255)
-        => new(Windows.UI.Color.FromArgb(a, v, v, v));
+    public static SolidColorBrush Gray(byte v, byte alpha = 255)
+        => new(Windows.UI.Color.FromArgb(alpha, v, v, v));
 
     public static string Fmt(double v) =>
         Math.Abs(v) >= 1e6 ? $"{v / 1e6:0.#}M" :
@@ -71,7 +71,7 @@ public static class D3
     public static LineElement D3Line(double x1, double y1, double x2, double y2) =>
         new() { X1 = x1, Y1 = y1, X2 = x2, Y2 = y2 };
 
-    /// <summary>Creates a path from SVG path data string.</summary>
+    /// <summary>Creates a path from SVG path data string.  Accepts null pathData gracefully (renders nothing).</summary>
     public static PathElement D3Path(string? pathData, Brush? stroke = null, Brush? fill = null, double strokeWidth = 1.5) =>
         new()
         {
@@ -81,7 +81,7 @@ public static class D3
             StrokeThickness = strokeWidth,
         };
 
-    /// <summary>Creates a path from SVG path data with a translate transform (e.g. for pie slices centered on cx,cy).</summary>
+    /// <summary>Creates a path from SVG path data with a translate transform.  Accepts null pathData gracefully (renders nothing).</summary>
     public static PathElement D3PathTranslated(string? pathData, double translateX, double translateY, Brush? stroke = null, Brush? fill = null, double strokeWidth = 1.5) =>
         new()
         {
@@ -110,7 +110,37 @@ public static class D3
             .Set(tb => tb.TextAlignment = TextAlignment.Right)
             .Canvas(x, y);
 
+    /// <summary>Creates a positioned text label with center alignment and explicit width.</summary>
+    public static TextElement D3TextCenter(double x, double y, string text, double width, double fontSize = 10, Brush? foreground = null) =>
+        Text(text)
+            .FontSize(fontSize)
+            .Foreground(foreground ?? Gray(100))
+            .Width(width)
+            .Set(tb => tb.TextAlignment = TextAlignment.Center)
+            .Canvas(x, y);
+
     // ── Composite chart helpers ─────────────────────────────────────────
+
+    /// <summary>Creates a vertical bezier tree link path between two points (parent to child).</summary>
+    public static PathElement D3Link(double x1, double y1, double x2, double y2, Brush? stroke = null, double strokeWidth = 1.5)
+    {
+        double my = (y1 + y2) / 2;
+        var pb = new PathBuilder(3);
+        pb.MoveTo(x1, y1);
+        pb.BezierCurveTo(x1, my, x2, my, x2, y2);
+        return D3Path(pb.ToString(), stroke, null, strokeWidth);
+    }
+
+    /// <summary>Creates a legend as rect+text pairs laid out vertically.</summary>
+    public static Element[] D3Legend(double x, double y, IEnumerable<(string label, SolidColorBrush color)> items, double fontSize = 11)
+    {
+        return items.SelectMany((item, i) => new Element[]
+        {
+            D3Rect(x, y + i * 22, 14, 14) with { Fill = item.color, RadiusX = 2, RadiusY = 2 },
+            D3Text(x + 20, y + i * 22, item.label, fontSize, Gray(60)),
+        }).ToArray();
+    }
+
 
     /// <summary>Creates X and Y axis lines with tick labels as a flat array of Elements.</summary>
     public static Element[] D3Axes(LinearScale xs, LinearScale ys,

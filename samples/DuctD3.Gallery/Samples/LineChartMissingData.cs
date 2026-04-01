@@ -53,7 +53,7 @@ D3Path(pathData, stroke: Brush(Palette[0]), strokeWidth: 2)";
         var connectingLine = LineGenerator.Create<(double x, double y)>(
             d => xs.Map(d.x), d => ys.Map(d.y));
         var connectingPathData = connectingLine.Generate(connectingData);
-        var connectingPathEl = D3Path(connectingPathData, stroke: Brush(Palette[0], 0.2), strokeWidth: 1.5)
+        var connectingPathEl = D3Path(connectingPathData, stroke: Brush(Palette[0], opacity: 0.2), strokeWidth: 1.5)
             .Set(p => p.StrokeDashArray = new DoubleCollection { 4, 3 });
 
         // Solid line with gaps
@@ -71,7 +71,7 @@ D3Path(pathData, stroke: Brush(Palette[0]), strokeWidth: 2)";
             .ToArray();
 
         // Missing region bands
-        var bandBrush = Brush(Palette[3], 0.08);
+        var bandBrush = Brush(Palette[3], opacity: 0.08);
 
         return D3Canvas(W, H,
             [.. D3Grid(ys, left, width),

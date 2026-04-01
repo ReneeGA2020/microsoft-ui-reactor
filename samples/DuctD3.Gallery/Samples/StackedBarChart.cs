@@ -64,11 +64,7 @@ public class StackedBarChartSample : GallerySample
             .SetValue((row, key) => row[key]);
         var series = stack.Generate(data);
 
-        // Find max stacked value
-        double maxVal = 0;
-        foreach (var s in series)
-            foreach (var pt in s.Points)
-                if (pt.Y1 > maxVal) maxVal = pt.Y1;
+        double maxVal = series.SelectMany(s => s.Points).Max(p => p.Y1);
 
         // Scales
         var ys = new LinearScale([0, maxVal], [plotH, 0]).Nice();
@@ -76,7 +72,7 @@ public class StackedBarChartSample : GallerySample
         var ysScreen = new LinearScale(ys.Domain, [top + plotH, top]);
 
         // Axes
-        var axisBrush = Gray(100, 180);
+        var axisBrush = Gray(100, alpha: 180);
         double legendX = W - right + 12;
         double legendY = top + 10;
 
@@ -107,11 +103,7 @@ public class StackedBarChartSample : GallerySample
                  D3Text(left + band.Map(month) + band.Bandwidth / 2 - 14, top + plotH + 8, month, 10, axisBrush)),
 
              // Legend
-             .. keys.SelectMany((key, i) => new Element[]
-             {
-                 D3Rect(legendX, legendY + i * 22, 14, 14) with { Fill = Brush(Palette[i]), RadiusX = 2, RadiusY = 2 },
-                 D3Text(legendX + 20, legendY + i * 22, key, 11, Gray(60)),
-             }),
+             .. D3Legend(legendX, legendY, keys.Select((key, i) => (key, Brush(Palette[i])))),
 
              D3Text(left, 4, "Fruit Sales by Month (Stacked)", 13, Gray(40)),
             ]

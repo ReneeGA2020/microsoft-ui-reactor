@@ -53,22 +53,14 @@ public class DivergingBarChartSample : GallerySample
                           "Overall Value"];
         double[] scores = [72, 45, -18, -35, 28, 55, -12, 60, 38, -8];
 
-        // Find extent
-        double minVal = double.MaxValue, maxVal = double.MinValue;
-        foreach (var v in scores)
-        {
-            if (v < minVal) minVal = v;
-            if (v > maxVal) maxVal = v;
-        }
-        // Ensure zero is included and symmetric-ish
-        double absMax = Math.Max(Math.Abs(minVal), Math.Abs(maxVal));
+        double absMax = Math.Max(Math.Abs(scores.Min()), Math.Abs(scores.Max()));
 
         // Scales
         var xs = new LinearScale([-absMax, absMax], [0, plotW]).Nice();
         var band = BandScale.Create(items).SetRange(0, plotH).SetPaddingInner(0.2).SetPaddingOuter(0.1);
 
         // Vertical grid lines
-        var gridBrush = Gray(128, 40);
+        var gridBrush = Gray(128, alpha: 40);
         var gridLines = xs.Ticks(8).Select(t =>
             D3Line(left + xs.Map(t), top, left + xs.Map(t), top + plotH) with { Stroke = gridBrush, StrokeThickness = 1 });
 
@@ -80,27 +72,26 @@ public class DivergingBarChartSample : GallerySample
         var negBrush = Brush(Palette[3]);
 
         // Axes
-        var axisBrush = Gray(100, 180);
+        var axisBrush = Gray(100, alpha: 180);
 
         return D3Canvas(W, H,
             [.. gridLines,
              D3Line(zeroX, top, zeroX, top + plotH) with { Stroke = Gray(80), StrokeThickness = 1.5 },
 
              // Bars + value labels
-             .. items.SelectMany((item, i) =>
-             {
-                 double y = top + band.Map(item);
-                 double v = scores[i];
-                 double barStart = v >= 0 ? zeroX : left + xs.Map(v);
-                 double barWidth = v >= 0 ? xs.Map(v) - xs.Map(0) : xs.Map(0) - xs.Map(v);
-                 var fill = v >= 0 ? posBrush : negBrush;
-                 double labelX = v >= 0 ? barStart + barWidth + 4 : barStart - 30;
-                 return new Element[]
+             .. (from t in items.Select((item, i) => (item, i))
+                 let y = top + band.Map(t.item)
+                 let v = scores[t.i]
+                 let barStart = v >= 0 ? zeroX : left + xs.Map(v)
+                 let barWidth = v >= 0 ? xs.Map(v) - xs.Map(0) : xs.Map(0) - xs.Map(v)
+                 let fill = v >= 0 ? posBrush : negBrush
+                 let labelX = v >= 0 ? barStart + barWidth + 4 : barStart - 30
+                 from el in new Element[]
                  {
                      D3Rect(barStart, y, barWidth, band.Bandwidth) with { Fill = fill, RadiusX = 2, RadiusY = 2 },
                      D3Text(labelX, y + band.Bandwidth / 2 - 7, (v >= 0 ? "+" : "") + v.ToString("F0"), 10, Gray(60)),
-                 };
-             }),
+                 }
+                 select el),
 
              D3Line(left, top + plotH, left + plotW, top + plotH) with { Stroke = axisBrush, StrokeThickness = 1 },
              .. xs.Ticks(8).Select(t =>

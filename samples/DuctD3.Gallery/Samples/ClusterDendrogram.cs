@@ -88,9 +88,7 @@ public sealed class ClusterDendrogramSample : GallerySample
         var root = layout.Hierarchy(data, n => n.Children);
         layout.Layout(root);
 
-        // Collect nodes
-        var nodes = new List<TreeNode<TaxNode>>();
-        Collect(root, nodes);
+        var nodes = root.Descendants().ToList();
 
         var linkStroke = Gray(190);
 
@@ -98,19 +96,13 @@ public sealed class ClusterDendrogramSample : GallerySample
         [
             .. nodes.SelectMany(node =>
                 node.Children.Select(child =>
-                {
-                    double my = (node.Y + child.Y) / 2;
-                    var pb = new PathBuilder(3);
-                    pb.MoveTo(node.X, node.Y);
-                    pb.BezierCurveTo(node.X, my, child.X, my, child.X, child.Y);
-                    return D3Path(pb.ToString(), linkStroke, null, 1.2);
-                })),
+                    D3Link(node.X, node.Y, child.X, child.Y, linkStroke, 1.2))),
             .. nodes.SelectMany(node =>
             {
                 bool isLeaf = node.Children.Count == 0;
                 double r = isLeaf ? 3.5 : 4.5;
 
-                int branchColor = GetBranchColor(node);
+                int branchColor = root.Children.IndexOf(node.TopAncestor);
                 var fill = isLeaf
                     ? Brush(Palette[branchColor % Palette.Length])
                     : Brush("#666666");
@@ -131,18 +123,4 @@ public sealed class ClusterDendrogramSample : GallerySample
         ]);
     }
 
-    static int GetBranchColor(TreeNode<TaxNode> node)
-    {
-        var current = node;
-        while (current.Parent != null && current.Parent.Parent != null)
-            current = current.Parent;
-        if (current.Parent == null) return 0;
-        return current.Parent.Children.IndexOf(current);
-    }
-
-    static void Collect(TreeNode<TaxNode> node, List<TreeNode<TaxNode>> list)
-    {
-        list.Add(node);
-        foreach (var child in node.Children) Collect(child, list);
-    }
 }

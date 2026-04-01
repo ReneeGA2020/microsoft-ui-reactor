@@ -76,22 +76,14 @@ public sealed class TidyTreeSample : GallerySample
         var root = layout.Hierarchy(data, n => n.Children);
         layout.Layout(root);
 
-        // Collect all nodes
-        var nodes = new List<TreeNode<FsNode>>();
-        Collect(root, nodes);
+        var nodes = root.Descendants().ToList();
 
         var linkStroke = Gray(180);
 
         return D3Canvas(W, H,
             [.. nodes.SelectMany(node =>
                 node.Children.Select(child =>
-                {
-                    double my = (node.Y + child.Y) / 2;
-                    var pb = new PathBuilder(3);
-                    pb.MoveTo(node.X, node.Y);
-                    pb.BezierCurveTo(node.X, my, child.X, my, child.X, child.Y);
-                    return D3Path(pb.ToString(), linkStroke, null, 1.5);
-                })),
+                    D3Link(node.X, node.Y, child.X, child.Y, linkStroke, 1.5))),
              .. nodes.SelectMany(node =>
              {
                  bool isLeaf = node.Children.Count == 0;
@@ -101,10 +93,7 @@ public sealed class TidyTreeSample : GallerySample
 
                  Element label = isLeaf
                      ? D3Text(node.X + 8, node.Y - 7, node.Data.Name, 9, Gray(60))
-                     : (Text(node.Data.Name) with { FontSize = 10 })
-                         .Foreground(Brush("#333333"))
-                         .Set(tb => tb.TextAlignment = TextAlignment.Center)
-                         .Canvas(node.X - 4, node.Y - 18);
+                     : D3TextCenter(node.X - 4, node.Y - 18, node.Data.Name, 40, 10, Brush("#333333"));
 
                  return new Element[]
                  {
@@ -116,9 +105,4 @@ public sealed class TidyTreeSample : GallerySample
         );
     }
 
-    static void Collect(TreeNode<FsNode> node, List<TreeNode<FsNode>> list)
-    {
-        list.Add(node);
-        foreach (var child in node.Children) Collect(child, list);
-    }
 }

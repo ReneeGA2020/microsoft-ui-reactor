@@ -44,19 +44,17 @@ public sealed class PieChartSample : GallerySample
         var labelArc = new ArcGenerator().SetOuterRadius(180).SetInnerRadius(180);
 
         return D3Canvas(width, height,
-            [.. arcs.Select((a, i) => (a, i, pathData: arc.Generate(a)))
-                .Where(t => t.pathData != null)
-                .SelectMany(t =>
+            [.. arcs.SelectMany((a, i) =>
                 {
-                    var (ox, oy) = labelArc.Centroid(t.a.StartAngle, t.a.EndAngle);
+                    var (ox, oy) = labelArc.Centroid(a.StartAngle, a.EndAngle);
                     return new Element[]
                     {
-                        D3PathTranslated(t.pathData!, cx, cy,
-                            fill: Brush(Palette[t.i % Palette.Length]),
+                        D3PathTranslated(arc.Generate(a), cx, cy,
+                            fill: Brush(Palette[i % Palette.Length]),
                             stroke: new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.White),
                             strokeWidth: 1),
                         D3Text(cx + ox - 20, cy + oy - 7,
-                            $"{t.a.Data.Name} ({t.a.Data.Value}%)", 11, Brush(Palette[t.i % Palette.Length])),
+                            $"{a.Data.Name} ({a.Data.Value}%)", 11, Brush(Palette[i % Palette.Length])),
                     };
                 }),
              D3Text(cx - 60, 10, "Market Share", 16, Gray(40)),

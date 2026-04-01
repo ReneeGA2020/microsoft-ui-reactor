@@ -88,16 +88,9 @@ return D3Canvas(W, H,
             }
         }
 
-        // Compute Y extent across all layers
-        double yMin = double.MaxValue, yMax = double.MinValue;
-        foreach (var s in series)
-        {
-            foreach (var p in s.Points)
-            {
-                if (p.Y0 < yMin) yMin = p.Y0;
-                if (p.Y1 > yMax) yMax = p.Y1;
-            }
-        }
+        var allPts = series.SelectMany(s => s.Points);
+        double yMin = allPts.Min(p => p.Y0);
+        double yMax = allPts.Max(p => p.Y1);
 
         var xScale = new LinearScale([0, n - 1], [marginLeft, marginLeft + plotW]);
         var yScale = new LinearScale([yMin * 1.1, yMax * 1.1], [marginTop + plotH, marginTop]);
@@ -116,17 +109,9 @@ return D3Canvas(W, H,
                         d => xScale.Map(d.x),
                         d => yScale.Map(d.y0),
                         d => yScale.Map(d.y1));
-                    return area.Generate(pts);
-                })
-                .Where(path => path != null)
-                .Select((path, si) => D3Path(path!, fill: Brush(Palette[si], 0.8))),
-             .. Enumerable.Range(0, keys.Length).SelectMany(k => new Element[]
-             {
-                 D3Rect(marginLeft + 10, marginTop + 4 + k * 18, 12, 12)
-                     with { Fill = Brush(Palette[k], 0.8) },
-                 D3Text(marginLeft + 10 + 16, marginTop + 4 + k * 18 - 1,
-                     keys[k], 11, Gray(60)),
-             }),
+                    return (Element)D3Path(area.Generate(pts), fill: Brush(Palette[si], opacity: 0.8));
+                }),
+             .. D3Legend(marginLeft + 10, marginTop + 4, keys.Select((key, k) => (key, Brush(Palette[k], opacity: 0.8)))),
              D3Text(marginLeft + 100, 6, "Streamgraph (Centered Stack)", 14, Gray(40)),
             ]
         );

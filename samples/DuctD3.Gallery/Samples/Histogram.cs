@@ -55,7 +55,7 @@ public sealed class HistogramSample : GallerySample
         var xs = new LinearScale([bins[0].X0, bins[^1].X1], [left, left + pw]);
         var ys = new LinearScale([0, maxCount], [top + ph, top]).Nice();
 
-        var fill = Brush(Palette[0], 0.7);
+        var fill = Brush(Palette[0], opacity: 0.7);
 
         return D3Canvas(width, height,
             [.. D3Grid(ys, left, pw),

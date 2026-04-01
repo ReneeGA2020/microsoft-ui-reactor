@@ -24,11 +24,11 @@ public sealed class CirclePackingSample : GallerySample
             bool isLeaf = node.Children.Count == 0;
             if (isLeaf)
             {
-                var fill = Brush(Palette[colorIdx % Palette.Length], 0.6);
+                var fill = Brush(Palette[colorIdx % Palette.Length], opacity: 0.6);
                 return new[] { D3Circle(nx, ny, r) with { Fill = fill, Stroke = stroke } };
             }
             else
-                return new[] { D3Circle(nx, ny, r) with { Fill = Gray(200, alpha), Stroke = Gray(140) } };
+                return new[] { D3Circle(nx, ny, r) with { Fill = Gray(200, alpha: alpha), Stroke = Gray(140) } };
         });
         D3Canvas(W, H, [..elements, title]);
         """;
@@ -74,10 +74,7 @@ public sealed class CirclePackingSample : GallerySample
         var pack = PackLayout.Create<OrgNode>().Size(230).SetPadding(4);
         var root = pack.Layout(data, n => n.Children, n => n.Value);
 
-        // Collect all nodes and sort by depth (draw parents first)
-        var allNodes = new List<PackNode<OrgNode>>();
-        CollectPack(root, allNodes);
-        allNodes.Sort((a, b) => a.Depth.CompareTo(b.Depth));
+        var allNodes = root.Descendants().OrderBy(n => n.Depth).ToList();
 
         return D3Canvas(W, H,
         [
@@ -90,9 +87,9 @@ public sealed class CirclePackingSample : GallerySample
 
                 if (isLeaf)
                 {
-                    int colorIdx = GetBranchIndex(node);
-                    var fill = Brush(Palette[colorIdx % Palette.Length], 0.6);
-                    var stroke = Brush(Palette[colorIdx % Palette.Length], 0.9);
+                    int colorIdx = root.Children.IndexOf(node.TopAncestor);
+                    var fill = Brush(Palette[colorIdx % Palette.Length], opacity: 0.6);
+                    var stroke = Brush(Palette[colorIdx % Palette.Length], opacity: 0.9);
                     var circle = D3Circle(nx, ny, r) with { Fill = fill, Stroke = stroke, StrokeThickness = 1 };
 
                     if (r > 18)
@@ -103,8 +100,7 @@ public sealed class CirclePackingSample : GallerySample
                         return new Element[]
                         {
                             circle,
-                            D3Text(nx - r + 4, ny - 6, label, 8, Gray(30))
-                                .Width(r * 2 - 8).Set(tb => tb.TextAlignment = TextAlignment.Center),
+                            D3TextCenter(nx - r + 4, ny - 6, label, r * 2 - 8, 8, Gray(30)),
                         };
                     }
 
@@ -113,7 +109,7 @@ public sealed class CirclePackingSample : GallerySample
                 else
                 {
                     byte alpha = node.Depth == 0 ? (byte)40 : (byte)25;
-                    var fill = Gray(200, alpha);
+                    var fill = Gray(200, alpha: alpha);
                     var stroke = Gray(140);
                     return new Element[]
                     {
@@ -125,18 +121,4 @@ public sealed class CirclePackingSample : GallerySample
         ]);
     }
 
-    static int GetBranchIndex(PackNode<OrgNode> node)
-    {
-        var current = node;
-        while (current.Parent != null && current.Parent.Parent != null)
-            current = current.Parent;
-        if (current.Parent == null) return 0;
-        return current.Parent.Children.IndexOf(current);
-    }
-
-    static void CollectPack(PackNode<OrgNode> node, List<PackNode<OrgNode>> list)
-    {
-        list.Add(node);
-        foreach (var child in node.Children) CollectPack(child, list);
-    }
 }

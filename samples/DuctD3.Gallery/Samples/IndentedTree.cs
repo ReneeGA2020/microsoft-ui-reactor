@@ -77,9 +77,7 @@ public sealed class IndentedTreeSample : GallerySample
             .SetParentId(r => r.ParentId);
         var root = stratify.Build(flatData);
 
-        // Flatten tree in pre-order for rendering
-        var rows = new List<TreeNode<Row>>();
-        FlattenTree(root, rows);
+        var rows = root.Descendants().ToList();
 
         // Rendering constants
         const double rowH = 20;
@@ -134,9 +132,4 @@ public sealed class IndentedTreeSample : GallerySample
         ]);
     }
 
-    static void FlattenTree(TreeNode<Row> node, List<TreeNode<Row>> list)
-    {
-        list.Add(node);
-        foreach (var child in node.Children) FlattenTree(child, list);
-    }
 }

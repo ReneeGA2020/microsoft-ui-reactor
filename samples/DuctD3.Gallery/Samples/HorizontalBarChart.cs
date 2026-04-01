@@ -18,14 +18,14 @@ public class HorizontalBarChartSample : GallerySample
         var band = BandScale.Create(countries)
             .SetRange(0, plotH).SetPaddingInner(0.25).SetPaddingOuter(0.1);
 
-        var gridBrush = Gray(128, 40);
+        var gridBrush = Gray(128, alpha: 40);
         foreach (var t in xs.Ticks(6))
             D3Line(left + xs.Map(t), top, left + xs.Map(t), top + plotH)
                 with { Stroke = gridBrush };
 
         for (int i = 0; i < countries.Length; i++)
         {
-            var fill = Brush(Palette[i % Palette.Length], 0.85);
+            var fill = Brush(Palette[i % Palette.Length], opacity: 0.85);
             double y = top + band.Map(countries[i]);
             double barW = xs.Map(populations[i]);
             D3Rect(left, y, barW, band.Bandwidth)
@@ -45,36 +45,34 @@ public class HorizontalBarChartSample : GallerySample
                               "Nigeria", "Brazil", "Bangladesh", "Russia", "Mexico"];
         double[] populations = [1428, 1425, 340, 277, 230, 223, 216, 173, 144, 128];
 
-        double maxVal = 0;
-        foreach (var v in populations) if (v > maxVal) maxVal = v;
+        double maxVal = populations.Max();
 
         // Scales
         var xs = new LinearScale([0, maxVal], [0, plotW]).Nice();
         var band = BandScale.Create(countries).SetRange(0, plotH).SetPaddingInner(0.25).SetPaddingOuter(0.1);
 
         // Horizontal grid lines (vertical in this case — along X)
-        var gridBrush = Gray(128, 40);
+        var gridBrush = Gray(128, alpha: 40);
         var gridLines = xs.Ticks(6).Select(t =>
             D3Line(left + xs.Map(t), top, left + xs.Map(t), top + plotH) with { Stroke = gridBrush, StrokeThickness = 1 });
 
         // Axes
-        var axisBrush = Gray(100, 180);
+        var axisBrush = Gray(100, alpha: 180);
 
         return D3Canvas(W, H,
             [.. gridLines,
 
              // Bars + value labels
-             .. countries.SelectMany((country, i) =>
-             {
-                 var fill = Brush(Palette[i % Palette.Length], 0.85);
-                 double y = top + band.Map(country);
-                 double barW = xs.Map(populations[i]);
-                 return new Element[]
+             .. (from t in countries.Select((country, i) => (country, i))
+                 let fill = Brush(Palette[t.i % Palette.Length], opacity: 0.85)
+                 let y = top + band.Map(t.country)
+                 let barW = xs.Map(populations[t.i])
+                 from el in new Element[]
                  {
                      D3Rect(left, y, barW, band.Bandwidth) with { Fill = fill, RadiusX = 2, RadiusY = 2 },
-                     D3Text(left + barW + 4, y + band.Bandwidth / 2 - 7, $"{populations[i]:F0}M", 10, Gray(60)),
-                 };
-             }),
+                     D3Text(left + barW + 4, y + band.Bandwidth / 2 - 7, $"{populations[t.i]:F0}M", 10, Gray(60)),
+                 }
+                 select el),
 
              D3Line(left, top + plotH, left + plotW, top + plotH) with { Stroke = axisBrush, StrokeThickness = 1 },
              D3Line(left, top, left, top + plotH) with { Stroke = axisBrush, StrokeThickness = 1 },

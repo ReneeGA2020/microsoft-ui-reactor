@@ -30,8 +30,8 @@ public class RidgePlot : GallerySample
                 _ => baselineY,
                 d => yScale.Map(d.y));
             string? path = area.Generate(distribution);
-            D3Path(path, fill: Brush(D3Color.Parse("#ffffff"), 0.85))
-            D3Path(path, fill: Brush(Palette[r], 0.55))
+            D3Path(path, fill: Brush(D3Color.Parse("#ffffff"), opacity: 0.85))
+            D3Path(path, fill: Brush(Palette[r], opacity: 0.55))
         }
         """;
 
@@ -106,12 +106,9 @@ public class RidgePlot : GallerySample
 
                 return (Element[])
                 [
-                    .. (areaPath != null ? new Element[]
-                    {
-                        D3Path(areaPath, fill: Brush(D3Color.Parse("#ffffff"), 0.85)),
-                        D3Path(areaPath, fill: Brush(Palette[r], 0.55)),
-                    } : Array.Empty<Element>()),
-                    .. (linePath != null ? new[] { D3Path(linePath, stroke: Brush(Palette[r]), strokeWidth: 1.5) } : Array.Empty<Element>()),
+                    D3Path(areaPath, fill: Brush(D3Color.Parse("#ffffff"), opacity: 0.85)),
+                    D3Path(areaPath, fill: Brush(Palette[r], opacity: 0.55)),
+                    D3Path(linePath, stroke: Brush(Palette[r]), strokeWidth: 1.5),
                     D3Line(marginLeft, baselineY, marginLeft + plotW, baselineY) with { Stroke = Gray(210), StrokeThickness = 0.5 },
                     D3Text(4, baselineY - rowStep * 0.5 - 6, labels[r], 11, Gray(80)),
                 ];

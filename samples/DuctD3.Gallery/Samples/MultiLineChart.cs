@@ -48,42 +48,25 @@ foreach (var (series, color) in seriesData.Zip(colors))
         var ys = new LinearScale([yMax + 3, yMin - 3], [top, top + height]);
         ys.Nice();
 
-        // Draw month labels on x-axis
-        var monthLabels = new Element[12];
-        for (int i = 0; i < 12; i++)
-            monthLabels[i] = D3Text(xs.Map(i) - 10, top + height + 4, months[i], 10, Gray(100));
+        var monthLabels = months.Select((m, i) =>
+            D3Text(xs.Map(i) - 10, top + height + 4, m, 10, Gray(100)));
 
-        // Draw each series
-        var lines = new Element[allSeries.Length];
-        for (int s = 0; s < allSeries.Length; s++)
+        var lines = allSeries.Select((series, s) =>
         {
-            var series = allSeries[s];
-            var data = new (double x, double y)[12];
-            for (int i = 0; i < 12; i++)
-                data[i] = (i, series[i]);
-
+            var data = series.Select((v, i) => (x: (double)i, y: v)).ToArray();
             var line = LineGenerator.Create<(double x, double y)>(
                 d => xs.Map(d.x), d => ys.Map(d.y));
-            var pathData = line.Generate(data);
-            lines[s] = D3Path(pathData, stroke: Brush(colors[s]), strokeWidth: 2);
-        }
+            return (Element)D3Path(line.Generate(data), stroke: Brush(colors[s]), strokeWidth: 2);
+        });
 
-        // Legend
         double legendX = W - right + 10;
-        var legend = new Element[labels.Length * 2];
-        for (int s = 0; s < labels.Length; s++)
-        {
-            double ly = top + 10 + s * 22;
-            legend[s * 2] = D3Rect(legendX, ly, 14, 14) with { Fill = Brush(colors[s]), RadiusX = 2, RadiusY = 2 };
-            legend[s * 2 + 1] = D3Text(legendX + 20, ly, labels[s], 11, Gray(60));
-        }
 
         return D3Canvas(W, H,
             [.. D3Grid(ys, left, width),
              .. D3Axes(xs, ys, left, top, width, height),
              .. monthLabels,
              .. lines,
-             .. legend,
+             .. D3Legend(legendX, top + 10, labels.Select((label, s) => (label, Brush(colors[s])))),
              D3Text(2, top - 14, "\u00b0C", 11, Gray(80))]
         );
     }

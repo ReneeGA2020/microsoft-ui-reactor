@@ -28,7 +28,7 @@ public class StackedAreaChart : GallerySample
                 d => yScale.Map(d.y0),
                 d => yScale.Map(d.y1));
             string? path = area.Generate(pts);
-            D3Path(path, fill: Brush(Palette[si], 0.75))
+            D3Path(path, fill: Brush(Palette[si], opacity: 0.75))
         }
         """;
 
@@ -66,11 +66,7 @@ public class StackedAreaChart : GallerySample
             .SetValue((d, key) => d[key]);
         StackSeries[] series = stack.Generate(months);
 
-        // Compute max y
-        double maxY = 0;
-        foreach (var s in series)
-            foreach (var p in s.Points)
-                if (p.Y1 > maxY) maxY = p.Y1;
+        double maxY = series.SelectMany(s => s.Points).Max(p => p.Y1);
 
         var xScale = new LinearScale([0, 11], [marginLeft, marginLeft + plotW]);
         var yScale = new LinearScale([0, maxY * 1.1], [marginTop + plotH, marginTop]);
@@ -87,21 +83,13 @@ public class StackedAreaChart : GallerySample
                         d => xScale.Map(d.x),
                         d => yScale.Map(d.y0),
                         d => yScale.Map(d.y1));
-                    return area.Generate(pts);
-                })
-                .Where(path => path != null)
-                .Select((path, si) => D3Path(path!, fill: Brush(Palette[si], 0.75))),
+                    return (Element)D3Path(area.Generate(pts), fill: Brush(Palette[si], opacity: 0.75));
+                }),
              .. D3Axes(xScale, yScale, marginLeft, marginTop, plotW, plotH),
              .. Enumerable.Range(0, 6).Select(i =>
                 D3Text(xScale.Map(i * 2) - 10, marginTop + plotH + 6,
                     monthLabels[i * 2], 9, Gray(120))),
-             .. Enumerable.Range(0, keys.Length).SelectMany(k => new Element[]
-             {
-                 D3Rect(marginLeft + plotW - 100, marginTop + 8 + k * 18, 12, 12)
-                     with { Fill = Brush(Palette[k], 0.75) },
-                 D3Text(marginLeft + plotW - 100 + 16, marginTop + 8 + k * 18 - 1,
-                     keys[k], 11, Gray(60)),
-             }),
+             .. D3Legend(marginLeft + plotW - 100, marginTop + 8, keys.Select((key, k) => (key, Brush(Palette[k], opacity: 0.75)))),
              D3Text(marginLeft, 2, "Stacked Area Chart", 14, Gray(40)),
             ]
         );

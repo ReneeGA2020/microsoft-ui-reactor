@@ -31,7 +31,7 @@ public sealed class ChordDiagramSample : GallerySample
             };
         });
         var ribbons = data.Chords.Select(c =>
-            D3PathTranslated(ribbon.Generate(c), cx, cy, fill: Brush(color, 0.55)));
+            D3PathTranslated(ribbon.Generate(c), cx, cy, fill: Brush(color, opacity: 0.55)));
         D3Canvas(W, H, [..arcElements, ..ribbons, title]);
         """;
 
@@ -86,7 +86,7 @@ public sealed class ChordDiagramSample : GallerySample
             .. data.Chords
                 .Select(c => (color: Palette[c.Source.Index % Palette.Length], pathData: ribbon.Generate(c)))
                 .Where(x => x.pathData != null)
-                .Select(x => D3PathTranslated(x.pathData!, cx, cy, fill: Brush(x.color, 0.55))),
+                .Select(x => D3PathTranslated(x.pathData!, cx, cy, fill: Brush(x.color, opacity: 0.55))),
             D3Text(12, 6, "Chord Diagram — Regional Trade Flow", 14, Brush("#333333")),
         ]);
     }

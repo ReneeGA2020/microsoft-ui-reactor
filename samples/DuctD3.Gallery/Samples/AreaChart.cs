@@ -27,7 +27,7 @@ public class AreaChart : GallerySample
         D3Canvas(W, H,
             ..D3Grid(yScale, marginLeft, plotW),
             ..D3Axes(xScale, yScale, marginLeft, marginTop, plotW, plotH),
-            D3Path(areaPath, fill: Brush(Palette[0], 0.3)),
+            D3Path(areaPath, fill: Brush(Palette[0], opacity: 0.3)),
             D3Path(linePath, stroke: Brush(Palette[0]), strokeWidth: 2),
             ..dots
         )
@@ -70,19 +70,14 @@ public class AreaChart : GallerySample
             .SetCurve(D3Curve.MonotoneX);
         string? linePath = line.Generate(data);
 
-        // Data dots
-        var dots = new Element[data.Length];
-        for (int i = 0; i < data.Length; i++)
-        {
-            var d = data[i];
-            dots[i] = D3Circle(xScale.Map(d.x), yScale.Map(d.y), 3) with { Fill = Brush(Palette[0]) };
-        }
+        var dots = data.Select(d =>
+            (Element)(D3Circle(xScale.Map(d.x), yScale.Map(d.y), 3) with { Fill = Brush(Palette[0]) }));
 
         return D3Canvas(W, H,
             [.. D3Grid(yScale, marginLeft, plotW),
              .. D3Axes(xScale, yScale, marginLeft, marginTop, plotW, plotH),
-             .. (areaPath != null ? [D3Path(areaPath, fill: Brush(Palette[0], 0.3))] : Array.Empty<Element>()),
-             .. (linePath != null ? [D3Path(linePath, stroke: Brush(Palette[0]), strokeWidth: 2)] : Array.Empty<Element>()),
+             D3Path(areaPath, fill: Brush(Palette[0], opacity: 0.3)),
+             D3Path(linePath, stroke: Brush(Palette[0]), strokeWidth: 2),
              .. dots,
              D3Text(marginLeft, 2, "Area Chart", 14, Gray(40))]
         );

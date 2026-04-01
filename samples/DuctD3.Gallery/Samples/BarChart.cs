@@ -37,31 +37,26 @@ public class BarChartSample : GallerySample
                            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         double[] revenue = [42, 55, 48, 61, 73, 68, 82, 91, 77, 85, 94, 103];
 
-        double maxVal = 0;
-        foreach (var v in revenue) if (v > maxVal) maxVal = v;
+        double maxVal = revenue.Max();
 
         var ys = new LinearScale([0, maxVal], [plotH, 0]).Nice();
         var band = BandScale.Create(months).SetRange(0, plotW).SetPaddingInner(0.2).SetPaddingOuter(0.1);
         var ysScreen = new LinearScale(ys.Domain, [top + plotH, top]);
 
         var fill = Brush(Palette[0]);
-        var axisBrush = Gray(100, 180);
+        var axisBrush = Gray(100, alpha: 180);
 
-        var bars = new Element[months.Length];
-        for (int i = 0; i < months.Length; i++)
-        {
-            double x = left + band.Map(months[i]);
-            double barH = plotH - ys.Map(revenue[i]);
-            double y = top + ys.Map(revenue[i]);
-            bars[i] = D3Rect(x, y, band.Bandwidth, barH) with { Fill = fill, RadiusX = 2, RadiusY = 2 };
-        }
+        var bars =
+            from i in Enumerable.Range(0, months.Length)
+            let x = left + band.Map(months[i])
+            let barH = plotH - ys.Map(revenue[i])
+            let y = top + ys.Map(revenue[i])
+            select D3Rect(x, y, band.Bandwidth, barH) with { Fill = fill, RadiusX = 2, RadiusY = 2 };
 
-        var xLabels = new Element[months.Length];
-        for (int i = 0; i < months.Length; i++)
-        {
-            double cx = left + band.Map(months[i]) + band.Bandwidth / 2;
-            xLabels[i] = D3Text(cx - 14, top + plotH + 8, months[i], 10, axisBrush);
-        }
+        var xLabels =
+            from month in months
+            let cx = left + band.Map(month) + band.Bandwidth / 2
+            select D3Text(cx - 14, top + plotH + 8, month, 10, axisBrush);
 
         return D3Canvas(W, H,
             [.. D3Grid(ysScreen, left, plotW),

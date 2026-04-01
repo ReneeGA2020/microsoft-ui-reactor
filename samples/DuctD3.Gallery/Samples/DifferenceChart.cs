@@ -102,14 +102,11 @@ D3Canvas(W, H, [..grid, ..axes, greenArea, redArea, lineA, lineB, ..legend, titl
         [
             .. grid,
             .. axes,
-            .. (greenPath != null ? [D3Path(greenPath, fill: Brush(D3Color.Parse("#2ca02c"), 0.35))] : Array.Empty<Element>()),
-            .. (redPath != null ? [D3Path(redPath, fill: Brush(D3Color.Parse("#d62728"), 0.35))] : Array.Empty<Element>()),
-            .. (lineAPath != null ? [D3Path(lineAPath, stroke: Brush(D3Color.Parse("#2ca02c")), strokeWidth: 2)] : Array.Empty<Element>()),
-            .. (lineBPath != null ? [D3Path(lineBPath, stroke: Brush(D3Color.Parse("#d62728")), strokeWidth: 2)] : Array.Empty<Element>()),
-            D3Rect(lx, marginTop + 6, 12, 12) with { Fill = Brush(D3Color.Parse("#2ca02c")) },
-            D3Text(lx + 16, marginTop + 5, "Revenue", 11, Gray(60)),
-            D3Rect(lx, marginTop + 24, 12, 12) with { Fill = Brush(D3Color.Parse("#d62728")) },
-            D3Text(lx + 16, marginTop + 23, "Expenses", 11, Gray(60)),
+            D3Path(greenPath, fill: Brush(D3Color.Parse("#2ca02c"), opacity: 0.35)),
+            D3Path(redPath, fill: Brush(D3Color.Parse("#d62728"), opacity: 0.35)),
+            D3Path(lineAPath, stroke: Brush(D3Color.Parse("#2ca02c")), strokeWidth: 2),
+            D3Path(lineBPath, stroke: Brush(D3Color.Parse("#d62728")), strokeWidth: 2),
+            .. D3Legend(lx, marginTop + 6, [("Revenue", Brush(D3Color.Parse("#2ca02c"))), ("Expenses", Brush(D3Color.Parse("#d62728")))]),
             D3Text(marginLeft, 4, "Difference Chart (Revenue vs Expenses)", 14, Gray(40)),
         ]);
     }

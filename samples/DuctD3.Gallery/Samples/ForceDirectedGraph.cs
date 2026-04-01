@@ -87,7 +87,7 @@ public sealed class ForceDirectedGraphSample : GallerySample
                 var t = sim.Nodes[link.Target];
                 return D3Line(s.X, s.Y, t.X, t.Y) with { Stroke = edgeStroke, StrokeThickness = 1.2 };
             }),
-            .. sim.Nodes.Select((n, i) => new Element[]
+            .. sim.Nodes.SelectMany((n, i) => new Element[]
             {
                 D3Circle(n.X, n.Y, 10) with
                 {
@@ -95,11 +95,8 @@ public sealed class ForceDirectedGraphSample : GallerySample
                     Stroke = white,
                     StrokeThickness = 1.5,
                 },
-                Text(labels[i]).FontSize(9).Foreground(Gray(60))
-                    .Width(32)
-                    .Set(tb => tb.TextAlignment = TextAlignment.Center)
-                    .Canvas(n.X - 16, n.Y + 12),
-            }).SelectMany(e => e),
+                D3TextCenter(n.X - 16, n.Y + 12, labels[i], 32, 9, Gray(60)),
+            }),
             D3Text(12, 6, "Force-Directed Graph", 14, Brush("#333333")),
         ]);
     }

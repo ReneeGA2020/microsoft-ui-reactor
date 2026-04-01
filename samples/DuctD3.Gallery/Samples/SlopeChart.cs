@@ -53,8 +53,8 @@ public class SlopeChart : GallerySample
 
         double xLeft = left;
         double xRight = left + width;
-        var gridBrush = Gray(128, 30);
-        var axisBrush = Gray(100, 180);
+        var gridBrush = Gray(128, alpha: 30);
+        var axisBrush = Gray(100, alpha: 180);
 
         return D3Canvas(canvasW, canvasH,
             [// Column headers

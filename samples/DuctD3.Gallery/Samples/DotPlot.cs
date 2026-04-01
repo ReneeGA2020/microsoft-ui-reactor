@@ -45,19 +45,19 @@ public sealed class DotPlotSample : GallerySample
 
         return D3Canvas(width, height,
             [// X axis
-             D3Line(left, axisY, left + pw, axisY) with { Stroke = Gray(100, 180) },
+             D3Line(left, axisY, left + pw, axisY) with { Stroke = Gray(100, alpha: 180) },
              .. xs.Ticks(6).Select(t =>
                  D3Text(xs.Map(t) - 12, axisY + 4, Fmt(t), 10, Gray(100))),
              // Category rows and dots
              .. categories.SelectMany((cat, ci) =>
              {
                  double rowY = top + ci * rowHeight + rowHeight / 2;
-                 var fill = Brush(Palette[ci % Palette.Length], 0.6);
+                 var fill = Brush(Palette[ci % Palette.Length], opacity: 0.6);
                  var stroke = Brush(Palette[ci % Palette.Length]);
                  return ((Element[])
                  [
                      D3Text(4, rowY - 7, cat, 11, Gray(60)),
-                     D3Line(left, rowY, left + pw, rowY) with { Stroke = Gray(128, 30) },
+                     D3Line(left, rowY, left + pw, rowY) with { Stroke = Gray(128, alpha: 30) },
                      .. data.Where(d => d.cat == cat)
                          .Select(d => D3Circle(xs.Map(d.value), rowY, 5) with { Fill = fill, Stroke = stroke }),
                  ]);

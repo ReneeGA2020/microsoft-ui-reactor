@@ -50,15 +50,16 @@ public sealed class DonutChartSample : GallerySample
 
         return D3Canvas(width, height,
         [
-            .. arcs.Select((a, i) => (a, i, pathData: arc.Generate(a)))
-                .Where(t => t.pathData != null)
-                .SelectMany(t => new Element[]
+            .. arcs.SelectMany((a, i) =>
                 {
-                    D3PathTranslated(t.pathData!, cx, cy,
-                        fill: Brush(Palette[t.i % Palette.Length])),
-                    D3Text(cx + labelArc.Centroid(t.a.StartAngle, t.a.EndAngle).x - 24,
-                           cy + labelArc.Centroid(t.a.StartAngle, t.a.EndAngle).y - 7,
-                        $"{t.a.Data.Name}", 10, Brush(Palette[t.i % Palette.Length])),
+                    var (lx, ly) = labelArc.Centroid(a.StartAngle, a.EndAngle);
+                    return new Element[]
+                    {
+                        D3PathTranslated(arc.Generate(a), cx, cy,
+                            fill: Brush(Palette[i % Palette.Length])),
+                        D3Text(cx + lx - 24, cy + ly - 7,
+                            $"{a.Data.Name}", 10, Brush(Palette[i % Palette.Length])),
+                    };
                 }),
             D3Text(cx - 24, cy - 12, $"${total:N0}", 14, Gray(40)),
             D3Text(cx - 16, cy + 6, "/ month", 10, Gray(120)),

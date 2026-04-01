@@ -60,37 +60,30 @@ public sealed class BoxPlotSample : GallerySample
         return D3Canvas(width, height,
             [.. D3Grid(ys, left, pw),
              // Y axis
-             D3Line(left, top, left, top + ph) with { Stroke = Gray(100, 180), StrokeThickness = 1 },
+             D3Line(left, top, left, top + ph) with { Stroke = Gray(100, alpha: 180), StrokeThickness = 1 },
              .. ys.Ticks(6).Select(t =>
                  D3TextRight(0, ys.Map(t) - 7, Fmt(t), left - 6, 10, Gray(100))),
              // Box plots per group
-             .. groupData.SelectMany((sorted, g) =>
-             {
-                 double min = sorted[0];
-                 double max = sorted[^1];
-                 double q1 = D3Statistics.QuantileSorted(sorted, 0.25);
-                 double median = D3Statistics.QuantileSorted(sorted, 0.5);
-                 double q3 = D3Statistics.QuantileSorted(sorted, 0.75);
-
-                 double cx = left + g * groupWidth + groupWidth / 2;
-                 double bx = cx - boxWidth / 2;
-
-                 var color = Palette[g % Palette.Length];
-                 var fill = Brush(color, 0.35);
-                 var stroke = Brush(color);
-
-                 double boxY = ys.Map(q3);
-                 double boxH = ys.Map(q1) - ys.Map(q3);
-
-                 return new Element[]
+             .. (from entry in groupData.Select((sorted, g) => (sorted, g))
+                 let min = entry.sorted[0]
+                 let max = entry.sorted[^1]
+                 let q1 = D3Statistics.QuantileSorted(entry.sorted, 0.25)
+                 let median = D3Statistics.QuantileSorted(entry.sorted, 0.5)
+                 let q3 = D3Statistics.QuantileSorted(entry.sorted, 0.75)
+                 let cx = left + entry.g * groupWidth + groupWidth / 2
+                 let bx = cx - boxWidth / 2
+                 let color = Palette[entry.g % Palette.Length]
+                 let fill = Brush(color, opacity: 0.35)
+                 let stroke = Brush(color)
+                 let boxY = ys.Map(q3)
+                 let boxH = ys.Map(q1) - ys.Map(q3)
+                 from el in new Element[]
                  {
-                     // Whisker: min to Q1
+                     // Whiskers
                      D3Line(cx, ys.Map(min), cx, ys.Map(q1)) with { Stroke = stroke, StrokeThickness = 1.5 },
-                     // Whisker: Q3 to max
                      D3Line(cx, ys.Map(q3), cx, ys.Map(max)) with { Stroke = stroke, StrokeThickness = 1.5 },
-                     // Min cap
+                     // Caps
                      D3Line(cx - boxWidth * 0.3, ys.Map(min), cx + boxWidth * 0.3, ys.Map(min)) with { Stroke = stroke, StrokeThickness = 1.5 },
-                     // Max cap
                      D3Line(cx - boxWidth * 0.3, ys.Map(max), cx + boxWidth * 0.3, ys.Map(max)) with { Stroke = stroke, StrokeThickness = 1.5 },
                      // Box: Q1 to Q3
                      D3Rect(bx, boxY, boxWidth, boxH) with { Fill = fill, RadiusX = 2, RadiusY = 2 },
@@ -102,9 +95,9 @@ public sealed class BoxPlotSample : GallerySample
                      // Median line
                      D3Line(bx, ys.Map(median), bx + boxWidth, ys.Map(median)) with { Stroke = stroke, StrokeThickness = 2.5 },
                      // Group label
-                     D3Text(cx - 8, top + ph + 8, $"Group {groups[g]}", 11, Gray(60)),
-                 };
-             }),
+                     D3Text(cx - 8, top + ph + 8, $"Group {groups[entry.g]}", 11, Gray(60)),
+                 }
+                 select el),
              D3Text(left, 6, "Box Plot (four groups)", 14, Gray(40))]
         );
     }

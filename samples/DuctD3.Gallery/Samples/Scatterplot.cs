@@ -39,7 +39,7 @@ public sealed class ScatterplotSample : GallerySample
         var xs = new LinearScale([0, 100], [left, left + pw]).Nice();
         var ys = new LinearScale([0, 100], [top + ph, top]).Nice();
 
-        var fill = Brush(Palette[0], 0.6);
+        var fill = Brush(Palette[0], opacity: 0.6);
         var stroke = Brush(Palette[0]);
 
         return D3Canvas(width, height,

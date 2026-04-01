@@ -78,7 +78,7 @@ public sealed class ArcDiagramSample : GallerySample
                  pb.Arc(midX, baseline, r, Math.PI, 0, ccw: !above);
 
                  int colorIdx = categories[edge.s];
-                 var stroke = Brush(Palette[colorIdx % Palette.Length], 0.6);
+                 var stroke = Brush(Palette[colorIdx % Palette.Length], opacity: 0.6);
                  return D3Path(pb.ToString(), stroke: stroke, strokeWidth: 1.8);
              }),
              .. Enumerable.Range(0, nodeCount).SelectMany(i =>
@@ -87,8 +87,7 @@ public sealed class ArcDiagramSample : GallerySample
                  return new Element[]
                  {
                      D3Circle(nodeX[i], baseline, 8) with { Fill = fill, Stroke = white, StrokeThickness = 1.5 },
-                     D3Text(nodeX[i] - 24, baseline + 14, labels[i], 9, Gray(60))
-                         .Set(tb => tb.TextAlignment = TextAlignment.Center).Width(48),
+                     D3TextCenter(nodeX[i] - 24, baseline + 14, labels[i], 48, 9, Gray(60)),
                  };
              }),
              D3Text(12, 6, "Arc Diagram", 14, Brush("#333333")),

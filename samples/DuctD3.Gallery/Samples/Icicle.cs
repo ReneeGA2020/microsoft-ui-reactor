@@ -25,7 +25,7 @@ public sealed class IcicleSample : GallerySample
                     D3Rect(node.X0, node.Y0, w, h)
                         with { Fill = fill, RadiusX = 1, RadiusY = 1 },
                     D3Rect(node.X0, node.Y0, w, h)
-                        with { Stroke = Gray(255, 180), StrokeThickness = 0.5 },
+                        with { Stroke = Gray(255, alpha: 180), StrokeThickness = 0.5 },
                 }),
             ]
         )
@@ -85,9 +85,7 @@ public sealed class IcicleSample : GallerySample
             .SetPadding(1);
         var root = partition.Layout(data, n => n.Children, n => n.Amount);
 
-        // Draw all nodes as rectangles
-        var allNodes = new List<PartitionNode<BudgetNode>>();
-        CollectPartition(root, allNodes);
+        var allNodes = root.Descendants().ToList();
 
         return D3Canvas(W, H,
         [
@@ -96,7 +94,7 @@ public sealed class IcicleSample : GallerySample
                 .SelectMany(node =>
                 {
                     double w = node.Width, h = node.Height;
-                    int colorIdx = GetTopBranch(node);
+                    int colorIdx = root.Children.IndexOf(node.TopAncestor);
                     double opacity = Math.Min(node.Depth == 0 ? 0.35 : 0.5 + node.Depth * 0.1, 0.85);
                     var fill = Brush(Palette[colorIdx % Palette.Length], opacity);
 
@@ -111,7 +109,7 @@ public sealed class IcicleSample : GallerySample
                     return (Element[])
                     [
                         D3Rect(node.X0, node.Y0, w, h) with { Fill = fill, RadiusX = 1, RadiusY = 1 },
-                        D3Rect(node.X0, node.Y0, w, h) with { Stroke = Gray(255, 180), StrokeThickness = 0.5 },
+                        D3Rect(node.X0, node.Y0, w, h) with { Stroke = Gray(255, alpha: 180), StrokeThickness = 0.5 },
                         .. (w > 50 && h > 16 ? new[] { D3Text(node.X0 + 4, node.Y0 + 3, label, 9, Gray(20)) } : Array.Empty<Element>()),
                         .. (w > 50 && h > 30 ? new[] { D3Text(node.X0 + 4, node.Y0 + 16, valLabel, 8, Gray(60)) } : Array.Empty<Element>()),
                     ];
@@ -119,18 +117,4 @@ public sealed class IcicleSample : GallerySample
         ]);
     }
 
-    static int GetTopBranch(PartitionNode<BudgetNode> node)
-    {
-        if (node.Parent == null) return 0;
-        var current = node;
-        while (current.Parent != null && current.Parent.Parent != null)
-            current = current.Parent;
-        return current.Parent == null ? 0 : current.Parent.Children.IndexOf(current);
-    }
-
-    static void CollectPartition(PartitionNode<BudgetNode> node, List<PartitionNode<BudgetNode>> list)
-    {
-        list.Add(node);
-        foreach (var child in node.Children) CollectPartition(child, list);
-    }
 }

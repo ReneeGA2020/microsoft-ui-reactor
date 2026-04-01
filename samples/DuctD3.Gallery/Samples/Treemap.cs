@@ -22,7 +22,7 @@ public sealed class TreemapSample : GallerySample
 
         D3Canvas(W, H,
             [..root.Leaves().Select(leaf => {
-                var fill = Brush(Palette[colorIdx], 0.75);
+                var fill = Brush(Palette[colorIdx], opacity: 0.75);
                 return D3Rect(leaf.X0, leaf.Y0, w, h)
                     with { Fill = fill, RadiusX = 2, RadiusY = 2 };
             }),
@@ -88,7 +88,6 @@ public sealed class TreemapSample : GallerySample
         treemap.Layout(root);
 
         // Assign colors by top-level folder
-        var topFolders = root.Children.Select(c => c.Data.Name).ToList();
 
         return D3Canvas(W, H,
             [.. root.Leaves()
@@ -97,8 +96,8 @@ public sealed class TreemapSample : GallerySample
                 {
                     double w = leaf.Width;
                     double h = leaf.Height;
-                    int colorIdx = GetTopFolderIndex(leaf, topFolders);
-                    var fill = Brush(Palette[colorIdx % Palette.Length], 0.75);
+                    int colorIdx = root.Children.IndexOf(leaf.TopAncestor);
+                    var fill = Brush(Palette[colorIdx % Palette.Length], opacity: 0.75);
 
                     string label = leaf.Data.Name;
                     if (label.Length > (int)(w / 6)) label = label[..(int)(w / 6)] + "..";
@@ -120,11 +119,4 @@ public sealed class TreemapSample : GallerySample
         );
     }
 
-    static int GetTopFolderIndex(TreemapNode<FileNode> node, List<string> topFolders)
-    {
-        var current = node;
-        while (current.Parent != null && current.Parent.Parent != null)
-            current = current.Parent;
-        return Math.Max(0, topFolders.IndexOf(current.Data.Name));
-    }
 }

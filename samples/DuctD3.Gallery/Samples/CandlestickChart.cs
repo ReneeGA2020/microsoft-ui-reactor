@@ -80,20 +80,18 @@ public class CandlestickChart : GallerySample
             [.. D3Grid(ys, left, width),
              .. D3Axes(xs, ys, left, top, width, height),
              // Candlesticks
-             .. candles.SelectMany((c, i) =>
-             {
-                 double cx = xs.Map(i);
-                 bool bullish = c.Close >= c.Open;
-                 var brush = bullish ? bullBrush : bearBrush;
-                 double bodyTop = ys.Map(Math.Max(c.Open, c.Close));
-                 double bodyBot = ys.Map(Math.Min(c.Open, c.Close));
-                 double bodyH = Math.Max(bodyBot - bodyTop, 1); // minimum 1px
-                 return new Element[]
+             .. (from t in candles.Select((c, i) => (c, i))
+                 let cx = xs.Map(t.i)
+                 let bullish = t.c.Close >= t.c.Open
+                 let brush = bullish ? bullBrush : bearBrush
+                 let bodyTop = ys.Map(Math.Max(t.c.Open, t.c.Close))
+                 let bodyH = Math.Max(ys.Map(Math.Min(t.c.Open, t.c.Close)) - bodyTop, 1)
+                 from el in new Element[]
                  {
-                     D3Line(cx, ys.Map(c.High), cx, ys.Map(c.Low)) with { Stroke = brush, StrokeThickness = 1.5 },
+                     D3Line(cx, ys.Map(t.c.High), cx, ys.Map(t.c.Low)) with { Stroke = brush, StrokeThickness = 1.5 },
                      D3Rect(cx - barW / 2, bodyTop, barW, bodyH) with { Fill = brush },
-                 };
-             }),
+                 }
+                 select el),
              // X-axis labels (every 5 days)
              .. Enumerable.Range(0, 4).Select(n => n * 5)
                  .Select(i => D3Text(xs.Map(i) - 12, top + height + 4, $"Day {i + 1}", 10, Gray(100))),

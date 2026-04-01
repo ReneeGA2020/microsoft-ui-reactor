@@ -22,7 +22,7 @@ public sealed class SankeyDiagramSample : GallerySample
         foreach (var link in graph.Links)
         {
             string? pathData = SankeyLayout.LinkPath(link);
-            D3PathTranslated(pathData, pad, pad, fill: Brush(color, 0.35))
+            D3PathTranslated(pathData, pad, pad, fill: Brush(color, opacity: 0.35))
         }
         foreach (var node in graph.Nodes)
         {
@@ -91,14 +91,12 @@ public sealed class SankeyDiagramSample : GallerySample
 
         return D3Canvas(W, H,
             [.. graph.Links
-                .Select(link => (pathData: SankeyLayout.LinkPath(link), link.SourceId))
-                .Where(t => t.pathData != null)
-                .Select(t =>
+                .Select(link =>
                 {
-                    int ci = nodeColors.GetValueOrDefault(t.SourceId, 0);
+                    int ci = nodeColors.GetValueOrDefault(link.SourceId, 0);
                     var color = Palette[ci % Palette.Length];
-                    return D3PathTranslated(t.pathData!, pad, pad,
-                        fill: Brush(color, 0.35));
+                    return (Element)D3PathTranslated(SankeyLayout.LinkPath(link), pad, pad,
+                        fill: Brush(color, opacity: 0.35));
                 }),
              .. graph.Nodes.SelectMany(node =>
              {

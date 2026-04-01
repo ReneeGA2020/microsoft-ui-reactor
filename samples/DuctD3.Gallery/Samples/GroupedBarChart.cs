@@ -54,11 +54,7 @@ public class GroupedBarChartSample : GallerySample
             [60, 70, 105, 80, 315],     // Groceries
         ];
 
-        // Find max value
-        double maxVal = 0;
-        foreach (var row in values)
-            foreach (var v in row)
-                if (v > maxVal) maxVal = v;
+        double maxVal = values.SelectMany(row => row).Max();
 
         // Scales
         var ys = new LinearScale([0, maxVal], [plotH, 0]).Nice();
@@ -67,7 +63,7 @@ public class GroupedBarChartSample : GallerySample
         var ysScreen = new LinearScale(ys.Domain, [top + plotH, top]);
 
         // Axes
-        var axisBrush = Gray(100, 180);
+        var axisBrush = Gray(100, alpha: 180);
         double legendX = W - right + 12;
         double legendY = top + 10;
 
@@ -97,11 +93,7 @@ public class GroupedBarChartSample : GallerySample
                  D3Text(left + band.Map(cat) + band.Bandwidth / 2 - 10, top + plotH + 8, cat, 10, axisBrush)),
 
              // Legend
-             .. seriesNames.SelectMany((name, i) => new Element[]
-             {
-                 D3Rect(legendX, legendY + i * 22, 14, 14) with { Fill = Brush(Palette[i]), RadiusX = 2, RadiusY = 2 },
-                 D3Text(legendX + 20, legendY + i * 22, name, 11, Gray(60)),
-             }),
+             .. D3Legend(legendX, legendY, seriesNames.Select((name, i) => (name, Brush(Palette[i])))),
 
              D3Text(left, 4, "Quarterly Sales by Product Line", 13, Gray(40)),
             ]

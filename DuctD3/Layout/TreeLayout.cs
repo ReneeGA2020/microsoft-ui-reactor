@@ -25,6 +25,27 @@ public sealed class TreeNode<T>
     internal int Number;
 
     public TreeNode(T data) { Data = data; Ancestor = this; }
+
+    /// <summary>Returns all descendant nodes (including this one) in pre-order.</summary>
+    public IEnumerable<TreeNode<T>> Descendants()
+    {
+        yield return this;
+        foreach (var child in Children)
+            foreach (var desc in child.Descendants())
+                yield return desc;
+    }
+
+    /// <summary>Returns the ancestor that is a direct child of the root (for branch coloring). Returns this node if it has no parent.</summary>
+    public TreeNode<T> TopAncestor
+    {
+        get
+        {
+            var current = this;
+            while (current.Parent is { Parent: not null })
+                current = current.Parent;
+            return current;
+        }
+    }
 }
 
 /// <summary>

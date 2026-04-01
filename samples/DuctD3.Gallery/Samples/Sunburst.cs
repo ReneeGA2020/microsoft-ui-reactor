@@ -82,9 +82,7 @@ public sealed class SunburstSample : GallerySample
 
         var arc = new ArcGenerator();
 
-        // Collect all nodes
-        var allNodes = new List<PartitionNode<DiskNode>>();
-        CollectPartition(root, allNodes);
+        var allNodes = root.Descendants().ToList();
 
         return D3Canvas(W, H,
             [.. allNodes
@@ -100,7 +98,7 @@ public sealed class SunburstSample : GallerySample
                     var (startAngle, endAngle, innerRadius, outerRadius) =
                         node.ToPolar(totalAngleWidth, totalHeightNorm, maxRadius);
 
-                    int colorIdx = GetTopBranch(node);
+                    int colorIdx = root.Children.IndexOf(node.TopAncestor);
                     double opacity = 0.9 - node.Depth * 0.15;
                     var fill = Brush(Palette[colorIdx % Palette.Length], Math.Max(0.3, opacity));
 
@@ -114,34 +112,13 @@ public sealed class SunburstSample : GallerySample
 
                     return (Element[])
                     [
-                        .. (pathData != null ? new[] { D3PathTranslated(pathData, cx, cy, Gray(255), fill, 1) } : Array.Empty<Element>()),
-                        .. (showLabel ? new Element[] { (Text(node.Data.Name) with { FontSize = 8 })
-                                .Foreground(Gray(30)).Width(40)
-                                .Set(tb => tb.TextAlignment = TextAlignment.Center)
-                                .Canvas(lx - 20, ly - 6) } : Array.Empty<Element>()),
+                        D3PathTranslated(pathData, cx, cy, Gray(255), fill, 1),
+                        .. (showLabel ? [D3TextCenter(lx - 20, ly - 6, node.Data.Name, 40, 8, Gray(30))] : Array.Empty<Element>()),
                     ];
                 }),
-             (Text("Disk") with { FontSize = 12 })
-                 .Foreground(Brush("#333333"))
-                 .Width(40)
-                 .Set(tb => tb.TextAlignment = TextAlignment.Center)
-                 .Canvas(cx - 20, cy - 7),
+             D3TextCenter(cx - 20, cy - 7, "Disk", 40, 12, Brush("#333333")),
             ]
         );
     }
 
-    static int GetTopBranch(PartitionNode<DiskNode> node)
-    {
-        var current = node;
-        while (current.Parent != null && current.Parent.Parent != null)
-            current = current.Parent;
-        if (current.Parent == null) return 0;
-        return current.Parent.Children.IndexOf(current);
-    }
-
-    static void CollectPartition(PartitionNode<DiskNode> node, List<PartitionNode<DiskNode>> list)
-    {
-        list.Add(node);
-        foreach (var child in node.Children) CollectPartition(child, list);
-    }
 }
