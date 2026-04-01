@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <UseWinUI>true</UseWinUI>
     <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
-    <IsAotCompatible>true</IsAotCompatible>
+    <IsAotCompatible>false</IsAotCompatible>
   </PropertyGroup>
 
   <ItemGroup>
