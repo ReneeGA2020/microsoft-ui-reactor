@@ -1,0 +1,253 @@
+using Duct;
+using Duct.Core;
+using Duct.D3;
+using Duct.D3.Charts;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using static Duct.UI;
+using static Duct.D3.Charts.ChartDsl;
+
+DuctApp.Run<ChartGallery>("DuctD3 Chart Gallery", width: 1200, height: 800,
+    configure: host => XamlInterop.Register(host.Reconciler));
+
+// ── Data types ──────────────────────────────────────────────────────────────
+
+record DataPoint(double X, double Y);
+record OrgNode(string Name, OrgNode[]? Reports = null);
+
+// ── Main gallery ────────────────────────────────────────────────────────────
+
+class ChartGallery : Component
+{
+    static readonly Random Rng = new(42);
+
+    public override Element Render()
+    {
+        var (tab, setTab) = UseState(0);
+        var (tick, setTick) = UseState(0);
+
+        // Handles — stored in refs so they survive re-renders
+        var lineHandle = UseRef<ChartHandle?>(null);
+        var barHandle = UseRef<ChartHandle?>(null);
+        var areaHandle = UseRef<ChartHandle?>(null);
+        var pieHandle = UseRef<PieChartHandle?>(null);
+        var treeHandle = UseRef<TreeChartHandle?>(null);
+        var forceHandle = UseRef<ForceGraphHandle?>(null);
+
+        // Timer: every 800ms bump the tick counter → generates new data
+        UseEffect(() =>
+        {
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(800) };
+            timer.Tick += (_, _) =>
+            {
+                int t = tick + 1;
+                setTick(t);
+                PushAnimatedData(t, tab,
+                    lineHandle.Current, barHandle.Current, areaHandle.Current,
+                    pieHandle.Current, treeHandle.Current);
+            };
+            timer.Start();
+            return () => timer.Stop();
+        }, tab);
+
+        // Initial data (tick 0)
+        var sineData = MakeSineData(0);
+        var barData = MakeBarData(0);
+        var pieData = MakePieData(0);
+
+        var orgTree = new OrgNode("CEO", [
+            new("CTO", [
+                new("Eng", [new("FE"), new("BE"), new("Infra")]),
+                new("Research", [new("ML"), new("Sec")]),
+            ]),
+            new("CFO", [new("Finance"), new("Acctg")]),
+            new("COO", [new("Ops"), new("HR"), new("Legal")]),
+        ]);
+
+        var graphNodes = UseMemo(() => new ForceNode[]
+        {
+            new() { Label = "App", Radius = 12 }, new() { Label = "Auth", Radius = 10 },
+            new() { Label = "API", Radius = 10 }, new() { Label = "DB", Radius = 10 },
+            new() { Label = "Cache", Radius = 8 }, new() { Label = "Queue", Radius = 8 },
+            new() { Label = "Worker", Radius = 8 }, new() { Label = "Storage", Radius = 8 },
+            new() { Label = "CDN", Radius = 8 }, new() { Label = "Monitor", Radius = 8 },
+            new() { Label = "Logger", Radius = 7 }, new() { Label = "Metrics", Radius = 7 },
+        });
+        var graphLinks = UseMemo(() => new ForceLink[]
+        {
+            new(0, 1), new(0, 2), new(2, 3), new(2, 4), new(2, 5), new(5, 6),
+            new(3, 7), new(0, 8), new(2, 9), new(9, 10), new(9, 11),
+            new(1, 3), new(6, 3), new(6, 7), new(4, 3),
+        });
+
+        string[] tabs = ["Line", "Bar", "Area", "Pie", "Tree", "Force"];
+
+        return VStack(8,
+            Heading("DuctD3 — D3-Powered Charts for Duct"),
+            Caption($"Tick {tick} — data changes every 800 ms"),
+            HStack(8, tabs.Select((name, i) =>
+                Button(tab == i ? $"● {name}" : name, () => setTab(i))).ToArray()),
+            ScrollView(
+                Border(
+                    tab switch
+                    {
+                        0 => VStack(SubHeading("Line Chart — Live Sine Wave"),
+                            LineChart(sineData, d => d.X, d => d.Y)
+                                .Width(750).Height(350).Stroke("#4285f4")
+                                .OnReady(h => lineHandle.Current = h)),
+
+                        1 => VStack(SubHeading("Bar Chart — Streaming Revenue"),
+                            BarChart(barData, d => d.X, d => d.Y)
+                                .Width(750).Height(350).Fill("#34a853")
+                                .OnReady(h => barHandle.Current = h)),
+
+                        2 => VStack(SubHeading("Area Chart — Live Signal"),
+                            AreaChart(sineData, d => d.X, d => d.Y)
+                                .Width(750).Height(350).Stroke("#ea4335").Fill("#ea4335").FillOpacity(0.2)
+                                .OnReady(h => areaHandle.Current = h)),
+
+                        3 => VStack(SubHeading("Pie Chart — Shifting Market Share"),
+                            PieChart(pieData, d => d.Y, d => ((string[])["Chrome","Safari","Firefox","Edge","Other"])[(int)d.X])
+                                .Width(400).Height(400).InnerRadius(60).PadAngle(0.03)
+                                .OnReady(h => pieHandle.Current = h)),
+
+                        4 => VStack(SubHeading("Tree Layout — Growing Org Chart"),
+                            TreeChart(orgTree, n => n.Reports, n => n.Name)
+                                .Width(800).Height(450).NodeColor("#9467bd")
+                                .OnReady(h => treeHandle.Current = h)),
+
+                        5 => VStack(SubHeading("Force Graph — Drag any node!"),
+                            ForceGraph(graphNodes, graphLinks)
+                                .Width(800).Height(500).Charge(-200).Distance(80)
+                                .OnReady(h => { forceHandle.Current = h; SetupDrag(h); })),
+
+                        _ => Text("Select a tab"),
+                    }
+                ).Padding(16)
+            )
+        ).Padding(24);
+    }
+
+    // ── Data generators — pure functions of tick ─────────────────────────
+
+    static DataPoint[] MakeSineData(int tick)
+    {
+        double phase = tick * 0.3;
+        return Enumerable.Range(0, 50)
+            .Select(i => new DataPoint(i * 0.2, Math.Sin(i * 0.2 + phase) * 50 + 50))
+            .ToArray();
+    }
+
+    static DataPoint[] MakeBarData(int tick)
+    {
+        return Enumerable.Range(0, 12)
+            .Select(i => new DataPoint(i, 3000 + 2000 * Math.Sin(tick * 0.2 + i * 0.5) + Rng.Next(500)))
+            .ToArray();
+    }
+
+    static DataPoint[] MakePieData(int tick)
+    {
+        double t = tick * 0.15;
+        double[] bases = [60, 18, 8, 7, 7];
+        return Enumerable.Range(0, 5)
+            .Select(i => new DataPoint(i, Math.Max(2, bases[i] + 8 * Math.Sin(t + i * 1.3))))
+            .ToArray();
+    }
+
+    static OrgNode MakeTree(int tick)
+    {
+        // Every few ticks add/remove a leaf to show the tree re-laying out
+        int extra = (tick / 3) % 4;
+        var engKids = new List<OrgNode> { new("FE"), new("BE"), new("Infra") };
+        if (extra >= 1) engKids.Add(new("Mobile"));
+        if (extra >= 2) engKids.Add(new("DevOps"));
+        if (extra >= 3) engKids.Add(new("QA"));
+
+        return new OrgNode("CEO", [
+            new("CTO", [
+                new("Eng", engKids.ToArray()),
+                new("Research", [new("ML"), new("Sec")]),
+            ]),
+            new("CFO", [new("Finance"), new("Acctg")]),
+            new("COO", [new("Ops"), new("HR"), new("Legal")]),
+        ]);
+    }
+
+    // ── Push new data into the handles (no Duct re-render needed) ───────
+
+    static void PushAnimatedData(int tick, int tab,
+        ChartHandle? line, ChartHandle? bar, ChartHandle? area,
+        PieChartHandle? pie, TreeChartHandle? tree)
+    {
+        switch (tab)
+        {
+            case 0: line?.Redraw(MakeSineData(tick)); break;
+            case 1: bar?.Redraw(MakeBarData(tick)); break;
+            case 2: area?.Redraw(MakeSineData(tick)); break;
+            case 3: pie?.Redraw(MakePieData(tick)); break;
+            case 4: tree?.Redraw(MakeTree(tick)); break;
+            // Force graph animates via its own timer set up in SetupDrag
+        }
+    }
+
+    // ── Force graph drag — sample-side interaction logic ────────────────
+
+    static void SetupDrag(ForceGraphHandle handle)
+    {
+        var sim = handle.Simulation;
+        int dragIndex = -1;
+        DispatcherTimer? animTimer = null;
+
+        void StartAnimating()
+        {
+            if (animTimer != null) return;
+            animTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+            animTimer.Tick += (_, _) =>
+            {
+                sim.Tick();
+                handle.SyncPositions();
+                if (sim.Alpha < sim.AlphaMin && dragIndex == -1)
+                {
+                    animTimer.Stop();
+                    animTimer = null;
+                }
+            };
+            animTimer.Start();
+        }
+
+        for (int i = 0; i < handle.NodeEllipses.Length; i++)
+        {
+            int idx = i;
+            var ellipse = handle.NodeEllipses[idx];
+
+            ellipse.PointerPressed += (_, e) =>
+            {
+                dragIndex = idx;
+                var n = sim.Nodes[idx]; n.Fx = n.X; n.Fy = n.Y;
+                ellipse.CapturePointer(e.Pointer);
+                sim.AlphaTarget = 0.3;
+                sim.Alpha = Math.Max(sim.Alpha, 0.3);
+                StartAnimating();
+                e.Handled = true;
+            };
+            ellipse.PointerMoved += (_, e) =>
+            {
+                if (dragIndex != idx) return;
+                var pos = e.GetCurrentPoint(handle.Canvas).Position;
+                sim.Nodes[idx].Fx = pos.X;
+                sim.Nodes[idx].Fy = pos.Y;
+                e.Handled = true;
+            };
+            ellipse.PointerReleased += (_, e) =>
+            {
+                if (dragIndex != idx) return;
+                dragIndex = -1;
+                sim.Nodes[idx].Fx = null;
+                sim.Nodes[idx].Fy = null;
+                sim.AlphaTarget = 0;
+                ellipse.ReleasePointerCapture(e.Pointer);
+                e.Handled = true;
+            };
+        }
+    }
+}
