@@ -33,7 +33,7 @@ public sealed partial class Reconciler
         {
             TextElement text => MountText(text),
             RichTextBlockElement richText => MountRichTextBlock(richText),
-            ButtonElement btn => MountButton(btn),
+            ButtonElement btn => MountButton(btn, requestRerender),
             HyperlinkButtonElement hlBtn => MountHyperlinkButton(hlBtn),
             RepeatButtonElement repBtn => MountRepeatButton(repBtn),
             ToggleButtonElement togBtn => MountToggleButton(togBtn),
@@ -189,9 +189,13 @@ public sealed partial class Reconciler
         return rtb;
     }
 
-    private WinUI.Button MountButton(ButtonElement btn)
+    private WinUI.Button MountButton(ButtonElement btn, Action requestRerender)
     {
-        var button = new WinUI.Button { Content = btn.Label, IsEnabled = btn.IsEnabled };
+        var button = new WinUI.Button { IsEnabled = btn.IsEnabled };
+        if (btn.ContentElement is not null)
+            button.Content = Mount(btn.ContentElement, requestRerender);
+        else
+            button.Content = btn.Label;
         SetElementTag(button, btn);
         button.Click += (s, _) => (GetElementTag((UIElement)s!) as ButtonElement)?.OnClick?.Invoke();
         ApplySetters(btn.Setters, button);
@@ -516,7 +520,10 @@ public sealed partial class Reconciler
     private WinUI.Image MountImage(ImageElement img)
     {
         var image = _pool.TryRent(typeof(WinUI.Image)) as WinUI.Image ?? new WinUI.Image();
-        image.Source = new BitmapImage(new Uri(img.Source, UriKind.RelativeOrAbsolute));
+        var uri = new Uri(img.Source, UriKind.RelativeOrAbsolute);
+        image.Source = img.Source.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
+            ? new SvgImageSource(uri)
+            : new BitmapImage(uri);
         if (img.Width.HasValue) image.Width = img.Width.Value;
         if (img.Height.HasValue) image.Height = img.Height.Value;
         ApplySetters(img.Setters, image);

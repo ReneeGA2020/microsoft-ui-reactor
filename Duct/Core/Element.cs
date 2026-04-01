@@ -111,6 +111,7 @@ public abstract record Element
                 ba.Label == bb.Label
                 && ba.IsEnabled == bb.IsEnabled
                 && ReferenceEquals(ba.OnClick, bb.OnClick)
+                && ba.ContentElement is null && bb.ContentElement is null
                 && ba.Setters.Length == 0 && bb.Setters.Length == 0,
 
             (ImageElement ia, ImageElement ib) =>
@@ -487,6 +488,7 @@ public record RichTextLineBreak() : RichTextInline;
 public record ButtonElement(string Label, Action? OnClick = null) : Element
 {
     public bool IsEnabled { get; init; } = true;
+    public Element? ContentElement { get; init; }
     internal Action<WinUI.Button>[] Setters { get; init; } = [];
 }
 

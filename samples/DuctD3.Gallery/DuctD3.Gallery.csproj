@@ -15,4 +15,8 @@
     <ProjectReference Include="..\..\DuctD3\DuctD3.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Icons\*.svg" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

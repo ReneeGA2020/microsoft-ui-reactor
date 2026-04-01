@@ -23,6 +23,9 @@ public abstract class GallerySample
     public abstract string Category { get; }
     public abstract string SourceCode { get; }
     public abstract Element Render();
+
+    /// <summary>SVG icon filename (without extension), derived from class name.</summary>
+    public string IconName => GetType().Name.Replace("Sample", "");
 }
 
 /// <summary>Shared helpers used by all samples to render charts on a Canvas.</summary>

@@ -26,6 +26,12 @@ class GalleryApp : Component
         return RenderLanding(setCurrent);
     }
 
+    static string IconPath(GallerySample sample) =>
+        System.IO.Path.Combine(AppContext.BaseDirectory, "Icons", $"{sample.IconName}.svg");
+
+    static Element SampleIcon(GallerySample sample, double size) =>
+        Image(IconPath(sample)) with { Width = size, Height = size };
+
     Element RenderLanding(Action<GallerySample?> navigate)
     {
         var categories = SampleRegistry.All
@@ -37,7 +43,13 @@ class GalleryApp : Component
                 SubHeading(group.Key),
                 new FlexElement(
                     group.Select(sample =>
-                        Button(sample.Title, () => navigate(sample))
+                        Button(
+                            VStack(6,
+                                SampleIcon(sample, 36),
+                                Text(sample.Title) with { FontSize = 12 }
+                            ).MaxWidth(100).HAlign(HorizontalAlignment.Center),
+                            () => navigate(sample)
+                        ).Width(130).Height(90)
                     ).ToArray()
                 )
                 {
@@ -49,21 +61,22 @@ class GalleryApp : Component
             )
         ).ToArray();
 
-        return VStack(16,
-            Heading("DuctD3 Gallery"),
-            Caption($"{SampleRegistry.All.Length} interactive samples — powered by D3.js ported to C#"),
-            ScrollView(VStack(24, sections))
-        ).Padding(24);
+        return FlexColumn(
+            Heading("DuctD3 Gallery").Padding(24, 24, 24, 0),
+            Caption($"{SampleRegistry.All.Length} interactive samples — powered by D3.js ported to C#").Padding(24, 0, 24, 0),
+            ScrollView(VStack(24, sections).Padding(24, 12, 24, 24)).Flex(grow: 1, basis: 0)
+        );
     }
 
     Element RenderSamplePage(GallerySample sample, Action goBack)
     {
-        return VStack(12,
+        return FlexColumn(
             HStack(12,
                 Button("< Back", goBack),
+                SampleIcon(sample, 28),
                 Heading(sample.Title)
-            ),
-            Caption(sample.Description),
+            ).Padding(24, 24, 24, 0),
+            Caption(sample.Description).Padding(24, 8, 24, 0),
             ScrollView(VStack(16,
                 Border(sample.Render()) with
                 {
@@ -92,8 +105,8 @@ class GalleryApp : Component
                     },
                     _ => { }
                 ) { TypeKey = $"Code_{sample.Title}" }
-            ))
-        ).Padding(24);
+            ).Padding(24, 0, 24, 24)).Flex(grow: 1, basis: 0)
+        );
     }
 
     static int CategoryOrder(string category) => category switch

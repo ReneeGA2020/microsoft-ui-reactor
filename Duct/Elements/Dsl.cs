@@ -45,6 +45,9 @@ public static class UI
     public static ButtonElement Button(string label, Action? onClick = null) =>
         new(label, onClick);
 
+    public static ButtonElement Button(Element content, Action? onClick = null) =>
+        new("", onClick) { ContentElement = content };
+
     public static HyperlinkButtonElement HyperlinkButton(string content, Uri? navigateUri = null, Action? onClick = null) =>
         new(content, navigateUri, onClick);
 

@@ -48,8 +48,8 @@ public sealed partial class Reconciler
                 => UpdateText(n, tb),
             (RichTextBlockElement o, RichTextBlockElement n, WinUI.RichTextBlock rtb)
                 => UpdateRichTextBlock(o, n, rtb),
-            (ButtonElement, ButtonElement n, WinUI.Button b)
-                => UpdateButton(n, b),
+            (ButtonElement o, ButtonElement n, WinUI.Button b)
+                => UpdateButton(o, n, b, requestRerender),
             (HyperlinkButtonElement, HyperlinkButtonElement n, WinUI.HyperlinkButton hb)
                 => UpdateHyperlinkButton(n, hb),
             (RepeatButtonElement, RepeatButtonElement n, WinPrim.RepeatButton rb)
@@ -445,9 +445,28 @@ public sealed partial class Reconciler
         }
     }
 
-    private UIElement? UpdateButton(ButtonElement n, WinUI.Button b)
+    private UIElement? UpdateButton(ButtonElement o, ButtonElement n, WinUI.Button b, Action requestRerender)
     {
-        b.Content = n.Label; b.IsEnabled = n.IsEnabled; SetElementTag(b, n);
+        b.IsEnabled = n.IsEnabled;
+        if (n.ContentElement is not null && o.ContentElement is not null && b.Content is UIElement existingContent)
+        {
+            var replacement = UpdateChild(o.ContentElement, n.ContentElement, existingContent, requestRerender);
+            if (replacement is not null)
+            {
+                UnmountChild(existingContent);
+                b.Content = replacement;
+            }
+        }
+        else if (n.ContentElement is not null)
+        {
+            if (b.Content is UIElement oldContent) UnmountChild(oldContent);
+            b.Content = Mount(n.ContentElement, requestRerender);
+        }
+        else
+        {
+            b.Content = n.Label;
+        }
+        SetElementTag(b, n);
         ApplySetters(n.Setters, b);
         return null;
     }
@@ -626,7 +645,13 @@ public sealed partial class Reconciler
 
     private UIElement? UpdateImage(ImageElement o, ImageElement n, WinUI.Image img)
     {
-        if (o.Source != n.Source) img.Source = new BitmapImage(new Uri(n.Source, UriKind.RelativeOrAbsolute));
+        if (o.Source != n.Source)
+        {
+            var uri = new Uri(n.Source, UriKind.RelativeOrAbsolute);
+            img.Source = n.Source.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
+                ? new SvgImageSource(uri)
+                : new BitmapImage(uri);
+        }
         if (n.Width.HasValue) img.Width = n.Width.Value;
         if (n.Height.HasValue) img.Height = n.Height.Value;
         ApplySetters(n.Setters, img);

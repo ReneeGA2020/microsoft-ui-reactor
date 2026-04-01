@@ -340,6 +340,7 @@ public sealed partial class Reconciler : IDisposable
         else if (control is WinUI.ContentControl cc && cc.Content is UIElement ccChild)
         {
             UnmountAndCollect(ccChild, toPool);
+            cc.Content = null; // Detach so pooled child has no parent
         }
 
         if (control is FrameworkElement poolCandidate)
