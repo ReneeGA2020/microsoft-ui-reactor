@@ -21,15 +21,11 @@ public class StackedAreaChart : GallerySample
             .SetValue((d, key) => d[key]);
         StackSeries[] series = stack.Generate(months);
 
-        for (int si = 0; si < series.Length; si++)
-        {
-            var area = AreaGenerator.Create<(double x, double y0, double y1)>(
-                d => xScale.Map(d.x),
-                d => yScale.Map(d.y0),
-                d => yScale.Map(d.y1));
-            string? path = area.Generate(pts);
-            D3Path(path, fill: Brush(Palette[si], opacity: 0.75))
-        }
+        ..series.Select((s, si) => {
+            var pts = s.Points.Select((p, j) => (x: (double)j, y0: p.Y0, y1: p.Y1)).ToArray();
+            return D3AreaPath(pts, x: d => xs.Map(d.x), y0: d => ys.Map(d.y0), y1: d => ys.Map(d.y1),
+                fill: Brush(Palette[si], opacity: 0.75));
+        })
         """;
 
     public override Element Render()
@@ -74,16 +70,11 @@ public class StackedAreaChart : GallerySample
 
         return D3Canvas(W, H,
             [.. D3Grid(yScale, marginLeft, plotW),
-             .. Enumerable.Range(0, series.Length)
-                .Select(si =>
+             .. series.Select((s, si) =>
                 {
-                    var s = series[si];
                     var pts = s.Points.Select((p, j) => (x: (double)j, y0: p.Y0, y1: p.Y1)).ToArray();
-                    var area = AreaGenerator.Create<(double x, double y0, double y1)>(
-                        d => xScale.Map(d.x),
-                        d => yScale.Map(d.y0),
-                        d => yScale.Map(d.y1));
-                    return (Element)D3Path(area.Generate(pts), fill: Brush(Palette[si], opacity: 0.75));
+                    return (Element)D3AreaPath(pts, x: d => xScale.Map(d.x), y0: d => yScale.Map(d.y0), y1: d => yScale.Map(d.y1),
+                        fill: Brush(Palette[si], opacity: 0.75));
                 }),
              .. D3Axes(xScale, yScale, marginLeft, marginTop, plotW, plotH),
              .. Enumerable.Range(0, 6).Select(i =>

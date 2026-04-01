@@ -119,6 +119,57 @@ public static class D3
             .Set(tb => tb.TextAlignment = TextAlignment.Center)
             .Canvas(x, y);
 
+    // ── Generator helpers (functional one-shot wrappers) ──────────────
+
+    /// <summary>Creates a line path element directly from data, collapsing LineGenerator + Generate + D3Path into one expression.</summary>
+    public static PathElement D3LinePath<T>(IReadOnlyList<T> data, Func<T, double> x, Func<T, double> y,
+        Brush? stroke = null, double strokeWidth = 1.5,
+        CurveFactory? curve = null, Func<T, int, bool>? defined = null)
+    {
+        var gen = LineGenerator.Create(x, y);
+        if (curve != null) gen.SetCurve(curve);
+        if (defined != null) gen.SetDefined(defined);
+        return D3Path(gen.Generate(data), stroke: stroke, strokeWidth: strokeWidth);
+    }
+
+    /// <summary>Creates an area path element directly from data, collapsing AreaGenerator + Generate + D3Path into one expression.</summary>
+    public static PathElement D3AreaPath<T>(IReadOnlyList<T> data, Func<T, double> x, Func<T, double> y0, Func<T, double> y1,
+        Brush? fill = null, Brush? stroke = null, double strokeWidth = 1.5,
+        CurveFactory? curve = null)
+    {
+        var gen = AreaGenerator.Create(x, y0, y1);
+        if (curve != null) gen.SetCurve(curve);
+        return D3Path(gen.Generate(data), stroke: stroke, fill: fill, strokeWidth: strokeWidth);
+    }
+
+    /// <summary>Creates an arc sector path element at (cx, cy), collapsing ArcGenerator + Generate + D3PathTranslated into one expression.</summary>
+    public static PathElement D3ArcPath(double startAngle, double endAngle, double cx, double cy,
+        double innerRadius = 0, double outerRadius = 100,
+        double padAngle = 0, Brush? fill = null, Brush? stroke = null, double strokeWidth = 1.5)
+    {
+        var pathData = new ArcGenerator()
+            .SetInnerRadius(innerRadius)
+            .SetOuterRadius(outerRadius)
+            .Generate(startAngle, endAngle, padAngle);
+        return D3PathTranslated(pathData, cx, cy, stroke: stroke, fill: fill, strokeWidth: strokeWidth);
+    }
+
+    /// <summary>Creates pie/donut slice elements directly from data, collapsing PieGenerator + ArcGenerator + iteration into one expression.</summary>
+    public static Element[] D3Pie<T>(IReadOnlyList<T> data, Func<T, double> value, double cx, double cy,
+        double outerRadius = 150, double innerRadius = 0,
+        double padAngle = 0, bool sort = true,
+        Brush? stroke = null, double strokeWidth = 1.5)
+    {
+        var arcs = PieGenerator.Generate(data, value, sort, padAngle);
+        var arc = new ArcGenerator().SetOuterRadius(outerRadius).SetInnerRadius(innerRadius);
+        return arcs.Select((a, i) =>
+            (Element)D3PathTranslated(arc.Generate(a), cx, cy,
+                fill: Brush(Palette[i % Palette.Length]),
+                stroke: stroke,
+                strokeWidth: strokeWidth)
+        ).ToArray();
+    }
+
     // ── Composite chart helpers ─────────────────────────────────────────
 
     /// <summary>Creates a vertical bezier tree link path between two points (parent to child).</summary>

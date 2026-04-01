@@ -14,13 +14,11 @@ public class LineChart : GallerySample
     public override string Category => "Lines";
 
     public override string SourceCode => """
-        var line = LineGenerator.Create<(double x, double y)>(
-            d => xs.Map(d.x), d => ys.Map(d.y));
-        var pathData = line.Generate(data);
         D3Canvas(W, H,
             ..D3Grid(ys, left, width),
             ..D3Axes(xs, ys, left, top, width, height),
-            D3Path(pathData, stroke: lineBrush, strokeWidth: 2),
+            D3LinePath(data, x: d => xs.Map(d.x), y: d => ys.Map(d.y),
+                stroke: lineBrush, strokeWidth: 2),
             ..dots
         )
         """;
@@ -48,15 +46,12 @@ public class LineChart : GallerySample
         var ys = new LinearScale([yMax + 2, yMin - 2], [top, top + height]);
         ys.Nice();
 
-        var line = LineGenerator.Create<(double x, double y)>(d => xs.Map(d.x), d => ys.Map(d.y));
-        var pathData = line.Generate(data);
-
         var lineBrush = Brush(Palette[0]);
 
         return D3Canvas(canvasW, canvasH,
             [.. D3Grid(ys, left, width),
              .. D3Axes(xs, ys, left, top, width, height),
-             D3Path(pathData, stroke: lineBrush, strokeWidth: 2),
+             D3LinePath(data, x: d => xs.Map(d.x), y: d => ys.Map(d.y), stroke: lineBrush, strokeWidth: 2),
              .. data.Select(d => (Element)(D3Circle(xs.Map(d.x), ys.Map(d.y), 3) with { Fill = lineBrush })),
              D3Text(canvasW / 2 - 20, canvasH - 12, "Day", 11, Gray(80)),
              D3Text(2, top - 14, "\u00b0C", 11, Gray(80))]

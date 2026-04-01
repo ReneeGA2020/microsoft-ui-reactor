@@ -102,4 +102,14 @@ public static class PieGenerator
     /// <summary>Creates a pie generator with a custom value accessor.</summary>
     public static PieGenerator<T> Create<T>(Func<T, double> value)
         => new((d, _) => value(d));
+
+    /// <summary>One-shot convenience: computes pie arcs directly without constructing and configuring a generator instance.</summary>
+    public static PieArc<T>[] Generate<T>(IReadOnlyList<T> data, Func<T, double> value,
+        bool sort = true, double padAngle = 0)
+    {
+        var gen = Create(value);
+        if (!sort) gen.SetSortValues(null);
+        if (padAngle != 0) gen.SetPadAngle(padAngle);
+        return gen.Generate(data);
+    }
 }

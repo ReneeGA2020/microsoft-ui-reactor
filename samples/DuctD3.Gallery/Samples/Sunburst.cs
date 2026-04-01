@@ -21,14 +21,14 @@ public sealed class SunburstSample : GallerySample
         var partition = PartitionLayout.Create<DiskNode>()
             .Size(totalAngleWidth, totalHeightNorm);
         var root = partition.Layout(data, n => n.Children, n => n.Size);
-        var arc = new ArcGenerator();
 
         D3Canvas(W, H,
             [..allNodes.Where(n => n.Parent != null)
                 .Select(node => {
                     var (sa, ea, ir, or) = node.ToPolar(...);
-                    return D3PathTranslated(arc.Generate(sa, ea, 0, ir, or),
-                        cx, cy, Gray(255), fill, 1);
+                    return D3ArcPath(sa, ea, cx, cy,
+                        innerRadius: ir, outerRadius: or,
+                        fill: fill, stroke: Gray(255), strokeWidth: 1);
                 }),
              ..labels]
         )
@@ -80,8 +80,6 @@ public sealed class SunburstSample : GallerySample
         var partition = PartitionLayout.Create<DiskNode>().Size(totalAngleWidth, totalHeightNorm);
         var root = partition.Layout(data, n => n.Children, n => n.Size);
 
-        var arc = new ArcGenerator();
-
         var allNodes = root.Descendants().ToList();
 
         return D3Canvas(W, H,
@@ -102,8 +100,6 @@ public sealed class SunburstSample : GallerySample
                     double opacity = 0.9 - node.Depth * 0.15;
                     var fill = Brush(Palette[colorIdx % Palette.Length], Math.Max(0.3, opacity));
 
-                    string? pathData = arc.Generate(startAngle, endAngle, 0, innerRadius, outerRadius);
-
                     bool showLabel = (endAngle - startAngle) > 0.15 && node.Children.Count == 0;
                     double midAngle = (startAngle + endAngle) / 2 - Math.PI / 2;
                     double midR = (innerRadius + outerRadius) / 2;
@@ -112,7 +108,9 @@ public sealed class SunburstSample : GallerySample
 
                     return (Element[])
                     [
-                        D3PathTranslated(pathData, cx, cy, Gray(255), fill, 1),
+                        D3ArcPath(startAngle, endAngle, cx, cy,
+                            innerRadius: innerRadius, outerRadius: outerRadius,
+                            fill: fill, stroke: Gray(255), strokeWidth: 1),
                         .. (showLabel ? [D3TextCenter(lx - 20, ly - 6, node.Data.Name, 40, 8, Gray(30))] : Array.Empty<Element>()),
                     ];
                 }),

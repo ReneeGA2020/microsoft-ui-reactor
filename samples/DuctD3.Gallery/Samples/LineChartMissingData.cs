@@ -50,18 +50,14 @@ D3Path(pathData, stroke: Brush(Palette[0]), strokeWidth: 2)";
 
         // Dashed line connecting across gaps
         var connectingData = data.Where(d => !double.IsNaN(d.y)).ToArray();
-        var connectingLine = LineGenerator.Create<(double x, double y)>(
-            d => xs.Map(d.x), d => ys.Map(d.y));
-        var connectingPathData = connectingLine.Generate(connectingData);
-        var connectingPathEl = D3Path(connectingPathData, stroke: Brush(Palette[0], opacity: 0.2), strokeWidth: 1.5)
+        var connectingPathEl = D3LinePath(connectingData, x: d => xs.Map(d.x), y: d => ys.Map(d.y),
+                stroke: Brush(Palette[0], opacity: 0.2), strokeWidth: 1.5)
             .Set(p => p.StrokeDashArray = new DoubleCollection { 4, 3 });
 
         // Solid line with gaps
-        var fullLine = LineGenerator.Create<(double x, double y)>(
-                d => xs.Map(d.x), d => ys.Map(d.y))
-            .SetDefined((d, _) => !double.IsNaN(d.y));
-        var pathData = fullLine.Generate(data);
-        var solidLine = D3Path(pathData, stroke: Brush(Palette[0]), strokeWidth: 2);
+        var solidLine = D3LinePath(data, x: d => xs.Map(d.x), y: d => ys.Map(d.y),
+            stroke: Brush(Palette[0]), strokeWidth: 2,
+            defined: (d, _) => !double.IsNaN(d.y));
 
         // Data points (only for valid values)
         var dotBrush = Brush(Palette[0]);

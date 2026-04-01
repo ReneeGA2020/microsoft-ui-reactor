@@ -135,6 +135,18 @@ public sealed class ArcGenerator
     public ArcGenerator SetCornerRadius(double r) { _cornerRadius = r; return this; }
     public ArcGenerator SetDigits(int? digits) { _digits = digits; return this; }
 
+    /// <summary>
+    /// Static convenience: computes the centroid of an arc without constructing an instance.
+    /// Returns the midpoint of the inner/outer radii at the midpoint angle.
+    /// </summary>
+    public static (double x, double y) Centroid(double startAngle, double endAngle,
+        double innerRadius = 0, double outerRadius = 100)
+    {
+        double r = (innerRadius + outerRadius) / 2;
+        double a = (startAngle + endAngle) / 2 - Pi / 2;
+        return (Math.Cos(a) * r, Math.Sin(a) * r);
+    }
+
     private static double SafeAsin(double x) =>
         x >= 1 ? HalfPi : x <= -1 ? -HalfPi : Math.Asin(x);
 }

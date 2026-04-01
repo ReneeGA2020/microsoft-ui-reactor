@@ -14,14 +14,13 @@ public sealed class PieChartSample : GallerySample
     public override string Category => "Radial";
 
     public override string SourceCode => """
-        var pie = PieGenerator.Create<(string, double)>(d => d.Value)
-            .SetSortValues(null);
-        var arc = new ArcGenerator().SetOuterRadius(150).SetInnerRadius(0);
-        var arcs = pie.Generate(data);
+        var arcs = PieGenerator.Generate(data, value: d => d.Value, sort: false);
         D3Canvas(width, height,
-            ..arcs.Select((a, i) =>
-                D3PathTranslated(arc.Generate(a), cx, cy,
-                    fill: Brush(Palette[i % Palette.Length])))
+            ..arcs.SelectMany((a, i) => new[] {
+                D3ArcPath(a.StartAngle, a.EndAngle, cx, cy, outerRadius: 150,
+                    fill: Brush(Palette[i % Palette.Length])),
+                D3Text(cx + lx, cy + ly, label, 11, brush),
+            })
         )
         """;
 
@@ -36,23 +35,17 @@ public sealed class PieChartSample : GallerySample
             ("Edge", 5.0), ("Other", 5.0)
         };
 
-        var pie = PieGenerator.Create<(string Name, double Value)>(d => d.Value)
-            .SetSortValues(null);
-        var arc = new ArcGenerator().SetOuterRadius(150).SetInnerRadius(0);
-        var arcs = pie.Generate(data);
-
-        var labelArc = new ArcGenerator().SetOuterRadius(180).SetInnerRadius(180);
+        var arcs = PieGenerator.Generate(data, value: d => d.Value, sort: false);
 
         return D3Canvas(width, height,
             [.. arcs.SelectMany((a, i) =>
                 {
-                    var (ox, oy) = labelArc.Centroid(a.StartAngle, a.EndAngle);
+                    var (ox, oy) = ArcGenerator.Centroid(a.StartAngle, a.EndAngle, innerRadius: 180, outerRadius: 180);
                     return new Element[]
                     {
-                        D3PathTranslated(arc.Generate(a), cx, cy,
+                        D3ArcPath(a.StartAngle, a.EndAngle, cx, cy, outerRadius: 150,
                             fill: Brush(Palette[i % Palette.Length]),
-                            stroke: new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.White),
-                            strokeWidth: 1),
+                            stroke: Brush("#ffffff"), strokeWidth: 1),
                         D3Text(cx + ox - 20, cy + oy - 7,
                             $"{a.Data.Name} ({a.Data.Value}%)", 11, Brush(Palette[i % Palette.Length])),
                     };

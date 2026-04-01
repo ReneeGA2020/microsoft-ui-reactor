@@ -98,18 +98,13 @@ return D3Canvas(W, H,
         return D3Canvas(W, H,
             [D3Line(marginLeft, yScale.Map(0), marginLeft + plotW, yScale.Map(0))
                 with { Stroke = Gray(200), StrokeThickness = 1 },
-             .. Enumerable.Range(0, series.Length)
-                .Select(si =>
+             .. series.Select((s, si) =>
                 {
-                    var s = series[si];
                     var pts = Enumerable.Range(0, n)
                         .Select(j => (x: (double)j, y0: s.Points[j].Y0, y1: s.Points[j].Y1))
                         .ToArray();
-                    var area = AreaGenerator.Create<(double x, double y0, double y1)>(
-                        d => xScale.Map(d.x),
-                        d => yScale.Map(d.y0),
-                        d => yScale.Map(d.y1));
-                    return (Element)D3Path(area.Generate(pts), fill: Brush(Palette[si], opacity: 0.8));
+                    return (Element)D3AreaPath(pts, x: d => xScale.Map(d.x), y0: d => yScale.Map(d.y0), y1: d => yScale.Map(d.y1),
+                        fill: Brush(Palette[si], opacity: 0.8));
                 }),
              .. D3Legend(marginLeft + 10, marginTop + 4, keys.Select((key, k) => (key, Brush(Palette[k], opacity: 0.8)))),
              D3Text(marginLeft + 100, 6, "Streamgraph (Centered Stack)", 14, Gray(40)),

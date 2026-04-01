@@ -16,22 +16,16 @@ public class DifferenceChart : GallerySample
     public override string Category => "Areas";
 
     public override string SourceCode => @"
-var greenPts = new (double x, double y0, double y1)[n];
-var redPts = new (double x, double y0, double y1)[n];
-for (int i = 0; i < n; i++)
-{
-    double a = data[i].A, b = data[i].B;
-    greenPts[i] = (i, Math.Min(a, b), a);
-    redPts[i] = (i, Math.Min(a, b), b);
-}
+var greenPts = data.Select(d => (x: d.X, y0: Math.Min(d.A, d.B), y1: d.A)).ToArray();
+var redPts   = data.Select(d => (x: d.X, y0: Math.Min(d.A, d.B), y1: d.B)).ToArray();
 
-var areaGreen = AreaGenerator.Create<(double x, double y0, double y1)>(
-    d => xScale.Map(d.x),
-    d => yScale.Map(d.y0),
-    d => yScale.Map(d.y1));
-string? greenPath = areaGreen.Generate(greenPts);
-string? redPath = areaGreen.Generate(redPts);
-D3Canvas(W, H, [..grid, ..axes, greenArea, redArea, lineA, lineB, ..legend, title]);";
+D3Canvas(W, H,
+    [..grid, ..axes,
+     D3AreaPath(greenPts, x: d => xs.Map(d.x), y0: d => ys.Map(d.y0), y1: d => ys.Map(d.y1), fill: greenFill),
+     D3AreaPath(redPts,   x: d => xs.Map(d.x), y0: d => ys.Map(d.y0), y1: d => ys.Map(d.y1), fill: redFill),
+     D3LinePath(data, x: d => xs.Map(d.X), y: d => ys.Map(d.A), stroke: greenBrush, curve: MonotoneX),
+     D3LinePath(data, x: d => xs.Map(d.X), y: d => ys.Map(d.B), stroke: redBrush, curve: MonotoneX),
+     ..legend, title]);";
 
     private record struct Point(double X, double A, double B);
 
@@ -71,29 +65,8 @@ D3Canvas(W, H, [..grid, ..axes, greenArea, redArea, lineA, lineB, ..legend, titl
         var greenPts = data.Select((d, i) => (x: (double)i, y0: Math.Min(d.A, d.B), y1: d.A)).ToArray();
         var redPts = data.Select((d, i) => (x: (double)i, y0: Math.Min(d.A, d.B), y1: d.B)).ToArray();
 
-        // Green area (Revenue > Expenses)
-        var areaGreen = AreaGenerator.Create<(double x, double y0, double y1)>(
-            d => xScale.Map(d.x),
-            d => yScale.Map(d.y0),
-            d => yScale.Map(d.y1));
-        string? greenPath = areaGreen.Generate(greenPts);
-
-        // Red area (Expenses > Revenue)
-        var areaRed = AreaGenerator.Create<(double x, double y0, double y1)>(
-            d => xScale.Map(d.x),
-            d => yScale.Map(d.y0),
-            d => yScale.Map(d.y1));
-        string? redPath = areaRed.Generate(redPts);
-
-        // Line for series A (Revenue)
-        var lineA = LineGenerator.Create<Point>(d => xScale.Map(d.X), d => yScale.Map(d.A))
-            .SetCurve(D3Curve.MonotoneX);
-        string? lineAPath = lineA.Generate(data);
-
-        // Line for series B (Expenses)
-        var lineB = LineGenerator.Create<Point>(d => xScale.Map(d.X), d => yScale.Map(d.B))
-            .SetCurve(D3Curve.MonotoneX);
-        string? lineBPath = lineB.Generate(data);
+        var greenBrush = Brush(D3Color.Parse("#2ca02c"));
+        var redBrush = Brush(D3Color.Parse("#d62728"));
 
         // Legend
         double lx = marginLeft + plotW - 130;
@@ -102,10 +75,14 @@ D3Canvas(W, H, [..grid, ..axes, greenArea, redArea, lineA, lineB, ..legend, titl
         [
             .. grid,
             .. axes,
-            D3Path(greenPath, fill: Brush(D3Color.Parse("#2ca02c"), opacity: 0.35)),
-            D3Path(redPath, fill: Brush(D3Color.Parse("#d62728"), opacity: 0.35)),
-            D3Path(lineAPath, stroke: Brush(D3Color.Parse("#2ca02c")), strokeWidth: 2),
-            D3Path(lineBPath, stroke: Brush(D3Color.Parse("#d62728")), strokeWidth: 2),
+            D3AreaPath(greenPts, x: d => xScale.Map(d.x), y0: d => yScale.Map(d.y0), y1: d => yScale.Map(d.y1),
+                fill: Brush(D3Color.Parse("#2ca02c"), opacity: 0.35)),
+            D3AreaPath(redPts, x: d => xScale.Map(d.x), y0: d => yScale.Map(d.y0), y1: d => yScale.Map(d.y1),
+                fill: Brush(D3Color.Parse("#d62728"), opacity: 0.35)),
+            D3LinePath(data, x: d => xScale.Map(d.X), y: d => yScale.Map(d.A),
+                stroke: greenBrush, strokeWidth: 2, curve: D3Curve.MonotoneX),
+            D3LinePath(data, x: d => xScale.Map(d.X), y: d => yScale.Map(d.B),
+                stroke: redBrush, strokeWidth: 2, curve: D3Curve.MonotoneX),
             .. D3Legend(lx, marginTop + 6, [("Revenue", Brush(D3Color.Parse("#2ca02c"))), ("Expenses", Brush(D3Color.Parse("#d62728")))]),
             D3Text(marginLeft, 4, "Difference Chart (Revenue vs Expenses)", 14, Gray(40)),
         ]);

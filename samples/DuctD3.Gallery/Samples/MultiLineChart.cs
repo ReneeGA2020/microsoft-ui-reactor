@@ -14,13 +14,12 @@ public class MultiLineChart : GallerySample
     public override string Category => "Lines";
 
     public override string SourceCode => @"
-foreach (var (series, color) in seriesData.Zip(colors))
+var lines = allSeries.Select((series, s) =>
 {
-    var line = LineGenerator.Create<(double x, double y)>(
-        d => xs.Map(d.x), d => ys.Map(d.y));
-    var pathData = line.Generate(series);
-    D3Path(pathData, stroke: Brush(color), strokeWidth: 2)
-}";
+    var data = series.Select((v, i) => (x: (double)i, y: v)).ToArray();
+    return D3LinePath(data, x: d => xs.Map(d.x), y: d => ys.Map(d.y),
+        stroke: Brush(colors[s]), strokeWidth: 2);
+});";
 
     public override Element Render()
     {
@@ -54,9 +53,8 @@ foreach (var (series, color) in seriesData.Zip(colors))
         var lines = allSeries.Select((series, s) =>
         {
             var data = series.Select((v, i) => (x: (double)i, y: v)).ToArray();
-            var line = LineGenerator.Create<(double x, double y)>(
-                d => xs.Map(d.x), d => ys.Map(d.y));
-            return (Element)D3Path(line.Generate(data), stroke: Brush(colors[s]), strokeWidth: 2);
+            return (Element)D3LinePath(data, x: d => xs.Map(d.x), y: d => ys.Map(d.y),
+                stroke: Brush(colors[s]), strokeWidth: 2);
         });
 
         double legendX = W - right + 10;

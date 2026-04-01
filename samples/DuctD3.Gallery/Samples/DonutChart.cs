@@ -14,18 +14,14 @@ public sealed class DonutChartSample : GallerySample
     public override string Category => "Radial";
 
     public override string SourceCode => """
-        var data = new[] {
-            ("Housing", 1800.0), ("Food", 650.0), ("Transport", 400.0),
-            ("Utilities", 250.0), ("Health", 300.0), ("Savings", 600.0)
-        };
-        var pie = PieGenerator.Create<(string, double)>(d => d.Item2)
-            .SetSortValues(null).SetPadAngle(0.02);
-        var arc = new ArcGenerator().SetOuterRadius(150).SetInnerRadius(80);
-        var arcs = pie.Generate(data);
-        var slices = arcs.Select((a, i) =>
-            D3PathTranslated(arc.Generate(a), cx, cy,
-                fill: Brush(Palette[i % Palette.Length])));
-        D3Canvas(width, height, [..slices, ..labels, ..centerText, title]);
+        var arcs = PieGenerator.Generate(data, value: d => d.Value, sort: false, padAngle: 0.02);
+        var slices = arcs.SelectMany((a, i) => new[] {
+            D3ArcPath(a.StartAngle, a.EndAngle, cx, cy,
+                outerRadius: 150, innerRadius: 80, padAngle: 0.02,
+                fill: Brush(Palette[i % Palette.Length])),
+            D3Text(cx + lx, cy + ly, a.Data.Name, 10, brush),
+        });
+        D3Canvas(width, height, [..slices, ..centerText, title]);
         """;
 
     public override Element Render()
@@ -39,23 +35,18 @@ public sealed class DonutChartSample : GallerySample
             ("Utilities", 250.0), ("Health", 300.0), ("Savings", 600.0)
         };
 
-        var pie = PieGenerator.Create<(string Name, double Value)>(d => d.Value)
-            .SetSortValues(null)
-            .SetPadAngle(0.02);
-        var arc = new ArcGenerator().SetOuterRadius(150).SetInnerRadius(80);
-        var arcs = pie.Generate(data);
-
-        var labelArc = new ArcGenerator().SetOuterRadius(185).SetInnerRadius(185);
+        var arcs = PieGenerator.Generate(data, value: d => d.Value, sort: false, padAngle: 0.02);
         double total = data.Sum(d => d.Value);
 
         return D3Canvas(width, height,
         [
             .. arcs.SelectMany((a, i) =>
                 {
-                    var (lx, ly) = labelArc.Centroid(a.StartAngle, a.EndAngle);
+                    var (lx, ly) = ArcGenerator.Centroid(a.StartAngle, a.EndAngle, innerRadius: 185, outerRadius: 185);
                     return new Element[]
                     {
-                        D3PathTranslated(arc.Generate(a), cx, cy,
+                        D3ArcPath(a.StartAngle, a.EndAngle, cx, cy,
+                            outerRadius: 150, innerRadius: 80, padAngle: 0.02,
                             fill: Brush(Palette[i % Palette.Length])),
                         D3Text(cx + lx - 24, cy + ly - 7,
                             $"{a.Data.Name}", 10, Brush(Palette[i % Palette.Length])),

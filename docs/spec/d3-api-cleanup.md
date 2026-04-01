@@ -690,6 +690,121 @@ These are fine as positional:
 
 ---
 
+## 10. Functional Generator Pattern
+
+Generators (LineGenerator, AreaGenerator, ArcGenerator, PieGenerator, etc.) required a
+multi-step imperative pattern: create instance → configure with fluent setters → call
+`.Generate(data)` → pass result to `D3Path()`. This broke the "single expression per
+visual element" ideal that the rest of the DSL achieves.
+
+### 10.1 The problem
+
+A simple line chart required 3 statements just for the line:
+```csharp
+var line = LineGenerator.Create<(double x, double y)>(d => xs.Map(d.x), d => ys.Map(d.y));
+var pathData = line.Generate(data);
+D3Path(pathData, stroke: lineBrush, strokeWidth: 2)
+```
+
+An area chart with a line overlay needed 8 lines of generator plumbing. Pie charts needed
+3 generator instances (pie + arc + label arc).
+
+### 10.2 Solution: DSL-level one-shot helpers
+
+Added to `D3` class (imported via `using static Duct.D3.Charts.D3`):
+
+| Helper | Signature | Returns |
+|--------|-----------|---------|
+| `D3LinePath<T>` | `(data, x, y, stroke?, strokeWidth?, curve?, defined?)` | `PathElement` |
+| `D3AreaPath<T>` | `(data, x, y0, y1, fill?, stroke?, strokeWidth?, curve?)` | `PathElement` |
+| `D3ArcPath` | `(startAngle, endAngle, cx, cy, innerRadius?, outerRadius?, padAngle?, fill?, stroke?, strokeWidth?)` | `PathElement` |
+| `D3Pie<T>` | `(data, value, cx, cy, outerRadius?, innerRadius?, padAngle?, sort?, stroke?, strokeWidth?)` | `Element[]` |
+
+Each collapses the full create → configure → generate → wrap pipeline into a single expression.
+
+### 10.3 Static convenience methods on generators
+
+For cases where intermediate data is needed (e.g., label positioning on pie slices):
+
+| Method | Purpose |
+|--------|---------|
+| `PieGenerator.Generate<T>(data, value, sort?, padAngle?)` | One-shot pie arc computation — no instance construction |
+| `ArcGenerator.Centroid(startAngle, endAngle, innerRadius?, outerRadius?)` | Static centroid — no instance needed |
+
+### 10.4 Before/after examples
+
+**LineChart** — 3 lines → 1 expression:
+```csharp
+// Before:
+var line = LineGenerator.Create<(double x, double y)>(d => xs.Map(d.x), d => ys.Map(d.y));
+var pathData = line.Generate(data);
+D3Path(pathData, stroke: lineBrush, strokeWidth: 2)
+
+// After:
+D3LinePath(data, x: d => xs.Map(d.x), y: d => ys.Map(d.y), stroke: lineBrush, strokeWidth: 2)
+```
+
+**AreaChart** — 8 lines → 2 expressions:
+```csharp
+// Before:
+var area = AreaGenerator.Create<(double x, double y)>(
+    d => xScale.Map(d.x), d => yScale.Map(0), d => yScale.Map(d.y));
+string? areaPath = area.Generate(data);
+var line = LineGenerator.Create<(double x, double y)>(d => xScale.Map(d.x), d => yScale.Map(d.y))
+    .SetCurve(D3Curve.MonotoneX);
+string? linePath = line.Generate(data);
+D3Path(areaPath, fill: Brush(Palette[0], opacity: 0.3)),
+D3Path(linePath, stroke: Brush(Palette[0]), strokeWidth: 2),
+
+// After:
+D3AreaPath(data, x: d => xScale.Map(d.x), y0: d => yScale.Map(0), y1: d => yScale.Map(d.y),
+    fill: Brush(Palette[0], opacity: 0.3)),
+D3LinePath(data, x: d => xScale.Map(d.x), y: d => yScale.Map(d.y),
+    stroke: Brush(Palette[0]), strokeWidth: 2, curve: D3Curve.MonotoneX),
+```
+
+**PieChart** — 3 generator instances + 5-line setup → 1-line setup:
+```csharp
+// Before:
+var pie = PieGenerator.Create<T>(d => d.Value).SetSortValues(null);
+var arc = new ArcGenerator().SetOuterRadius(150).SetInnerRadius(0);
+var arcs = pie.Generate(data);
+var labelArc = new ArcGenerator().SetOuterRadius(180).SetInnerRadius(180);
+// then: labelArc.Centroid(...), D3PathTranslated(arc.Generate(a), cx, cy, ...)
+
+// After:
+var arcs = PieGenerator.Generate(data, value: d => d.Value, sort: false);
+// then: ArcGenerator.Centroid(..., innerRadius: 180, outerRadius: 180),
+//       D3ArcPath(a.StartAngle, a.EndAngle, cx, cy, outerRadius: 150, fill: ...)
+```
+
+### 10.5 When to use which
+
+- **Single path from data** → `D3LinePath` / `D3AreaPath` (covers 90% of line/area chart cases)
+- **Arc sector** → `D3ArcPath` (pie slices, sunburst nodes)
+- **Simple pie with palette colors** → `D3Pie` (no labels needed)
+- **Pie with custom labels** → `PieGenerator.Generate` + `D3ArcPath` + `ArcGenerator.Centroid`
+- **Complex configuration** (e.g., `SetDefined`, `.Set()` on result) → `D3LinePath` supports `defined:` param; for `.Set()` chaining, the result is still a `PathElement` so `.Set()` works
+
+### 10.6 Samples migrated
+
+| Sample | Generators replaced | Lines saved |
+|--------|-------------------|-------------|
+| LineChart | LineGenerator | 2 |
+| MultiLineChart | LineGenerator | 2 |
+| AreaChart | AreaGenerator + LineGenerator | 6 |
+| LineChartMissingData | 2× LineGenerator | 4 |
+| DifferenceChart | 2× AreaGenerator + 2× LineGenerator | 12 |
+| RidgePlot | AreaGenerator + LineGenerator (per row) | 8 |
+| StackedAreaChart | AreaGenerator (per series) | 5 |
+| StreamgraphChart | AreaGenerator (per series) | 5 |
+| PieChart | PieGenerator + 2× ArcGenerator | 4 |
+| DonutChart | PieGenerator + 2× ArcGenerator | 5 |
+| Sunburst | ArcGenerator | 2 |
+| ChordDiagram | `.Where().Select()` null guard | 2 |
+
+---
+
 ## 9. Summary of Recommended Changes
 
 1. ~~**Make `D3Path(null, ...)` return a benign no-op element**~~ DONE — doc clarified, null guards removed from all affected samples
@@ -704,3 +819,4 @@ These are fine as positional:
 10. ~~**Rewrite MultiLineChart**~~ DONE — converted all 3 for-loops to LINQ + D3Legend
 11. ~~**Convert 10+ samples to query syntax**~~ DONE — converted BoxPlot (12 let), DivergingBarChart (6), CandlestickChart (5), BarChart (3), HorizontalBarChart (3) to query syntax; others were simplified via direct LINQ in earlier passes
 12. ~~**Add named parameters at call sites**~~ DONE — `Gray(alpha:)`, `Brush(opacity:)` sweep across all samples
+13. ~~**Functional generator helpers**~~ DONE — `D3LinePath`, `D3AreaPath`, `D3ArcPath`, `D3Pie` DSL helpers + `PieGenerator.Generate` and `ArcGenerator.Centroid` static methods; migrated 12 samples

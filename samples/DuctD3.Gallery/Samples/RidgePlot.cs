@@ -17,22 +17,21 @@ public class RidgePlot : GallerySample
     public override string Category => "Areas";
 
     public override string SourceCode => """
-        double rowHeight = plotH / rows;
-        double overlap = rowHeight * 0.45;
+        double rowStep = plotH / rows;
+        double overlap = rowStep * 0.45;
 
-        for (int r = 0; r < rows; r++)
-        {
+        ..Enumerable.Range(0, rows).Reverse().SelectMany(r => {
             double baselineY = marginTop + r * (rowStep - overlap) + rowStep + overlap;
-            var yScale = new LinearScale([0, peak], [baselineY, baselineY - rowStep * 1.2]);
-
-            var area = AreaGenerator.Create<(double x, double y)>(
-                d => xScale.Map(d.x),
-                _ => baselineY,
-                d => yScale.Map(d.y));
-            string? path = area.Generate(distribution);
-            D3Path(path, fill: Brush(D3Color.Parse("#ffffff"), opacity: 0.85))
-            D3Path(path, fill: Brush(Palette[r], opacity: 0.55))
-        }
+            var ys = new LinearScale([0, peak], [baselineY, baselineY - rowStep * 1.2]);
+            return new Element[] {
+                D3AreaPath(pts, x: d => xs.Map(d.x), y0: _ => baselineY, y1: d => ys.Map(d.y),
+                    fill: Brush("#ffffff", opacity: 0.85)),
+                D3AreaPath(pts, x: d => xs.Map(d.x), y0: _ => baselineY, y1: d => ys.Map(d.y),
+                    fill: Brush(Palette[r], opacity: 0.55)),
+                D3LinePath(pts, x: d => xs.Map(d.x), y: d => ys.Map(d.y),
+                    stroke: Brush(Palette[r]), strokeWidth: 1.5, curve: D3Curve.Natural),
+            };
+        })
         """;
 
     public override Element Render()
@@ -92,23 +91,14 @@ public class RidgePlot : GallerySample
                     .Select(i => (x: (double)i, y: distributions[r][i]))
                     .ToArray();
 
-                var area = AreaGenerator.Create<(double x, double y)>(
-                    d => xScale.Map(d.x),
-                    _ => baselineY,
-                    d => yScale.Map(d.y));
-                string? areaPath = area.Generate(pts);
-
-                var line = LineGenerator.Create<(double x, double y)>(
-                    d => xScale.Map(d.x),
-                    d => yScale.Map(d.y))
-                    .SetCurve(D3Curve.Natural);
-                string? linePath = line.Generate(pts);
-
                 return (Element[])
                 [
-                    D3Path(areaPath, fill: Brush(D3Color.Parse("#ffffff"), opacity: 0.85)),
-                    D3Path(areaPath, fill: Brush(Palette[r], opacity: 0.55)),
-                    D3Path(linePath, stroke: Brush(Palette[r]), strokeWidth: 1.5),
+                    D3AreaPath(pts, x: d => xScale.Map(d.x), y0: _ => baselineY, y1: d => yScale.Map(d.y),
+                        fill: Brush(D3Color.Parse("#ffffff"), opacity: 0.85)),
+                    D3AreaPath(pts, x: d => xScale.Map(d.x), y0: _ => baselineY, y1: d => yScale.Map(d.y),
+                        fill: Brush(Palette[r], opacity: 0.55)),
+                    D3LinePath(pts, x: d => xScale.Map(d.x), y: d => yScale.Map(d.y),
+                        stroke: Brush(Palette[r]), strokeWidth: 1.5, curve: D3Curve.Natural),
                     D3Line(marginLeft, baselineY, marginLeft + plotW, baselineY) with { Stroke = Gray(210), StrokeThickness = 0.5 },
                     D3Text(4, baselineY - rowStep * 0.5 - 6, labels[r], 11, Gray(80)),
                 ];

@@ -84,9 +84,8 @@ public sealed class ChordDiagramSample : GallerySample
                 };
             }),
             .. data.Chords
-                .Select(c => (color: Palette[c.Source.Index % Palette.Length], pathData: ribbon.Generate(c)))
-                .Where(x => x.pathData != null)
-                .Select(x => D3PathTranslated(x.pathData!, cx, cy, fill: Brush(x.color, opacity: 0.55))),
+                .Select(c => D3PathTranslated(ribbon.Generate(c), cx, cy,
+                    fill: Brush(Palette[c.Source.Index % Palette.Length], opacity: 0.55))),
             D3Text(12, 6, "Chord Diagram — Regional Trade Flow", 14, Brush("#333333")),
         ]);
     }

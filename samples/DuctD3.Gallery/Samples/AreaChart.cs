@@ -17,18 +17,13 @@ public class AreaChart : GallerySample
     public override string Category => "Areas";
 
     public override string SourceCode => """
-        var area = AreaGenerator.Create<(double x, double y)>(
-            d => xScale.Map(d.x),
-            d => yScale.Map(0),
-            d => yScale.Map(d.y));
-        string? areaPath = area.Generate(data);
-        var line = LineGenerator.Create<(double x, double y)>(...)
-            .SetCurve(D3Curve.MonotoneX);
         D3Canvas(W, H,
             ..D3Grid(yScale, marginLeft, plotW),
             ..D3Axes(xScale, yScale, marginLeft, marginTop, plotW, plotH),
-            D3Path(areaPath, fill: Brush(Palette[0], opacity: 0.3)),
-            D3Path(linePath, stroke: Brush(Palette[0]), strokeWidth: 2),
+            D3AreaPath(data, x: d => xScale.Map(d.x), y0: d => yScale.Map(0), y1: d => yScale.Map(d.y),
+                fill: Brush(Palette[0], opacity: 0.3)),
+            D3LinePath(data, x: d => xScale.Map(d.x), y: d => yScale.Map(d.y),
+                stroke: Brush(Palette[0]), strokeWidth: 2, curve: D3Curve.MonotoneX),
             ..dots
         )
         """;
@@ -56,28 +51,16 @@ public class AreaChart : GallerySample
         var yScale = new LinearScale([0, Math.Max(yMax * 1.1, 10)], [marginTop + plotH, marginTop]);
         yScale.Nice();
 
-        // Area generator
-        var area = AreaGenerator.Create<(double x, double y)>(
-            d => xScale.Map(d.x),
-            d => yScale.Map(0),
-            d => yScale.Map(d.y));
-        string? areaPath = area.Generate(data);
-
-        // Line generator with monotone curve
-        var line = LineGenerator.Create<(double x, double y)>(
-            d => xScale.Map(d.x),
-            d => yScale.Map(d.y))
-            .SetCurve(D3Curve.MonotoneX);
-        string? linePath = line.Generate(data);
-
         var dots = data.Select(d =>
             (Element)(D3Circle(xScale.Map(d.x), yScale.Map(d.y), 3) with { Fill = Brush(Palette[0]) }));
 
         return D3Canvas(W, H,
             [.. D3Grid(yScale, marginLeft, plotW),
              .. D3Axes(xScale, yScale, marginLeft, marginTop, plotW, plotH),
-             D3Path(areaPath, fill: Brush(Palette[0], opacity: 0.3)),
-             D3Path(linePath, stroke: Brush(Palette[0]), strokeWidth: 2),
+             D3AreaPath(data, x: d => xScale.Map(d.x), y0: d => yScale.Map(0), y1: d => yScale.Map(d.y),
+                fill: Brush(Palette[0], opacity: 0.3)),
+             D3LinePath(data, x: d => xScale.Map(d.x), y: d => yScale.Map(d.y),
+                stroke: Brush(Palette[0]), strokeWidth: 2, curve: D3Curve.MonotoneX),
              .. dots,
              D3Text(marginLeft, 2, "Area Chart", 14, Gray(40))]
         );
