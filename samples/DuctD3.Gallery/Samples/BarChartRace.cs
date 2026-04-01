@@ -3,39 +3,50 @@ using Duct.Core;
 using Duct.D3;
 using Duct.D3.Charts;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
 using static Duct.D3.Charts.D3;
 using static Duct.UI;
-using WinCanvas = Microsoft.UI.Xaml.Controls.Canvas;
-using WinShapes = Microsoft.UI.Xaml.Shapes;
 
 namespace DuctD3.Gallery;
 
 /// <summary>
 /// An animated horizontal bar chart that races through yearly data —
-/// bars grow, shrink, and re-sort as the year advances. Uses D3Ease
-/// for smooth interpolation and a DispatcherQueue timer to drive frames.
+/// bars grow, shrink, and re-sort as the year advances. Uses Func + UseState +
+/// UseEffect for fully declarative animation: a timer updates eased progress,
+/// triggering re-renders that produce a D3Canvas with interpolated bar positions.
 /// </summary>
 public sealed class BarChartRaceSample : GallerySample
 {
     public override string Title => "Bar Chart Race";
     public override string Description =>
         "An animated bar chart race where horizontal bars grow, shrink, and re-sort over time. " +
-        "Uses D3Ease.CubicInOut for smooth transitions and DispatcherQueue for frame timing.";
+        "Uses D3Ease.Cubic for smooth transitions and UseEffect for timer lifecycle.";
     public override string Category => "Animation";
 
     public override string SourceCode => """
-        // Timer advances the year, interpolates bar widths + positions
-        timer = DispatcherQueue.CreateTimer();
-        timer.Interval = TimeSpan.FromMilliseconds(60);
-        timer.Tick += (_, _) => {
-            progress += 0.04;
-            if (progress >= 1) { progress = 0; yearIdx++; }
-            double t = D3Ease.Cubic(progress);
-            // Interpolate bar width and Y position
-            bar.Width = D3Interpolate.Number(oldW, newW)(t);
-        };
+        var (yearIdx, setYearIdx) = ctx.UseState(0);
+        var (animT, setAnimT) = ctx.UseState(0.0);
+
+        ctx.UseEffect(() => {
+            var timer = DispatcherQueue.GetForCurrentThread().CreateTimer();
+            timer.Tick += (_, _) => {
+                progress.Current += 0.03;
+                if (progress.Current >= 1.0) { AdvanceYear(); }
+                setAnimT(D3Ease.Cubic(progress.Current));
+            };
+            timer.Start();
+            return () => timer.Stop();
+        }, yearIdx);
+
+        // Interpolate bar widths and Y positions, render declaratively
+        return D3Canvas(W, H, [
+            ..countries.SelectMany((name, ci) => new[] {
+                D3Rect(left, interpY, xScale.Map(interpVal), barH),
+                D3TextRight(0, interpY, name, left - 10),
+                D3Text(left + barW + 6, interpY, $"${val:F1}T"),
+            }),
+            D3Text(..., "GDP by Country"),
+            D3Text(..., Years[yearIdx]),  // watermark
+        ]);
         """;
 
     static readonly string[] Countries = ["USA", "China", "Japan", "Germany", "India", "UK", "France", "Brazil"];
@@ -52,169 +63,99 @@ public sealed class BarChartRaceSample : GallerySample
 
     static readonly string[] Years = ["2018", "2019", "2020", "2021", "2022", "2023"];
 
+    const int N = 8; // country count
+    const double W = 700, H = 420;
+    const double Left = 80, Top = 40, Right = 40, Bottom = 20;
+
+    static readonly double PlotW = W - Left - Right;
+    static readonly double PlotH = H - Top - Bottom;
+    static readonly double BarH = PlotH / N * 0.75;
+    static readonly double BarGap = PlotH / N;
+    static readonly double MaxVal = YearData.SelectMany(y => y).Max() + 2;
+    static readonly LinearScale XScale = new([0, MaxVal], [0, PlotW]);
+
     public override Element Render()
     {
-        const double W = 700, H = 420;
-        const double left = 80, top = 40, right = 40, bottom = 20;
-        double plotW = W - left - right;
-        double plotH = H - top - bottom;
-        double barH = plotH / Countries.Length * 0.75;
-        double barGap = plotH / Countries.Length;
-
-        return new XamlHostElement(() =>
+        return Func(ctx =>
         {
-            var canvas = new WinCanvas
+            var (yearIdx, setYearIdx) = ctx.UseState(0);
+            var (animT, setAnimT) = ctx.UseState(0.0);
+
+            var prevValues = ctx.UseRef(YearData[0].ToArray());
+            var nextValues = ctx.UseRef(YearData[1].ToArray());
+            var prevOrder = ctx.UseRef(RankOrder(0));
+            var nextOrder = ctx.UseRef(RankOrder(1));
+            var progress = ctx.UseRef(0.0);
+
+            // Timer effect — auto-advances through years
+            ctx.UseEffect(() =>
             {
-                Width = W, Height = H,
-                Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
-            };
-
-            var palette = D3Color.Category10;
-
-            // Pre-create elements for animation
-            var bars = new WinShapes.Rectangle[Countries.Length];
-            var labels = new TextBlock[Countries.Length];
-            var valueLabels = new TextBlock[Countries.Length];
-            var yearLabel = new TextBlock
-            {
-                Text = Years[0],
-                FontSize = 48,
-                FontWeight = Microsoft.UI.Text.FontWeights.Bold,
-                Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(40, 100, 100, 100)),
-            };
-            WinCanvas.SetLeft(yearLabel, W - 160);
-            WinCanvas.SetTop(yearLabel, H - 80);
-            canvas.Children.Add(yearLabel);
-
-            // Title
-            var title = new TextBlock
-            {
-                Text = "GDP by Country (Trillions USD)",
-                FontSize = 14,
-                Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(200, 50, 50, 50)),
-            };
-            WinCanvas.SetLeft(title, 12);
-            WinCanvas.SetTop(title, 8);
-            canvas.Children.Add(title);
-
-            // Sort initial data
-            int[] order = Enumerable.Range(0, Countries.Length).OrderByDescending(i => YearData[0][i]).ToArray();
-            double maxVal = YearData.SelectMany(y => y).Max();
-            var xScale = new LinearScale([0, maxVal + 2], [0, plotW]);
-
-            for (int rank = 0; rank < Countries.Length; rank++)
-            {
-                int ci = order[rank];
-                var color = palette[ci % palette.Length];
-                var brush = new SolidColorBrush(
-                    Windows.UI.Color.FromArgb((byte)(color.Opacity * 255), color.R, color.G, color.B));
-
-                double bw = xScale.Map(YearData[0][ci]);
-                double by = top + rank * barGap;
-
-                bars[ci] = new WinShapes.Rectangle
+                var timer = Microsoft.UI.Dispatching.DispatcherQueue
+                    .GetForCurrentThread().CreateTimer();
+                timer.Interval = TimeSpan.FromMilliseconds(50);
+                timer.Tick += (_, _) =>
                 {
-                    Width = Math.Max(0, bw),
-                    Height = barH,
-                    Fill = brush,
-                    RadiusX = 3,
-                    RadiusY = 3,
+                    progress.Current += 0.03;
+                    if (progress.Current >= 1.0)
+                    {
+                        // Advance to next year transition
+                        int next = (yearIdx + 1) % Years.Length;
+                        prevValues.Current = nextValues.Current;
+                        prevOrder.Current = nextOrder.Current;
+                        nextValues.Current = YearData[(next + 1) % Years.Length].ToArray();
+                        nextOrder.Current = RankOrder((next + 1) % Years.Length);
+                        progress.Current = 0.0;
+                        setAnimT(0.0);
+                        setYearIdx(next);
+                        return;
+                    }
+                    setAnimT(D3Ease.Cubic(progress.Current));
                 };
-                WinCanvas.SetLeft(bars[ci], left);
-                WinCanvas.SetTop(bars[ci], by);
-                canvas.Children.Add(bars[ci]);
+                timer.Start();
+                return () => timer.Stop();
+            }, yearIdx);
 
-                labels[ci] = new TextBlock
-                {
-                    Text = Countries[ci],
-                    FontSize = 11,
-                    FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                    Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(200, 50, 50, 50)),
-                    TextAlignment = TextAlignment.Right,
-                    Width = left - 10,
-                };
-                WinCanvas.SetLeft(labels[ci], 0);
-                WinCanvas.SetTop(labels[ci], by + barH / 2 - 8);
-                canvas.Children.Add(labels[ci]);
-
-                valueLabels[ci] = new TextBlock
-                {
-                    Text = $"${YearData[0][ci]:F1}T",
-                    FontSize = 10,
-                    Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(180, 80, 80, 80)),
-                };
-                WinCanvas.SetLeft(valueLabels[ci], left + bw + 6);
-                WinCanvas.SetTop(valueLabels[ci], by + barH / 2 - 7);
-                canvas.Children.Add(valueLabels[ci]);
+            // Compute rank → Y position maps for prev and next
+            double[] prevY = new double[N], nextY = new double[N];
+            for (int rank = 0; rank < N; rank++)
+            {
+                prevY[prevOrder.Current[rank]] = Top + rank * BarGap;
+                nextY[nextOrder.Current[rank]] = Top + rank * BarGap;
             }
 
-            // Animation state
-            int yearIdx = 0;
-            double progress = 0;
-            int[] prevOrder = order.ToArray();
-            int[] nextOrder = order.ToArray();
-            double[] prevValues = YearData[0].ToArray();
-            double[] nextValues = YearData[0].ToArray();
+            // Render: iterate by country index (stable order for reconciler)
+            var titleBrush = Gray(50, alpha: 200);
+            var valueBrush = Gray(80, alpha: 180);
+            var yearBrush = Gray(100, alpha: 40);
 
-            void AdvanceYear()
-            {
-                prevOrder = nextOrder.ToArray();
-                prevValues = nextValues.ToArray();
-                yearIdx = (yearIdx + 1) % YearData.Length;
-                nextValues = YearData[yearIdx].ToArray();
-                nextOrder = Enumerable.Range(0, Countries.Length)
-                    .OrderByDescending(i => nextValues[i]).ToArray();
-            }
-
-            // First advance
-            AdvanceYear();
-
-            var timer = canvas.DispatcherQueue.CreateTimer();
-            timer.Interval = TimeSpan.FromMilliseconds(50);
-            timer.Tick += (_, _) =>
-            {
-                progress += 0.03;
-                if (progress >= 1.0)
+            return D3Canvas(W, H,
+            [
+                .. Enumerable.Range(0, N).SelectMany(ci =>
                 {
-                    progress = 0;
-                    AdvanceYear();
-                }
+                    double val = D3Interpolate.Number(prevValues.Current[ci], nextValues.Current[ci])(animT);
+                    double bw = XScale.Map(val);
+                    double by = D3Interpolate.Number(prevY[ci], nextY[ci])(animT);
 
-                double t = D3Ease.Cubic(progress);
-                yearLabel.Text = Years[yearIdx];
-
-                // Compute rank positions for prev and next
-                double[] prevY = new double[Countries.Length];
-                double[] nextY = new double[Countries.Length];
-                for (int rank = 0; rank < Countries.Length; rank++)
-                {
-                    prevY[prevOrder[rank]] = top + rank * barGap;
-                    nextY[nextOrder[rank]] = top + rank * barGap;
-                }
-
-                for (int ci = 0; ci < Countries.Length; ci++)
-                {
-                    double val = D3Interpolate.Number(prevValues[ci], nextValues[ci])(t);
-                    double bw = xScale.Map(val);
-                    double by = D3Interpolate.Number(prevY[ci], nextY[ci])(t);
-
-                    bars[ci].Width = Math.Max(0, bw);
-                    WinCanvas.SetLeft(bars[ci], left);
-                    WinCanvas.SetTop(bars[ci], by);
-
-                    WinCanvas.SetTop(labels[ci], by + barH / 2 - 8);
-
-                    valueLabels[ci].Text = $"${val:F1}T";
-                    WinCanvas.SetLeft(valueLabels[ci], left + bw + 6);
-                    WinCanvas.SetTop(valueLabels[ci], by + barH / 2 - 7);
-                }
-            };
-            timer.Start();
-
-            canvas.Unloaded += (_, _) => timer.Stop();
-
-            return canvas;
-        }, _ => { })
-        { TypeKey = "BarChartRace" };
+                    return new Element[]
+                    {
+                        D3Rect(Left, by, Math.Max(0, bw), BarH) with
+                        {
+                            Fill = Brush(Palette[ci % Palette.Length]),
+                            RadiusX = 3, RadiusY = 3,
+                        },
+                        D3TextRight(0, by + BarH / 2 - 8, Countries[ci], Left - 10, fontSize: 11,
+                            foreground: titleBrush),
+                        D3Text(Left + bw + 6, by + BarH / 2 - 7, $"${val:F1}T", fontSize: 10,
+                            foreground: valueBrush),
+                    };
+                }),
+                D3Text(12, 8, "GDP by Country (Trillions USD)", fontSize: 14, foreground: titleBrush),
+                D3Text(W - 160, H - 80, Years[yearIdx], fontSize: 48, foreground: yearBrush),
+            ]);
+        });
     }
+
+    /// <summary>Returns country indices sorted by descending value for the given year.</summary>
+    static int[] RankOrder(int yearIdx) =>
+        Enumerable.Range(0, N).OrderByDescending(i => YearData[yearIdx][i]).ToArray();
 }

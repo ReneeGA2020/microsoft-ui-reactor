@@ -3,180 +3,136 @@ using Duct.Core;
 using Duct.D3;
 using Duct.D3.Charts;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using static Duct.D3.Charts.D3;
 using static Duct.UI;
-using WinCanvas = Microsoft.UI.Xaml.Controls.Canvas;
-using WinShapes = Microsoft.UI.Xaml.Shapes;
 
 namespace DuctD3.Gallery;
 
 /// <summary>
-/// A CI/CD-style workflow pipeline where each stage is a composite WinUI control
-/// (icon + title + ProgressBar/status) connected by D3 bezier links.
+/// A CI/CD-style workflow pipeline where each stage is a composite Duct card
+/// (icon + title + ProgressBar + status) connected by horizontal D3 bezier links.
+/// All controls are Duct elements positioned inside a D3Canvas.
 /// </summary>
 public sealed class WorkflowPipelineSample : GallerySample
 {
     public override string Title => "Workflow Pipeline";
     public override string Description =>
-        "A directed workflow graph where each node is a composite WinUI panel (icon, title, progress bar) " +
-        "connected by curved D3 bezier links. Shows how arbitrary XAML subtrees participate in D3 layout.";
+        "A directed workflow graph where each node is a composite panel (icon, title, progress bar) " +
+        "connected by curved bezier links. Shows how Duct controls participate in D3 layout.";
     public override string Category => "Controls";
 
     public override string SourceCode => """
-        // Position nodes in a DAG layout, draw bezier links,
-        // then place composite WinUI panels at each node:
-        var panel = new StackPanel {
-            Children = {
-                new FontIcon { Glyph = stage.Icon },
-                new TextBlock { Text = stage.Name },
-                new ProgressBar { Value = stage.Progress, Maximum = 100 },
-            }
-        };
-        WinCanvas.SetLeft(panel, node.X);
-        WinCanvas.SetTop(panel, node.Y);
+        return D3Canvas(W, H,
+            [.. edges.Select(e => HBezier(cx[e.From], cy[e.From], cx[e.To], cy[e.To])),
+             .. stages.Select((s, i) =>
+                StageCard(s).Canvas(cx[i] - cardW/2, cy[i] - cardH/2)),
+            ]);
+
+        Element StageCard(stage) =>
+            Border(VStack(2,
+                Text(stage.Icon).Set(tb => tb.FontFamily = mdl2),
+                Text(stage.Name).SemiBold(),
+                Progress(stage.Progress),
+                Text(stage.Status),
+            )) with { CornerRadius = 8, BorderBrush = statusColor, ... };
         """;
 
     record Stage(string Name, string Icon, double Progress, string Status, int Column, int Row);
-
     record Edge(int From, int To);
+
+    const double W = 780, H = 420;
+    const double ColW = 130, RowH = 140;
+    const double PadX = 50, PadY = 60;
+    const double CardW = 100, CardH = 80;
+
+    static readonly Stage[] Stages =
+    [
+        new("Source",    "\uE943", 100, "Done",       0, 0),
+        new("Build",    "\uE71A", 100, "Done",       1, 0),
+        new("Unit Test","\uE9D5", 100, "Done",       2, 0),
+        new("Lint",     "\uE71C", 100, "Done",       2, 1),
+        new("Package",  "\uE7B8", 75,  "Running...", 3, 0),
+        new("Staging",  "\uE753", 0,   "Pending",    4, 0),
+        new("Approve",  "\uE8FB", 0,   "Pending",    4, 1),
+        new("Deploy",   "\uE968", 0,   "Pending",    5, 0),
+    ];
+
+    static readonly Edge[] Edges =
+    [
+        new(0, 1), new(1, 2), new(1, 3),
+        new(2, 4), new(3, 4), new(4, 5),
+        new(4, 6), new(5, 7), new(6, 7),
+    ];
 
     public override Element Render()
     {
-        const double W = 780, H = 420;
+        // Compute node center positions from column/row grid
+        var cx = Stages.Select(s => PadX + s.Column * ColW + CardW / 2).ToArray();
+        var cy = Stages.Select(s => PadY + s.Row * RowH + CardH / 2).ToArray();
 
-        var stages = new Stage[]
-        {
-            new("Source",    "\uE943", 100, "Done",       0, 0),  // 0
-            new("Build",    "\uE71A", 100, "Done",       1, 0),  // 1
-            new("Unit Test","\uE9D5", 100, "Done",       2, 0),  // 2
-            new("Lint",     "\uE71C", 100, "Done",       2, 1),  // 3
-            new("Package",  "\uE7B8", 75,  "Running...", 3, 0),  // 4
-            new("Staging",  "\uE753", 0,   "Pending",    4, 0),  // 5
-            new("Approve",  "\uE8FB", 0,   "Pending",    4, 1),  // 6
-            new("Deploy",   "\uE968", 0,   "Pending",    5, 0),  // 7
-        };
+        var edgeBrush = Gray(100, alpha: 100);
 
-        var edges = new Edge[]
-        {
-            new(0, 1), new(1, 2), new(1, 3),
-            new(2, 4), new(3, 4), new(4, 5),
-            new(4, 6), new(5, 7), new(6, 7),
-        };
+        return D3Canvas(W, H,
+        [
+            // Horizontal bezier edges (dashed)
+            .. Edges.Select(e =>
+                HBezier(cx[e.From], cy[e.From], cx[e.To], cy[e.To], edgeBrush)),
 
-        double colW = 130, rowH = 140;
-        double padX = 50, padY = 60;
-        double cardW = 100, cardH = 80;
-
-        return new XamlHostElement(() =>
-        {
-            var canvas = new WinCanvas
-            {
-                Width = W, Height = H,
-                Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
-            };
-
-            // Compute node center positions
-            double[] cx = new double[stages.Length];
-            double[] cy = new double[stages.Length];
-            for (int i = 0; i < stages.Length; i++)
-            {
-                cx[i] = padX + stages[i].Column * colW + cardW / 2;
-                cy[i] = padY + stages[i].Row * rowH + cardH / 2;
-            }
-
-            // Draw bezier edges
-            var edgeBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(100, 100, 100, 100));
-            foreach (var e in edges)
-            {
-                double x1 = cx[e.From], y1 = cy[e.From];
-                double x2 = cx[e.To], y2 = cy[e.To];
-                double mx = (x1 + x2) / 2;
-
-                var pb = new PathBuilder(3);
-                pb.MoveTo(x1, y1);
-                pb.BezierCurveTo(mx, y1, mx, y2, x2, y2);
-
-                canvas.Children.Add(new WinShapes.Path
-                {
-                    Data = PathDataParser.Parse(pb.ToString()),
-                    Stroke = edgeBrush,
-                    StrokeThickness = 2,
-                    StrokeDashArray = [4, 3],
-                });
-            }
-
-            var palette = D3Color.Category10;
-
-            // Place composite control cards at each node
-            for (int i = 0; i < stages.Length; i++)
-            {
-                var s = stages[i];
-                var color = s.Status == "Done" ? palette[2]    // green
-                          : s.Status == "Running..." ? palette[0]  // blue
-                          : palette[7];                            // gray
-
-                var colorBrush = new SolidColorBrush(
-                    Windows.UI.Color.FromArgb((byte)(color.Opacity * 255), color.R, color.G, color.B));
-
-                var icon = new FontIcon
-                {
-                    Glyph = s.Icon,
-                    FontSize = 18,
-                    Foreground = colorBrush,
-                    FontFamily = new FontFamily("Segoe MDL2 Assets"),
-                };
-
-                var title = new TextBlock
-                {
-                    Text = s.Name,
-                    FontSize = 11,
-                    FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                };
-
-                var progress = new ProgressBar
-                {
-                    Value = s.Progress,
-                    Maximum = 100,
-                    Width = 80,
-                    Height = 4,
-                    Margin = new Thickness(0, 4, 0, 0),
-                };
-
-                var status = new TextBlock
-                {
-                    Text = s.Status,
-                    FontSize = 9,
-                    Foreground = colorBrush,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                };
-
-                var card = new Border
-                {
-                    Width = cardW,
-                    Height = cardH,
-                    CornerRadius = new CornerRadius(8),
-                    BorderBrush = colorBrush,
-                    BorderThickness = new Thickness(1.5),
-                    Background = new SolidColorBrush(Windows.UI.Color.FromArgb(15, color.R, color.G, color.B)),
-                    Padding = new Thickness(8),
-                    Child = new StackPanel
-                    {
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        Spacing = 2,
-                        Children = { icon, title, progress, status },
-                    },
-                };
-
-                WinCanvas.SetLeft(card, cx[i] - cardW / 2);
-                WinCanvas.SetTop(card, cy[i] - cardH / 2);
-                canvas.Children.Add(card);
-            }
-
-            return canvas;
-        }, _ => { })
-        { TypeKey = "WorkflowPipeline" };
+            // Stage cards
+            .. Stages.Select((s, i) =>
+                StageCard(s).Canvas(cx[i] - CardW / 2, cy[i] - CardH / 2)),
+        ]);
     }
+
+    static Element StageCard(Stage s)
+    {
+        var color = StatusColor(s.Status);
+        var bgColor = Brush(StatusPaletteColor(s.Status), opacity: 0.06);
+
+        return (Border(
+            VStack(2,
+                (Text(s.Icon) with { FontSize = 18 })
+                    .Set(tb => tb.FontFamily = new FontFamily("Segoe MDL2 Assets"))
+                    .Foreground(color).HAlign(HorizontalAlignment.Center),
+                (Text(s.Name) with { FontSize = 11 })
+                    .SemiBold().HAlign(HorizontalAlignment.Center),
+                Progress(s.Progress).Width(80).Height(4).Margin(0, 4, 0, 0),
+                (Text(s.Status) with { FontSize = 9 })
+                    .Foreground(color).HAlign(HorizontalAlignment.Center)
+            ).HAlign(HorizontalAlignment.Center)
+        ) with
+        {
+            CornerRadius = 8,
+            BorderBrush = color,
+            BorderThickness = 1.5,
+            Background = bgColor,
+            Padding = new Thickness(8),
+        }).Size(CardW, CardH);
+    }
+
+    /// <summary>Horizontal bezier link — control points at midpoint X (for left-to-right DAGs).</summary>
+    static Element HBezier(double x1, double y1, double x2, double y2, Microsoft.UI.Xaml.Media.Brush stroke)
+    {
+        double mx = (x1 + x2) / 2;
+        var pb = new PathBuilder(3);
+        pb.MoveTo(x1, y1);
+        pb.BezierCurveTo(mx, y1, mx, y2, x2, y2);
+        return D3Path(pb.ToString(), stroke: stroke, strokeWidth: 2)
+            .Set(p => p.StrokeDashArray = [4, 3]);
+    }
+
+    static Microsoft.UI.Xaml.Media.Brush StatusColor(string status) => status switch
+    {
+        "Done" => Brush(Palette[2]),         // green
+        "Running..." => Brush(Palette[0]),   // blue
+        _ => Brush(Palette[7]),              // gray
+    };
+
+    static D3Color StatusPaletteColor(string status) => status switch
+    {
+        "Done" => Palette[2],
+        "Running..." => Palette[0],
+        _ => Palette[7],
+    };
 }

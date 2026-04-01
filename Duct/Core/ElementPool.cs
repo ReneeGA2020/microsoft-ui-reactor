@@ -31,6 +31,37 @@ public sealed class ElementPool
 
     private readonly Dictionary<Type, Stack<FrameworkElement>> _pools = new();
 
+    // A scratch panel used to force WinUI to fully process parent detachment.
+    // Adding then removing from this panel ensures WinUI's internal parent
+    // tracking is cleared before the element goes into the pool.
+    private WinUI.StackPanel? _scratchPanel;
+
+    /// <summary>
+    /// Force WinUI to fully release an element's internal parent state by
+    /// round-tripping it through a scratch panel. Returns false if the element
+    /// is broken (can't be re-parented) and should not be pooled.
+    /// </summary>
+    private bool ForceDetach(FrameworkElement element)
+    {
+        try
+        {
+            _scratchPanel ??= new WinUI.StackPanel();
+            _scratchPanel.Children.Add(element);
+            _scratchPanel.Children.Remove(element);
+            return true;
+        }
+        catch (System.Runtime.InteropServices.COMException)
+        {
+            // Element has broken WinUI internal state — not safe to pool.
+            return false;
+        }
+        catch
+        {
+            // No WinUI thread (e.g. unit tests) — skip validation, allow pooling.
+            return true;
+        }
+    }
+
     /// <summary>
     /// Try to rent an element of the given type from the pool.
     /// Returns null if the pool is empty or the type is not poolable.
@@ -39,25 +70,9 @@ public sealed class ElementPool
     {
         if (!PoolableTypes.Contains(type)) { System.Diagnostics.Debug.WriteLine($"[Pool] TryRent({type.Name}) — not poolable"); return null; }
         if (!_pools.TryGetValue(type, out var stack) || stack.Count == 0) { System.Diagnostics.Debug.WriteLine($"[Pool] TryRent({type.Name}) — pool empty"); return null; }
-
-        // Try up to stack.Count times to find a truly parentless element.
-        // WinUI may not have fully disconnected elements from a previous render pass.
-        int attempts = stack.Count;
-        while (attempts-- > 0)
-        {
-            var item = stack.Pop();
-            DetachFromParent(item);
-            if (item.Parent == null)
-            {
-                System.Diagnostics.Debug.WriteLine($"[Pool] TryRent({type.Name}) — GOT {item.GetHashCode()}, {stack.Count} remaining");
-                return item;
-            }
-            // Element still has a parent after detach — WinUI hasn't released it yet. Drop it.
-            System.Diagnostics.Debug.WriteLine($"[Pool] TryRent({type.Name}) — SKIPPED {item.GetHashCode()} (still parented), {stack.Count} remaining");
-        }
-
-        System.Diagnostics.Debug.WriteLine($"[Pool] TryRent({type.Name}) — pool exhausted (all parented)");
-        return null;
+        var item = stack.Pop();
+        System.Diagnostics.Debug.WriteLine($"[Pool] TryRent({type.Name}) — GOT {item.GetHashCode()}, {stack.Count} remaining");
+        return item;
     }
 
     /// <summary>
@@ -80,6 +95,16 @@ public sealed class ElementPool
         // Detach from parent before pooling — WinUI doesn't allow an element in two parents.
         // Use FrameworkElement.Parent (works even for detached trees, unlike VisualTreeHelper).
         DetachFromParent(element);
+
+        // Force WinUI to fully process the detachment by round-tripping through a
+        // scratch panel. Without this, WinUI's internal parent tracking may retain
+        // stale state that causes COMException when the element is re-parented later.
+        // If the round-trip fails, the element is broken and must not be pooled.
+        if (!ForceDetach(element))
+        {
+            System.Diagnostics.Debug.WriteLine($"[Pool] Return({type.Name} {element.GetHashCode()}) — BROKEN (ForceDetach failed), DROPPED");
+            return;
+        }
 
         System.Diagnostics.Debug.WriteLine($"[Pool] Return({type.Name} {element.GetHashCode()}) — POOLED, {stack.Count + 1} in pool");
         CleanElement(element);

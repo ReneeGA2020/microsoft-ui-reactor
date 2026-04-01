@@ -3,42 +3,42 @@ using Duct.Core;
 using Duct.D3;
 using Duct.D3.Charts;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
 using static Duct.D3.Charts.D3;
 using static Duct.UI;
-using WinCanvas = Microsoft.UI.Xaml.Controls.Canvas;
 
 namespace DuctD3.Gallery;
 
 /// <summary>
-/// A treemap where each rectangle contains a WinUI ListView showing the
-/// child items for that category. D3 sizes the outer regions; WinUI
-/// provides scrollable drill-down inside each cell.
+/// A treemap where each rectangle contains a Duct ListView showing the
+/// child items for that category. D3's squarify layout sizes categories;
+/// standard Duct controls provide scrollable drill-down inside each cell.
 /// </summary>
 public sealed class NestedListExplorerSample : GallerySample
 {
     public override string Title => "Nested List Explorer";
     public override string Description =>
-        "A treemap where each rectangle hosts a WinUI ListView showing child items. " +
-        "D3's squarify layout sizes categories; standard WinUI controls provide scrollable drill-down.";
+        "A treemap where each rectangle hosts a ListView showing child items. " +
+        "D3's squarify layout sizes categories; Duct controls provide scrollable drill-down.";
     public override string Category => "Controls";
 
     public override string SourceCode => """
-        var treemap = TreemapLayout.Create<Category>()
+        var treemap = TreemapLayout.Create<CatalogItem>()
             .Size(W, H).SetPadding(4).SetPaddingInner(4);
         var root = treemap.Hierarchy(data, n => n.Subs, n => n.Size);
         treemap.Layout(root);
 
-        // Each top-level cell becomes a Border + ListView
-        foreach (var folder in root.Children)
-        {
-            var list = new ListView();
-            foreach (var leaf in folder.Leaves())
-                list.Items.Add(leaf.Data.Name);
-            WinCanvas.SetLeft(border, folder.X0);
-            WinCanvas.SetTop(border, folder.Y0);
-        }
+        return D3Canvas(W, H,
+            [.. root.Children.Select((folder, ci) =>
+                Border(VStack(4,
+                    Text(folder.Data.Name).SemiBold().Foreground(color),
+                    ListView(folder.Leaves().Select(leaf =>
+                        HStack(8, Text(leaf.Data.Name), Text($"${leaf.Data.Size}"))
+                    ).ToArray())
+                )) with { CornerRadius = 6, BorderBrush = color, ... }
+                  .Size(folder.Width, folder.Height)
+                  .Canvas(folder.X0, folder.Y0)
+            )]
+        );
         """;
 
     record CatalogItem(string Name, double Size = 0, CatalogItem[]? Subs = null);
@@ -80,97 +80,47 @@ public sealed class NestedListExplorerSample : GallerySample
             ]),
         ]);
 
-        return new XamlHostElement(() =>
-        {
-            var canvas = new WinCanvas
-            {
-                Width = W, Height = H,
-                Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
-            };
+        var treemap = TreemapLayout.Create<CatalogItem>()
+            .Size(W, H)
+            .SetPadding(4)
+            .SetPaddingInner(4);
+        var root = treemap.Hierarchy(data, n => n.Subs, n => n.Size);
+        treemap.Layout(root);
 
-            var treemap = TreemapLayout.Create<CatalogItem>()
-                .Size(W, H)
-                .SetPadding(4)
-                .SetPaddingInner(4);
-            var root = treemap.Hierarchy(data, n => n.Subs, n => n.Size);
-            treemap.Layout(root);
-
-            var palette = D3Color.Category10;
-
-            for (int ci = 0; ci < root.Children.Count; ci++)
-            {
-                var folder = root.Children[ci];
-                double fw = folder.Width;
-                double fh = folder.Height;
-                if (fw < 10 || fh < 10) continue;
-
-                var color = palette[ci % palette.Length];
-                var colorBrush = new SolidColorBrush(
-                    Windows.UI.Color.FromArgb((byte)(color.Opacity * 255), color.R, color.G, color.B));
-                var bgBrush = new SolidColorBrush(
-                    Windows.UI.Color.FromArgb(15, color.R, color.G, color.B));
-
-                // Header
-                var header = new TextBlock
+        return D3Canvas(W, H,
+        [
+            .. root.Children
+                .Select((folder, ci) => folder)
+                .Where(folder => folder.Width >= 10 && folder.Height >= 10)
+                .Select((folder, ci) =>
                 {
-                    Text = folder.Data.Name,
-                    FontSize = 12,
-                    FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                    Foreground = colorBrush,
-                    Margin = new Thickness(8, 6, 8, 2),
-                };
+                    var color = Brush(Palette[ci % Palette.Length]);
+                    var bgColor = Brush(Palette[ci % Palette.Length], opacity: 0.06);
+                    var dimBrush = Gray(100, alpha: 160);
 
-                // List of leaf items
-                var listView = new ListView
-                {
-                    SelectionMode = ListViewSelectionMode.Single,
-                    IsItemClickEnabled = true,
-                    Padding = new Thickness(0),
-                    Margin = new Thickness(4, 0, 4, 4),
-                };
+                    var header = (Text(folder.Data.Name) with { FontSize = 12 })
+                        .SemiBold().Foreground(color).Margin(8, 6, 8, 2);
 
-                foreach (var leaf in folder.Leaves())
-                {
-                    var row = new StackPanel
+                    var items = folder.Leaves().Select(leaf =>
+                        (Element)HStack(8,
+                            (Text(leaf.Data.Name) with { FontSize = 11 }).VAlign(VerticalAlignment.Center),
+                            (Text($"${leaf.Data.Size:N0}") with { FontSize = 10 })
+                                .Foreground(dimBrush).VAlign(VerticalAlignment.Center)
+                        )
+                    ).ToArray();
+
+                    return (Border(
+                        VStack(0, header, ListView(items).Margin(4, 0, 4, 4))
+                    ) with
                     {
-                        Orientation = Orientation.Horizontal,
-                        Spacing = 8,
-                        Children =
-                        {
-                            new TextBlock { Text = leaf.Data.Name, FontSize = 11, VerticalAlignment = VerticalAlignment.Center },
-                            new TextBlock
-                            {
-                                Text = $"${leaf.Data.Size:N0}",
-                                FontSize = 10,
-                                Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(160, 100, 100, 100)),
-                                VerticalAlignment = VerticalAlignment.Center,
-                            },
-                        },
-                    };
-                    listView.Items.Add(row);
-                }
-
-                var cell = new Border
-                {
-                    Width = fw,
-                    Height = fh,
-                    CornerRadius = new CornerRadius(6),
-                    BorderBrush = colorBrush,
-                    BorderThickness = new Thickness(1.5),
-                    Background = bgBrush,
-                    Child = new StackPanel
-                    {
-                        Children = { header, listView },
-                    },
-                };
-
-                WinCanvas.SetLeft(cell, folder.X0);
-                WinCanvas.SetTop(cell, folder.Y0);
-                canvas.Children.Add(cell);
-            }
-
-            return canvas;
-        }, _ => { })
-        { TypeKey = "NestedListExplorer" };
+                        CornerRadius = 6,
+                        BorderBrush = color,
+                        BorderThickness = 1.5,
+                        Background = bgColor,
+                    })
+                    .Size(folder.Width, folder.Height)
+                    .Canvas(folder.X0, folder.Y0);
+                }),
+        ]);
     }
 }

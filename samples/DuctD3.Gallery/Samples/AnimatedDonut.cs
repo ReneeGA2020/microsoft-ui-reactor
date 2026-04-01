@@ -3,19 +3,19 @@ using Duct.Core;
 using Duct.D3;
 using Duct.D3.Charts;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
 using static Duct.D3.Charts.D3;
 using static Duct.UI;
-using WinCanvas = Microsoft.UI.Xaml.Controls.Canvas;
-using WinShapes = Microsoft.UI.Xaml.Shapes;
 
 namespace DuctD3.Gallery;
 
 /// <summary>
 /// A donut chart that smoothly animates between different datasets. Wedges
-/// expand, shrink, and transition using D3Ease.ElasticOut interpolation of
+/// expand, shrink, and transition using D3Ease and D3Interpolate to interpolate
 /// startAngle/endAngle. A button cycles through datasets.
+///
+/// Uses Func + UseState + UseEffect + UseRef for fully declarative animation:
+/// the timer updates a single eased progress value, triggering a re-render
+/// that produces a new D3Canvas with interpolated arc angles.
 /// </summary>
 public sealed class AnimatedDonutSample : GallerySample
 {
@@ -26,169 +26,129 @@ public sealed class AnimatedDonutSample : GallerySample
     public override string Category => "Animation";
 
     public override string SourceCode => """
-        // Interpolate startAngle/endAngle between old and new pie layouts
-        timer.Tick += (_, _) => {
-            progress += 0.025;
-            double t = D3Ease.Cubic(progress);
-            for (int i = 0; i < sliceCount; i++) {
-                double sa = D3Interpolate.Number(oldArcs[i].Start, newArcs[i].Start)(t);
-                double ea = D3Interpolate.Number(oldArcs[i].End, newArcs[i].End)(t);
-                paths[i].Data = ParsePathData(arcGen.Generate(sa, ea, padAngle));
-            }
-        };
+        var (datasetIdx, setDatasetIdx) = ctx.UseState(0);
+        var (animT, setAnimT) = ctx.UseState(1.0);
+        var oldArcs = ctx.UseRef(ComputeArcs(0));
+        var newArcs = ctx.UseRef(ComputeArcs(0));
+        var progress = ctx.UseRef(1.0);
+
+        // Timer effect — starts animation when datasetIdx changes
+        ctx.UseEffect(() => {
+            var timer = DispatcherQueue.GetForCurrentThread().CreateTimer();
+            timer.Tick += (_, _) => {
+                progress.Current = Math.Min(progress.Current + 0.025, 1.0);
+                setAnimT(D3Ease.Cubic(progress.Current));
+                if (progress.Current >= 1.0) timer.Stop();
+            };
+            if (progress.Current < 1.0) timer.Start();
+            return () => timer.Stop();
+        }, datasetIdx);
+
+        // Interpolate arcs and render declaratively
+        return VStack(8,
+            D3Canvas(W, H, [
+                ..slices.SelectMany(i => new[] {
+                    D3ArcPath(sa, ea, cx, cy, innerRadius: innerR, outerRadius: outerR,
+                        fill: Brush(Palette[i]), stroke: Brush("#ffffff"), strokeWidth: 2),
+                    D3TextCenter(cx + lx - 12, cy + ly - 8, Labels[i], ...),
+                }),
+                D3TextCenter(cx - 50, cy - 10, DatasetNames[datasetIdx], 100, 14, Gray(60)),
+            ]),
+            Button("Next Dataset ▶", OnNext)
+        );
         """;
 
     static readonly string[] Labels = ["Q1", "Q2", "Q3", "Q4"];
 
     static readonly double[][] Datasets =
     [
-        [40, 30, 20, 10],   // Even spread
-        [60, 15, 15, 10],   // Q1 dominant
-        [20, 50, 20, 10],   // Q2 dominant
-        [10, 10, 60, 20],   // Q3 dominant
-        [25, 25, 25, 25],   // Uniform
+        [40, 30, 20, 10],
+        [60, 15, 15, 10],
+        [20, 50, 20, 10],
+        [10, 10, 60, 20],
+        [25, 25, 25, 25],
     ];
 
     static readonly string[] DatasetNames =
         ["Default", "Q1 Surge", "Q2 Surge", "Q3 Surge", "Uniform"];
 
-    record ArcState(double Start, double End);
+    const double W = 400, H = 400;
+    const double OuterR = 150, InnerR = 80, PadAngle = 0.03;
+    const int SliceCount = 4;
 
     public override Element Render()
     {
-        const double W = 400, H = 400;
-        double cx = W / 2, cy = H / 2;
-        const double outerR = 150, innerR = 80;
-        const double padAngle = 0.03;
-        const int sliceCount = 4;
-
-        return new XamlHostElement(() =>
+        return Func(ctx =>
         {
-            var canvas = new WinCanvas
+            double cx = W / 2, cy = H / 2;
+
+            var (datasetIdx, setDatasetIdx) = ctx.UseState(0);
+            var (animT, setAnimT) = ctx.UseState(1.0);
+
+            var oldArcs = ctx.UseRef(ComputeArcs(0));
+            var newArcs = ctx.UseRef(ComputeArcs(0));
+            var progress = ctx.UseRef(1.0);
+
+            // Timer effect — re-runs when datasetIdx changes
+            ctx.UseEffect(() =>
             {
-                Width = W, Height = H,
-                Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
-            };
+                if (progress.Current >= 1.0) return () => { };
 
-            var palette = D3Color.Category10;
-            var arcGen = new ArcGenerator().SetInnerRadius(innerR).SetOuterRadius(outerR);
+                var timer = Microsoft.UI.Dispatching.DispatcherQueue
+                    .GetForCurrentThread().CreateTimer();
+                timer.Interval = TimeSpan.FromMilliseconds(16);
+                timer.Tick += (_, _) =>
+                {
+                    progress.Current = Math.Min(progress.Current + 0.025, 1.0);
+                    setAnimT(D3Ease.Cubic(progress.Current));
+                    if (progress.Current >= 1.0) timer.Stop();
+                };
+                timer.Start();
+                return () => timer.Stop();
+            }, datasetIdx);
 
-            // Initial arcs
-            var initArcs = PieGenerator.Generate(Datasets[0], v => v, sort: false, padAngle: padAngle);
-            var oldState = initArcs.Select(a => new ArcState(a.StartAngle, a.EndAngle)).ToArray();
-            var newState = oldState.ToArray();
-
-            // Create path elements
-            var paths = new WinShapes.Path[sliceCount];
-            var labelBlocks = new TextBlock[sliceCount];
-
-            for (int i = 0; i < sliceCount; i++)
+            void OnNext()
             {
-                var color = palette[i % palette.Length];
-                var brush = new SolidColorBrush(
-                    Windows.UI.Color.FromArgb((byte)(color.Opacity * 255), color.R, color.G, color.B));
-
-                string? pd = arcGen.Generate(initArcs[i].StartAngle, initArcs[i].EndAngle, padAngle);
-                paths[i] = new WinShapes.Path
-                {
-                    Fill = brush,
-                    Stroke = new SolidColorBrush(Microsoft.UI.Colors.White),
-                    StrokeThickness = 2,
-                    RenderTransform = new TranslateTransform { X = cx, Y = cy },
-                };
-                if (pd != null)
-                    paths[i].Data = PathDataParser.Parse(pd);
-                canvas.Children.Add(paths[i]);
-
-                var (lx, ly) = ArcGenerator.Centroid(initArcs[i].StartAngle, initArcs[i].EndAngle,
-                    innerRadius: outerR + 20, outerRadius: outerR + 20);
-                labelBlocks[i] = new TextBlock
-                {
-                    Text = Labels[i],
-                    FontSize = 12,
-                    FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                    Foreground = brush,
-                };
-                WinCanvas.SetLeft(labelBlocks[i], cx + lx - 12);
-                WinCanvas.SetTop(labelBlocks[i], cy + ly - 8);
-                canvas.Children.Add(labelBlocks[i]);
+                oldArcs.Current = newArcs.Current;
+                newArcs.Current = ComputeArcs((datasetIdx + 1) % Datasets.Length);
+                progress.Current = 0.0;
+                setAnimT(0.0); // reset before datasetIdx change so first frame shows old arcs
+                setDatasetIdx((datasetIdx + 1) % Datasets.Length);
             }
 
-            // Center label
-            var centerLabel = new TextBlock
-            {
-                Text = DatasetNames[0],
-                FontSize = 14,
-                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(180, 60, 60, 60)),
-                HorizontalAlignment = HorizontalAlignment.Center,
-                TextAlignment = TextAlignment.Center,
-                Width = innerR * 1.4,
-            };
-            WinCanvas.SetLeft(centerLabel, cx - innerR * 0.7);
-            WinCanvas.SetTop(centerLabel, cy - 10);
-            canvas.Children.Add(centerLabel);
+            // Interpolate current arc angles
+            var arcs = Enumerable.Range(0, SliceCount).Select(i => (
+                Start: D3Interpolate.Number(oldArcs.Current[i].Start, newArcs.Current[i].Start)(animT),
+                End: D3Interpolate.Number(oldArcs.Current[i].End, newArcs.Current[i].End)(animT)
+            )).ToArray();
 
-            // Navigation button
-            int datasetIdx = 0;
-            double progress = 1.0; // start fully resolved
+            return VStack(8,
+                D3Canvas(W, H,
+                [
+                    .. arcs.SelectMany((a, i) =>
+                    {
+                        var (lx, ly) = ArcGenerator.Centroid(a.Start, a.End,
+                            innerRadius: OuterR + 20, outerRadius: OuterR + 20);
+                        return new Element[]
+                        {
+                            D3ArcPath(a.Start, a.End, cx, cy,
+                                outerRadius: OuterR, innerRadius: InnerR, padAngle: PadAngle,
+                                fill: Brush(Palette[i % Palette.Length]),
+                                stroke: Brush("#ffffff"), strokeWidth: 2),
+                            D3TextCenter(cx + lx - 12, cy + ly - 8, Labels[i], 24, 12,
+                                Brush(Palette[i % Palette.Length])),
+                        };
+                    }),
+                    D3TextCenter(cx - 50, cy - 10, DatasetNames[datasetIdx], 100, 14, Gray(60)),
+                ]),
+                Button("Next Dataset \u25B6", OnNext).Center()
+            ).HAlign(HorizontalAlignment.Center).Padding(16);
+        });
+    }
 
-            var nextButton = new Button
-            {
-                Content = "Next Dataset \u25B6",
-                FontSize = 12,
-                Margin = new Thickness(0),
-                HorizontalAlignment = HorizontalAlignment.Center,
-            };
-            WinCanvas.SetLeft(nextButton, cx - 55);
-            WinCanvas.SetTop(nextButton, H - 40);
-
-            var timer = canvas.DispatcherQueue.CreateTimer();
-            timer.Interval = TimeSpan.FromMilliseconds(16);
-
-            nextButton.Click += (_, _) =>
-            {
-                oldState = newState.ToArray();
-                datasetIdx = (datasetIdx + 1) % Datasets.Length;
-                var targetArcs = PieGenerator.Generate(Datasets[datasetIdx], v => v, sort: false, padAngle: padAngle);
-                newState = targetArcs.Select(a => new ArcState(a.StartAngle, a.EndAngle)).ToArray();
-                centerLabel.Text = DatasetNames[datasetIdx];
-                progress = 0;
-                timer.Start();
-            };
-
-            timer.Tick += (_, _) =>
-            {
-                progress += 0.025;
-                if (progress >= 1.0)
-                {
-                    progress = 1.0;
-                    timer.Stop();
-                }
-
-                double t = D3Ease.Cubic(progress);
-
-                for (int i = 0; i < sliceCount; i++)
-                {
-                    double sa = D3Interpolate.Number(oldState[i].Start, newState[i].Start)(t);
-                    double ea = D3Interpolate.Number(oldState[i].End, newState[i].End)(t);
-
-                    string? pd = arcGen.Generate(sa, ea, padAngle);
-                    if (pd != null)
-                        paths[i].Data = PathDataParser.Parse(pd);
-
-                    var (lx, ly) = ArcGenerator.Centroid(sa, ea,
-                        innerRadius: outerR + 20, outerRadius: outerR + 20);
-                    WinCanvas.SetLeft(labelBlocks[i], cx + lx - 12);
-                    WinCanvas.SetTop(labelBlocks[i], cy + ly - 8);
-                }
-            };
-
-            canvas.Children.Add(nextButton);
-            canvas.Unloaded += (_, _) => timer.Stop();
-
-            return canvas;
-        }, _ => { })
-        { TypeKey = "AnimatedDonut" };
+    static (double Start, double End)[] ComputeArcs(int datasetIdx)
+    {
+        var arcs = PieGenerator.Generate(Datasets[datasetIdx], v => v, sort: false, padAngle: PadAngle);
+        return arcs.Select(a => (a.StartAngle, a.EndAngle)).ToArray();
     }
 }

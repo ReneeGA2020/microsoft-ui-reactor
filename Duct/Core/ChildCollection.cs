@@ -51,7 +51,12 @@ internal sealed class PanelChildCollection : IChildCollection
 
     public void Replace(int index, UIElement element)
     {
-        _children[index] = element;
+        // Use explicit RemoveAt+Insert instead of indexer assignment.
+        // WinUI's _children[i] = x doesn't always fully disconnect the old
+        // element's internal parent state, causing COMException when the old
+        // element is later reused from the pool.
+        _children.RemoveAt(index);
+        _children.Insert(index, element);
     }
 }
 

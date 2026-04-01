@@ -3,19 +3,16 @@ using Duct.Core;
 using Duct.D3;
 using Duct.D3.Charts;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
 using static Duct.D3.Charts.D3;
 using static Duct.UI;
-using WinCanvas = Microsoft.UI.Xaml.Controls.Canvas;
-using WinShapes = Microsoft.UI.Xaml.Shapes;
 
 namespace DuctD3.Gallery;
 
 /// <summary>
 /// A tidy tree where each node is a live WinUI control matching its type —
 /// Button, ToggleSwitch, Slider, TextBox, CheckBox — laid out by D3's
-/// Reingold-Tilford algorithm.
+/// Reingold-Tilford algorithm. All controls are Duct elements positioned
+/// inside a D3Canvas using .Canvas(x, y) attached properties.
 /// </summary>
 public sealed class ComponentHierarchySample : GallerySample
 {
@@ -26,29 +23,34 @@ public sealed class ComponentHierarchySample : GallerySample
     public override string Category => "Controls";
 
     public override string SourceCode => """
-        var layout = TreeLayout.Create<CtrlNode>().Size(640, 380);
+        var layout = TreeLayout.Create<CtrlNode>().Size(660, 380);
         var root = layout.Hierarchy(data, n => n.Children);
         layout.Layout(root);
 
-        // Draw bezier links, then place a live WinUI control at each node
-        foreach (var node in root.Descendants())
-        {
-            var ctrl = node.Data.Kind switch {
-                "Button"       => new Button { Content = node.Data.Name },
-                "ToggleSwitch" => new ToggleSwitch { OnContent = "On", OffContent = "Off" },
-                "Slider"       => new Slider { Width = 80, Minimum = 0, Maximum = 100, Value = 50 },
-                _ => new TextBlock { Text = node.Data.Name },
-            };
-            WinCanvas.SetLeft(ctrl, node.X - 40);
-            WinCanvas.SetTop(ctrl, node.Y - 12);
-            canvas.Children.Add(ctrl);
-        }
+        return D3Canvas(W, H,
+            [.. nodes.SelectMany(n => n.Children.Select(c =>
+                D3Link(n.X, n.Y, c.X, c.Y, stroke: linkBrush))),
+             .. nodes.Select(n =>
+                ControlForNode(n.Data).Canvas(n.X - offset, n.Y - 14)),
+            ]);
+
+        Element ControlForNode(node) => node.Kind switch {
+            "Button"       => Button(node.Name, null),
+            "ToggleSwitch" => ToggleSwitch(false, null, "On", "Off"),
+            "Slider"       => Slider(50, 0, 100).Width(90),
+            "TextBox"      => TextField("", placeholder: node.Name).Width(90),
+            "CheckBox"     => CheckBox(false, label: node.Name),
+            _              => HeaderBadge(node.Name),
+        };
         """;
 
     record CtrlNode(string Name, string Kind, CtrlNode[]? Children = null);
 
     public override Element Render()
     {
+        const double W = 750, H = 460;
+        const double PadX = 40, PadY = 40;
+
         var data = new CtrlNode("App", "Header", [
             new("Navigation", "Header", [
                 new("Home", "Button"),
@@ -66,121 +68,49 @@ public sealed class ComponentHierarchySample : GallerySample
             ]),
         ]);
 
-        const double W = 750, H = 460;
+        var layout = TreeLayout.Create<CtrlNode>().Size(W - PadX * 2, H - PadY * 2);
+        var root = layout.Hierarchy(data, n => n.Children);
+        layout.Layout(root);
 
-        return new XamlHostElement(() =>
-        {
-            var canvas = new WinCanvas
+        var nodes = root.Descendants().ToList();
+        var linkBrush = Gray(100, alpha: 120);
+
+        return D3Canvas(W, H,
+        [
+            // Bezier links between parent and child nodes
+            .. nodes.SelectMany(n =>
+                n.Children.Select(c =>
+                    (Element)D3Link(PadX + n.X, PadY + n.Y, PadX + c.X, PadY + c.Y,
+                        stroke: linkBrush, strokeWidth: 1.5))),
+
+            // WinUI controls at each node position
+            .. nodes.Select(n =>
             {
-                Width = W, Height = H,
-                Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
-            };
-
-            var layout = TreeLayout.Create<CtrlNode>().Size(W - 80, H - 80);
-            var root = layout.Hierarchy(data, n => n.Children);
-            layout.Layout(root);
-
-            var nodes = root.Descendants().ToList();
-            var linkBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(120, 100, 100, 100));
-
-            // Draw links
-            foreach (var node in nodes)
-            {
-                foreach (var child in node.Children)
-                {
-                    double x1 = 40 + node.X, y1 = 40 + node.Y;
-                    double x2 = 40 + child.X, y2 = 40 + child.Y;
-                    double my = (y1 + y2) / 2;
-
-                    var pb = new PathBuilder(3);
-                    pb.MoveTo(x1, y1);
-                    pb.BezierCurveTo(x1, my, x2, my, x2, y2);
-
-                    var path = new WinShapes.Path
-                    {
-                        Data = PathDataParser.Parse(pb.ToString()),
-                        Stroke = linkBrush,
-                        StrokeThickness = 1.5,
-                    };
-                    canvas.Children.Add(path);
-                }
-            }
-
-            var palette = D3Color.Category10;
-
-            // Place WinUI controls at each node
-            foreach (var node in nodes)
-            {
-                double nx = 40 + node.X, ny = 40 + node.Y;
-                bool isLeaf = node.Children.Count == 0;
-
-                FrameworkElement ctrl = node.Data.Kind switch
-                {
-                    "Button" => new Button
-                    {
-                        Content = node.Data.Name,
-                        FontSize = 11,
-                        Padding = new Thickness(10, 4, 10, 4),
-                        Background = new SolidColorBrush(Windows.UI.Color.FromArgb(
-                            (byte)(palette[0].Opacity * 255), palette[0].R, palette[0].G, palette[0].B)),
-                    },
-                    "ToggleSwitch" => new ToggleSwitch
-                    {
-                        OnContent = "On",
-                        OffContent = "Off",
-                        MinWidth = 0,
-                        FontSize = 10,
-                    },
-                    "Slider" => new Slider
-                    {
-                        Width = 90,
-                        Minimum = 0,
-                        Maximum = 100,
-                        Value = 50,
-                        Height = 32,
-                    },
-                    "TextBox" => new TextBox
-                    {
-                        PlaceholderText = node.Data.Name,
-                        Width = 90,
-                        FontSize = 11,
-                        Padding = new Thickness(6, 4, 6, 4),
-                    },
-                    "CheckBox" => new CheckBox
-                    {
-                        Content = node.Data.Name,
-                        FontSize = 10,
-                        MinWidth = 0,
-                    },
-                    _ => MakeHeaderBadge(node.Data.Name, palette),
-                };
-
-                WinCanvas.SetLeft(ctrl, nx - (isLeaf ? 45 : 30));
-                WinCanvas.SetTop(ctrl, ny - 14);
-                canvas.Children.Add(ctrl);
-            }
-
-            return canvas;
-        }, _ => { })
-        { TypeKey = "ComponentHierarchy" };
+                double nx = PadX + n.X, ny = PadY + n.Y;
+                double offsetX = n.Children.Count == 0 ? 45 : 30;
+                return ControlForNode(n.Data).Canvas(nx - offsetX, ny - 14);
+            }),
+        ]);
     }
 
-    static Border MakeHeaderBadge(string text, D3Color[] palette)
+    static Element ControlForNode(CtrlNode node) => node.Kind switch
     {
-        var color = palette[3 % palette.Length];
-        return new Border
+        "Button" => Button(node.Name, null).Set(b => { b.FontSize = 11; b.Padding = new Thickness(10, 4, 10, 4); }),
+        "ToggleSwitch" => ToggleSwitch(false, null, "On", "Off").Set(ts => { ts.MinWidth = 0; ts.FontSize = 10; }),
+        "Slider" => Slider(50, 0, 100).Width(90).Height(32),
+        "TextBox" => TextField("", placeholder: node.Name).Width(90).Set(tb => { tb.FontSize = 11; tb.Padding = new Thickness(6, 4, 6, 4); }),
+        "CheckBox" => CheckBox(false, label: node.Name).Set(cb => { cb.FontSize = 10; cb.MinWidth = 0; }),
+        _ => HeaderBadge(node.Name),
+    };
+
+    static Element HeaderBadge(string text) =>
+        Border(
+            (Text(text) with { FontSize = 11, Weight = Microsoft.UI.Text.FontWeights.SemiBold })
+                .Foreground("#ffffff")
+        ) with
         {
-            Child = new TextBlock
-            {
-                Text = text,
-                FontSize = 11,
-                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                Foreground = new SolidColorBrush(Microsoft.UI.Colors.White),
-                Padding = new Thickness(10, 4, 10, 4),
-            },
-            Background = new SolidColorBrush(Windows.UI.Color.FromArgb(
-                (byte)(color.Opacity * 255), color.R, color.G, color.B)),
-            CornerRadius = new CornerRadius(4),
+            Background = Brush(Palette[3 % Palette.Length]),
+            CornerRadius = 4,
+            Padding = new Thickness(10, 4, 10, 4),
         };
-    }
 }
