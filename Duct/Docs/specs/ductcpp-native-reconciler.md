@@ -794,7 +794,7 @@ int main() {
 
 ## TestApp Port
 
-Port all 11 demos from `Duct.TestApp/App.cs`. The C++ versions should be nearly line-for-line translations, demonstrating API parity.
+Port all 11 demos from `tests/Duct.TestApp/App.cs`. The C++ versions should be nearly line-for-line translations, demonstrating API parity.
 
 ### Example: Counter Demo
 
@@ -888,7 +888,7 @@ public:
 
 ## Perf Benchmark: StressPerf.DuctCpp
 
-Add a 4th variant to the existing `stress_perf/` harness.
+Add a 4th variant to the existing `tests/stress_perf/` harness.
 
 ### What to Measure
 
@@ -1011,7 +1011,7 @@ This ensures the project opens and builds natively in Visual Studio with full In
 
 ### Phase 5: TestApp Port
 
-**Goal:** Complete, working port of `Duct.TestApp/App.cs`.
+**Goal:** Complete, working port of `tests/Duct.TestApp/App.cs`.
 
 - [ ] Port root DemoApp with tab navigation
 - [ ] Port CounterDemo

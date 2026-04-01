@@ -2,7 +2,7 @@
 set -e
 APP_EXE="$1"
 APP_NAME="$2"
-TRACE_DIR="C:/Users/andersonch/Code/patch/stress_perf/traces"
+TRACE_DIR="C:/Users/andersonch/Code/patch/tests/stress_perf/traces"
 
 echo "=== Starting $APP_NAME ==="
 # Launch app in background

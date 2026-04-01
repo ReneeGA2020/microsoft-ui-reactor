@@ -5,12 +5,12 @@
 set -e
 
 DURATION=7
-OUTFILE="C:/Users/andersonch/Code/patch/stress_perf/benchmark_results.csv"
+OUTFILE="C:/Users/andersonch/Code/patch/tests/stress_perf/benchmark_results.csv"
 
-DIRECT_EXE="C:/Users/andersonch/Code/patch/stress_perf/StressPerf.Direct/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.Direct.exe"
-BOUND_EXE="C:/Users/andersonch/Code/patch/stress_perf/StressPerf.Bound/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.Bound.exe"
-DUCT_EXE="C:/Users/andersonch/Code/patch/stress_perf/StressPerf.Duct/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.Duct.exe"
-DIRECTX_EXE="C:/Users/andersonch/Code/patch/stress_perf/StressPerf.DirectX/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.DirectX.exe"
+DIRECT_EXE="C:/Users/andersonch/Code/patch/tests/stress_perf/StressPerf.Direct/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.Direct.exe"
+BOUND_EXE="C:/Users/andersonch/Code/patch/tests/stress_perf/StressPerf.Bound/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.Bound.exe"
+DUCT_EXE="C:/Users/andersonch/Code/patch/tests/stress_perf/StressPerf.Duct/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.Duct.exe"
+DIRECTX_EXE="C:/Users/andersonch/Code/patch/tests/stress_perf/StressPerf.DirectX/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.DirectX.exe"
 DUCTCPP_EXE="C:/Users/andersonch/Code/patch/DuctCpp/bin/Release/ARM64/DuctCpp.StressPerf.exe"
 
 # CSV header

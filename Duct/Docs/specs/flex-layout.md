@@ -498,7 +498,7 @@ Duct/
 │   ├── Dsl.cs                     # + Flex(), FlexRow(), FlexColumn()
 │   └── FlexExtensions.cs          # .Flex(grow:, shrink:, ...) extension
 
-FlexPanelGallery/                   # Standalone XAML test app (repo root, no Duct dependency)
+samples/FlexPanelGallery/            # Standalone XAML test app (no Duct dependency)
 ├── FlexPanelGallery.csproj
 ├── App.xaml / App.xaml.cs
 ├── MainWindow.xaml / MainWindow.xaml.cs

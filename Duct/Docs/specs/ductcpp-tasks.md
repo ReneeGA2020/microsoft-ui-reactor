@@ -337,7 +337,7 @@ The render loop and application bootstrap.
 
 ## Phase 8: TestApp Port
 
-Port all 11 demo pages from `Duct.TestApp/App.cs` to C++.
+Port all 11 demo pages from `tests/Duct.TestApp/App.cs` to C++.
 Each demo exercises different framework capabilities.
 
 ### 8a: App Shell
@@ -470,7 +470,7 @@ Exercises: opacity slider, show/hide items (transitions not yet implemented).
 
 ## Phase 9: Stress Perf Benchmark
 
-Add a 4th variant (`DuctCpp`) to the existing `stress_perf/` benchmark harness.
+Add a 4th variant (`DuctCpp`) to the existing `tests/stress_perf/` benchmark harness.
 
 ### 9a: Port Shared Infrastructure to C++
 
@@ -516,7 +516,7 @@ Add a 4th variant (`DuctCpp`) to the existing `stress_perf/` benchmark harness.
 - [x] Run all 5 variants (Direct, Bound, Duct C#, DuctCpp, DirectX) at 10% update rate
 - [x] Run all 5 variants at 50% update rate
 - [x] Run all 5 variants at 100% update rate
-- [x] Capture results in `stress_perf/benchmark_results.csv`
+- [x] Capture results in `tests/stress_perf/benchmark_results.csv`
 - [x] Analyze: where is time spent? (element construction vs diffing vs WinRT calls)
 - [x] Document results and analysis
 

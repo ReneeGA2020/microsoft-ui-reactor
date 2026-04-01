@@ -112,13 +112,13 @@ dotnet build Duct.sln -p:Platform=x64
 # Or open Duct.sln in Visual Studio 2022, select x64 or ARM64, and build (Ctrl+Shift+B)
 
 # Run the interactive test app
-dotnet run --project Duct.TestApp -p:Platform=x64
+dotnet run --project tests/Duct.TestApp -p:Platform=x64
 ```
 
 ### Run tests
 
 ```bash
-dotnet test Duct.Tests -p:Platform=x64
+dotnet test tests/Duct.Tests -p:Platform=x64
 ```
 
 ## Project structure
@@ -131,12 +131,16 @@ Duct/                  Core framework
   Yoga/                Pure C# port of Meta's Yoga layout engine
   Hosting/             App bootstrap, render loop, hot reload
   Native/              Experimental Rust differ (ViewDiffer)
-Duct.Tests/            xUnit test suite (incl. 590 Yoga layout fixtures)
-Duct.TestApp/          Interactive control showcase
 Duct.Cli/              CLI scaffolding tool
-samples/apps/
-  wordpuzzle/          Word puzzle game
-  ductfiles/           File explorer demo
+tests/
+  Duct.Tests/          xUnit test suite (incl. 590 Yoga layout fixtures)
+  Duct.TestApp/        Interactive control showcase
+  Duct.UITests/        UI integration tests
+  stress_perf/         Performance benchmarks
+samples/
+  apps/                Sample apps (wordpuzzle, ductfiles, regedit, etc.)
+  FlexPanelGallery/    FlexPanel layout gallery
+  TodoApp/             Todo app sample
 ```
 
 ## Documentation

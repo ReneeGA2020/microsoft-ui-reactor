@@ -119,13 +119,13 @@ All projects target `net8.0-windows10.0.22621.0` and use the repo-wide
 
 ```bash
 # Build all
-dotnet build stress_perf/StressPerf.Direct -c Release -p:Platform=x64
-dotnet build stress_perf/StressPerf.Bound  -c Release -p:Platform=x64
-dotnet build stress_perf/StressPerf.Duct   -c Release -p:Platform=x64
+dotnet build tests/stress_perf/StressPerf.Direct -c Release -p:Platform=x64
+dotnet build tests/stress_perf/StressPerf.Bound  -c Release -p:Platform=x64
+dotnet build tests/stress_perf/StressPerf.Duct   -c Release -p:Platform=x64
 
 # Run interactive
-dotnet run --project stress_perf/StressPerf.Direct -c Release -p:Platform=x64
+dotnet run --project tests/stress_perf/StressPerf.Direct -c Release -p:Platform=x64
 
 # Run headless benchmark
-dotnet run --project stress_perf/StressPerf.Direct -c Release -p:Platform=x64 -- --headless --percent 50 --duration 10
+dotnet run --project tests/stress_perf/StressPerf.Direct -c Release -p:Platform=x64 -- --headless --percent 50 --duration 10
 ```

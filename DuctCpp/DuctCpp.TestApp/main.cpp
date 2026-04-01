@@ -1,6 +1,6 @@
 // DuctCpp Test App — A single-file WinUI 3 application using the DuctCpp framework.
 // No XAML. No data binding. No resources. No templates. Just C++.
-// Port of the C# Duct.TestApp/App.cs
+// Port of the C# tests/Duct.TestApp/App.cs
 
 #ifndef NOMINMAX
 #define NOMINMAX

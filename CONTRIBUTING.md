@@ -47,13 +47,13 @@ The solution targets `x64` and `ARM64`. MSBuild maps these to Rust target triple
 
 ```bash
 # Run all tests
-dotnet test Duct.Tests
+dotnet test tests/Duct.Tests
 
 # Run a specific test class
-dotnet test Duct.Tests --filter "FullyQualifiedName~TreeSerializerTests"
+dotnet test tests/Duct.Tests --filter "FullyQualifiedName~TreeSerializerTests"
 
 # Run with verbose output
-dotnet test Duct.Tests -v normal
+dotnet test tests/Duct.Tests -v normal
 ```
 
 Tests use **xUnit** and target the same `net8.0-windows10.0.22621.0` framework as the main library. The test project has `InternalsVisibleTo` access so it can test internal APIs.
@@ -62,10 +62,10 @@ Tests use **xUnit** and target the same `net8.0-windows10.0.22621.0` framework a
 
 ```bash
 # Run the UI integration tests (launches TestApp with --self-test)
-dotnet test Duct.UITests -p:Platform=x64
+dotnet test tests/Duct.UITests -p:Platform=x64
 
 # Or run the self-test harness directly
-dotnet run --project Duct.TestApp -p:Platform=x64 -- --self-test
+dotnet run --project tests/Duct.TestApp -p:Platform=x64 -- --self-test
 ```
 
 UI tests exercise the full Duct pipeline (Element DSL → Reconciler → WinUI control tree) by launching the TestApp with a `--self-test` flag. The app uses `VisualTreeHelper` and `ButtonAutomationPeer` to walk and interact with its own WinUI control tree in-process, then reports TAP-format results. The `Duct.UITests` MSTest project wraps these results so they integrate with `dotnet test` and Visual Studio Test Explorer.
@@ -90,7 +90,7 @@ UI tests exercise the full Duct pipeline (Element DSL → Reconciler → WinUI c
 The interactive test app exercises every built-in control:
 
 ```bash
-dotnet run --project Duct.TestApp
+dotnet run --project tests/Duct.TestApp
 ```
 
 ## Project layout
@@ -134,12 +134,16 @@ Duct/                          Core framework library
         reconcile.rs           Keyed list reconciliation with LIS
         ffi.rs                 extern "C" FFI entry points
         arena.rs               Reusable diff context/buffer
-Duct.Tests/                    xUnit test suite
-Duct.TestApp/                  Interactive control showcase
 Duct.Cli/                      CLI scaffolding tool (duct --create <Name>)
-samples/apps/
-  wordpuzzle/                  Word puzzle game sample
-  ductfiles/                   File explorer sample
+tests/
+  Duct.Tests/                  xUnit test suite
+  Duct.TestApp/                Interactive control showcase
+  Duct.UITests/                UI integration tests
+  stress_perf/                 Performance benchmarks
+samples/
+  apps/                        Sample apps (wordpuzzle, ductfiles, regedit, etc.)
+  FlexPanelGallery/            FlexPanel layout gallery
+  TodoApp/                     Todo app sample
 ```
 
 ## How to add a new element type
@@ -198,7 +202,7 @@ If the control has properties that make sense as fluent modifiers, add extension
 
 ### 6. Add tests
 
-Add test cases in `Duct.Tests/` covering element creation, mount, and update.
+Add test cases in `tests/Duct.Tests/` covering element creation, mount, and update.
 
 ## How to add a new hook
 
@@ -207,7 +211,7 @@ Hooks live in `Duct/Core/Component.cs` (public API) and `Duct/Core/RenderContext
 1. Add the hook method to `Component` (delegates to `RenderContext`)
 2. Implement the logic in `RenderContext`, using `GetOrCreateHook<T>()` to manage state
 3. Follow the convention: hooks must be called in the same order every render, no conditional calls
-4. Add tests in `Duct.Tests/`
+4. Add tests in `tests/Duct.Tests/`
 
 ## Working on the Rust native differ
 

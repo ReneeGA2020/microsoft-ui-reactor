@@ -94,8 +94,8 @@ public class SessionManager
             _ => "x64"
         };
 
-        var exe = Path.Combine(dir, "Duct.TestApp", "bin", platform, "Debug",
-            "net8.0-windows10.0.22621.0", "Duct.TestApp.exe");
+        var exe = Path.Combine(dir, "tests", "Duct.TestApp", "bin", platform, "Debug",
+            "net9.0-windows10.0.22621.0", "Duct.TestApp.exe");
 
         if (!File.Exists(exe))
             throw new FileNotFoundException($"Build the TestApp first: {exe}");

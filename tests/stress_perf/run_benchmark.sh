@@ -5,13 +5,13 @@
 set -e
 
 DURATION=7
-OUTFILE="C:/Users/andersonch/Code/patch/stress_perf/benchmark_results.csv"
+OUTFILE="C:/Users/andersonch/Code/patch/tests/stress_perf/benchmark_results.csv"
 
-DIRECT_EXE="C:/Users/andersonch/Code/patch/stress_perf/StressPerf.Direct/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.Direct.exe"
-BOUND_EXE="C:/Users/andersonch/Code/patch/stress_perf/StressPerf.Bound/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.Bound.exe"
-DUCT_EXE="C:/Users/andersonch/Code/patch/stress_perf/StressPerf.Duct/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.Duct.exe"
-WPF_EXE="C:/Users/andersonch/Code/patch/stress_perf/StressPerf.Wpf/bin/ARM64/Release/net8.0-windows/StressPerf.Wpf.exe"
-DIRECTX_EXE="C:/Users/andersonch/Code/patch/stress_perf/StressPerf.DirectX/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.DirectX.exe"
+DIRECT_EXE="C:/Users/andersonch/Code/patch/tests/stress_perf/StressPerf.Direct/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.Direct.exe"
+BOUND_EXE="C:/Users/andersonch/Code/patch/tests/stress_perf/StressPerf.Bound/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.Bound.exe"
+DUCT_EXE="C:/Users/andersonch/Code/patch/tests/stress_perf/StressPerf.Duct/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.Duct.exe"
+WPF_EXE="C:/Users/andersonch/Code/patch/tests/stress_perf/StressPerf.Wpf/bin/ARM64/Release/net8.0-windows/StressPerf.Wpf.exe"
+DIRECTX_EXE="C:/Users/andersonch/Code/patch/tests/stress_perf/StressPerf.DirectX/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.DirectX.exe"
 
 # CSV header
 echo "App,Percent,Duration_s,Avg_FPS,Min_FPS,Max_FPS,Avg_Update_ms,Max_Update_ms,Avg_Memory_MB,Peak_Memory_MB" > "$OUTFILE"

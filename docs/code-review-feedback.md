@@ -538,7 +538,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 ### 11.1 Experimental SDK Version
 
 - [ ] **Status:** `skip`
-- **File:** `Duct/Duct.csproj`, line 19; `Duct.Tests/Duct.Tests.csproj`, line 16; all .csproj files
+- **File:** `Duct/Duct.csproj`, line 19; `tests/Duct.Tests/Duct.Tests.csproj`, line 16; all .csproj files
 - **Issue:** All projects reference `Microsoft.WindowsAppSDK Version="2.0.0-experimental4"`. Experimental packages have no stability guarantees and can break between releases.
 - **Question:** Is this intentional because you need a specific API from the experimental release? If so, document which API and track when it moves to stable. If not, consider using the latest stable release. When this project ships to external developers, they should not depend on experimental packages.
 
@@ -575,7 +575,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 ### 12.1 No Tests for Reconciler Mount/Update Logic
 
 - [x] **Status:** `done`
-- **Files:** `Duct.Tests/` (all test files)
+- **Files:** `tests/Duct.Tests/` (all test files)
 - **Issue:** The reconciler is the heart of the framework - it creates WinUI controls, applies properties, and reconciles changes. There are **zero tests** that verify:
   - `Reconciler.Mount` creates the correct WinUI control type for a given element
   - `Reconciler.Update` correctly applies property changes to existing controls
@@ -602,7 +602,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 ### 12.2 No Tests for DuctHost or DuctHostControl Render Loop
 
 - [x] **Status:** `done`
-- **Files:** `Duct.Tests/DuctHostControlTests.cs`
+- **Files:** `tests/Duct.Tests/DuctHostControlTests.cs`
 - **Issue:** The `DuctHostControlTests` only verify API surface (that properties and methods exist on the type). They don't test:
   - Mounting a component and verifying it renders
   - State changes triggering re-renders
@@ -628,7 +628,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 ### 12.4 ViewDifferTests Don't Test Actual Diffing
 
 - [x] **Status:** `done`
-- **File:** `Duct.Tests/ViewDifferTests.cs`
+- **File:** `tests/Duct.Tests/ViewDifferTests.cs`
 - **Issue:** The `ViewDifferTests` only test:
   - FNV-1a hash function (4 tests)
   - `ViewNode` default values
@@ -641,7 +641,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 ### 12.5 ChildReconcilerTests Only Test ComputeLIS
 
 - [x] **Status:** `done`
-- **File:** `Duct.Tests/ChildReconcilerTests.cs`
+- **File:** `tests/Duct.Tests/ChildReconcilerTests.cs`
 - **Issue:** The `ChildReconcilerTests` test the LIS algorithm (6 tests), key utilities (3 tests), and element equality (3 tests). They don't test the actual `Reconcile` method, which is the core of the child reconciliation algorithm. Missing scenarios:
   - Positional reconciliation: add, remove, replace children
   - Keyed reconciliation: reorder, insert, remove keyed children
@@ -653,21 +653,21 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 ### 12.6 Thickness Tests Are Testing Framework Code, Not Your Code
 
 - [x] **Status:** `done`
-- **File:** `Duct.Tests/ElementTests.cs`, lines 673-701
+- **File:** `tests/Duct.Tests/ElementTests.cs`, lines 673-701
 - **Issue:** Three tests verify that `new Thickness(10)` sets all four sides to 10, that `Thickness(5,10,5,10)` sets left/right to 5 and top/bottom to 10, etc. These are testing `Microsoft.UI.Xaml.Thickness` constructor behavior, not your code. The compiler guarantees the struct is constructed correctly.
 - **Recommendation:** Remove these tests. They add maintenance burden without validating any Duct code.
 
 ### 12.7 ReconcilerRegressionTests.Move_* Tests Don't Test ChildCollection
 
 - [x] **Status:** `done`
-- **File:** `Duct.Tests/ReconcilerRegressionTests.cs`, lines 206-257
+- **File:** `tests/Duct.Tests/ReconcilerRegressionTests.cs`, lines 206-257
 - **Issue:** The Move tests operate on `List<string>`, not on the actual `PanelChildCollection` or `ItemsControlChildCollection`. They verify that remove-then-insert on a `List<string>` produces the right result, but they don't verify that the `Move` method on `IChildCollection` behaves the same way.
 - **Recommendation:** These tests should create a real `StackPanel`, populate its `Children`, and call `PanelChildCollection.Move` to verify the actual WinUI collection behavior matches expectations.
 
 ### 12.8 ObservableHookTests Need Multi-Property Change Scenarios
 
 - [x] **Status:** `done`
-- **File:** `Duct.Tests/ObservableHookTests.cs`
+- **File:** `tests/Duct.Tests/ObservableHookTests.cs`
 - **Issue:** The tests cover basic subscribe/unsubscribe but don't test:
   - Rapid successive property changes (should only trigger one re-render if batched)
   - Multiple hooks watching the same source
@@ -678,14 +678,14 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 ### 12.9 TypeRegistryTests Don't Verify Unmount Dispatch
 
 - [x] **Status:** `done`
-- **File:** `Duct.Tests/TypeRegistryTests.cs`
+- **File:** `tests/Duct.Tests/TypeRegistryTests.cs`
 - **Issue:** Tests verify mount and update dispatch, but there's no test that verifies the unmount handler is called when a registered type control is removed from the tree.
 - **Recommendation:** Add a test that registers a type with an unmount handler, mounts a control, then calls `UnmountChild` and verifies the unmount handler was invoked.
 
 ### 12.10 No Test Coverage Tool Configuration
 
 - [x] **Status:** `done`
-- **File:** `Duct.Tests/Duct.Tests.csproj`
+- **File:** `tests/Duct.Tests/Duct.Tests.csproj`
 - **Issue:** No code coverage tool (e.g., `coverlet.collector`) is configured. Without coverage data, you can't measure how much of the framework is actually tested.
 - **Recommendation:** Add coverlet:
   ```xml
@@ -710,7 +710,7 @@ This is genuinely impressive work for a new C# engineer. The architecture is wel
 ### 13.2 TestApp Shows Good Patterns But Has No Error Handling Examples
 
 - [ ] **Status:** `skip`
-- **File:** `Duct.TestApp/App.cs`
+- **File:** `tests/Duct.TestApp/App.cs`
 - **Issue:** The TestApp demonstrates tabs, forms, lists, conditional UI, etc. but doesn't demonstrate error handling patterns (try/catch in effects, error boundaries, loading states, etc.).
 - **Recommendation:** Add one tab showing resilient patterns: loading spinners, error messages, retry logic. This helps users write production-quality apps.
 
