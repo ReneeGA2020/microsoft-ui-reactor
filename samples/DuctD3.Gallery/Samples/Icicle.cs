@@ -94,7 +94,7 @@ public sealed class IcicleSample : GallerySample
                 .SelectMany(node =>
                 {
                     double w = node.Width, h = node.Height;
-                    int colorIdx = root.Children.IndexOf(node.TopAncestor);
+                    int colorIdx = Math.Max(0, root.Children.IndexOf(node.TopAncestor));
                     double opacity = Math.Min(node.Depth == 0 ? 0.35 : 0.5 + node.Depth * 0.1, 0.85);
                     var fill = Brush(Palette[colorIdx % Palette.Length], opacity);
 
