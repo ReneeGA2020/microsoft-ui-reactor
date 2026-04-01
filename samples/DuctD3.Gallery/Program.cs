@@ -7,8 +7,15 @@ using Microsoft.UI.Xaml.Media;
 using static Duct.UI;
 using DuctD3.Gallery;
 
-DuctApp.Run<GalleryApp>("DuctD3 Gallery", width: 1400, height: 900,
-    configure: host => XamlInterop.Register(host.Reconciler));
+if (args.Contains("--self-test"))
+{
+    GallerySelfTestRunner.RunAll();
+}
+else
+{
+    DuctApp.Run<GalleryApp>("DuctD3 Gallery", width: 1400, height: 900,
+        configure: host => XamlInterop.Register(host.Reconciler));
+}
 
 // ═══════════════════════════════════════════════════════════════════════
 //  Gallery App — Landing page + sample detail pages
