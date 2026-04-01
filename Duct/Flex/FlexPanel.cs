@@ -191,15 +191,39 @@ public partial class FlexPanel : Panel
 
     // ── Layout ──
 
+    // MeasureOverride and ArrangeOverride use different Yoga strategies:
+    //
+    // MEASURE: We need to answer "how big does my content need to be?" — this is
+    // the WinUI measure contract. We pass NaN (undefined) to CalculateLayout so
+    // Yoga computes the root's size from its children's intrinsic sizes, matching
+    // CSS default behavior where a flex container without explicit width/height is
+    // content-sized. We set MaxWidth/MaxHeight on the root node so Yoga won't
+    // exceed the available space (equivalent to CSS max-width/max-height).
+    //
+    // ARRANGE: We know the final allocated size, so we pass it as definite
+    // dimensions to CalculateLayout. This lets Yoga distribute extra space to
+    // children with flex-grow, fill stretched cross-axis items, etc.
+    //
+    // Without this split, a nested FlexPanel (e.g. a FlexRow inside a Border)
+    // would expand to fill all available height during measure, because passing
+    // availableSize as a definite constraint tells Yoga "my root IS this tall"
+    // rather than "my root can be AT MOST this tall."
+
     protected override Size MeasureOverride(Size availableSize)
     {
         SyncYogaTree();
         SetRootConstraints(availableSize);
 
-        _rootNode.CalculateLayout(
-            float.IsInfinity((float)availableSize.Width) ? float.NaN : (float)availableSize.Width,
-            float.IsInfinity((float)availableSize.Height) ? float.NaN : (float)availableSize.Height,
-            LayoutDirection);
+        // Set max constraints so Yoga content-sizes the root but won't overflow.
+        _rootNode.MaxWidth = float.IsInfinity((float)availableSize.Width)
+            ? YogaValue.Undefined
+            : YogaValue.Point((float)availableSize.Width);
+        _rootNode.MaxHeight = float.IsInfinity((float)availableSize.Height)
+            ? YogaValue.Undefined
+            : YogaValue.Point((float)availableSize.Height);
+
+        // NaN = undefined: let Yoga compute content size rather than filling.
+        _rootNode.CalculateLayout(float.NaN, float.NaN, LayoutDirection);
 
         // Measure each child at the size Yoga computed for it
         for (int i = 0; i < Children.Count; i++)
@@ -216,7 +240,11 @@ public partial class FlexPanel : Panel
 
     protected override Size ArrangeOverride(Size finalSize)
     {
-        // Re-calculate if final size differs from measure pass
+        // Clear max constraints — finalSize is the definite allocated size.
+        _rootNode.MaxWidth = YogaValue.Undefined;
+        _rootNode.MaxHeight = YogaValue.Undefined;
+
+        // Definite dimensions let Yoga distribute space via grow/shrink/stretch.
         _rootNode.CalculateLayout(
             (float)finalSize.Width,
             (float)finalSize.Height,

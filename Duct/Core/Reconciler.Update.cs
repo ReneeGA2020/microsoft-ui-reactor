@@ -1128,34 +1128,16 @@ public sealed partial class Reconciler
         panel.ColumnGap = n.ColumnGap;
         panel.RowGap = n.RowGap;
 
-        int oldCount = o.Children.Length;
-        int newCount = n.Children.Length;
-        int shared = Math.Min(oldCount, newCount);
+        ReconcileChildren(o.Children, n.Children, panel, requestRerender);
 
-        for (int i = 0; i < shared; i++)
+        // Re-apply flex attached properties — skip nulls/EmptyElements to stay
+        // aligned with panel.Children (ChildReconciler filters those out).
+        int panelIdx = 0;
+        for (int i = 0; i < n.Children.Length && panelIdx < panel.Children.Count; i++)
         {
-            var oldChild = o.Children[i];
-            var newChild = n.Children[i];
-            var existingCtrl = panel.Children[i];
-            var replacement = Reconcile(oldChild, newChild, existingCtrl, requestRerender);
-            if (replacement is not null && replacement != existingCtrl)
-                panel.Children[i] = replacement;
-            ApplyFlexAttached(newChild, panel.Children[i]);
-        }
-
-        for (int i = oldCount - 1; i >= shared; i--)
-        {
-            Unmount(panel.Children[i]);
-            panel.Children.RemoveAt(i);
-        }
-
-        for (int i = shared; i < newCount; i++)
-        {
-            var child = n.Children[i];
-            var ctrl = Mount(child, requestRerender);
-            if (ctrl is null) continue;
-            ApplyFlexAttached(child, ctrl);
-            panel.Children.Add(ctrl);
+            if (n.Children[i] is null or EmptyElement) continue;
+            ApplyFlexAttached(n.Children[i], panel.Children[panelIdx]);
+            panelIdx++;
         }
 
         SetElementTag(panel, n);
