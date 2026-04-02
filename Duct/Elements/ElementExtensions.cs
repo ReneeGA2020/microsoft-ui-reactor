@@ -242,6 +242,14 @@ public static class ElementExtensions
     public static NavigationViewElement PaneTitle(this NavigationViewElement el, string title) =>
         el with { PaneTitle = title };
 
+    // ── TitleBar sugar ──────────────────────────────────────────────
+
+    public static TitleBarElement Subtitle(this TitleBarElement el, string subtitle) =>
+        el with { Subtitle = subtitle };
+
+    public static TitleBarElement Set(this TitleBarElement el, Action<WinUI.TitleBar> configure) =>
+        el with { Setters = [.. el.Setters, configure] };
+
     // ── ExpanderElement sugar ───────────────────────────────────────
 
     public static ExpanderElement Direction(this ExpanderElement el, ExpandDirection dir) =>

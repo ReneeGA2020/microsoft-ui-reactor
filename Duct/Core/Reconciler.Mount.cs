@@ -73,6 +73,7 @@ public sealed partial class Reconciler
             CanvasElement cvs => MountCanvas(cvs, requestRerender),
             FlexElement flex => MountFlex(flex, requestRerender),
             NavigationViewElement nav => MountNavigationView(nav, requestRerender),
+            TitleBarElement tb => MountTitleBar(tb, requestRerender),
             TabViewElement tab => MountTabView(tab, requestRerender),
             BreadcrumbBarElement bcb => MountBreadcrumbBar(bcb),
             PivotElement pvt => MountPivot(pvt, requestRerender),
@@ -308,7 +309,7 @@ public sealed partial class Reconciler
     private WinUI.AutoSuggestBox MountAutoSuggestBox(AutoSuggestBoxElement asb)
     {
         var box = new WinUI.AutoSuggestBox { Text = asb.Text, PlaceholderText = asb.PlaceholderText ?? "" };
-        box.ItemsSource = asb.Suggestions;
+        if (asb.Suggestions.Length > 0) box.ItemsSource = asb.Suggestions;
         SetElementTag(box, asb);
         box.TextChanged += (s, args) =>
         {
@@ -839,6 +840,33 @@ public sealed partial class Reconciler
         if (data.Children is not null)
             foreach (var child in data.Children) item.MenuItems.Add(CreateNavItem(child));
         return item;
+    }
+
+    private WinUI.TitleBar MountTitleBar(TitleBarElement tb, Action requestRerender)
+    {
+        var titleBar = new WinUI.TitleBar
+        {
+            Title = tb.Title,
+            IsBackButtonVisible = tb.IsBackButtonVisible,
+            IsBackButtonEnabled = tb.IsBackButtonEnabled,
+            IsPaneToggleButtonVisible = tb.IsPaneToggleButtonVisible,
+        };
+        if (tb.Subtitle is not null) titleBar.Subtitle = tb.Subtitle;
+        if (tb.Content is not null) titleBar.Content = Mount(tb.Content, requestRerender);
+        if (tb.RightHeader is not null) titleBar.RightHeader = Mount(tb.RightHeader, requestRerender);
+        SetElementTag(titleBar, tb);
+        titleBar.BackRequested += (s, _) => (GetElementTag((UIElement)s!) as TitleBarElement)?.OnBackRequested?.Invoke();
+        titleBar.PaneToggleRequested += (s, _) => (GetElementTag((UIElement)s!) as TitleBarElement)?.OnPaneToggleRequested?.Invoke();
+        ApplySetters(tb.Setters, titleBar);
+
+        // Register with the window for drag regions and caption buttons
+        if (Duct.DuctApp.ActiveHost is { } host)
+        {
+            host.Window.ExtendsContentIntoTitleBar = true;
+            host.Window.SetTitleBar(titleBar);
+        }
+
+        return titleBar;
     }
 
     private WinUI.TabView MountTabView(TabViewElement tab, Action requestRerender)

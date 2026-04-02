@@ -138,6 +138,36 @@
             editor.setPosition({ lineNumber: lineNumber, column: column });
             editor.focus();
         }
+
+        function monacoFindText(searchString) {
+            if (!editor) return;
+            var model = editor.getModel();
+            if (!model) return;
+
+            // Clear previous decorations
+            if (!window._searchDecorations) window._searchDecorations = [];
+            window._searchDecorations = editor.deltaDecorations(window._searchDecorations, []);
+
+            if (!searchString) return;
+
+            // Find all matches and highlight them
+            var matches = model.findMatches(searchString, false, false, false, null, false);
+            var decorations = matches.map(function(m) {
+                return {
+                    range: m.range,
+                    options: {
+                        className: 'findMatch',
+                        overviewRuler: { color: '#d186167e', position: 2 }
+                    }
+                };
+            });
+            window._searchDecorations = editor.deltaDecorations([], decorations);
+
+            // Jump to first match
+            if (matches.length > 0) {
+                editor.revealRangeInCenter(matches[0].range);
+            }
+        }
     </script>
 </body>
 </html>

@@ -120,6 +120,8 @@ public sealed partial class Reconciler
                 => Mount(newEl, requestRerender),
             (NavigationViewElement o, NavigationViewElement n, WinUI.NavigationView nv)
                 => UpdateNavigationView(o, n, nv, requestRerender),
+            (TitleBarElement o, TitleBarElement n, WinUI.TitleBar tb)
+                => UpdateTitleBar(o, n, tb, requestRerender),
             (TabViewElement, TabViewElement, WinUI.TabView)
                 => Mount(newEl, requestRerender),
             (BreadcrumbBarElement, BreadcrumbBarElement n, WinUI.BreadcrumbBar bcb)
@@ -549,7 +551,8 @@ public sealed partial class Reconciler
     private UIElement? UpdateAutoSuggestBox(AutoSuggestBoxElement n, WinUI.AutoSuggestBox asb)
     {
         asb.Text = n.Text; asb.PlaceholderText = n.PlaceholderText ?? "";
-        asb.ItemsSource = n.Suggestions; SetElementTag(asb, n);
+        if (n.Suggestions.Length > 0) asb.ItemsSource = n.Suggestions;
+        SetElementTag(asb, n);
         ApplySetters(n.Setters, asb);
         return null;
     }
@@ -842,6 +845,54 @@ public sealed partial class Reconciler
         SetElementTag(nv, n);
         ApplySetters(n.Setters, nv);
         return null;
+    }
+
+    private UIElement? UpdateTitleBar(TitleBarElement o, TitleBarElement n, WinUI.TitleBar titleBar, Action requestRerender)
+    {
+        titleBar.Title = n.Title;
+        if (n.Subtitle is not null) titleBar.Subtitle = n.Subtitle;
+        titleBar.IsBackButtonVisible = n.IsBackButtonVisible;
+        titleBar.IsBackButtonEnabled = n.IsBackButtonEnabled;
+        titleBar.IsPaneToggleButtonVisible = n.IsPaneToggleButtonVisible;
+
+        ReconcileChild(o.Content, n.Content,
+            () => titleBar.Content as UIElement,
+            c => titleBar.Content = c,
+            () => titleBar.Content = null,
+            requestRerender);
+
+        ReconcileChild(o.RightHeader, n.RightHeader,
+            () => titleBar.RightHeader as UIElement,
+            c => titleBar.RightHeader = c,
+            () => titleBar.RightHeader = null,
+            requestRerender);
+
+        SetElementTag(titleBar, n);
+        ApplySetters(n.Setters, titleBar);
+        return null;
+    }
+
+    private void ReconcileChild(Element? oldChild, Element? newChild,
+        Func<UIElement?> getControl, Action<UIElement> setControl, Action clearControl,
+        Action requestRerender)
+    {
+        if (newChild is not null && oldChild is not null
+            && getControl() is UIElement existing && CanUpdate(oldChild, newChild))
+        {
+            var replacement = Update(oldChild, newChild, existing, requestRerender);
+            if (replacement is not null) setControl(replacement);
+        }
+        else if (newChild is not null)
+        {
+            if (getControl() is UIElement old) Unmount(old);
+            var mounted = Mount(newChild, requestRerender);
+            if (mounted is not null) setControl(mounted);
+        }
+        else if (newChild is null && getControl() is UIElement stale)
+        {
+            Unmount(stale);
+            clearControl();
+        }
     }
 
     private UIElement? UpdateBreadcrumbBar(BreadcrumbBarElement n, WinUI.BreadcrumbBar bcb)

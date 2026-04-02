@@ -923,6 +923,21 @@ public record NavigationViewElement(
     internal Action<WinUI.NavigationView>[] Setters { get; init; } = [];
 }
 
+public record TitleBarElement(
+    string Title
+) : Element
+{
+    public string? Subtitle { get; init; }
+    public bool IsBackButtonVisible { get; init; }
+    public bool IsBackButtonEnabled { get; init; }
+    public Action? OnBackRequested { get; init; }
+    public bool IsPaneToggleButtonVisible { get; init; }
+    public Action? OnPaneToggleRequested { get; init; }
+    public Element? Content { get; init; }
+    public Element? RightHeader { get; init; }
+    internal Action<WinUI.TitleBar>[] Setters { get; init; } = [];
+}
+
 public record TabViewElement(
     TabViewItemData[] Tabs
 ) : Element

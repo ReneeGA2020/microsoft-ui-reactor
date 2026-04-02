@@ -359,6 +359,12 @@ public sealed partial class MonacoEditor : UserControl
     /// </summary>
     public void UpdateOptions(string optionsJson) =>
         EnqueueCommand(() => ExecuteScriptAsync($"monacoUpdateOptions({optionsJson})"));
+
+    /// <summary>
+    /// Opens the find widget with the given search string.
+    /// </summary>
+    public void FindText(string searchString) =>
+        EnqueueCommand(() => ExecuteScriptAsync($"monacoFindText({JsonSerializer.Serialize(searchString, MonacoJsonContext.Default.String)})"));
 }
 
 // ── Event args ────────────────────────────────────────────────────────

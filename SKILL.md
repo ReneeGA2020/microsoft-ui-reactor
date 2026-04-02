@@ -30,17 +30,16 @@ re-renders automatically.
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <TargetFramework>net10.0-windows10.0.22621.0</TargetFramework>
     <Platforms>x64;ARM64</Platforms>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
-    <WindowsSdkPackageVersion>10.0.22621.52</WindowsSdkPackageVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.0.0-experimental4" />
-    <ProjectReference Include="..\Patch\Duct.csproj" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.0.0-experimental6" />
+    <ProjectReference Include="..\Duct\Duct.csproj" />
   </ItemGroup>
 </Project>
 ```
@@ -55,7 +54,7 @@ re-renders automatically.
 ```csharp
 using Duct;
 using Duct.Core;
-using Duct.Yoga;                   // YogaFlexDirection, YogaJustify, etc. (if using Flex layout)
+using Duct.Flex;                   // FlexDirection, FlexJustify, etc. (if using Flex layout)
 using Microsoft.UI.Xaml;           // Thickness, HorizontalAlignment, VerticalAlignment
 using Microsoft.UI.Xaml.Controls;  // Orientation, InfoBarSeverity, etc. (if needed)
 using static Duct.UI;  // Brings Text(), Button(), VStack() etc. into scope
@@ -68,11 +67,22 @@ like `Thickness`, `HorizontalAlignment`, and `Orientation` — Patch uses WinUI 
 ### App Entry Point
 
 ```csharp
-// Top-level statement — this IS the entire Program.cs
+// Component root with all options
+DuctApp.Run<TRoot>(title: "Duct App", width: 1024, height: 768, fullScreen: false, configure: host => { });
+
+// Inline render function root
+DuctApp.Run("Window Title", ctx => { ... }, width: 1024, height: 768, fullScreen: false);
+```
+
+The `configure` parameter gives access to the host, which exposes `host.Window` for
+Mica backdrop, titlebar customization, etc.
+
+Example — component root (most common):
+```csharp
 DuctApp.Run<MyRootComponent>("Window Title", width: 1024, height: 768);
 ```
 
-Alternative inline root (no component class needed):
+Example — inline root (no component class needed):
 ```csharp
 DuctApp.Run("Window Title", ctx =>
 {
@@ -208,6 +218,16 @@ var prevCount = UseRef(0);
 UseEffect(() => { prevCount.Current = count; }, count);
 ```
 
+### UseObservable\<T\>(source) → T — tracks INotifyPropertyChanged, re-renders on change
+
+### UseObservableProperty\<T, TProp\>(source, selector, propertyName) → TProp — tracks a single property
+
+### UseCollection\<T\>(collection) → IReadOnlyList\<T\> — tracks ObservableCollection changes
+
+### UseWindowSize(window) → (double Width, double Height) — reactive window dimensions
+
+### UseBreakpoint(window, minWidth) → bool — responsive breakpoint helper
+
 ---
 
 ## DSL Reference — All Available Elements
@@ -253,6 +273,8 @@ UseEffect(() => { prevCount.Current = count; }, count);
 | `ToggleSwitch(isOn, onChanged?, onContent?, offContent?)` | `(bool, Action<bool>?, string?, string?) → ToggleSwitchElement` |
 | `RatingControl(value?, onValueChanged?)` | `(double, Action<double>?) → RatingControlElement` |
 | `ColorPicker(color, onColorChanged?)` | `(Windows.UI.Color, Action<Windows.UI.Color>?) → ColorPickerElement` |
+| `RichEditBox(text?, onTextChanged?)` | `(string, Action<string>?) → RichEditBoxElement` |
+| `ThreeStateCheckBox(checkedState?, onChanged?, label?)` | `(bool?, Action<bool?>?, string?) → CheckBoxElement` |
 
 ### Date & Time
 
@@ -289,9 +311,11 @@ UseEffect(() => { prevCount.Current = count; }, count);
 | `Canvas(children...)` | `params CanvasChild[] → CanvasElement` | Absolute positioning |
 | `CanvasItem(element, left?, top?)` | `(Element, double, double) → CanvasChild` | Positioned canvas child |
 | `Flex(children...)` | `params Element?[] → FlexElement` | CSS Flexbox (row default) |
-| `Flex(direction, children...)` | `(YogaFlexDirection, params Element?[]) → FlexElement` | Flexbox with direction |
+| `Flex(direction, children...)` | `(FlexDirection, params Element?[]) → FlexElement` | Flexbox with direction |
 | `FlexRow(children...)` | `params Element?[] → FlexElement` | Flex row shortcut |
 | `FlexColumn(children...)` | `params Element?[] → FlexElement` | Flex column shortcut |
+| `WrapGrid(children...)` | `params Element?[] → WrapGridElement` | Wrapping grid |
+| `RelativePanel(children...)` | `params Element?[] → RelativePanelElement` | Relative positioning |
 
 ### Grid
 
@@ -299,10 +323,10 @@ UseEffect(() => { prevCount.Current = count; }, count);
 Grid(
     columns: ["*", "*", "200"],      // Star, Star, 200px fixed
     rows: ["Auto", "*"],              // Auto-height, fill remaining
-    Cell(Text("A"), row: 0, column: 0),
-    Cell(Text("B"), row: 0, column: 1),
-    Cell(Text("C"), row: 0, column: 2),
-    Cell(Text("Wide"), row: 1, column: 0, columnSpan: 3)
+    Text("A").Grid(row: 0, column: 0),
+    Text("B").Grid(row: 0, column: 1),
+    Text("C").Grid(row: 0, column: 2),
+    Text("Wide").Grid(row: 1, column: 0, columnSpan: 3)
 )
 ```
 
@@ -319,11 +343,11 @@ CSS Flexbox, you already know how this works — the property names map directly
 
 | CSS Property | Duct Container Property | Duct Enum |
 |---|---|---|
-| `flex-direction` | `Direction` | `YogaFlexDirection` { Row, RowReverse, Column, ColumnReverse } |
-| `justify-content` | `JustifyContent` | `YogaJustify` { FlexStart, Center, FlexEnd, SpaceBetween, SpaceAround, SpaceEvenly } |
-| `align-items` | `AlignItems` | `YogaAlign` { FlexStart, Center, FlexEnd, Stretch, Baseline } |
-| `align-content` | `AlignContent` | `YogaAlign` (same as above + SpaceBetween, SpaceAround, SpaceEvenly) |
-| `flex-wrap` | `Wrap` | `YogaWrap` { NoWrap, Wrap, WrapReverse } |
+| `flex-direction` | `Direction` | `FlexDirection` { Row, RowReverse, Column, ColumnReverse } |
+| `justify-content` | `JustifyContent` | `FlexJustify` { FlexStart, Center, FlexEnd, SpaceBetween, SpaceAround, SpaceEvenly } |
+| `align-items` | `AlignItems` | `FlexAlign` { FlexStart, Center, FlexEnd, Stretch, Baseline } |
+| `align-content` | `AlignContent` | `FlexAlign` (same as above + SpaceBetween, SpaceAround, SpaceEvenly) |
+| `flex-wrap` | `Wrap` | `FlexWrap` { NoWrap, Wrap, WrapReverse } |
 | `column-gap` | `ColumnGap` | `double` |
 | `row-gap` | `RowGap` | `double` |
 
@@ -363,17 +387,17 @@ FlexRow(
 // Justify and align (like justify-content + align-items)
 Flex(
     Text("Centered")
-) with { JustifyContent = YogaJustify.Center, AlignItems = YogaAlign.Center }
+) with { JustifyContent = FlexJustify.Center, AlignItems = FlexAlign.Center }
 
 // Wrapping (like flex-wrap:wrap with gap)
 Flex(
     tags.Select(t => Text(t).Margin(4)).ToArray()
-) with { Wrap = YogaWrap.Wrap, ColumnGap = 8, RowGap = 8 }
+) with { Wrap = FlexWrap.Wrap, ColumnGap = 8, RowGap = 8 }
 
 // Absolute positioning within flex (like position:absolute)
 Flex(
     Text("Normal flow"),
-    Text("Badge").Flex(position: YogaPositionType.Absolute, top: 0, right: 0)
+    Text("Badge").Flex(position: FlexPositionType.Absolute, top: 0, right: 0)
 )
 
 // Nested flex for complex layouts (holy grail)
@@ -396,7 +420,7 @@ FlexColumn(
 
 **Required imports for Flex:**
 ```csharp
-using Duct.Yoga;  // YogaFlexDirection, YogaJustify, YogaAlign, YogaWrap, YogaPositionType
+using Duct.Flex;  // FlexDirection, FlexJustify, FlexAlign, FlexWrap, FlexPositionType
 ```
 
 ### Navigation
@@ -405,6 +429,7 @@ using Duct.Yoga;  // YogaFlexDirection, YogaJustify, YogaAlign, YogaWrap, YogaPo
 |---------|-----------|
 | `NavigationView(menuItems, content?)` | `(NavigationViewItemData[], Element?) → NavigationViewElement` |
 | `NavItem(content, icon?, tag?)` | `(string, string?, string?) → NavigationViewItemData` |
+| `TitleBar(title)` | `(string) → TitleBarElement` |
 | `TabView(tabs...)` | `params TabViewItemData[] → TabViewElement` |
 | `Tab(header, content)` | `(string, Element) → TabViewItemData` |
 | `BreadcrumbBar(items, onItemClicked?)` | `(BreadcrumbBarItemData[], Action<BreadcrumbBarItemData>?) → BreadcrumbBarElement` |
@@ -421,6 +446,18 @@ using Duct.Yoga;  // YogaFlexDirection, YogaJustify, YogaAlign, YogaWrap, YogaPo
 | `TreeView(nodes...)` | `params TreeViewNodeData[] → TreeViewElement` |
 | `TreeNode(content, children...)` | `(string, params TreeViewNodeData[]) → TreeViewNodeData` |
 | `FlipView(items...)` | `params Element[] → FlipViewElement` |
+| `ListBox(items, selectedIndex?, onSelectionChanged?)` | `(string[], int, Action<int>?) → ListBoxElement` |
+
+### Templated Collections (data-driven, virtualized)
+
+| Factory | Signature |
+|---------|-----------|
+| `ListView<T>(items, keySelector, viewBuilder)` | `(IReadOnlyList<T>, Func<T, string>, Func<T, int, Element>) → TemplatedListViewElement<T>` |
+| `GridView<T>(items, keySelector, viewBuilder)` | `(IReadOnlyList<T>, Func<T, string>, Func<T, int, Element>) → TemplatedGridViewElement<T>` |
+| `FlipView<T>(items, keySelector, viewBuilder)` | `(IReadOnlyList<T>, Func<T, string>, Func<T, int, Element>) → TemplatedFlipViewElement<T>` |
+| `LazyVStack<T>(items, keySelector, viewBuilder)` | `(IReadOnlyList<T>, Func<T, string>, Func<T, int, Element>) → LazyVStackElement<T>` — virtualized via ItemsRepeater |
+| `LazyHStack<T>(items, keySelector, viewBuilder)` | `(IReadOnlyList<T>, Func<T, string>, Func<T, int, Element>) → LazyHStackElement<T>` — virtualized via ItemsRepeater |
+| `ItemsView<T>(items, keySelector, viewBuilder)` | `(IReadOnlyList<T>, Func<T, string>, Func<T, int, Element>) → ItemsViewElement<T>` |
 
 ### Dialogs & Overlays
 
@@ -429,6 +466,10 @@ using Duct.Yoga;  // YogaFlexDirection, YogaJustify, YogaAlign, YogaWrap, YogaPo
 | `ContentDialog(title, content, primaryButtonText?)` | `(string, Element, string) → ContentDialogElement` |
 | `Flyout(target, flyoutContent)` | `(Element, Element) → FlyoutElement` |
 | `TeachingTip(title, subtitle?)` | `(string, string?) → TeachingTipElement` |
+| `ContentFlyout(content, placement?)` | `(Element, FlyoutPlacementMode) → ContentFlyoutElement` |
+| `Popup(child, isOpen?, onClosed?)` | `(Element, bool, Action?) → PopupElement` |
+| `RefreshContainer(content, onRefreshRequested?)` | `(Element, Action?) → RefreshContainerElement` |
+| `CommandBarFlyout(target, primaryCommands?, secondaryCommands?)` | `(Element, AppBarItemBase[]?, AppBarItemBase[]?) → CommandBarFlyoutElement` |
 
 ### Menus
 
@@ -442,6 +483,11 @@ using Duct.Yoga;  // YogaFlexDirection, YogaJustify, YogaAlign, YogaWrap, YogaPo
 | `MenuFlyout(target, items...)` | `(Element, params MenuFlyoutItemBase[]) → MenuFlyoutElement` |
 | `CommandBar(primaryCommands?, secondaryCommands?)` | `(AppBarButtonData[]?, AppBarButtonData[]?) → CommandBarElement` |
 | `AppBarButton(label, onClick?, icon?)` | `(string, Action?, string?) → AppBarButtonData` |
+| `AppBarToggleButton(label, isChecked?, onToggled?, icon?)` | `(string, bool, Action<bool>?, string?) → AppBarToggleButtonData` |
+| `AppBarSeparator()` | `→ AppBarSeparatorData` |
+| `ToggleMenuItem(text, isChecked?, onToggled?, icon?)` | `(string, bool, Action<bool>?, string?) → ToggleMenuFlyoutItemData` |
+| `RadioMenuItem(text, groupName, isChecked?, onClick?, icon?)` | `(string, string, bool, Action?, string?) → RadioMenuFlyoutItemData` |
+| `MenuItems(items...)` | `params MenuFlyoutItemBase[] → MenuFlyoutContentElement` |
 
 ### Media
 
@@ -450,6 +496,63 @@ using Duct.Yoga;  // YogaFlexDirection, YogaJustify, YogaAlign, YogaWrap, YogaPo
 | `Image(source)` | `string → ImageElement` |
 | `PersonPicture()` | `→ PersonPictureElement` |
 | `WebView2(source?)` | `Uri? → WebView2Element` |
+| `MediaPlayerElement(source?)` | `string? → MediaPlayerElementElement` |
+| `AnimatedVisualPlayer()` | `→ AnimatedVisualPlayerElement` |
+| `MonacoEditor(text?, onTextChanged?, language?, theme?)` | `(string, Action<string>?, string, string) → MonacoEditorElement` |
+
+### Additional Controls
+
+| Factory | Signature |
+|---------|-----------|
+| `SelectorBar(items, selectedIndex?, onSelectionChanged?)` | `(SelectorBarItemData[], int, Action<int>?) → SelectorBarElement` |
+| `SelectorBarItem(text, icon?)` | `(string, string?) → SelectorBarItemData` |
+| `PipsPager(numberOfPages, selectedPageIndex?, onSelectedIndexChanged?)` | `(int, int, Action<int>?) → PipsPagerElement` |
+| `AnnotatedScrollBar()` | `→ AnnotatedScrollBarElement` |
+| `CalendarView()` | `→ CalendarViewElement` |
+| `SemanticZoom(zoomedInView, zoomedOutView)` | `(Element, Element) → SemanticZoomElement` |
+| `SwipeControl(content, leftItems?, rightItems?)` | `(Element, SwipeItemData[]?, SwipeItemData[]?) → SwipeControlElement` |
+| `AnimatedIcon(source?, fallbackIconSource?)` | `(object?, IconSource?) → AnimatedIconElement` |
+| `ParallaxView(child, verticalShift?, horizontalShift?)` | `(Element, double, double) → ParallaxViewElement` |
+| `MapControl(mapServiceToken?, zoomLevel?)` | `(string?, double) → MapControlElement` |
+| `Frame(sourcePageType?, navigationParameter?)` | `(Type?, object?) → FrameElement` |
+
+### Shapes
+
+| Factory | Signature |
+|---------|-----------|
+| `Rectangle()` | `→ RectangleElement` |
+| `Ellipse()` | `→ EllipseElement` |
+
+### Rich Text
+
+| Factory | Signature |
+|---------|-----------|
+| `RichText(paragraphs)` | `RichTextParagraph[] → RichTextBlockElement` |
+| `Paragraph(inlines...)` | `params RichTextInline[] → RichTextParagraph` |
+| `Run(text)` | `string → RichTextRun` |
+| `Hyperlink(text, navigateUri)` | `(string, Uri) → RichTextHyperlink` |
+| `Markdown(markdown)` | `string → Element` |
+| `Markdown(markdown, options)` | `(string, MarkdownOptions) → Element` |
+
+### Icons
+
+| Factory | Signature |
+|---------|-----------|
+| `SymbolIcon(symbol)` | `string → SymbolIconData` |
+| `FontIcon(glyph, fontFamily?, fontSize?)` | `(string, string?, double?) → FontIconData` |
+| `BitmapIcon(source, showAsMonochrome?)` | `(Uri, bool) → BitmapIconData` |
+| `PathIcon(data)` | `string → PathIconData` |
+| `ImageIcon(source)` | `Uri → ImageIconData` |
+
+### Utilities
+
+| Factory | Signature |
+|---------|-----------|
+| `Thick(uniform)` | `double → Thickness` |
+| `Thick(horizontal, vertical)` | `(double, double) → Thickness` |
+| `Thick(left, top, right, bottom)` | `(double, double, double, double) → Thickness` |
+| `Accelerator(key, modifiers?)` | `(VirtualKey, VirtualKeyModifiers) → KeyboardAcceleratorData` |
+| `AcrylicBrush(tintColor, tintOpacity?, fallbackColor?, tintLuminosityOpacity?)` | `→ AcrylicBrush` |
 
 ### Conditional Helpers
 
@@ -474,8 +577,9 @@ concrete type), so call type-specific sugar methods BEFORE generic modifiers.
 .Margin(16)                          // uniform
 .Margin(16, 8)                       // horizontal, vertical
 .Margin(10, 20, 10, 20)             // left, top, right, bottom
-.Padding(12)                         // uniform (NOTE: only on BorderElement)
-.Padding(8, 4)                       // horizontal, vertical (on BorderElement)
+.Padding(12)                         // uniform
+.Padding(8, 4)                       // horizontal, vertical
+.Padding(10, 20, 10, 20)            // left, top, right, bottom
 .Width(300)
 .Height(200)
 .Size(300, 200)                      // width + height
@@ -489,6 +593,26 @@ concrete type), so call type-specific sugar methods BEFORE generic modifiers.
 .Visible(condition)                  // Show/hide (Collapsed when false)
 .Opacity(0.6)                        // 0.0 to 1.0
 .ToolTip("Helpful text")
+.WithToolTip(element)                // rich tooltip with element content
+.WithFlyout(flyout)                  // attaches a flyout
+.WithContextFlyout(contextFlyout)    // attaches a context flyout
+.ApplyStyle(styleName)               // apply a named style
+.AutomationName(name)                // accessibility
+.SoundMode(mode)                     // control sound feedback
+.OnMount(action)                     // callback when the real WinUI control is created
+.Translation(x, y, z)               // composition translation
+```
+
+### Transition Modifiers (work on ANY Element)
+
+```csharp
+.OpacityTransition(duration?)        // animate opacity changes
+.RotationTransition(duration?)       // animate rotation
+.ScaleTransition(transition?)        // animate scale
+.TranslationTransition(transition?)  // animate position
+.BackgroundTransition(duration?)     // animate background color
+.WithTransitions(transitions...)     // theme transitions for children
+.ItemContainerTransitions(transitions...) // item container transitions
 ```
 
 ### Type-Specific Sugar (call BEFORE generic modifiers)
@@ -498,6 +622,7 @@ concrete type), so call type-specific sugar methods BEFORE generic modifiers.
 Text("Hello").Bold()                  // FontWeights.Bold
 Text("Hello").SemiBold()              // FontWeights.SemiBold
 Text("Hello").FontSize(24)            // Custom font size
+Text("Hello").FontStyle(style)        // FontStyle
 
 // ButtonElement:
 Button("Click").Disabled()            // IsEnabled = false
@@ -508,7 +633,7 @@ Border(child).CornerRadius(8)         // Rounded corners
 Border(child).Background("#f5f5f5")   // Background color
 Border(child).Background("lightgray") // Named colors work too
 Border(child).WithBorder("#ccc", 1)   // Border brush + thickness
-Border(child).Padding(new Thickness(16))
+Border(child).Padding(16)
 
 // StackElement:
 VStack(...).Spacing(16)
@@ -531,6 +656,9 @@ InfoBar("Title", "Message").Severity(InfoBarSeverity.Warning).Closable(false)
 // NavigationViewElement:
 NavigationView(items, content).PaneDisplayMode(NavigationViewPaneDisplayMode.Left).PaneTitle("Nav")
 
+// TitleBarElement:
+TitleBar("My App").Subtitle("Home")
+
 // ExpanderElement:
 Expander("Header", content).Direction(ExpandDirection.Up)
 
@@ -545,6 +673,33 @@ TabView(tabs).ShowAddButton()
 
 // Element Key (for stable identity in lists):
 element.WithKey("unique-id")
+
+// ProgressRingElement:
+ProgressRing().Active(active)         // control active state
+
+// RepeatButtonElement:
+RepeatButton("Go", onClick).Delay(delay).Interval(interval)
+
+// RectangleElement / EllipseElement:
+Rectangle().Fill(brush)
+Ellipse().Fill(brush)
+
+// PopupElement:
+Popup(child, isOpen).LightDismiss(enabled).Offset(horizontal, vertical)
+
+// ScrollViewElement:
+ScrollView(child).ZoomMode(mode).HorizontalScrollMode(mode).VerticalScrollMode(mode)
+
+// TextFieldElement / SliderElement / ToggleSwitchElement:
+TextField(val, setVal).Header(header)
+Slider(val, 0, 100).Header(header)
+ToggleSwitch(isOn, setOn).Header(header)
+
+// LazyVStack / LazyHStack:
+LazyVStack<T>(items, keySelector, viewBuilder).SetRepeater(configure)
+
+// MonacoEditorElement:
+MonacoEditor(text, onChanged).ReadOnly().EditorFontSize(size).EditorWordWrap(wrap).Minimap(enabled)
 ```
 
 ### Set() — Escape Hatch to Native WinUI Properties
@@ -612,12 +767,12 @@ FontWeights.Bold
 FontWeights.SemiBold
 FontWeights.Normal
 
-// Duct.Yoga namespace (for Flex layout):
-YogaFlexDirection        { Column, ColumnReverse, Row, RowReverse }
-YogaJustify              { FlexStart, Center, FlexEnd, SpaceBetween, SpaceAround, SpaceEvenly }
-YogaAlign                { FlexStart, Center, FlexEnd, Stretch, Baseline, SpaceBetween, SpaceAround, SpaceEvenly }
-YogaWrap                 { NoWrap, Wrap, WrapReverse }
-YogaPositionType         { Static, Relative, Absolute }
+// Duct.Flex namespace (for Flex layout):
+FlexDirection            { Column, ColumnReverse, Row, RowReverse }
+FlexJustify              { FlexStart, Center, FlexEnd, SpaceBetween, SpaceAround, SpaceEvenly }
+FlexAlign                { FlexStart, Center, FlexEnd, Stretch, Baseline, SpaceBetween, SpaceAround, SpaceEvenly }
+FlexWrap                 { NoWrap, Wrap, WrapReverse }
+FlexPositionType         { Static, Relative, Absolute }
 ```
 
 ---
@@ -684,7 +839,7 @@ static Element Card(string title, Element content) =>
             Text(title).Bold().FontSize(16),
             content
         )
-    ).CornerRadius(8).Background("#f5f5f5").Padding(new Thickness(16));
+    ).CornerRadius(8).Background("#f5f5f5").Padding(16);
 ```
 
 ### Tab Navigation Pattern
@@ -824,6 +979,65 @@ class AppShell : Component
 }
 ```
 
+### TitleBar with NavigationView Pattern
+```csharp
+// TitleBar integrates with NavigationView via back button and pane toggle.
+// Window.ExtendsContentIntoTitleBar and Window.SetTitleBar() are called automatically on mount.
+class AppShell : Component
+{
+    public override Element Render()
+    {
+        var (selectedTag, setSelectedTag) = UseState("home");
+        var (isPaneOpen, setIsPaneOpen) = UseState(true);
+
+        return Grid(
+            rows: "Auto,*",
+
+            TitleBar("My App") with
+            {
+                Subtitle = selectedTag,
+                IsBackButtonVisible = true,
+                IsBackButtonEnabled = selectedTag != "home",
+                OnBackRequested = () => setSelectedTag("home"),
+                IsPaneToggleButtonVisible = true,
+                OnPaneToggleRequested = () => setIsPaneOpen(!isPaneOpen),
+            }.Grid(row: 0),
+
+            NavigationView(
+                new[]
+                {
+                    NavItem("Home", icon: "Home", tag: "home"),
+                    NavItem("Settings", icon: "Setting", tag: "settings"),
+                },
+                content: selectedTag switch
+                {
+                    "home" => Component<HomePage>(),
+                    "settings" => Component<SettingsPage>(),
+                    _ => Text("Not found")
+                }
+            ) with
+            {
+                SelectedTag = selectedTag,
+                OnSelectionChanged = tag => { if (tag != null) setSelectedTag(tag); },
+                IsPaneOpen = isPaneOpen,
+                IsSettingsVisible = false,
+            }
+            .Grid(row: 1)
+        );
+    }
+}
+```
+
+### TitleBar with Search Content
+```csharp
+// Embed controls (like AutoSuggestBox) in the TitleBar content area.
+TitleBar("My App") with
+{
+    Subtitle = "Documents",
+    Content = AutoSuggestBox(query, setQuery, placeholder: "Search..."),
+}
+```
+
 ### TabView Pattern
 ```csharp
 TabView(
@@ -881,7 +1095,7 @@ ScrollView(
         items.Select(item =>
             Border(
                 HStack(8, Text(item.Name).SemiBold(), Text(item.Description).Opacity(0.7))
-            ).CornerRadius(4).Background("#f0f0f0").Padding(new Thickness(12, 8, 12, 8))
+            ).CornerRadius(4).Background("#f0f0f0").Padding(12, 8, 12, 8)
         ).ToArray()
     )
 )
@@ -892,10 +1106,10 @@ ScrollView(
 Grid(
     columns: ["200", "*"],
     rows: ["Auto", "*"],
-    Cell(Text("Sidebar Header").Bold(), row: 0, column: 0),
-    Cell(Text("Main Header").Bold(), row: 0, column: 1),
-    Cell(Component<SideNav>(), row: 1, column: 0),
-    Cell(Component<MainContent>(), row: 1, column: 1)
+    Text("Sidebar Header").Bold().Grid(row: 0, column: 0),
+    Text("Main Header").Bold().Grid(row: 0, column: 1),
+    Component<SideNav>().Grid(row: 1, column: 0),
+    Component<MainContent>().Grid(row: 1, column: 1)
 )
 ```
 
@@ -975,6 +1189,7 @@ VStack(
 // Many element records have init-only properties not exposed as constructor params.
 // Use `with` expressions or fluent extensions:
 NavigationView(menuItems, content) with { SelectedTag = "home", IsPaneOpen = true }
+TitleBar("My App") with { Subtitle = "Home", IsBackButtonVisible = true, OnBackRequested = () => goBack() }
 ComboBox(items) with { Header = "Choose one", PlaceholderText = "Select..." }
 InfoBar("Title", "Msg") with { Severity = InfoBarSeverity.Warning, IsClosable = false }
 ```
@@ -1027,7 +1242,7 @@ class App : Component
                         NavBtn("Settings", page, setPage)
                     ).VAlign(VerticalAlignment.Center)
                 )
-            ).Background("#f0f0f0").Padding(new Thickness(24, 12, 24, 12)),
+            ).Background("#f0f0f0").Padding(24, 12, 24, 12),
 
             // Content area
             Border(
@@ -1038,7 +1253,7 @@ class App : Component
                     "Settings" => Component<SettingsPage>(),
                     _ => Text("Not found")
                 }
-            ).Padding(new Thickness(24)).Margin(0, 0, 0, 0)
+            ).Padding(24).Margin(0, 0, 0, 0)
         );
     }
 

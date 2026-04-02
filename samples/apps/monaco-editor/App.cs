@@ -12,7 +12,10 @@ using Path = System.IO.Path;
 public static class Program
 {
     [STAThread]
-    static void Main() => DuctApp.Run<EditorApp>("Monaco Editor", width: 1200, height: 800);
+    static void Main() => DuctApp.Run<EditorApp>("Monaco Editor", width: 1200, height: 800, configure: host =>
+    {
+        host.Window.SystemBackdrop = new Microsoft.UI.Xaml.Media.MicaBackdrop();
+    });
 }
 
 class EditorApp : Component
@@ -74,6 +77,7 @@ class EditorApp : Component
         var (filePath, setFilePath) = UseState<string?>(null);
         var (isDirty, setIsDirty) = UseState(false);
         var (status, setStatus) = UseState("Ready");
+        var editorRef = UseRef<Duct.Monaco.MonacoEditor?>(null);
 
         var language = Languages[langIndex].Id;
 
@@ -143,6 +147,16 @@ class EditorApp : Component
         bool showPreview = language == "markdown";
         string[] columns = showPreview ? ["*", "Auto", "*"] : ["*"];
 
+        var titleBar = (TitleBar("Monaco Editor") with
+        {
+            Subtitle = title,
+            Content = (AutoSuggestBox("") with { PlaceholderText = "Search" })
+                .Width(250)
+                .Set(asb => asb.TextChanged += (s, _) =>
+                    editorRef.Current?.FindText(((Microsoft.UI.Xaml.Controls.AutoSuggestBox)s).Text ?? "")),
+        })
+            .Grid(row: 0, columnSpan: columns.Length);
+
         var toolbar = (FlexRow(
             Button("New", OnNew),
             Button("Open...", OnOpen),
@@ -164,7 +178,7 @@ class EditorApp : Component
             ).Width(140)
         ) with { AlignItems = FlexAlign.Center, ColumnGap = 6 })
         .Padding(8)
-        .Grid(row: 0, columnSpan: columns.Length);
+        .Grid(row: 1, columnSpan: columns.Length);
 
         var statusBar = (FlexRow(
             Text(title).FontSize(12),
@@ -172,16 +186,17 @@ class EditorApp : Component
             Text(status).FontSize(12).Opacity(0.7)
         ) with { ColumnGap = 12 })
         .Padding(8, 4)
-        .Grid(row: 2, columnSpan: columns.Length);
+        .Grid(row: 3, columnSpan: columns.Length);
 
         var editor = MonacoEditor(text, OnTextChanged, language, theme)
-            .Grid(row: 1, column: 0);
+            .OnMount(ctrl => editorRef.Current = ctrl as Duct.Monaco.MonacoEditor)
+            .Grid(row: 2, column: 0);
 
         if (!showPreview)
         {
-            return Grid(columns, ["Auto", "*", "Auto"],
-                toolbar, editor, statusBar
-            );
+            return Grid(columns, ["Auto", "Auto", "*", "Auto"],
+                titleBar, toolbar, editor, statusBar
+            ).Background("Transparent");
         }
 
         var previewPane = ScrollView(
@@ -190,6 +205,7 @@ class EditorApp : Component
          .Background("White");
 
         return FlexColumn(
+            VStack(titleBar).Flex(shrink:0),
             VStack(toolbar).Flex(shrink:0),
             FlexRow(editor.Flex(grow:1, basis:0), previewPane.Flex(grow: 1, basis:0)).Flex(grow:1, basis:0),
             VStack(statusBar).Flex(shrink:0)

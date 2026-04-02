@@ -710,8 +710,8 @@ Only needed once most pages are migrated and the shell itself is being converted
     - [x] ItemPage (PageHeader embed, Frame navigation to control pages, theme toggle, reflection cleanup)
 - [x] **Migrate shell**: NavigationView chrome, TitleBar, search box.
     - [x] ShellComponent renders NavigationView + Frame via Duct DSL
-    - [x] TitleBar stays in XAML (requires Window.SetTitleBar — inherently non-component)
-    - [x] Search box stays in XAML TitleBar, events bridge to ShellComponent
+    - [x] TitleBar now available as a first-class DSL element (`TitleBar(title)`)
+    - [x] Search box can be embedded in TitleBar via `Content` property
     - [x] Dynamic control group items populated from ControlInfoDataSource
     - [x] Navigation selection handling moved to ShellComponent
     - [x] Test automation helpers preserved in XAML
@@ -726,7 +726,7 @@ These gaps were found during the migration of 105 control pages, 6 shell pages, 
 
 | Gap | Pages Affected | Workaround |
 |-----|---------------|------------|
-| **No TitleBar DSL element** | MainWindow shell | TitleBar must stay in XAML — `Window.SetTitleBar()` requires a real control reference; no component model equivalent |
+| ~~**No TitleBar DSL element**~~ | ~~MainWindow shell~~ | ~~Resolved — `TitleBar(title)` is now a first-class DSL element. Automatically calls `Window.SetTitleBar()` on mount.~~ |
 | **No ContentIsland / ChildSiteLink / composition hosting** | ContentIslandPage | Entire page is imperative — 3D model loading, composition tree (skip) |
 | **No CaptureElement / MediaCapture** | CaptureElementPreviewPage | Camera capture + snapshot gallery entirely imperative (skip) |
 | **No SettingsCard / SettingsExpander DSL elements** | SettingsPage | CommunityToolkit controls built entirely imperatively via Border + `.Set()` — header, description, icons, nested cards all manual |
