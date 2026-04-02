@@ -135,11 +135,12 @@ with custom layout). SemanticZoom is also exposed (SemanticZoomElement).
 | **MenuFlyout** | Exposed | `MenuFlyout(target, items)` | MenuFlyoutElement + MenuFlyoutContentElement |
 | **CommandBarFlyout** | Exposed | `CommandBarFlyout(target, ...)` | CommandBarFlyoutElement |
 | **TeachingTip** | Exposed | `TeachingTip(title, content)` | TeachingTipElement |
-| **ToolTip** | Augmented | `.ToolTip("text")` / `.WithToolTip(element)` modifier | Attached as modifier, not standalone element — simpler API |
+| **ToolTip** | Missing | `.ToolTip("text")` / `.WithToolTip(element)` modifier | Basic text tooltips work, but the full WinUI ToolTip feature set (placement, timing, rich content styling, ToolTipService properties) is not exposed; needs first-class element or richer modifier |
 | **Popup** | Exposed | `Popup(content)` | PopupElement |
 
-**Verdict: 7/7 exposed (1 augmented).** ToolTip is a modifier rather than an element, which
-is a better fit for its attached-property nature in WinUI.
+**Verdict: 6/7 exposed, 1 missing.** ToolTip has a basic modifier but lacks the full
+WinUI ToolTip feature set (placement, timing, rich content control). Needs a richer API
+to expose the full platform capability.
 
 ### 1.7 Menus, Toolbars, and Commands
 
@@ -243,7 +244,7 @@ container, or via `Reconciler.RegisterType<>()` to create custom element types.
 | 1.3 Icons | 6 | 6 | — | — | — | — |
 | 1.4 Collections | 6 | 4 | 1 | — | 1 | — |
 | 1.5 Date/Time | 4 | 4 | — | — | — | — |
-| 1.6 Dialogs | 7 | 6 | 1 | — | — | — |
+| 1.6 Dialogs | 7 | 6 | — | — | — | 1 |
 | 1.7 Menus/Toolbars | 6 | 4 | — | — | 2 | — |
 | 1.8 Navigation | 8 | 7 | — | 1 | — | — |
 | 1.9 Media | 10 | 6 | 1 | — | — | 3 |
@@ -253,8 +254,8 @@ container, or via `Reconciler.RegisterType<>()` to create custom element types.
 | 1.13 Title Bar | 1 | 1 | — | — | — | — |
 | **Totals** | **86** | **71** | **6** | **1** | **4** | **4** |
 
-**Overall control coverage: 82/86 (95%) accessible, 4 missing (InkCanvas, InkToolbar,
-CaptureElement, TwoPaneView).**
+**Overall control coverage: 81/86 (94%) accessible, 5 missing (InkCanvas, InkToolbar,
+CaptureElement, TwoPaneView, full ToolTip).**
 
 ---
 
@@ -323,18 +324,21 @@ rather than lightweight property changes.
 
 | WinUI Feature | Status | Duct Surface | Notes |
 |---|---|---|---|
-| **NavigationView** | Exposed | NavigationViewElement | Full: pane, back button, settings, selection, display modes |
-| **Frame + Page navigation** | Replaced | Component state switching | Pattern: `currentPage == "home" ? Component<Home>() : Component<Detail>()` |
-| **Back stack management** | Replaced | Component state | No automatic back stack; app manages navigation state explicitly |
+| **NavigationView** | Exposed | NavigationViewElement | Control works; pane, back button, settings, selection, display modes |
+| **Frame + Page navigation** | Blocked | — | Page subclasses require XAML code-behind files; cannot define Pages in pure Duct. Component state switching is a workaround but lacks transitions, parameter passing, and lifecycle hooks |
+| **Back stack management** | Missing | — | No Duct equivalent; no automatic back stack, no history, no forward/back. Apps must build their own navigation state management |
 | **TabView** | Exposed | TabViewElement | Full tab management with selection |
 | **BreadcrumbBar** | Exposed | BreadcrumbBarElement | Click handler per item |
 | **SelectorBar** | Exposed | SelectorBarElement | View switching |
-| **Frame.Navigate(typeof(Page))** | Exposed | FrameElement | Available for hybrid scenarios; most apps use component switching instead |
+| **Frame.Navigate(typeof(Page))** | Blocked | FrameElement exists but requires XAML Pages | Frame element can be mounted but is unusable without XAML-defined Page types |
 
-**Verdict: Mostly replaced.** Duct's component model replaces XAML's Frame/Page navigation
-with explicit state management. This is more flexible (any state can drive navigation) but
-loses automatic back-stack and navigation transition support. Frame is still available for
-apps that want page-based navigation.
+**Verdict: Navigation is generally broken.** While the navigation *controls* (NavigationView,
+TabView, BreadcrumbBar) work as UI elements, the core navigation *scenario* — Frame/Page
+with back stack, transitions, and parameter passing — is blocked because Page subclasses
+require XAML files. The component-state-switching workaround (`currentPage == "home" ? ...`)
+is functional but loses automatic back-stack management, navigation transitions, and the
+standard WinUI navigation lifecycle. A Duct-native navigation system (router, history stack,
+transition coordination) is needed to close this gap.
 
 ---
 
@@ -367,15 +371,17 @@ state management. MVVM interop is available via `UseObservable` for gradual migr
 |---|---|---|
 | **DependencyProperty registration** | Blocked | Duct elements are C# records, not DependencyObjects; no DP registration needed or possible |
 | **PropertyChangedCallback** | Replaced | Reconciler diffing detects property changes and applies them to real WinUI controls |
-| **Value precedence** | Replaced | Duct has a simpler model: explicit value > WinUI default. Animations and styles still follow WinUI precedence on the underlying control |
+| **Value precedence** | Blocked | Duct's modifiers always do local property sets (highest precedence), which overrides styles, theme resources, and template values. Until ThemeRef (theming design spec) is implemented, there is no way to set a value at the style/theme tier of WinUI's precedence chain |
 | **Attached properties** | Augmented | Type-safe `.Grid(row:, col:)` / `.Canvas(left:, top:)` / `.Flex(grow:)` extensions stored in Element.Attached dictionary |
 | **RegisterPropertyChangedCallback** | Passthrough | Available via `.Set()` for instance-level observation |
 | **ClearValue** | Passthrough | Available via `.Set()` |
 
-**Verdict: Mostly replaced.** The DP system is the backbone of XAML but is invisible in
+**Verdict: Partially blocked.** The DP system is the backbone of XAML but is invisible in
 Duct's programming model. Element properties are plain C# record fields. The reconciler
 translates these to real DP values on mount/update. Attached properties are reimplemented
-as a type-safe dictionary system.
+as a type-safe dictionary system. However, value precedence is blocked: every Duct modifier
+does a local-value set, which sits at the top of WinUI's precedence chain and overrides
+styles and theme resources. This is the root cause of theming breakage (see Section 9).
 
 ---
 
@@ -392,16 +398,16 @@ as a type-safe dictionary system.
 | **x:Key** | Blocked | No resource dictionaries in DSL |
 | **x:Class** | Replaced | C# class declaration IS the component |
 | **x:DataType** | Replaced | C# generics on template lambdas |
-| **x:DeferLoadStrategy / x:Load** | Missing | No lazy element loading mechanism; could be implemented as a component wrapper |
+| **x:DeferLoadStrategy / x:Load** | Replaced | C# conditional rendering (`if`/ternary in render) inherently defers creation — elements not in the current render output are never mounted |
 | **Conditional XAML** | Replaced | C# `if`/`switch` in render method |
-| **Custom MarkupExtension** | Blocked | No XAML |
+| **Custom MarkupExtension** | Replaced | The user scenario (inject custom resolution logic into property values) is handled by C# methods, extension methods, and helper functions called inline during render |
 | **Casting in {x:Bind}** | Replaced | Standard C# casting |
 
 **Verdict: Mostly blocked/replaced.** XAML markup features are inherently tied to the XAML
 parser and are not applicable in Duct's pure-C# model. Every feature that XAML markup
 extensions provide is handled by standard C# language features (conditionals, generics,
-casting, string interpolation). The only gap is deferred loading (x:Load), which has no
-Duct equivalent for lazy element creation.
+casting, string interpolation, helper methods). Deferred loading is inherently replaced
+by conditional rendering — elements not returned from render are never created.
 
 ---
 
@@ -444,21 +450,36 @@ is not yet available but is planned per the theming design spec.
 
 ## 9. Theming
 
+Theming is evaluated with a "could a normal developer use this correctly" bar. While
+WinUI's theme system technically operates on the underlying controls, Duct's design
+decisions make it easy to silently break theming without realizing it.
+
 | WinUI Feature | Status | Duct Surface | Notes |
 |---|---|---|---|
-| **Light/Dark/HighContrast** | Passthrough | WinUI handles theme switching | Controls respond to theme changes natively |
-| **Application.RequestedTheme** | Passthrough | Set via DuctApp or `.Set()` | App-level theme selection works |
-| **Per-element RequestedTheme** | Passthrough | Via `.Set(fe => fe.RequestedTheme = Dark)` | Not a first-class modifier yet |
-| **ThemeResource lookup** | Exposed | ThemeResource helper class | Read-only; resolve theme resource values |
-| **Theme-reactive values** | Planned | `Theme.Accent` token system | Per theming design spec: `Button("OK").Background(Theme.Accent)` |
-| **Accent colors** | Passthrough | Available via WinUI theme resources | No Duct-specific accent API |
-| **High contrast** | Passthrough | WinUI handles natively | Controls get high-contrast resources automatically |
+| **Light/Dark/HighContrast (unstyled controls)** | Passthrough | Works if dev uses zero Duct style modifiers | A Button with no `.Background()` / `.Foreground()` responds to theme changes correctly. The moment a dev sets any color via Duct modifiers, they silently opt out of theme reactivity with no warning |
+| **Light/Dark/HighContrast (styled controls)** | Blocked | — | Any use of `.Background()`, `.Foreground()`, or other color modifiers does a local-value set (highest DP precedence), permanently overriding the theme resource. A normal developer would not discover this until testing dark mode |
+| **Application.RequestedTheme** | Passthrough | Set via DuctApp or `.Set()` | App-level theme selection works for unstyled controls |
+| **Per-element RequestedTheme** | Missing | Via `.Set(fe => fe.RequestedTheme = Dark)` | No first-class modifier; requires knowing the WinUI escape hatch |
+| **ThemeResource lookup** | Exposed | ThemeResource helper class | Read-only, one-shot resolve; does NOT re-resolve on theme change — a trap for developers who assume it's reactive |
+| **Theme-reactive values** | Blocked | Not implemented | The `Theme.Accent` token system from the theming design spec is not yet built. There is currently no way to set a color in Duct that reacts to theme changes. Developers must either leave properties unset (Tier 3) or accept broken theming |
+| **Accent colors** | Blocked | — | No way to reference `SystemAccentColor` or its shades in a theme-reactive manner from Duct DSL |
+| **High contrast** | Blocked | — | Unstyled controls work, but any Duct-styled control will keep its hard-coded colors in high-contrast mode, violating accessibility requirements. A normal developer has no path to high-contrast correctness for custom-styled elements |
 
-**Verdict: Passthrough with planned improvements.** The theming design spec outlines a
-three-tier value model (unset → theme token → local concrete) that will add first-class
-theme reactivity. Currently, theme switching works because WinUI controls respond to theme
-changes natively, but Duct-set explicit values (`.Background("#FF0000")`) do not react to
-theme changes.
+**Verdict: Blocked for any real-world app that uses Duct's styling API.** The core problem:
+Duct's styling modifiers (`.Background()`, `.Foreground()`, etc.) do local-value property
+sets, which sit at the top of WinUI's dependency property precedence chain. This permanently
+overrides theme resources, styles, and high-contrast dictionaries on that control.
+
+A developer building a styled app today faces an impossible choice:
+- **Don't use Duct modifiers** → theming works but the app can't have custom styling
+- **Use Duct modifiers** → custom styling works but dark mode and high contrast break silently
+
+The theming design spec (see `duct-theming-design.md`) outlines the solution: a three-tier
+value model with `ThemeRef` tokens that resolve from WinUI resources and re-resolve on theme
+change. Until this is implemented, theming is effectively broken for any control that uses
+Duct's color/brush modifiers.
+
+**This is a P0 architectural gap.**
 
 ---
 
@@ -666,16 +687,18 @@ XY focus, and drag-drop are all missing as first-class modifiers.**
 
 | WinUI Feature | Status | Notes |
 |---|---|---|
-| **ICommand** | Replaced | `Action` callbacks on Button, MenuFlyoutItem, etc. |
-| **XamlUICommand** | Missing | Label+Icon+Accelerator bundling not replicated |
+| **ICommand** | Missing | Action callbacks only cover the "execute" part of a command. ICommand bundles execute + can-execute query + change notification — none of which Duct replicates. A command is a named, stateful, reusable action; a callback is just a closure |
+| **XamlUICommand** | Missing | Label+Icon+Accelerator+Description bundling not replicated |
 | **StandardUICommand** | Missing | No pre-built Cut/Copy/Paste/Undo command objects |
-| **Command property on controls** | Replaced | OnClick/OnChanged callbacks replace Command binding |
-| **CanExecute / auto-disable** | Missing | No automatic disable-when-unavailable; use `.Disabled(condition)` manually |
+| **Command property on controls** | Missing | Controls only have OnClick/OnChanged callbacks, not a Command binding point |
+| **CanExecute / auto-disable** | Missing | No automatic disable-when-unavailable; `.Disabled(condition)` is manual and must be wired separately per control |
 
-**Verdict: Replaced for basic usage, missing for advanced.** Simple command scenarios
-(button click → action) are handled cleanly by callbacks. The XamlUICommand/StandardUICommand
-pattern that bundles label, icon, accelerator, and CanExecute into a reusable object has no
-Duct equivalent. Apps can model this as a plain C# class and manually wire the pieces.
+**Verdict: Missing.** Duct has no command abstraction. Action callbacks cover the simplest
+case (click → do thing) but do not replicate what ICommand provides: a named, queryable,
+reusable action with enable/disable state that automatically propagates to all bound
+controls. The XamlUICommand/StandardUICommand pattern that bundles label, icon, accelerator,
+description, and CanExecute into a single reusable object has no Duct equivalent. A
+Duct-native command model is needed.
 
 ---
 
@@ -818,21 +841,21 @@ is blocked due to no XAML.
 
 | # | Feature Area | Exposed | Augmented | Replaced | Passthrough | Missing | Blocked |
 |---|---|---|---|---|---|---|---|
-| 1 | Built-in Controls | 71 | 6 | 1 | 4 | 4 | — |
+| 1 | Built-in Controls | 71 | 5 | 1 | 4 | 5 | — |
 | 2 | Layout System | 6 | 2 | 1 | 5 | — | — |
-| 3 | Navigation | 5 | — | 3 | — | — | — |
+| 3 | Navigation | 4 | — | — | — | 1 | 3 |
 | 4 | Data Binding | — | — | 11 | — | — | — |
-| 5 | Dependency Properties | — | 1 | 3 | 2 | — | — |
-| 6 | XAML Markup | — | — | 6 | — | 1 | 6 |
+| 5 | Dependency Properties | — | 1 | 2 | 2 | — | 1 |
+| 6 | XAML Markup | — | — | 8 | — | — | 5 |
 | 7 | Resources | 1 | — | — | 4 | — | — |
 | 8 | Styling | 1 | — | 1 | 3 | 1 | 2 |
-| 9 | Theming | — | — | — | 5 | — | — |
+| 9 | Theming | — | — | — | 2 | 1 | 5 |
 | 10 | Visual State Manager | — | — | 7 | — | — | — |
 | 11 | Animations | 14 | — | — | 6 | 1 | — |
 | 12 | Composition Layer | — | — | — | 6 | — | — |
 | 13 | Materials/Effects | — | — | — | 8 | — | — |
 | 14 | Input Handling | 10 | — | — | 12 | 8 | — |
-| 15 | Commands | — | — | 2 | — | 3 | — |
+| 15 | Commands | — | — | — | — | 5 | — |
 | 16 | Accessibility | 1 | — | — | 1 | 9 | 1 |
 | 17 | Threading | — | — | — | 5 | — | — |
 | 18 | Windowing | 2 | — | — | 6 | 1 | — |
@@ -845,18 +868,20 @@ is blocked due to no XAML.
 
 | Priority | Gap | Impact | Effort |
 |---|---|---|---|
+| **P0** | Theming: ThemeRef token system + theme-reactive modifiers | Any Duct-styled control breaks dark mode and high contrast silently; blocks all real-world apps | High — requires ThemeRef type, modifier overloads, reconciler changes, theme change detection (see `duct-theming-design.md`) |
 | **P0** | Accessibility modifiers (HelpText, LiveSetting, HeadingLevel, AutomationId, LandmarkType) | Blocks production apps; compliance requirement | Low — add modifiers to ElementExtensions |
-| **P0** | Lightweight styling (per-control theme resource overrides) | Blocks custom-branded apps | Medium — per theming design spec |
+| **P0** | Navigation: Duct-native router with back stack, transitions, parameter passing | Core navigation scenario is broken; Frame/Page requires XAML | High — design and implement navigation system |
+| **P0** | Command model (ICommand equivalent with name, query-status, action) | No reusable command abstraction; blocks toolbar/menu-driven apps | Medium — design command data model + control integration |
+| **P1** | Lightweight styling (per-control theme resource key overrides) | Blocks custom-branded controls | Medium — per theming design spec |
 | **P1** | Focus management modifiers (IsTabStop, TabIndex, TabFocusNavigation) | Poor keyboard navigation | Low — add modifiers |
 | **P1** | Access key modifiers | Missing Alt-key mnemonics | Low — add modifier |
 | **P1** | Drag-and-drop modifiers (CanDrag, AllowDrop) | Common interaction pattern | Low — add modifiers |
 | **P1** | Multi-window support | Blocks MDI/tool-window apps | Medium — DuctHost per window |
+| **P1** | ToolTip: expose full feature set (placement, timing, rich content) | Platform capability hidden behind minimal modifier | Low — richer modifier or element |
 | **P2** | Connected animations | Navigation feels static | Medium — cross-component coordination needed |
-| **P2** | XamlUICommand / StandardUICommand equivalents | No reusable command bundles | Medium — design command data model |
 | **P2** | ManipulationMode modifier | Custom gesture handling awkward | Low — add modifier |
 | **P2** | Per-element RequestedTheme modifier | Subtree theme override is verbose | Low — add modifier |
 | **P3** | InkCanvas / InkToolbar elements | Blocks inking apps | Low — add element + mount handler |
-| **P3** | Deferred element loading | Performance for large trees | Medium — component wrapper design |
 | **P3** | Activation kinds (file, protocol, etc.) | Blocks registered-handler apps | Medium — DuctApp.Run overload |
 | **P3** | App service wrappers (clipboard, file pickers, printing) | Convenience; not blocking | Medium — new Duct.Services namespace |
 
@@ -869,7 +894,8 @@ is blocked due to no XAML.
 | Declarative VisualStateManager | Any C# logic can drive visual state |
 | Compiled {x:Bind} with zero-overhead | No binding errors, no DataContext confusion |
 | XAML resource forward-reference chain | Standard C# scoping rules |
-| Automatic back-stack navigation | Explicit state management; full control |
-| DP value precedence system | Simple "explicit wins" model |
-| x:DeferLoadStrategy lazy loading | (no equivalent yet) |
+| Automatic back-stack navigation | (missing — no equivalent yet) |
+| DP value precedence system | (blocked — local-value-only sets break theme/style integration) |
+| Theme-reactive styled controls | (blocked — any color modifier silently opts out of theming) |
+| ICommand with query-status | (missing — callbacks don't replicate command model) |
 | x:Phase incremental rendering | (no equivalent; reconciler batching partially compensates) |
