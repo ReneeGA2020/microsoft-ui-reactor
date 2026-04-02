@@ -162,6 +162,7 @@ public abstract record Element
             && a.ElementSoundMode == b.ElementSoundMode
             && a.ToolTip == b.ToolTip
             && a.AutomationName == b.AutomationName
+            && a.AutomationId == b.AutomationId
             && ReferenceEquals(a.Background, b.Background)
             && ReferenceEquals(a.Foreground, b.Foreground)
             && ReferenceEquals(a.BorderBrush, b.BorderBrush)
@@ -268,6 +269,7 @@ public record ElementModifiers
     public Brush? BorderBrush { get; init; }
     public Thickness? BorderThickness { get; init; }
     public string? AutomationName { get; init; }
+    public string? AutomationId { get; init; }
     public ElementSoundMode? ElementSoundMode { get; init; }
     public Action<FrameworkElement>? OnMountAction { get; init; }
 
@@ -298,6 +300,7 @@ public record ElementModifiers
             BorderBrush = other.BorderBrush ?? BorderBrush,
             BorderThickness = other.BorderThickness ?? BorderThickness,
             AutomationName = other.AutomationName ?? AutomationName,
+            AutomationId = other.AutomationId ?? AutomationId,
             ElementSoundMode = other.ElementSoundMode ?? ElementSoundMode,
             OnMountAction = other.OnMountAction ?? OnMountAction,
         };

@@ -70,7 +70,7 @@ dotnet run --project tests/Duct.TestApp -p:Platform=x64 -- --self-test
 
 UI tests exercise the full Duct pipeline (Element DSL → Reconciler → WinUI control tree) by launching the TestApp with a `--self-test` flag. The app uses `VisualTreeHelper` and `ButtonAutomationPeer` to walk and interact with its own WinUI control tree in-process, then reports TAP-format results. The `Duct.UITests` MSTest project wraps these results so they integrate with `dotnet test` and Visual Studio Test Explorer.
 
-> **Why not WinAppDriver?** WinUI 3 Desktop apps host XAML inside a `DesktopChildSiteBridge` which creates a UIA boundary that external-process automation tools (WinAppDriver, FlaUI, System.Windows.Automation) cannot traverse. In-process testing via `VisualTreeHelper` is the reliable approach.
+> **UI Automation note:** WinUI 3 Desktop apps host XAML inside a `DesktopChildSiteBridge`. External-process UIA tools (FlaUI, WinAppDriver) work correctly as long as the app's main thread is STA. `DuctApp.Run` handles this automatically — it detects MTA threads (common with top-level statements) and re-launches on an STA thread. In-process testing via `VisualTreeHelper` remains available as a complementary approach.
 
 ### What the tests cover
 

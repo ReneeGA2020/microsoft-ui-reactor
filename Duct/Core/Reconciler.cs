@@ -535,6 +535,10 @@ public sealed partial class Reconciler : IDisposable
         if (m.AutomationName is not null && m.AutomationName != oldM?.AutomationName)
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(fe, m.AutomationName);
 
+        // AutomationProperties.AutomationId
+        if (m.AutomationId is not null && m.AutomationId != oldM?.AutomationId)
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(fe, m.AutomationId);
+
         // ElementSoundMode (on Control, not FrameworkElement)
         if (m.ElementSoundMode.HasValue && m.ElementSoundMode != oldM?.ElementSoundMode && fe is WinUI.Control ctrl)
             ctrl.ElementSoundMode = m.ElementSoundMode.Value;

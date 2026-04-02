@@ -776,6 +776,14 @@ public static class ElementExtensions
         Modify(el, new ElementModifiers { AutomationName = name });
 
     /// <summary>
+    /// Sets AutomationProperties.AutomationId on the element's control.
+    /// Provides a stable identifier for UI Automation / test tools (FlaUI, WinAppDriver).
+    /// Usage: Button("Go", onClick).AutomationId("GoButton")
+    /// </summary>
+    public static T AutomationId<T>(this T el, string id) where T : Element =>
+        Modify(el, new ElementModifiers { AutomationId = id });
+
+    /// <summary>
     /// Sets ElementSoundMode on the element's control.
     /// Usage: Button("Play", onClick).SoundMode(ElementSoundMode.Off)
     /// </summary>

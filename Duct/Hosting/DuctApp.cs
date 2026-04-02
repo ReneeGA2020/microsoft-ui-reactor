@@ -44,43 +44,80 @@ public static class DuctApp
     public static void Run<TRoot>(string title = "Duct App", int width = 1024, int height = 768, bool fullScreen = false, Action<DuctHost>? configure = null)
         where TRoot : Component, new()
     {
-        if (!SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2))
-            System.Diagnostics.Debug.WriteLine($"SetProcessDpiAwarenessContext failed: {Marshal.GetLastWin32Error()}");
-        WinRT.ComWrappersSupport.InitializeComWrappers();
-        Options = new DuctAppOptions(
-            RootFactory: () => new TRoot(),
-            Configure: configure,
-            WindowTitle: title,
-            WindowWidth: width,
-            WindowHeight: height,
-            FullScreen: fullScreen);
-
-        Application.Start(_ =>
+        RunOnSta(() =>
         {
-            var context = new DispatcherQueueSynchronizationContext(DispatcherQueue.GetForCurrentThread());
-            SynchronizationContext.SetSynchronizationContext(context);
-            new DuctApplication();
+            InitProcess();
+            Options = new DuctAppOptions(
+                RootFactory: () => new TRoot(),
+                Configure: configure,
+                WindowTitle: title,
+                WindowWidth: width,
+                WindowHeight: height,
+                FullScreen: fullScreen);
+
+            Application.Start(_ =>
+            {
+                var context = new DispatcherQueueSynchronizationContext(DispatcherQueue.GetForCurrentThread());
+                SynchronizationContext.SetSynchronizationContext(context);
+                new DuctApplication();
+            });
         });
     }
 
     public static void Run(string title, Func<RenderContext, Element> rootRender, int width = 1024, int height = 768, bool fullScreen = false)
     {
+        RunOnSta(() =>
+        {
+            InitProcess();
+            Options = new DuctAppOptions(
+                RootRenderFunc: rootRender,
+                WindowTitle: title,
+                WindowWidth: width,
+                WindowHeight: height,
+                FullScreen: fullScreen);
+
+            Application.Start(_ =>
+            {
+                var context = new DispatcherQueueSynchronizationContext(DispatcherQueue.GetForCurrentThread());
+                SynchronizationContext.SetSynchronizationContext(context);
+                new DuctApplication();
+            });
+        });
+    }
+
+    private static void InitProcess()
+    {
         if (!SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2))
             System.Diagnostics.Debug.WriteLine($"SetProcessDpiAwarenessContext failed: {Marshal.GetLastWin32Error()}");
         WinRT.ComWrappersSupport.InitializeComWrappers();
-        Options = new DuctAppOptions(
-            RootRenderFunc: rootRender,
-            WindowTitle: title,
-            WindowWidth: width,
-            WindowHeight: height,
-            FullScreen: fullScreen);
+    }
 
-        Application.Start(_ =>
+    /// <summary>
+    /// Ensures the action runs on an STA thread. WinUI 3's DesktopChildSiteBridge requires
+    /// STA for UI Automation (screen readers, test tools) to traverse into the XAML island.
+    /// Top-level statements and async Main produce MTA threads where [STAThread] cannot be
+    /// applied, so we re-launch on a dedicated STA thread when needed.
+    /// </summary>
+    private static void RunOnSta(Action action)
+    {
+        if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
         {
-            var context = new DispatcherQueueSynchronizationContext(DispatcherQueue.GetForCurrentThread());
-            SynchronizationContext.SetSynchronizationContext(context);
-            new DuctApplication();
+            action();
+            return;
+        }
+
+        // Current thread is MTA — spawn a new STA thread and run there.
+        Exception? caught = null;
+        var staThread = new Thread(() =>
+        {
+            try { action(); }
+            catch (Exception ex) { caught = ex; }
         });
+        staThread.SetApartmentState(ApartmentState.STA);
+        staThread.Start();
+        staThread.Join();
+        if (caught is not null)
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(caught).Throw();
     }
 }
 
