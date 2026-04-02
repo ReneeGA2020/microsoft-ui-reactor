@@ -34,7 +34,7 @@ internal sealed class ExportDialog : Component<ExportDialogProps>
                 ),
                 When(!Props.ExportAll, () =>
                     TextField(Props.SelectedBranch, _ => { })
-                        .Set(tb => { tb.IsReadOnly = true; })
+                        .ReadOnly()
                 )
             ).Width(400),
             Strings.Export

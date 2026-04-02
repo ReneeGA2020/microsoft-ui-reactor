@@ -93,7 +93,7 @@ public sealed class WorkflowPipelineSample : GallerySample
         return (Border(
             VStack(2,
                 (Text(s.Icon) with { FontSize = 18 })
-                    .Set(tb => tb.FontFamily = new FontFamily("Segoe MDL2 Assets"))
+                    .FontFamily("Segoe MDL2 Assets")
                     .Foreground(color).HAlign(HorizontalAlignment.Center),
                 (Text(s.Name) with { FontSize = 11 })
                     .SemiBold().HAlign(HorizontalAlignment.Center),
@@ -119,7 +119,7 @@ public sealed class WorkflowPipelineSample : GallerySample
         pb.MoveTo(x1, y1);
         pb.BezierCurveTo(mx, y1, mx, y2, x2, y2);
         return D3Path(pb.ToString(), stroke: stroke, strokeWidth: 2)
-            .Set(p => p.StrokeDashArray = [4, 3]);
+            .StrokeDashArray(4, 3);
     }
 
     static Microsoft.UI.Xaml.Media.Brush StatusColor(string status) => status switch

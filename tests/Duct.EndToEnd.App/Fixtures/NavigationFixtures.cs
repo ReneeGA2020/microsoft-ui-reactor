@@ -19,11 +19,11 @@ internal static class NavigationFixtures
                 return VStack(
                     HStack(
                         Button("Home", () => setTab("Home"))
-                            .Set(b => b.IsEnabled = tab != "Home"),
+                            .Disabled(tab == "Home"),
                         Button("Settings", () => setTab("Settings"))
-                            .Set(b => b.IsEnabled = tab != "Settings"),
+                            .Disabled(tab == "Settings"),
                         Button("About", () => setTab("About"))
-                            .Set(b => b.IsEnabled = tab != "About")
+                            .Disabled(tab == "About")
                     ),
                     Border(
                         tab switch

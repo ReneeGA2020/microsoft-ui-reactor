@@ -450,7 +450,8 @@ internal sealed class MarkdownBuilder
                         new RichTextRun(code) { FontFamily = _options.CodeFontFamily }
                     ])],
                     IsTextSelectionEnabled = true,
-                }.Set(rtb => rtb.TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap)
+                    TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap,
+                }
             )
             .Background("#F5F5F5")
             .Padding(12)

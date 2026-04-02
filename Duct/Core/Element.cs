@@ -468,6 +468,11 @@ public record TextElement(string Content) : Element
     public FontWeight? Weight { get; init; }
     public Windows.UI.Text.FontStyle? FontStyle { get; init; }
     public HorizontalAlignment? HorizontalAlignment { get; init; }
+    public TextWrapping? TextWrapping { get; init; }
+    public TextAlignment? TextAlignment { get; init; }
+    public TextTrimming? TextTrimming { get; init; }
+    public bool? IsTextSelectionEnabled { get; init; }
+    public Microsoft.UI.Xaml.Media.FontFamily? FontFamily { get; init; }
     internal Action<WinUI.TextBlock>[] Setters { get; init; } = [];
 }
 
@@ -476,6 +481,7 @@ public record RichTextBlockElement(string Text) : Element
     public double? FontSize { get; init; }
     public RichTextParagraph[]? Paragraphs { get; init; }
     public bool IsTextSelectionEnabled { get; init; }
+    public TextWrapping? TextWrapping { get; init; }
     internal Action<WinUI.RichTextBlock>[] Setters { get; init; } = [];
 }
 
@@ -552,6 +558,9 @@ public record TextFieldElement(
 ) : Element
 {
     public string? Header { get; init; }
+    public bool? IsReadOnly { get; init; }
+    public bool? AcceptsReturn { get; init; }
+    public TextWrapping? TextWrapping { get; init; }
     internal Action<WinUI.TextBox>[] Setters { get; init; } = [];
 }
 
@@ -1353,6 +1362,7 @@ public record PathElement() : Element
     public Brush? Fill { get; init; }
     public Brush? Stroke { get; init; }
     public double StrokeThickness { get; init; } = 1;
+    public Microsoft.UI.Xaml.Media.DoubleCollection? StrokeDashArray { get; init; }
     public Transform? RenderTransform { get; init; }
     internal Action<WinShapes.Path>[] Setters { get; init; } = [];
 }

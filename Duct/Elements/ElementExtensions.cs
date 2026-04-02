@@ -139,6 +139,44 @@ public static class ElementExtensions
     public static TextElement FontStyle(this TextElement el, Windows.UI.Text.FontStyle style) =>
         el with { FontStyle = style };
 
+    public static TextElement TextWrapping(this TextElement el, TextWrapping wrapping = Microsoft.UI.Xaml.TextWrapping.Wrap) =>
+        el with { TextWrapping = wrapping };
+
+    public static TextElement TextAlignment(this TextElement el, TextAlignment alignment) =>
+        el with { TextAlignment = alignment };
+
+    public static TextElement TextTrimming(this TextElement el, TextTrimming trimming) =>
+        el with { TextTrimming = trimming };
+
+    public static TextElement Selectable(this TextElement el, bool selectable = true) =>
+        el with { IsTextSelectionEnabled = selectable };
+
+    public static TextElement FontFamily(this TextElement el, string family) =>
+        el with { FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(family) };
+
+    public static TextElement FontFamily(this TextElement el, Microsoft.UI.Xaml.Media.FontFamily family) =>
+        el with { FontFamily = family };
+
+    // ── TextField sugar ────────────────────────────────────────────────
+
+    public static TextFieldElement ReadOnly(this TextFieldElement el, bool readOnly = true) =>
+        el with { IsReadOnly = readOnly };
+
+    public static TextFieldElement AcceptsReturn(this TextFieldElement el, bool accepts = true) =>
+        el with { AcceptsReturn = accepts };
+
+    public static TextFieldElement TextWrapping(this TextFieldElement el, TextWrapping wrapping = Microsoft.UI.Xaml.TextWrapping.Wrap) =>
+        el with { TextWrapping = wrapping };
+
+    // ── Path sugar ─────────────────────────────────────────────────────
+
+    public static PathElement StrokeDashArray(this PathElement el, params double[] dashes)
+    {
+        var dc = new Microsoft.UI.Xaml.Media.DoubleCollection();
+        foreach (var d in dashes) dc.Add(d);
+        return el with { StrokeDashArray = dc };
+    }
+
     // ── IsEnabled (on Control — works on buttons, inputs, etc.) ────
 
     public static T Disabled<T>(this T el, bool disabled = true) where T : Element =>

@@ -542,9 +542,9 @@ public class ElementTests
     public void Set_Chains_Multiple_Setters()
     {
         var el = Text("Hi")
-            .Set(tb => tb.IsTextSelectionEnabled = true)
-            .Set(tb => tb.TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap);
-        // Each Set call adds a setter to the internal array
+            .Selectable()
+            .TextWrapping();
+        // Fluent methods create new record instances with the properties set
         Assert.NotEqual(Text("Hi"), el);
     }
 

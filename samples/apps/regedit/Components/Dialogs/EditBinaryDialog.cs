@@ -25,7 +25,7 @@ internal sealed class EditBinaryDialog : Component<EditBinaryDialogProps>
                 VStack(4,
                     Text(Strings.ValueName),
                     TextField(Props.ValueName, _ => { })
-                        .Set(tb => { tb.IsReadOnly = true; })
+                        .ReadOnly()
                 ),
                 VStack(4,
                     Text(Strings.ValueData),

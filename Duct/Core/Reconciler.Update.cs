@@ -233,6 +233,11 @@ public sealed partial class Reconciler
         if (n.Weight.HasValue && tb.FontWeight.Weight != n.Weight.Value.Weight) tb.FontWeight = n.Weight.Value;
         if (n.FontStyle.HasValue && tb.FontStyle != n.FontStyle.Value) tb.FontStyle = n.FontStyle.Value;
         if (n.HorizontalAlignment.HasValue && tb.HorizontalAlignment != n.HorizontalAlignment.Value) tb.HorizontalAlignment = n.HorizontalAlignment.Value;
+        if (n.TextWrapping.HasValue && tb.TextWrapping != n.TextWrapping.Value) tb.TextWrapping = n.TextWrapping.Value;
+        if (n.TextAlignment.HasValue && tb.TextAlignment != n.TextAlignment.Value) tb.TextAlignment = n.TextAlignment.Value;
+        if (n.TextTrimming.HasValue && tb.TextTrimming != n.TextTrimming.Value) tb.TextTrimming = n.TextTrimming.Value;
+        if (n.IsTextSelectionEnabled.HasValue && tb.IsTextSelectionEnabled != n.IsTextSelectionEnabled.Value) tb.IsTextSelectionEnabled = n.IsTextSelectionEnabled.Value;
+        if (n.FontFamily is not null && tb.FontFamily != n.FontFamily) tb.FontFamily = n.FontFamily;
         ApplySetters(n.Setters, tb);
         return null;
     }
@@ -527,6 +532,9 @@ public sealed partial class Reconciler
         if (o.Value != n.Value) tb.Text = n.Value;
         tb.PlaceholderText = n.Placeholder ?? "";
         if (n.Header is not null) tb.Header = n.Header;
+        if (n.IsReadOnly.HasValue) tb.IsReadOnly = n.IsReadOnly.Value;
+        if (n.AcceptsReturn.HasValue) tb.AcceptsReturn = n.AcceptsReturn.Value;
+        if (n.TextWrapping.HasValue) tb.TextWrapping = n.TextWrapping.Value;
         SetElementTag(tb, n);
         ApplySetters(n.Setters, tb);
         return null;
@@ -1432,6 +1440,7 @@ public sealed partial class Reconciler
         if (n.Fill is not null) p.Fill = n.Fill;
         if (n.Stroke is not null) p.Stroke = n.Stroke;
         p.StrokeThickness = n.StrokeThickness;
+        if (n.StrokeDashArray is not null) p.StrokeDashArray = n.StrokeDashArray;
         if (n.RenderTransform is not null) p.RenderTransform = n.RenderTransform;
         ApplySetters(n.Setters, p);
         return null;

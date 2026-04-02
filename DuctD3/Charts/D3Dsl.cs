@@ -110,7 +110,7 @@ public static class D3
             .FontSize(fontSize)
             .Foreground(foreground ?? Gray(100))
             .Width(width)
-            .Set(tb => tb.TextAlignment = TextAlignment.Right)
+            .TextAlignment(TextAlignment.Right)
             .Canvas(x, y);
 
     /// <summary>Creates a positioned text label with center alignment and explicit width.</summary>
@@ -119,7 +119,7 @@ public static class D3
             .FontSize(fontSize)
             .Foreground(foreground ?? Gray(100))
             .Width(width)
-            .Set(tb => tb.TextAlignment = TextAlignment.Center)
+            .TextAlignment(TextAlignment.Center)
             .Canvas(x, y);
 
     // ── Generator helpers (functional one-shot wrappers) ──────────────

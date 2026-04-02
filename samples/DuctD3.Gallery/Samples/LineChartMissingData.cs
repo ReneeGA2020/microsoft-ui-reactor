@@ -49,7 +49,7 @@ D3Path(pathData, stroke: Brush(Palette[0]), strokeWidth: 2)";
         var connectingData = data.Where(d => !double.IsNaN(d.y)).ToArray();
         var connectingPathEl = D3LinePath(connectingData, x: d => xs.Map(d.x), y: d => ys.Map(d.y),
                 stroke: Brush(Palette[0], opacity: 0.2), strokeWidth: 1.5)
-            .Set(p => p.StrokeDashArray = new DoubleCollection { 4, 3 });
+            .StrokeDashArray(4, 3);
 
         // Solid line with gaps
         var solidLine = D3LinePath(data, x: d => xs.Map(d.x), y: d => ys.Map(d.y),

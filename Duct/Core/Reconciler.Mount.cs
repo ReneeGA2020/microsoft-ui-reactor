@@ -138,6 +138,11 @@ public sealed partial class Reconciler
         if (text.Weight.HasValue) tb.FontWeight = text.Weight.Value;
         if (text.FontStyle.HasValue) tb.FontStyle = text.FontStyle.Value;
         if (text.HorizontalAlignment.HasValue) tb.HorizontalAlignment = text.HorizontalAlignment.Value;
+        if (text.TextWrapping.HasValue) tb.TextWrapping = text.TextWrapping.Value;
+        if (text.TextAlignment.HasValue) tb.TextAlignment = text.TextAlignment.Value;
+        if (text.TextTrimming.HasValue) tb.TextTrimming = text.TextTrimming.Value;
+        if (text.IsTextSelectionEnabled.HasValue) tb.IsTextSelectionEnabled = text.IsTextSelectionEnabled.Value;
+        if (text.FontFamily is not null) tb.FontFamily = text.FontFamily;
         ApplySetters(text.Setters, tb);
         return tb;
     }
@@ -146,6 +151,7 @@ public sealed partial class Reconciler
     {
         var rtb = _pool.TryRent(typeof(WinUI.RichTextBlock)) as WinUI.RichTextBlock ?? new WinUI.RichTextBlock();
         rtb.IsTextSelectionEnabled = richText.IsTextSelectionEnabled;
+        if (richText.TextWrapping.HasValue) rtb.TextWrapping = richText.TextWrapping.Value;
         if (richText.Paragraphs is not null)
         {
             foreach (var para in richText.Paragraphs)
@@ -272,6 +278,9 @@ public sealed partial class Reconciler
     {
         var textBox = new TextBox { Text = tf.Value, PlaceholderText = tf.Placeholder ?? "" };
         if (tf.Header is not null) textBox.Header = tf.Header;
+        if (tf.IsReadOnly == true) textBox.IsReadOnly = true;
+        if (tf.AcceptsReturn == true) textBox.AcceptsReturn = true;
+        if (tf.TextWrapping.HasValue) textBox.TextWrapping = tf.TextWrapping.Value;
         SetElementTag(textBox, tf);
         textBox.TextChanged += (_, _) => (GetElementTag(textBox) as TextFieldElement)?.OnChanged?.Invoke(textBox.Text);
         ApplySetters(tf.Setters, textBox);
@@ -1712,6 +1721,7 @@ public sealed partial class Reconciler
         if (pa.Fill is not null) p.Fill = pa.Fill;
         if (pa.Stroke is not null) p.Stroke = pa.Stroke;
         if (pa.StrokeThickness > 0) p.StrokeThickness = pa.StrokeThickness;
+        if (pa.StrokeDashArray is not null) p.StrokeDashArray = pa.StrokeDashArray;
         if (pa.RenderTransform is not null) p.RenderTransform = pa.RenderTransform;
         ApplySetters(pa.Setters, p);
         return p;
