@@ -352,6 +352,20 @@ public static class UI
     /// </summary>
     public static Element Empty() => EmptyElement.Instance;
 
+    /// <summary>
+    /// Wraps a child subtree in an error boundary. If any component in the subtree
+    /// throws during rendering, the fallback function is called with the exception.
+    /// When the ErrorBoundary re-renders, it retries the child (error recovery).
+    /// </summary>
+    public static ErrorBoundaryElement ErrorBoundary(
+        Element child, Func<Exception, Element> fallback) => new(child, fallback);
+
+    /// <summary>
+    /// Wraps a child subtree in an error boundary with a static fallback element.
+    /// </summary>
+    public static ErrorBoundaryElement ErrorBoundary(
+        Element child, Element fallback) => new(child, _ => fallback);
+
     // ── Thickness helpers (WinUI lacks a (horizontal, vertical) constructor) ──
 
     /// <summary>

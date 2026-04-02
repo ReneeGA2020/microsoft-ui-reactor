@@ -204,6 +204,8 @@ public sealed partial class Reconciler
                 => UpdateMapControl(n, mc),
             (FrameElement, FrameElement n, WinUI.Frame f)
                 => UpdateFrame(n, f),
+            (ErrorBoundaryElement oldEb, ErrorBoundaryElement newEb, Border)
+                => UpdateErrorBoundary(oldEb, newEb, control, requestRerender),
             (ComponentElement, ComponentElement, _)
                 => UpdateComponent(oldEl, newEl, control, requestRerender),
             (FuncElement, FuncElement, _)
@@ -1500,6 +1502,50 @@ public sealed partial class Reconciler
     {
         // Frame navigation is inherently imperative — only apply setters on update
         ApplySetters(n.Setters, f);
+        return null;
+    }
+
+    private UIElement? UpdateErrorBoundary(
+        ErrorBoundaryElement oldEb, ErrorBoundaryElement newEb,
+        UIElement control, Action requestRerender)
+    {
+        if (!_errorBoundaryNodes.TryGetValue(control, out var node))
+            return Mount(newEb, requestRerender);
+
+        var wrapper = (Border)control;
+        var existingChild = wrapper.Child;
+
+        // Always retry the child on re-render (error recovery).
+        Element newRendered;
+        Exception? caughtEx = null;
+
+        _errorBoundaryDepth++;
+        try
+        {
+            newRendered = newEb.Child;
+            var newControl = Reconcile(node.RenderedElement, newEb.Child, existingChild, requestRerender);
+            if (newControl != existingChild)
+                wrapper.Child = newControl;
+        }
+        catch (Exception ex)
+        {
+            _logger.Log(DuctLogLevel.Warning, "ErrorBoundary caught render error during update", ex);
+            caughtEx = ex;
+            if (existingChild is not null)
+                Unmount(existingChild);
+            newRendered = newEb.Fallback(ex);
+            wrapper.Child = Mount(newRendered, requestRerender);
+        }
+        finally
+        {
+            _errorBoundaryDepth--;
+        }
+
+        node.ChildElement = newEb.Child;
+        node.RenderedElement = newRendered;
+        node.CaughtException = caughtEx;
+        node.Fallback = newEb.Fallback;
+
         return null;
     }
 

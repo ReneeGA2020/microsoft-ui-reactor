@@ -126,6 +126,9 @@ public abstract record Element
 
             (EmptyElement, EmptyElement) => true,
 
+            // ErrorBoundary contains delegates — always update
+            (ErrorBoundaryElement, ErrorBoundaryElement) => false,
+
             // Conservative: unknown element types always update
             _ => false,
         };
@@ -203,6 +206,13 @@ public record EmptyElement : Element
 /// Produced by <c>ForEach</c> and <c>Group()</c> in the DSL.
 /// </summary>
 public record GroupElement(Element[] Children) : Element;
+
+/// <summary>
+/// Catches render errors in its child subtree and displays fallback UI.
+/// Like React's ErrorBoundary — catches errors during rendering, not event handlers.
+/// When the ErrorBoundary re-renders, it retries the child (error recovery).
+/// </summary>
+public record ErrorBoundaryElement(Element Child, Func<Exception, Element> Fallback) : Element;
 
 /// <summary>
 /// Wraps any element with layout modifiers (margin, alignment, size, etc.).

@@ -18,9 +18,11 @@ namespace Duct.Core;
 public sealed partial class Reconciler : IDisposable
 {
     private readonly Dictionary<UIElement, ComponentNode> _componentNodes = new();
+    private readonly Dictionary<UIElement, ErrorBoundaryNode> _errorBoundaryNodes = new();
     private readonly ElementPool _pool = new();
     private readonly Dictionary<Type, ITypeRegistration> _typeRegistry = new();
     private readonly IDuctLogger _logger;
+    private int _errorBoundaryDepth;
 
     public Reconciler() : this(NullDuctLogger.Instance) { }
 
@@ -190,7 +192,7 @@ public sealed partial class Reconciler : IDisposable
             }
             else return;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (_errorBoundaryDepth == 0)
         {
             _logger.Log(DuctLogLevel.Error, $"Component Render() threw: {newEl.GetType().Name}", ex);
             newChildElement = new TextElement($"⚠ Render error: {ex.Message}");
@@ -265,6 +267,8 @@ public sealed partial class Reconciler : IDisposable
             node.Context?.RunCleanups();
             _componentNodes.Remove(control);
         }
+
+        _errorBoundaryNodes.Remove(control);
 
         // Check registered type unmount handlers via Tag
         if (control is FrameworkElement fe && fe.Tag is Element tagEl
@@ -710,6 +714,17 @@ public sealed partial class Reconciler : IDisposable
         public Element? Element { get; set; }
     }
 
+    /// <summary>
+    /// Tracks the state of a mounted ErrorBoundary in the tree.
+    /// </summary>
+    internal class ErrorBoundaryNode
+    {
+        public Element ChildElement { get; set; } = null!;
+        public Element? RenderedElement { get; set; }
+        public Exception? CaughtException { get; set; }
+        public Func<Exception, Element> Fallback { get; set; } = null!;
+    }
+
     public void Dispose()
     {
         foreach (var node in _componentNodes.Values)
@@ -718,5 +733,6 @@ public sealed partial class Reconciler : IDisposable
             node.Component?.Context?.RunCleanups();
         }
         _componentNodes.Clear();
+        _errorBoundaryNodes.Clear();
     }
 }

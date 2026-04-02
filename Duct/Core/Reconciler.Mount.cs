@@ -112,6 +112,7 @@ public sealed partial class Reconciler
             ParallaxViewElement pv => MountParallaxView(pv, requestRerender),
             MapControlElement mc => MountMapControl(mc),
             FrameElement frame => MountFrame(frame),
+            ErrorBoundaryElement eb => MountErrorBoundary(eb, requestRerender),
             ComponentElement comp => MountComponent(comp, requestRerender),
             FuncElement func => MountFuncComponent(func, requestRerender),
             _ => null,
@@ -1551,6 +1552,41 @@ public sealed partial class Reconciler
         return icon;
     }
 
+    private UIElement MountErrorBoundary(ErrorBoundaryElement eb, Action requestRerender)
+    {
+        var wrapper = new Border();
+        Element renderedElement;
+        Exception? caughtEx = null;
+
+        _errorBoundaryDepth++;
+        try
+        {
+            renderedElement = eb.Child;
+            wrapper.Child = Mount(eb.Child, requestRerender);
+        }
+        catch (Exception ex)
+        {
+            _logger.Log(DuctLogLevel.Warning, "ErrorBoundary caught render error", ex);
+            caughtEx = ex;
+            renderedElement = eb.Fallback(ex);
+            wrapper.Child = Mount(renderedElement, requestRerender);
+        }
+        finally
+        {
+            _errorBoundaryDepth--;
+        }
+
+        _errorBoundaryNodes[wrapper] = new ErrorBoundaryNode
+        {
+            ChildElement = eb.Child,
+            RenderedElement = renderedElement,
+            CaughtException = caughtEx,
+            Fallback = eb.Fallback,
+        };
+
+        return wrapper;
+    }
+
     private UIElement MountComponent(ComponentElement compElement, Action requestRerender)
     {
         var component = compElement.CreateInstance();
@@ -1565,7 +1601,7 @@ public sealed partial class Reconciler
             childElement = component.Render();
             component.Context.FlushEffects();
         }
-        catch (Exception ex)
+        catch (Exception ex) when (_errorBoundaryDepth == 0)
         {
             _logger.Log(DuctLogLevel.Error, $"Component Render() threw during mount: {compElement.GetType().Name}", ex);
             childElement = new TextElement($"⚠ Render error: {ex.Message}");
@@ -1592,7 +1628,7 @@ public sealed partial class Reconciler
             childElement = funcElement.RenderFunc(ctx);
             ctx.FlushEffects();
         }
-        catch (Exception ex)
+        catch (Exception ex) when (_errorBoundaryDepth == 0)
         {
             _logger.Log(DuctLogLevel.Error, "FuncComponent Render() threw during mount", ex);
             childElement = new TextElement($"⚠ Render error: {ex.Message}");

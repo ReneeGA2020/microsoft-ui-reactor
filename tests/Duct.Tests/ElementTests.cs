@@ -638,6 +638,44 @@ public class ElementTests
     }
 
     // ════════════════════════════════════════════════════════════════
+    //  ErrorBoundary element
+    // ════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public void ErrorBoundary_Creates_Element_With_Child_And_Fallback()
+    {
+        var child = Text("Hello");
+        var eb = ErrorBoundary(child, ex => Text($"Error: {ex.Message}"));
+        Assert.IsType<ErrorBoundaryElement>(eb);
+        Assert.Same(child, eb.Child);
+    }
+
+    [Fact]
+    public void ErrorBoundary_Static_Fallback_Overload()
+    {
+        var child = Text("Hello");
+        var fallback = Text("Something went wrong");
+        var eb = ErrorBoundary(child, fallback);
+        Assert.IsType<ErrorBoundaryElement>(eb);
+
+        // The static overload wraps in a lambda — verify it returns the fallback
+        var result = eb.Fallback(new Exception("test"));
+        Assert.IsType<TextElement>(result);
+        Assert.Equal("Something went wrong", ((TextElement)result).Content);
+    }
+
+    [Fact]
+    public void ErrorBoundary_ShallowEquals_Always_Returns_False()
+    {
+        var child = Text("Hello");
+        Func<Exception, Element> fallback = ex => Text("err");
+        var a = new ErrorBoundaryElement(child, fallback);
+        var b = new ErrorBoundaryElement(child, fallback);
+        // Delegates can't be reliably compared, so ShallowEquals returns false
+        Assert.False(Element.ShallowEquals(a, b));
+    }
+
+    // ════════════════════════════════════════════════════════════════
     //  Record immutability
     // ════════════════════════════════════════════════════════════════
 
