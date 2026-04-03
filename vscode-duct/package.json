@@ -1,0 +1,44 @@
+{
+  "name": "duct-preview",
+  "displayName": "Duct Preview",
+  "description": "Live preview panel for Duct components — shows a streaming thumbnail of the native WinUI preview window",
+  "version": "0.1.0",
+  "publisher": "duct",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "duct.preview",
+        "title": "Duct: Preview Component"
+      },
+      {
+        "command": "duct.previewConnect",
+        "title": "Duct: Connect to Preview"
+      },
+      {
+        "command": "duct.previewStop",
+        "title": "Duct: Stop Preview"
+      },
+      {
+        "command": "duct.previewFocus",
+        "title": "Duct: Focus Preview Window"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  }
+}

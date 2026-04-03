@@ -91,10 +91,11 @@ public static class DuctApp
     }
 
     /// <summary>
-    /// Checks for <c>--preview ComponentName</c> in the process command-line args.
-    /// If found, launches a minimal preview window showing just that component.
-    /// Works with <c>dotnet watch run -- --preview CounterDemo</c> for hot reload
-    /// with state preservation — no separate preview app or build cycle needed.
+    /// Checks for <c>--preview</c> in the process command-line args.
+    /// If found, launches a minimal preview window showing the specified (or first) component.
+    /// Works with <c>dotnet watch run -- --preview CounterDemo</c> for hot reload.
+    /// With <c>--vscode</c>, starts a capture server with <c>/components</c> and
+    /// <c>POST /preview</c> endpoints for live component switching without restart.
     /// Only active when the caller passes <c>preview: true</c>.
     /// </summary>
     private static bool TryRunPreview(string title, int width, int height, Action<DuctHost>? configure)
@@ -103,7 +104,6 @@ public static class DuctApp
 
         // --preview-list: output all available component names (one per line) and exit.
         // Supports optional file path for tools: --preview-list C:\temp\components.txt
-        // (WinExe apps may not have stdout attached when launched via dotnet run)
         var listIdx = Array.IndexOf(args, "--preview-list");
         if (listIdx >= 0)
         {
@@ -111,50 +111,101 @@ public static class DuctApp
             foreach (var name in names)
                 Console.WriteLine(name);
             Console.Out.Flush();
-            // If an output file path follows, write there too (reliable for tools)
             if (listIdx + 1 < args.Length && !args[listIdx + 1].StartsWith("-"))
                 File.WriteAllLines(args[listIdx + 1], names);
             return true;
         }
 
         var idx = Array.IndexOf(args, "--preview");
-        if (idx < 0 || idx + 1 >= args.Length) return false;
+        if (idx < 0) return false;
 
-        var componentName = args[idx + 1];
+        // Component name is optional — if next arg looks like a flag (or is missing), use first found
+        string? componentName = null;
+        if (idx + 1 < args.Length && !args[idx + 1].StartsWith("-"))
+            componentName = args[idx + 1];
 
-        // Find the component type across all loaded assemblies (including internal types)
+        // Resolve the initial component type
         Type? componentType = null;
-        foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+        if (componentName != null)
         {
-            Type[] types;
-            try { types = asm.GetTypes(); }
-            catch (System.Reflection.ReflectionTypeLoadException ex) { types = ex.Types.Where(t => t != null).ToArray()!; }
-            catch { continue; }
-
-            componentType = types.FirstOrDefault(t =>
-                string.Equals(t.Name, componentName, StringComparison.OrdinalIgnoreCase) &&
-                typeof(Core.Component).IsAssignableFrom(t) &&
-                !t.IsAbstract);
-            if (componentType != null) break;
+            componentType = FindComponentType(componentName);
+            if (componentType == null)
+            {
+                Console.Error.WriteLine($"[preview] Component '{componentName}' not found.");
+                Console.Error.WriteLine($"[preview] Available components: {string.Join(", ", FindAllComponentNames())}");
+                return true;
+            }
+        }
+        else
+        {
+            // Default to first available component
+            var firstName = FindAllComponentNames().FirstOrDefault();
+            if (firstName == null)
+            {
+                Console.Error.WriteLine("[preview] No Component subclasses found.");
+                return true;
+            }
+            componentType = FindComponentType(firstName)!;
+            componentName = firstName;
         }
 
-        if (componentType == null)
-        {
-            Console.Error.WriteLine($"[preview] Component '{componentName}' not found.");
-            Console.Error.WriteLine($"[preview] Available components: {string.Join(", ", FindAllComponentNames())}");
-            return true; // handled (with error), don't fall through to normal Run
-        }
+        bool vscodeMode = args.Contains("--vscode");
+        int fps = 10;
+        var fpsIdx = Array.IndexOf(args, "--fps");
+        if (fpsIdx >= 0 && fpsIdx + 1 < args.Length && int.TryParse(args[fpsIdx + 1], out var parsedFps))
+            fps = Math.Clamp(parsedFps, 1, 30);
 
         Console.WriteLine($"[preview] Previewing {componentType.FullName}");
         Console.WriteLine($"[preview] Hot reload active — edit and save to see changes instantly");
+        if (vscodeMode) Console.WriteLine($"[preview] VS Code mode enabled (capture @ {fps} fps)");
+
+        var initialComponentType = componentType;
+        var initialComponentName = componentName;
+        var captureFps = fps;
 
         RunOnSta(() =>
         {
             InitProcess();
+
+            Action<DuctHost> combinedConfigure = host =>
+            {
+                configure?.Invoke(host);
+
+                if (vscodeMode)
+                {
+                    var server = new PreviewCaptureServer(
+                        host.Window.DispatcherQueue,
+                        host.Window,
+                        captureFps);
+
+                    server.GetComponents = () => FindAllComponentNames().ToList();
+                    server.GetCurrentComponent = () => initialComponentName;
+                    server.SwitchComponent = name =>
+                    {
+                        var type = FindComponentType(name);
+                        if (type == null) return false;
+
+                        host.Window.DispatcherQueue.TryEnqueue(() =>
+                        {
+                            var instance = (Core.Component)Activator.CreateInstance(type)!;
+                            host.Mount(instance);
+                            host.Window.Title = $"Preview — {name}";
+                        });
+
+                        // Update the closure so GetCurrentComponent stays correct
+                        initialComponentName = name;
+                        Console.WriteLine($"[preview] Switched to {type.FullName}");
+                        return true;
+                    };
+
+                    server.Start();
+                }
+            };
+
             Options = new DuctAppOptions(
-                RootFactory: () => (Core.Component)Activator.CreateInstance(componentType)!,
-                Configure: configure,
-                WindowTitle: $"Preview — {componentName}",
+                RootFactory: () => (Core.Component)Activator.CreateInstance(initialComponentType)!,
+                Configure: combinedConfigure,
+                WindowTitle: $"Preview — {initialComponentName}",
                 WindowWidth: width,
                 WindowHeight: height);
 
@@ -167,6 +218,27 @@ public static class DuctApp
         });
 
         return true;
+    }
+
+    /// <summary>
+    /// Finds a Component type by name across all loaded assemblies (case-insensitive).
+    /// </summary>
+    internal static Type? FindComponentType(string name)
+    {
+        foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            Type[] types;
+            try { types = asm.GetTypes(); }
+            catch (System.Reflection.ReflectionTypeLoadException ex) { types = ex.Types.Where(t => t != null).ToArray()!; }
+            catch { continue; }
+
+            var match = types.FirstOrDefault(t =>
+                string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase) &&
+                typeof(Core.Component).IsAssignableFrom(t) &&
+                !t.IsAbstract);
+            if (match != null) return match;
+        }
+        return null;
     }
 
     private static IEnumerable<string> FindAllComponentNames()

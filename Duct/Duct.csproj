@@ -12,11 +12,11 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Duct.Tests" />
-    <InternalsVisibleTo Include="Duct.Preview" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="$(WindowsAppSDKVersion)" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
   </ItemGroup>
 
   <!-- ═══════════════════════════════════════════════════════════════════

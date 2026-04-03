@@ -121,6 +121,79 @@ dotnet run --project tests/Duct.TestApp -p:Platform=x64
 dotnet test tests/Duct.Tests -p:Platform=x64
 ```
 
+## Live preview
+
+Duct includes a built-in preview mode that lets you see a single component in isolation with hot reload. There are two ways to use it: from the CLI, or via the VS Code extension.
+
+### CLI preview with hot reload
+
+Any Duct app that passes `preview: true` to `DuctApp.Run` supports the `--preview` flag:
+
+```csharp
+DuctApp.Run<App>("My App", preview: true);
+```
+
+Then use `dotnet watch` for live hot reload:
+
+```bash
+# Preview a specific component — rebuilds and refreshes on every file save
+dotnet watch run --project MyApp -- --preview CounterDemo
+
+# Preview the first component found (no name needed)
+dotnet watch run --project MyApp -- --preview
+```
+
+`dotnet watch` monitors your source files and incrementally rebuilds on save. The preview window updates automatically — no manual restart needed.
+
+You can also list all available components:
+
+```bash
+dotnet run --project MyApp -- --preview-list
+```
+
+### VS Code extension (recommended)
+
+The **Duct Preview** extension adds a live preview panel directly in VS Code. It launches a single preview process and switches between components instantly via HTTP — no process restart when you change components.
+
+#### Install
+
+```bash
+cd vscode-duct
+npm install
+npm run compile
+```
+
+Then install the extension in VS Code:
+
+1. Open VS Code
+2. Run **Extensions: Install from VSIX...** from the command palette, or:
+   ```bash
+   code --install-extension vscode-duct
+   ```
+   (If you're developing the extension locally, press **F5** in the `vscode-duct` folder to launch an Extension Development Host instead.)
+
+#### Usage
+
+1. Open a C# file containing a Duct `Component`
+2. Run **Duct: Preview Component** from the command palette (`Ctrl+Shift+P`)
+3. A preview panel opens beside your editor showing a live capture of the component
+
+The extension:
+- **Auto-detects components** in the current file and populates a dropdown if there are multiple
+- **Switches components instantly** via the dropdown — no relaunch, just an HTTP call to swap what's mounted
+- **Hot reloads on save** — powered by `dotnet watch` under the hood
+- **Follows your editor** — when you switch to a different C# file with components, the preview updates automatically
+- **Only relaunches** if you navigate to a file in a different `.csproj`
+
+#### Commands
+
+| Command | Description |
+|---------|-------------|
+| **Duct: Preview Component** | Start preview for the current file |
+| **Duct: Connect to Preview** | Connect to an already-running preview by port |
+| **Duct: Stop Preview** | Stop the preview process |
+| **Duct: Focus Preview Window** | Bring the native preview window to front |
+
 ## Project structure
 
 ```
@@ -129,9 +202,10 @@ Duct/                  Core framework
   Elements/            DSL factory methods + fluent modifiers
   Flex/                FlexPanel — CSS Flexbox layout via Yoga engine
   Yoga/                Pure C# port of Meta's Yoga layout engine
-  Hosting/             App bootstrap, render loop, hot reload
+  Hosting/             App bootstrap, render loop, hot reload, preview capture server
   Native/              Experimental Rust differ (ViewDiffer)
 Duct.Cli/              CLI scaffolding tool
+vscode-duct/           VS Code extension — live preview panel
 tests/
   Duct.Tests/          xUnit test suite (incl. 590 Yoga layout fixtures)
   Duct.TestApp/        Interactive control showcase
