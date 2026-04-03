@@ -64,13 +64,14 @@ public static class DuctApp
         });
     }
 
-    public static void Run(string title, Func<RenderContext, Element> rootRender, int width = 1024, int height = 768, bool fullScreen = false)
+    public static void Run(string title, Func<RenderContext, Element> rootRender, int width = 1024, int height = 768, bool fullScreen = false, Action<DuctHost>? configure = null)
     {
         RunOnSta(() =>
         {
             InitProcess();
             Options = new DuctAppOptions(
                 RootRenderFunc: rootRender,
+                Configure: configure,
                 WindowTitle: title,
                 WindowWidth: width,
                 WindowHeight: height,

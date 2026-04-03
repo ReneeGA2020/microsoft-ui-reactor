@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Duct.Tests" />
+    <InternalsVisibleTo Include="Duct.Preview" />
   </ItemGroup>
 
   <ItemGroup>

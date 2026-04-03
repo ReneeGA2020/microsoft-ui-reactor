@@ -24,6 +24,12 @@ public sealed partial class Reconciler : IDisposable
     private readonly IDuctLogger _logger;
     private int _errorBoundaryDepth;
 
+    /// <summary>
+    /// The element pool used by this reconciler. Disable via Pool.Enabled = false
+    /// to prevent recycled controls from retaining stale property state.
+    /// </summary>
+    public ElementPool Pool => _pool;
+
     public Reconciler() : this(NullDuctLogger.Instance) { }
 
     public Reconciler(IDuctLogger logger)

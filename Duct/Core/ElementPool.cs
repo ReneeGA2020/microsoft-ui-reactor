@@ -12,6 +12,13 @@ public sealed class ElementPool
 {
     private const int MaxPerType = 32;
 
+    /// <summary>
+    /// When false, TryRent always returns null and Return is a no-op.
+    /// Useful for scenarios like the live previewer where recycled controls
+    /// with stale property state can cause visual glitches.
+    /// </summary>
+    public bool Enabled { get; set; } = true;
+
     private static readonly HashSet<Type> PoolableTypes = new()
     {
         typeof(TextBlock),
@@ -68,6 +75,7 @@ public sealed class ElementPool
     /// </summary>
     public FrameworkElement? TryRent(Type type)
     {
+        if (!Enabled) return null;
         if (!PoolableTypes.Contains(type)) { System.Diagnostics.Debug.WriteLine($"[Pool] TryRent({type.Name}) — not poolable"); return null; }
         if (!_pools.TryGetValue(type, out var stack) || stack.Count == 0) { System.Diagnostics.Debug.WriteLine($"[Pool] TryRent({type.Name}) — pool empty"); return null; }
         var item = stack.Pop();
@@ -81,6 +89,7 @@ public sealed class ElementPool
     /// </summary>
     public void Return(FrameworkElement element)
     {
+        if (!Enabled) return;
         var type = element.GetType();
         if (!PoolableTypes.Contains(type)) { System.Diagnostics.Debug.WriteLine($"[Pool] Return({type.Name} {element.GetHashCode()}) — not poolable, DROPPED"); return; }
 
