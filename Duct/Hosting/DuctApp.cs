@@ -41,9 +41,11 @@ public static class DuctApp
 
     private static readonly nint DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4;
 
-    public static void Run<TRoot>(string title = "Duct App", int width = 1024, int height = 768, bool fullScreen = false, Action<DuctHost>? configure = null)
+    public static void Run<TRoot>(string title = "Duct App", int width = 1024, int height = 768, bool fullScreen = false, bool preview = false, Action<DuctHost>? configure = null)
         where TRoot : Component, new()
     {
+        if (preview && TryRunPreview(title, width, height, configure)) return;
+
         RunOnSta(() =>
         {
             InitProcess();
@@ -64,8 +66,10 @@ public static class DuctApp
         });
     }
 
-    public static void Run(string title, Func<RenderContext, Element> rootRender, int width = 1024, int height = 768, bool fullScreen = false, Action<DuctHost>? configure = null)
+    public static void Run(string title, Func<RenderContext, Element> rootRender, int width = 1024, int height = 768, bool fullScreen = false, bool preview = false, Action<DuctHost>? configure = null)
     {
+        if (preview && TryRunPreview(title, width, height, configure)) return;
+
         RunOnSta(() =>
         {
             InitProcess();
@@ -84,6 +88,95 @@ public static class DuctApp
                 new DuctApplication();
             });
         });
+    }
+
+    /// <summary>
+    /// Checks for <c>--preview ComponentName</c> in the process command-line args.
+    /// If found, launches a minimal preview window showing just that component.
+    /// Works with <c>dotnet watch run -- --preview CounterDemo</c> for hot reload
+    /// with state preservation — no separate preview app or build cycle needed.
+    /// Only active when the caller passes <c>preview: true</c>.
+    /// </summary>
+    private static bool TryRunPreview(string title, int width, int height, Action<DuctHost>? configure)
+    {
+        var args = Environment.GetCommandLineArgs();
+
+        // --preview-list: output all available component names (one per line) and exit.
+        // Supports optional file path for tools: --preview-list C:\temp\components.txt
+        // (WinExe apps may not have stdout attached when launched via dotnet run)
+        var listIdx = Array.IndexOf(args, "--preview-list");
+        if (listIdx >= 0)
+        {
+            var names = FindAllComponentNames().ToList();
+            foreach (var name in names)
+                Console.WriteLine(name);
+            Console.Out.Flush();
+            // If an output file path follows, write there too (reliable for tools)
+            if (listIdx + 1 < args.Length && !args[listIdx + 1].StartsWith("-"))
+                File.WriteAllLines(args[listIdx + 1], names);
+            return true;
+        }
+
+        var idx = Array.IndexOf(args, "--preview");
+        if (idx < 0 || idx + 1 >= args.Length) return false;
+
+        var componentName = args[idx + 1];
+
+        // Find the component type across all loaded assemblies (including internal types)
+        Type? componentType = null;
+        foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            Type[] types;
+            try { types = asm.GetTypes(); }
+            catch (System.Reflection.ReflectionTypeLoadException ex) { types = ex.Types.Where(t => t != null).ToArray()!; }
+            catch { continue; }
+
+            componentType = types.FirstOrDefault(t =>
+                string.Equals(t.Name, componentName, StringComparison.OrdinalIgnoreCase) &&
+                typeof(Core.Component).IsAssignableFrom(t) &&
+                !t.IsAbstract);
+            if (componentType != null) break;
+        }
+
+        if (componentType == null)
+        {
+            Console.Error.WriteLine($"[preview] Component '{componentName}' not found.");
+            Console.Error.WriteLine($"[preview] Available components: {string.Join(", ", FindAllComponentNames())}");
+            return true; // handled (with error), don't fall through to normal Run
+        }
+
+        Console.WriteLine($"[preview] Previewing {componentType.FullName}");
+        Console.WriteLine($"[preview] Hot reload active — edit and save to see changes instantly");
+
+        RunOnSta(() =>
+        {
+            InitProcess();
+            Options = new DuctAppOptions(
+                RootFactory: () => (Core.Component)Activator.CreateInstance(componentType)!,
+                Configure: configure,
+                WindowTitle: $"Preview — {componentName}",
+                WindowWidth: width,
+                WindowHeight: height);
+
+            Application.Start(_ =>
+            {
+                var context = new DispatcherQueueSynchronizationContext(DispatcherQueue.GetForCurrentThread());
+                SynchronizationContext.SetSynchronizationContext(context);
+                new DuctApplication();
+            });
+        });
+
+        return true;
+    }
+
+    private static IEnumerable<string> FindAllComponentNames()
+    {
+        return AppDomain.CurrentDomain.GetAssemblies()
+            .SelectMany(a => { try { return a.GetTypes(); } catch (System.Reflection.ReflectionTypeLoadException ex) { return ex.Types.Where(t => t != null)!; } catch { return []; } })
+            .Where(t => typeof(Core.Component).IsAssignableFrom(t!) && !t!.IsAbstract && !t.FullName!.StartsWith("Duct."))
+            .Select(t => t!.Name)
+            .Distinct()
+            .OrderBy(n => n);
     }
 
     private static void InitProcess()

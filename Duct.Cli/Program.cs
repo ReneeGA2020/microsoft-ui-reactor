@@ -131,7 +131,11 @@ string GenerateProgram(string name) =>
     using static Duct.UI;
     using Microsoft.UI.Xaml;
 
-    DuctApp.Run<App>("{{name}}", width: 800, height: 600);
+    DuctApp.Run<App>("{{name}}", width: 800, height: 600
+    #if DEBUG
+        , preview: true  // enables: dotnet watch run -- --preview ComponentName
+    #endif
+    );
 
     class App : Component
     {

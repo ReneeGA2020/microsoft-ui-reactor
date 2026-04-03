@@ -17,7 +17,11 @@ if (args.Contains("--self-test"))
 }
 else
 {
-    DuctApp.Run<DemoApp>("Duct Demo", width: 1200, height: 800);
+    DuctApp.Run<DemoApp>("Duct Demo", width: 1200, height: 800
+#if DEBUG
+        , preview: true
+#endif
+    );
 }
 
 // ─── Root application component ────────────────────────────────────────────────
