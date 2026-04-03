@@ -316,7 +316,12 @@ public partial class FlexPanel : Panel
                     Height = childNode.LayoutHeight
                 };
                 _cachedChildLayouts.Add(layout);
-                child.Measure(new Size(layout.Width, layout.Height));
+                // Add margin back: Yoga's layout sizes are content-area,
+                // but WinUI's Measure subtracts the child's Margin.
+                var m = child is FrameworkElement cfe ? cfe.Margin : default;
+                child.Measure(new Size(
+                    layout.Width + m.Left + m.Right,
+                    layout.Height + m.Top + m.Bottom));
             }
             else
             {
@@ -380,7 +385,15 @@ public partial class FlexPanel : Panel
         for (int i = 0; i < Children.Count && i < _cachedChildLayouts.Count; i++)
         {
             var layout = _cachedChildLayouts[i];
-            Children[i].Arrange(new Rect(layout.X, layout.Y, layout.Width, layout.Height));
+            var child = Children[i];
+            // Expand arrange rect by margin: Yoga positions/sizes the content area,
+            // but WinUI's Arrange subtracts the child's Margin from the rect.
+            var m = child is FrameworkElement fe ? fe.Margin : default;
+            child.Arrange(new Rect(
+                layout.X - m.Left,
+                layout.Y - m.Top,
+                layout.Width + m.Left + m.Right,
+                layout.Height + m.Top + m.Bottom));
         }
 
         return finalSize;
@@ -438,17 +451,35 @@ public partial class FlexPanel : Panel
                 // During ArrangeOverride (_arranging=true), return the last
                 // DesiredSize without calling Measure — calling Measure during
                 // Arrange can trigger LayoutCycleException.
+                //
+                // Margin compensation: Yoga handles margins for positioning and
+                // spacing between children (synced in ApplyAttachedProperties).
+                // WinUI also subtracts Margin during Measure/Arrange. To avoid
+                // double-counting, we add the margin back to Yoga's constraints
+                // before calling WinUI Measure, and subtract it from DesiredSize
+                // before returning to Yoga.
                 var capturedChild = child;
                 var panel = this;
                 childNode.MeasureFunction = (node, w, wMode, h, hMode) =>
                 {
-                    if (panel._arranging)
-                        return new YogaSize((float)capturedChild.DesiredSize.Width, (float)capturedChild.DesiredSize.Height);
+                    var m = capturedChild is FrameworkElement cfe ? cfe.Margin : default;
+                    double mH = m.Left + m.Right;
+                    double mV = m.Top + m.Bottom;
 
-                    var constraintW = wMode == YogaMeasureMode.Undefined ? double.PositiveInfinity : w;
-                    var constraintH = hMode == YogaMeasureMode.Undefined ? double.PositiveInfinity : h;
+                    if (panel._arranging)
+                        return new YogaSize(
+                            Math.Max(0, (float)(capturedChild.DesiredSize.Width - mH)),
+                            Math.Max(0, (float)(capturedChild.DesiredSize.Height - mV)));
+
+                    // Yoga's constraints are content-area (excluding margin).
+                    // Add margin so WinUI's subtraction yields the correct content area.
+                    var constraintW = wMode == YogaMeasureMode.Undefined ? double.PositiveInfinity : w + mH;
+                    var constraintH = hMode == YogaMeasureMode.Undefined ? double.PositiveInfinity : h + mV;
                     capturedChild.Measure(new Size(constraintW, constraintH));
-                    return new YogaSize((float)capturedChild.DesiredSize.Width, (float)capturedChild.DesiredSize.Height);
+                    // Return content size (without margin) since Yoga tracks margins separately
+                    return new YogaSize(
+                        Math.Max(0, (float)(capturedChild.DesiredSize.Width - mH)),
+                        Math.Max(0, (float)(capturedChild.DesiredSize.Height - mV)));
                 };
             }
 

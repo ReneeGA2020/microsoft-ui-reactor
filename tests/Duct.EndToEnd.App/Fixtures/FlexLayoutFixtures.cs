@@ -86,7 +86,7 @@ internal static class FlexLayoutFixtures
                 if (contentText is not null)
                 {
                     H.Check("FlexNested_RowInCol_ContentWidth",
-                        Near(contentText.ActualWidth, 450, 5));
+                        Near(contentText.RenderSize.Width, 450, 5));
                 }
             }
 
@@ -200,7 +200,7 @@ internal static class FlexLayoutFixtures
             // L2-Left should be ~1/3 of 600 = 200
             var l2Left = H.FindText("L2-Left");
             H.Check("FlexNested_Deep_L2LeftWidth",
-                l2Left is not null && Near(l2Left.ActualWidth, 200, 5));
+                l2Left is not null && Near(l2Left.RenderSize.Width, 200, 5));
 
             // L3 column should be ~2/3 of 600 = 400
             var l3Columns = H.FindAllControls<FlexPanel>(p =>
@@ -278,14 +278,14 @@ internal static class FlexLayoutFixtures
             var a2 = H.FindText("A2");
             H.Check("FlexInGrid_TopLeftDistribution",
                 a1 is not null && a2 is not null &&
-                Near(a1.ActualWidth, 100, 5) && Near(a2.ActualWidth, 100, 5));
+                Near(a1.RenderSize.Width, 100, 5) && Near(a2.RenderSize.Width, 100, 5));
 
             // D1 should be fixed 80px, D2 should get remaining (400 - 80 = 320)
             var d1 = H.FindText("D1");
             var d2 = H.FindText("D2");
             H.Check("FlexInGrid_MixedFixedGrow",
                 d1 is not null && d2 is not null &&
-                Near(d1.ActualWidth, 80, 5) && Near(d2.ActualWidth, 320, 5));
+                Near(d1.RenderSize.Width, 80, 5) && Near(d2.RenderSize.Width, 320, 5));
 
             await H.CaptureScreenshotAsync("FlexInsideGrid");
         }
@@ -336,7 +336,7 @@ internal static class FlexLayoutFixtures
             var right = H.FindText("Right");
             H.Check("FlexInBorder_MainAxisDistributed",
                 left is not null && right is not null &&
-                Near(left.ActualWidth, 300, 5) && Near(right.ActualWidth, 300, 5));
+                Near(left.RenderSize.Width, 300, 5) && Near(right.RenderSize.Width, 300, 5));
 
             await H.CaptureScreenshotAsync("FlexInsideBorder");
         }
@@ -398,7 +398,7 @@ internal static class FlexLayoutFixtures
             // Row1-B should be ~300px (2/4 of 600)
             var row1B = H.FindText("Row1-B");
             H.Check("FlexInVStack_GrowDistribution",
-                row1B is not null && Near(row1B.ActualWidth, 300, 5));
+                row1B is not null && Near(row1B.RenderSize.Width, 300, 5));
 
             await H.CaptureScreenshotAsync("FlexInsideVStack");
         }
@@ -446,7 +446,7 @@ internal static class FlexLayoutFixtures
             // Items should each be 60px tall
             var item1 = H.FindText("Item 1");
             H.Check("FlexInScroll_ItemHeight",
-                item1 is not null && Near(item1.ActualHeight, 60, 5));
+                item1 is not null && Near(item1.RenderSize.Height, 60, 5));
 
             await H.CaptureScreenshotAsync("FlexInsideScrollView");
         }
@@ -468,7 +468,7 @@ internal static class FlexLayoutFixtures
             var host = new DuctHost(H.Window);
             host.Mount(ctx =>
                 FlexColumn(
-                    Text("Header").Height(50).Background("LightCoral"),
+                    Text("Header").Height(50).Flex(shrink: 0).Background("LightCoral"),
 
                     ScrollView(
                         VStack(0,
@@ -480,7 +480,7 @@ internal static class FlexLayoutFixtures
                         )
                     ).Flex(grow: 1),
 
-                    Text("Footer").Height(50).Background("LightBlue")
+                    Text("Footer").Height(50).Flex(shrink: 0).Background("LightBlue")
                 ).Width(400).Height(400)
             );
 
@@ -494,7 +494,7 @@ internal static class FlexLayoutFixtures
             var scrollViewer = H.FindControl<WinUI.ScrollViewer>(_ => true);
             H.Check("ScrollInFlex_ScrollViewerExists", scrollViewer is not null);
             H.Check("ScrollInFlex_ScrollViewerHeight",
-                scrollViewer is not null && Near(scrollViewer.ActualHeight, 300, 10));
+                scrollViewer is not null && Near(scrollViewer.RenderSize.Height, 300, 10));
 
             // Scroll content should be 400px (5 items × 80) — taller than viewport
             H.Check("ScrollInFlex_ContentScrollable",
@@ -540,15 +540,15 @@ internal static class FlexLayoutFixtures
             var bot = H.FindText("Bottom");
 
             H.Check("FlexColGrow_TopHeight",
-                top is not null && Near(top.ActualHeight, 100, 5));
+                top is not null && Near(top.RenderSize.Height, 100, 5));
             H.Check("FlexColGrow_MiddleHeight",
-                mid is not null && Near(mid.ActualHeight, 200, 5));
+                mid is not null && Near(mid.RenderSize.Height, 200, 5));
             H.Check("FlexColGrow_BottomHeight",
-                bot is not null && Near(bot.ActualHeight, 100, 5));
+                bot is not null && Near(bot.RenderSize.Height, 100, 5));
 
             // All children should span the full 400px width (cross axis stretch)
             H.Check("FlexColGrow_FullWidth",
-                top is not null && Near(top.ActualWidth, 400, 5));
+                top is not null && Near(top.RenderSize.Width, 400, 5));
 
             await H.CaptureScreenshotAsync("FlexColumnGrow");
         }
@@ -586,13 +586,13 @@ internal static class FlexLayoutFixtures
 
             // Fixed children keep their 100px
             H.Check("FlexMixed_Fixed1Width",
-                fixed1 is not null && Near(fixed1.ActualWidth, 100, 3));
+                fixed1 is not null && Near(fixed1.RenderSize.Width, 100, 3));
             H.Check("FlexMixed_Fixed2Width",
-                fixed2 is not null && Near(fixed2.ActualWidth, 100, 3));
+                fixed2 is not null && Near(fixed2.RenderSize.Width, 100, 3));
 
             // Grow child gets remaining: 600 - 100 - 100 = 400
             H.Check("FlexMixed_GrowWidth",
-                grow is not null && Near(grow.ActualWidth, 400, 5));
+                grow is not null && Near(grow.RenderSize.Width, 400, 5));
 
             await H.CaptureScreenshotAsync("FlexMixedGrowFixed");
         }
@@ -637,14 +637,14 @@ internal static class FlexLayoutFixtures
             double expected = (600 - 2 * 20) / 3.0;
             H.Check("FlexGaps_EqualWidthsWithGap",
                 a is not null && b is not null && c is not null &&
-                Near(a.ActualWidth, expected, 3) &&
-                Near(b.ActualWidth, expected, 3) &&
-                Near(c.ActualWidth, expected, 3));
+                Near(a.RenderSize.Width, expected, 3) &&
+                Near(b.RenderSize.Width, expected, 3) &&
+                Near(c.RenderSize.Width, expected, 3));
 
             // Total children width + gaps should equal container width
             if (a is not null && b is not null && c is not null)
             {
-                double total = a.ActualWidth + b.ActualWidth + c.ActualWidth + 2 * 20;
+                double total = a.RenderSize.Width + b.RenderSize.Width + c.RenderSize.Width + 2 * 20;
                 Console.WriteLine($"# Gap layout total: {total:F1} (expected 600)");
                 H.Check("FlexGaps_TotalWidthCorrect", Near(total, 600, 3));
             }
@@ -684,11 +684,11 @@ internal static class FlexLayoutFixtures
             // Each child: (600 - 20 - 20) / 2 = 280
             H.Check("FlexPadding_ChildWidths",
                 a is not null && b is not null &&
-                Near(a.ActualWidth, 280, 3) && Near(b.ActualWidth, 280, 3));
+                Near(a.RenderSize.Width, 280, 3) && Near(b.RenderSize.Width, 280, 3));
 
             // Children should be inset by 20px (check height: 100 - 20 - 20 = 60)
             H.Check("FlexPadding_ChildHeights",
-                a is not null && Near(a.ActualHeight, 60, 5));
+                a is not null && Near(a.RenderSize.Height, 60, 5));
 
             await H.CaptureScreenshotAsync("FlexWithPadding");
         }
@@ -838,12 +838,13 @@ internal static class FlexLayoutFixtures
 
             // Each child has 10px margin on each side = 20px per child = 60px total
             // Available for content: 600 - 60 = 540 → each ~180
+            // Available for content: 600 - 60 = 540 → each ~180
             double expected = (600 - 6 * 10) / 3.0; // 6 margins (left+right × 3)
             H.Check("FlexMargins_ContentWidths",
                 m1 is not null && m2 is not null && m3 is not null &&
-                Near(m1.ActualWidth, expected, 5) &&
-                Near(m2.ActualWidth, expected, 5) &&
-                Near(m3.ActualWidth, expected, 5));
+                Near(m1.RenderSize.Width, expected, 5) &&
+                Near(m2.RenderSize.Width, expected, 5) &&
+                Near(m3.RenderSize.Width, expected, 5));
 
             await H.CaptureScreenshotAsync("FlexWithChildMargins");
         }
@@ -896,9 +897,9 @@ internal static class FlexLayoutFixtures
                     // Total = 3 × 100 + 2 × gap = 600 → gap = 150
                     // The children should all be 100px
                     H.Check("FlexJustify_ChildWidthsFixed",
-                        Near(j1.ActualWidth, 100, 3) &&
-                        Near(j2.ActualWidth, 100, 3) &&
-                        Near(j3.ActualWidth, 100, 3));
+                        Near(j1.RenderSize.Width, 100, 3) &&
+                        Near(j2.RenderSize.Width, 100, 3) &&
+                        Near(j3.RenderSize.Width, 100, 3));
                 }
             }
 
@@ -952,7 +953,7 @@ internal static class FlexLayoutFixtures
             // Grow 1:2 in 400px → ~133 + ~267
             H.Check("FlexCycle_GridStar_GrowDistribution",
                 growA is not null && growB is not null &&
-                Near(growA.ActualWidth, 133, 5) && Near(growB.ActualWidth, 267, 5));
+                Near(growA.RenderSize.Width, 133, 5) && Near(growB.RenderSize.Width, 267, 5));
 
             await H.CaptureScreenshotAsync("FlexLayoutCycle_GridStar");
         }
