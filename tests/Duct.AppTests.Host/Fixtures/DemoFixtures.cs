@@ -1,0 +1,110 @@
+using Duct;
+using Duct.Core;
+using static Duct.UI;
+
+namespace Duct.AppTests.Host.Fixtures;
+
+internal static class DemoFixtures
+{
+    // ── Counter Demo ───────────────────────────────────────────────
+
+    internal class CounterDemoComponent : Component
+    {
+        public override Element Render()
+        {
+            var (count, setCount) = UseState(0);
+
+            return VStack(12,
+                Text($"Current count: {count}")
+                    .FontSize(24)
+                    .AutomationId("CountDisplay"),
+
+                HStack(8,
+                    Button("-1", () => setCount(count - 1)).AutomationId("DecrementBtn"),
+                    Button("Reset", () => setCount(0))
+                        .Disabled(count == 0)
+                        .AutomationId("ResetBtn"),
+                    Button("+1", () => setCount(count + 1)).AutomationId("IncrementBtn")
+                ),
+
+                // Conditional text based on count
+                (count switch
+                {
+                    0 => Text("Try clicking the buttons!").AutomationId("CountMessage"),
+                    > 0 and < 10 => Text("Going up...").AutomationId("CountMessage"),
+                    >= 10 => Text("That's a lot!").AutomationId("CountMessage"),
+                    < 0 and > -10 => Text("Going negative...").AutomationId("CountMessage"),
+                    _ => Text("Way down!").AutomationId("CountMessage"),
+                })
+            );
+        }
+    }
+
+    internal static Element CounterDemo(RenderContext ctx) =>
+        Component<CounterDemoComponent>();
+
+    // ── Conditional Demo ───────────────────────────────────────────
+
+    internal class ConditionalDemoComponent : Component
+    {
+        public override Element Render()
+        {
+            var (showAdvanced, setShowAdvanced) = UseState(false);
+
+            return VStack(12,
+                CheckBox(showAdvanced, v => setShowAdvanced(v), "Show advanced options")
+                    .AutomationId("AdvancedCheckBox"),
+
+                showAdvanced
+                    ? VStack(8,
+                        Text("Advanced Settings").AutomationId("AdvancedTitle"),
+                        Text("Debug mode: ON").AutomationId("DebugMode"),
+                        Text("Verbose logging: ON").AutomationId("VerboseLogging")
+                    ).AutomationId("AdvancedPanel")
+                    : Empty()
+            );
+        }
+    }
+
+    internal static Element ConditionalDemo(RenderContext ctx) =>
+        Component<ConditionalDemoComponent>();
+
+    // ── Tab Navigation Demo ────────────────────────────────────────
+
+    internal class TabNavigationComponent : Component
+    {
+        public override Element Render()
+        {
+            var (tab, setTab) = UseState("Home");
+
+            return VStack(12,
+                HStack(8,
+                    Button("Home", () => setTab("Home"))
+                        .Disabled(tab == "Home").AutomationId("DemoHomeTab"),
+                    Button("Settings", () => setTab("Settings"))
+                        .Disabled(tab == "Settings").AutomationId("DemoSettingsTab"),
+                    Button("About", () => setTab("About"))
+                        .Disabled(tab == "About").AutomationId("DemoAboutTab")
+                ),
+                Border(
+                    tab switch
+                    {
+                        "Home" => VStack(
+                            Text("Welcome Home").AutomationId("DemoHomeTitle"),
+                            Text("Home page content.").AutomationId("DemoHomeContent")),
+                        "Settings" => VStack(
+                            Text("Settings Page").AutomationId("DemoSettingsTitle"),
+                            Text("Configure your preferences.").AutomationId("DemoSettingsContent")),
+                        "About" => VStack(
+                            Text("About Page").AutomationId("DemoAboutTitle"),
+                            Text("Version 1.0").AutomationId("DemoAboutVersion")),
+                        _ => Empty()
+                    }
+                ).Padding(16).AutomationId("DemoTabContent")
+            );
+        }
+    }
+
+    internal static Element TabNavigation(RenderContext ctx) =>
+        Component<TabNavigationComponent>();
+}

@@ -46,31 +46,43 @@ The solution targets `x64` and `ARM64`. MSBuild maps these to Rust target triple
 ## Running tests
 
 ```bash
-# Run all tests
-dotnet test tests/Duct.Tests
+# Run ALL tests (unit + UI) — one command, builds everything
+dotnet test tests/Duct.AppTests -p:Platform=x64
+```
+
+This single command:
+1. Builds all dependencies (Duct, DuctD3, AppTests.Host, AppTests)
+2. Runs **57 in-process UI tests** at CPU speed (~50s) — layout, flex, reconciler, error boundary, collections, observable, PropertyGrid, localization, markdown, D3, Monaco
+3. Runs **2 interactive Appium/WinAppDriver tests** (~30s) — counter button clicks, INPC mutation via real cross-process input injection
+4. Reports all results in a single MSTest run
+
+> **Requires:** [WinAppDriver](https://github.com/microsoft/WinAppDriver/releases) installed at `C:\Program Files (x86)\Windows Application Driver\WinAppDriver.exe` for the interactive tests. The in-process tests run without it.
+
+```bash
+# Run just the unit tests (no WinUI window needed)
+dotnet test tests/Duct.Tests -p:Platform=x64
 
 # Run a specific test class
 dotnet test tests/Duct.Tests --filter "FullyQualifiedName~TreeSerializerTests"
 
-# Run with verbose output
-dotnet test tests/Duct.Tests -v normal
+# Run just the in-process UI tests (no WinAppDriver needed)
+dotnet test tests/Duct.AppTests -p:Platform=x64 --filter "ClassName=Duct.AppTests.Tests.SelfTestBatch"
+
+# Run just the interactive Appium tests
+dotnet test tests/Duct.AppTests -p:Platform=x64 --filter "ClassName=Duct.AppTests.Tests.InteractiveTests"
 ```
 
-Tests use **xUnit** and target the same `net8.0-windows10.0.22621.0` framework as the main library. The test project has `InternalsVisibleTo` access so it can test internal APIs.
+### Test architecture
 
-### UI tests
+**Unit tests** (`Duct.Tests`) — 2,100+ xUnit tests that verify framework internals without a WinUI window: element creation, reconciliation, Yoga layout, localization, property hashing, control pooling, hooks.
 
-```bash
-# Run the UI integration tests (launches TestApp with --self-test)
-dotnet test tests/Duct.UITests -p:Platform=x64
+**UI tests** (`Duct.AppTests`) — 59 MSTest tests split into two categories:
 
-# Or run the self-test harness directly
-dotnet run --project tests/Duct.TestApp -p:Platform=x64 -- --self-test
-```
+- **Self-test batch** (57 tests): The `Duct.AppTests.Host` app launches with `--self-test`, mounts each fixture in a real WinUI window, runs assertions in-process via `VisualTreeHelper` at CPU speed, and outputs TAP results. The MSTest runner parses results and maps them to individual test methods.
 
-UI tests exercise the full Duct pipeline (Element DSL → Reconciler → WinUI control tree) by launching the TestApp with a `--self-test` flag. The app uses `VisualTreeHelper` and `ButtonAutomationPeer` to walk and interact with its own WinUI control tree in-process, then reports TAP-format results. The `Duct.UITests` MSTest project wraps these results so they integrate with `dotnet test` and Visual Studio Test Explorer.
+- **Interactive tests** (2 tests): Use Appium/WinAppDriver to simulate real user input (button clicks, INPC mutation) through the cross-process UI Automation pipeline. These verify the full end-to-end input path.
 
-> **UI Automation note:** WinUI 3 Desktop apps host XAML inside a `DesktopChildSiteBridge`. External-process UIA tools (FlaUI, WinAppDriver) work correctly as long as the app's main thread is STA. `DuctApp.Run` handles this automatically — it detects MTA threads (common with top-level statements) and re-launches on an STA thread. In-process testing via `VisualTreeHelper` remains available as a complementary approach.
+> **No stale binaries:** `Duct.AppTests.csproj` has a `ProjectReference` to the Host app with `ReferenceOutputAssembly="false"`, so `dotnet test` always builds the Host before running tests.
 
 ### What the tests cover
 
@@ -84,13 +96,20 @@ UI tests exercise the full Duct pipeline (Element DSL → Reconciler → WinUI c
 - **MVVM interop hooks** — `ObservableHookTests.cs`
 - **Regression cases** — `ReconcilerRegressionTests.cs`
 - **Yoga layout engine** — `YogaGenerated/*.cs` (590 fixtures ported from Yoga C++ test suite)
+- **Flex layout E2E** — 24 fixtures covering nesting, composition, grow/shrink, gaps, padding, margins, alignment, layout-cycle regressions
+- **Reconciler E2E** — mount, update, add/remove children, keyed list reuse
+- **Error boundaries** — catch and recover from render errors
+- **Observable/INPC** — `UseObservable`, `UseObservableProperty`, `UseCollection` hooks
+- **PropertyGrid** — reflection, categories, enums, immutable records, custom editors, target switching
+- **Localization** — locale switching with ICU MessageFormat
+- **Interactive input** — counter buttons, INPC mutation via WinAppDriver
 
-## Running the test app
+## Running the demo app
 
-The interactive test app exercises every built-in control:
+The interactive demo app exercises every built-in control:
 
 ```bash
-dotnet run --project tests/Duct.TestApp
+dotnet run --project samples/Duct.TestApp -p:Platform=x64
 ```
 
 ## Project layout
@@ -136,11 +155,12 @@ Duct/                          Core framework library
         arena.rs               Reusable diff context/buffer
 Duct.Cli/                      CLI scaffolding tool (duct --create <Name>)
 tests/
-  Duct.Tests/                  xUnit test suite
-  Duct.TestApp/                Interactive control showcase
-  Duct.UITests/                UI integration tests
+  Duct.Tests/                  xUnit unit test suite (2,100+ tests)
+  Duct.AppTests/               MSTest UI tests (Appium + in-process self-test)
+  Duct.AppTests.Host/          WinUI test host app (fixture navigator + self-test mode)
   stress_perf/                 Performance benchmarks
 samples/
+  Duct.TestApp/                Interactive control showcase / demo app
   apps/                        Sample apps (wordpuzzle, ductfiles, regedit, etc.)
   FlexPanelGallery/            FlexPanel layout gallery
   TodoApp/                     Todo app sample
