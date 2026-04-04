@@ -62,7 +62,8 @@ public class PropertyDiffApp : Component
                 {
                     shutdown.Stop();
                     timer.Stop();
-                    _tracker.WriteReportFile("EXP2_PropertyDiff_Duct");
+                    var suffix = global::Duct.Core.Reconciler.EnableBitmaskDiff ? "BitmaskOn" : "BitmaskOff";
+                    _tracker.WriteReportFile($"EXP2_PropertyDiff_Duct_{suffix}");
                     Microsoft.UI.Xaml.Application.Current.Exit();
                 };
                 shutdown.Start();

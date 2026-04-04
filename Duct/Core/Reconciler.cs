@@ -30,6 +30,12 @@ public sealed partial class Reconciler : IDisposable
     /// </summary>
     public ElementPool Pool => _pool;
 
+    /// <summary>
+    /// EXP-2: When true, UpdateText uses bitmask diff (old vs new Element comparison)
+    /// instead of reading WinUI control properties via COM interop to guard writes.
+    /// </summary>
+    public static bool EnableBitmaskDiff { get; set; }
+
     public Reconciler() : this(NullDuctLogger.Instance) { }
 
     public Reconciler(IDuctLogger logger)

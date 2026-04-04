@@ -44,8 +44,8 @@ public sealed partial class Reconciler
         {
         result = (oldEl, newEl, control) switch
         {
-            (TextElement, TextElement n, TextBlock tb)
-                => UpdateText(n, tb),
+            (TextElement o, TextElement n, TextBlock tb)
+                => EnableBitmaskDiff ? UpdateTextBitmask(o, n, tb) : UpdateText(n, tb),
             (RichTextBlockElement o, RichTextBlockElement n, WinUI.RichTextBlock rtb)
                 => UpdateRichTextBlock(o, n, rtb),
             (ButtonElement o, ButtonElement n, WinUI.Button b)
@@ -239,6 +239,30 @@ public sealed partial class Reconciler
         if (n.IsTextSelectionEnabled.HasValue && tb.IsTextSelectionEnabled != n.IsTextSelectionEnabled.Value) tb.IsTextSelectionEnabled = n.IsTextSelectionEnabled.Value;
         if (n.FontFamily is not null && tb.FontFamily != n.FontFamily) tb.FontFamily = n.FontFamily;
         ApplySetters(n.Setters, tb);
+        return null;
+    }
+
+    /// <summary>
+    /// EXP-2: Bitmask-based UpdateText — compares old vs new TextElement (pure C#)
+    /// to determine which properties changed, then only touches those WinUI properties.
+    /// Avoids COM interop reads for unchanged properties.
+    /// </summary>
+    private UIElement? UpdateTextBitmask(TextElement old, TextElement n, TextBlock tb)
+    {
+        var diff = TextElement.DiffProps(old, n);
+        if (diff == TextPropChanged.None) return null;
+
+        if ((diff & TextPropChanged.Content) != 0) tb.Text = n.Content;
+        if ((diff & TextPropChanged.FontSize) != 0 && n.FontSize.HasValue) tb.FontSize = n.FontSize.Value;
+        if ((diff & TextPropChanged.Weight) != 0 && n.Weight.HasValue) tb.FontWeight = n.Weight.Value;
+        if ((diff & TextPropChanged.FontStyle) != 0 && n.FontStyle.HasValue) tb.FontStyle = n.FontStyle.Value;
+        if ((diff & TextPropChanged.HorizontalAlignment) != 0 && n.HorizontalAlignment.HasValue) tb.HorizontalAlignment = n.HorizontalAlignment.Value;
+        if ((diff & TextPropChanged.TextWrapping) != 0 && n.TextWrapping.HasValue) tb.TextWrapping = n.TextWrapping.Value;
+        if ((diff & TextPropChanged.TextAlignment) != 0 && n.TextAlignment.HasValue) tb.TextAlignment = n.TextAlignment.Value;
+        if ((diff & TextPropChanged.TextTrimming) != 0 && n.TextTrimming.HasValue) tb.TextTrimming = n.TextTrimming.Value;
+        if ((diff & TextPropChanged.IsTextSelectionEnabled) != 0 && n.IsTextSelectionEnabled.HasValue) tb.IsTextSelectionEnabled = n.IsTextSelectionEnabled.Value;
+        if ((diff & TextPropChanged.FontFamily) != 0 && n.FontFamily is not null) tb.FontFamily = n.FontFamily;
+        if ((diff & TextPropChanged.Setters) != 0) ApplySetters(n.Setters, tb);
         return null;
     }
 

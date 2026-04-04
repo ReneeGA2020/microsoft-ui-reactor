@@ -491,6 +491,45 @@ public record TextElement(string Content) : Element
     public bool? IsTextSelectionEnabled { get; init; }
     public Microsoft.UI.Xaml.Media.FontFamily? FontFamily { get; init; }
     internal Action<WinUI.TextBlock>[] Setters { get; init; } = [];
+
+    /// <summary>
+    /// EXP-2: Bitmask diff — compare two TextElement instances (pure C#, no COM interop)
+    /// and return which properties actually changed. Callers only touch WinUI for set bits.
+    /// </summary>
+    internal static TextPropChanged DiffProps(TextElement old, TextElement cur)
+    {
+        var diff = TextPropChanged.None;
+        if (old.Content != cur.Content) diff |= TextPropChanged.Content;
+        if (old.FontSize != cur.FontSize) diff |= TextPropChanged.FontSize;
+        if (old.Weight != cur.Weight) diff |= TextPropChanged.Weight;
+        if (old.FontStyle != cur.FontStyle) diff |= TextPropChanged.FontStyle;
+        if (old.HorizontalAlignment != cur.HorizontalAlignment) diff |= TextPropChanged.HorizontalAlignment;
+        if (old.TextWrapping != cur.TextWrapping) diff |= TextPropChanged.TextWrapping;
+        if (old.TextAlignment != cur.TextAlignment) diff |= TextPropChanged.TextAlignment;
+        if (old.TextTrimming != cur.TextTrimming) diff |= TextPropChanged.TextTrimming;
+        if (old.IsTextSelectionEnabled != cur.IsTextSelectionEnabled) diff |= TextPropChanged.IsTextSelectionEnabled;
+        if (old.FontFamily != cur.FontFamily) diff |= TextPropChanged.FontFamily;
+        if (old.Setters.Length != cur.Setters.Length) diff |= TextPropChanged.Setters;
+        else if (cur.Setters.Length > 0) diff |= TextPropChanged.Setters; // can't compare delegates
+        return diff;
+    }
+}
+
+[Flags]
+internal enum TextPropChanged : ushort
+{
+    None                = 0,
+    Content             = 1 << 0,
+    FontSize            = 1 << 1,
+    Weight              = 1 << 2,
+    FontStyle           = 1 << 3,
+    HorizontalAlignment = 1 << 4,
+    TextWrapping        = 1 << 5,
+    TextAlignment       = 1 << 6,
+    TextTrimming        = 1 << 7,
+    IsTextSelectionEnabled = 1 << 8,
+    FontFamily          = 1 << 9,
+    Setters             = 1 << 10,
 }
 
 public record RichTextBlockElement(string Text) : Element

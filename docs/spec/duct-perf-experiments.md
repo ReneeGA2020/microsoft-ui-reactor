@@ -162,7 +162,7 @@ scenarios. Brings Duct closer to parity with direct manipulation.
 | WinUI3 Direct | **9.75** | **12.6** | **376** |
 | WinUI3 Bound | **33.21** | **10.1** | **468** |
 | Duct Current | **0.34** (state only) | **5.4** | **436** |
-| Duct + Bitmask Diff | _pending_ | _pending_ | _pending_ |
+| Duct + Bitmask Diff | **0.31** (state only) | **5.6** | **431** |
 
 **Analysis:** At 4,800 cells with 50% update rate, this is the first scenario where
 Duct's overhead becomes clearly visible. Duct achieves only 5.4 FPS vs 12.6 for
@@ -174,6 +174,17 @@ collections (vs 2 for Direct), confirming that per-frame element allocation is
 a real bottleneck at this scale. Bound (33ms update, 10 FPS) shows binding
 engine overhead is also significant. The bitmask diff optimization should reduce
 COM calls from ~8 per cell to 2, bringing Duct closer to Direct's throughput.
+
+**EXP-2 Bitmask Result (3-run avg):** Bitmask ON achieved 5.6 FPS vs 5.4 FPS
+baseline — a **~3-4% improvement**, within run-to-run noise. The optimization
+successfully avoids COM *reads* for unchanged properties (comparing old vs new
+Element C# fields instead), but the existing `UpdateText` already guards COM
+*writes* with per-property checks (`if (tb.Text != n.Content)`). Since COM reads
+are cheap relative to writes (no layout invalidation), the savings are marginal.
+The dominant bottleneck at this scale is the full 4,800-element tree rebuild and
+GC pressure (~146 Gen0 collections), not the property-setting phase. The bitmask
+diff is architecturally correct but low-impact in isolation — EXP-3 (structural
+sharing) and EXP-10 (GC reduction) target the actual bottlenecks.
 
 ---
 
