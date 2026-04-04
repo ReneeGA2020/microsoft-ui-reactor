@@ -1,6 +1,0 @@
-PERF [6 renders]: tree=3.06ms  reconcile=19.46ms  effects=0.02ms  total=22.54ms
-PERF [4 renders]: tree=3.04ms  reconcile=21.64ms  effects=0.00ms  total=24.68ms
-PERF [4 renders]: tree=2.53ms  reconcile=24.72ms  effects=0.00ms  total=27.25ms
-PERF [3 renders]: tree=2.65ms  reconcile=20.26ms  effects=0.00ms  total=22.91ms
-PERF [3 renders]: tree=2.63ms  reconcile=20.16ms  effects=0.00ms  total=22.79ms
-PERF [3 renders]: tree=2.74ms  reconcile=20.73ms  effects=0.00ms  total=23.46ms
