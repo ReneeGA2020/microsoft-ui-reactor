@@ -70,6 +70,9 @@ internal static class SelfTestFixtureRegistry
         "PropertyGrid_INPC_ExternalMutation",
         // Localization
         "Localization_LocaleSwitching",
+        // TypeRegistration mismatch regression
+        "Reconciler_TypeMismatch_UpdateFallback",
+        "Reconciler_TypeMismatch_UnmountSkip",
     ];
 
     public static SelfTestFixtureBase? Create(string name, Harness harness) => name switch
@@ -135,6 +138,9 @@ internal static class SelfTestFixtureRegistry
         "PropertyGrid_INPC_ExternalMutation" => new PropertyGridFixtures.INPC_ExternalMutation(harness),
         // Localization
         "Localization_LocaleSwitching" => new LocalizationFixtures.LocaleSwitching(harness),
+        // TypeRegistration mismatch regression
+        "Reconciler_TypeMismatch_UpdateFallback" => new TypeRegistrationMismatchFixtures.UpdateControlTypeMismatch(harness),
+        "Reconciler_TypeMismatch_UnmountSkip" => new TypeRegistrationMismatchFixtures.UnmountControlTypeMismatch(harness),
         _ => null,
     };
 }

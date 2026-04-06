@@ -120,10 +120,20 @@ public sealed partial class Reconciler : IDisposable
             => _mount(reconciler, (TElement)element, requestRerender);
 
         public UIElement? Update(Element oldEl, Element newEl, UIElement control, Action requestRerender, Reconciler reconciler)
-            => _update(reconciler, (TElement)oldEl, (TElement)newEl, (TControl)control, requestRerender);
+        {
+            // Guard against control type mismatch (e.g., recycled from pool or element type changed at this position).
+            // If the existing control isn't our expected type, force a fresh mount instead of crashing.
+            if (control is not TControl typedControl || oldEl is not TElement typedOldEl)
+                return _mount(reconciler, (TElement)newEl, requestRerender);
+
+            return _update(reconciler, typedOldEl, (TElement)newEl, typedControl, requestRerender);
+        }
 
         public void Unmount(UIElement control, Reconciler reconciler)
-            => _unmount?.Invoke(reconciler, (TControl)control);
+        {
+            if (control is TControl typedControl)
+                _unmount?.Invoke(reconciler, typedControl);
+        }
     }
 
     public UIElement? Reconcile(

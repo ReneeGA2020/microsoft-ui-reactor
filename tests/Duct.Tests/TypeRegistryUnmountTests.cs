@@ -89,10 +89,11 @@ public class TypeRegistryUnmountTests
     }
 
     [Fact]
-    public void Unmount_Registered_Type_Called_Via_Reconcile()
+    public void Unmount_With_Null_Control_Skips_Handler()
     {
-        // Verify that reconciling to null calls Unmount by registering a type
-        // and then reconciling null → the unmount handler should be invokable
+        // After the type-mismatch safety fix, Unmount uses `control is TControl`
+        // pattern matching. Null never matches, so the handler is correctly skipped
+        // (null is not a valid control to unmount).
         var reconciler = new Reconciler();
         bool unmountInvoked = false;
 
@@ -107,7 +108,6 @@ public class TypeRegistryUnmountTests
                 unmountInvoked = true;
             });
 
-        // Verify the unmount can be invoked via the ITypeRegistration interface
         var registry = typeof(Reconciler)
             .GetField("_typeRegistry", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
             .GetValue(reconciler) as System.Collections.IDictionary;
@@ -115,19 +115,10 @@ public class TypeRegistryUnmountTests
         var reg = registry![typeof(CustomCardElement)]!;
         var unmountMethod = reg.GetType().GetMethod("Unmount")!;
 
-        // Call Unmount with a null control — this will invoke the handler
-        // (the handler receives null which is fine for our test)
-        try
-        {
-            unmountMethod.Invoke(reg, [null!, reconciler]);
-        }
-        catch (System.Reflection.TargetInvocationException ex) when (ex.InnerException is NullReferenceException)
-        {
-            // The handler tries to pass ctrl as TControl which may fail with null,
-            // but the handler itself was invoked.
-        }
+        // Call Unmount with null — the `is TControl` guard rejects null,
+        // so the handler is never invoked (no NullReferenceException either).
+        unmountMethod.Invoke(reg, [null!, reconciler]);
 
-        // Even if it threw NullRef, verify it attempted the handler
-        Assert.True(unmountInvoked, "Unmount dispatch verified via reflection");
+        Assert.False(unmountInvoked, "Unmount handler should be skipped for null control");
     }
 }
