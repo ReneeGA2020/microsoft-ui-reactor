@@ -1206,55 +1206,59 @@ public sealed partial class Reconciler
         if (o.RowSpacing != n.RowSpacing) g.RowSpacing = n.RowSpacing;
         if (o.ColumnSpacing != n.ColumnSpacing) g.ColumnSpacing = n.ColumnSpacing;
 
-        // Reconcile children positionally
-        int oldCount = o.Children.Length;
-        int newCount = n.Children.Length;
-        int shared = Math.Min(oldCount, newCount);
-
-        for (int i = 0; i < shared; i++)
+        // When old and new child counts differ, the tree structure changed (e.g., a split
+        // was added or removed). Delegate to ChildReconciler which handles this safely,
+        // including the keyed path.
+        if (o.Children.Length != n.Children.Length || o.Children.Length != g.Children.Count)
         {
+            ReconcileChildren(o.Children, n.Children, g, requestRerender);
+            // Re-apply grid placement for all children after reconciliation
+            for (int i = 0; i < n.Children.Length && i < g.Children.Count; i++)
+            {
+                var ga = n.Children[i].GetAttached<GridAttached>();
+                if (ga is not null && g.Children[i] is FrameworkElement fe)
+                {
+                    WinUI.Grid.SetRow(fe, ga.Row);
+                    WinUI.Grid.SetColumn(fe, ga.Column);
+                    if (ga.RowSpan > 1) WinUI.Grid.SetRowSpan(fe, ga.RowSpan);
+                    if (ga.ColumnSpan > 1) WinUI.Grid.SetColumnSpan(fe, ga.ColumnSpan);
+                }
+            }
+            SetElementTag(g, n);
+            ApplySetters(n.Setters, g);
+            return null;
+        }
+
+        // Fast path: same child count — reconcile positionally with bounds checks.
+        int count = o.Children.Length;
+
+        for (int i = 0; i < count; i++)
+        {
+            // Guard: recursive Reconcile may have modified g.Children (e.g., via
+            // component re-renders that remove children from this grid).
+            if (i >= g.Children.Count) break;
+
             var oldChild = o.Children[i];
             var newChild = n.Children[i];
             var existingCtrl = g.Children[i];
             var replacement = Reconcile(oldChild, newChild, existingCtrl, requestRerender);
-            if (replacement is not null && replacement != existingCtrl)
+            if (replacement is not null && replacement != existingCtrl && i < g.Children.Count)
             {
                 g.Children[i] = replacement;
             }
             // Update grid placement — only if changed
-            var oldGa = oldChild.GetAttached<GridAttached>();
-            var ga = newChild.GetAttached<GridAttached>();
-            if (ga is not null && ga != oldGa && g.Children[i] is FrameworkElement ctrl)
+            if (i < g.Children.Count)
             {
-                WinUI.Grid.SetRow(ctrl, ga.Row);
-                WinUI.Grid.SetColumn(ctrl, ga.Column);
-                if (ga.RowSpan > 1) WinUI.Grid.SetRowSpan(ctrl, ga.RowSpan);
-                if (ga.ColumnSpan > 1) WinUI.Grid.SetColumnSpan(ctrl, ga.ColumnSpan);
+                var oldGa = oldChild.GetAttached<GridAttached>();
+                var ga = newChild.GetAttached<GridAttached>();
+                if (ga is not null && ga != oldGa && g.Children[i] is FrameworkElement ctrl)
+                {
+                    WinUI.Grid.SetRow(ctrl, ga.Row);
+                    WinUI.Grid.SetColumn(ctrl, ga.Column);
+                    if (ga.RowSpan > 1) WinUI.Grid.SetRowSpan(ctrl, ga.RowSpan);
+                    if (ga.ColumnSpan > 1) WinUI.Grid.SetColumnSpan(ctrl, ga.ColumnSpan);
+                }
             }
-        }
-
-        // Remove excess old children
-        for (int i = oldCount - 1; i >= shared; i--)
-        {
-            Unmount(g.Children[i]);
-            g.Children.RemoveAt(i);
-        }
-
-        // Add new children
-        for (int i = shared; i < newCount; i++)
-        {
-            var child = n.Children[i];
-            var ctrl = Mount(child, requestRerender);
-            if (ctrl is null) continue;
-            var ga = child.GetAttached<GridAttached>();
-            if (ga is not null && ctrl is FrameworkElement fe)
-            {
-                WinUI.Grid.SetRow(fe, ga.Row);
-                WinUI.Grid.SetColumn(fe, ga.Column);
-                if (ga.RowSpan > 1) WinUI.Grid.SetRowSpan(fe, ga.RowSpan);
-                if (ga.ColumnSpan > 1) WinUI.Grid.SetColumnSpan(fe, ga.ColumnSpan);
-            }
-            g.Children.Add(ctrl);
         }
 
         SetElementTag(g, n);

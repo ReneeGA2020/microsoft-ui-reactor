@@ -128,6 +128,8 @@ public class SelfTestBatch
     [TestMethod] public void Reconciler_AddRemoveChildren() => AssertChecks("Reconciler_AddRemove");
     [TestMethod] public void Reconciler_ComponentRerender() => AssertChecks("Reconciler_Rerender");
     [TestMethod] public void Reconciler_KeyedList() => AssertChecks("Reconciler_Keyed");
+    [TestMethod] public void Reconciler_GridDynamicChildCount() => AssertChecks("Reconciler_GridDynamic");
+    [TestMethod] public void Reconciler_AllLayoutsDynamicChildCount() => AssertChecks("Reconciler_AllLayouts");
 
     // ── Layout ──
     [TestMethod] public void FlexLayout_RowDistribution() => AssertChecks("FlexRow_");

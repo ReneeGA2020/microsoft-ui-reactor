@@ -47,6 +47,8 @@ internal static class FixtureRegistry
         "Reconciler_AddRemoveChildren",
         "Reconciler_ComponentRerender",
         "Reconciler_KeyedList",
+        "Reconciler_GridDynamicChildCount",
+        "Reconciler_AllLayoutsDynamicChildCount",
 
         // Error Boundary
         "ErrorBoundary_CatchesRenderError",
@@ -138,6 +140,8 @@ internal static class FixtureRegistry
         "Reconciler_AddRemoveChildren" => ReconcilerFixtures.AddRemoveChildren(ctx),
         "Reconciler_ComponentRerender" => ReconcilerFixtures.ComponentRerender(ctx),
         "Reconciler_KeyedList" => ReconcilerFixtures.KeyedList(ctx),
+        "Reconciler_GridDynamicChildCount" => ReconcilerFixtures.GridDynamicChildCount(ctx),
+        "Reconciler_AllLayoutsDynamicChildCount" => ReconcilerFixtures.AllLayoutsDynamicChildCount(ctx),
 
         // Error Boundary
         "ErrorBoundary_CatchesRenderError" => ErrorBoundaryFixtures.CatchesRenderError(ctx),

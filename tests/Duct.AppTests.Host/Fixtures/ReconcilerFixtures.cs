@@ -83,4 +83,68 @@ internal static class ReconcilerFixtures
 
     internal static Element KeyedList(RenderContext ctx) =>
         Component<KeyedListComponent>();
+
+    // Interactive: dynamic grid child count changes (docking split simulation)
+    internal class GridDynamicChildCountComponent : Component
+    {
+        public override Element Render()
+        {
+            var (paneCount, setPaneCount) = UseState(1);
+
+            var panes = Enumerable.Range(0, paneCount)
+                .Select(i => Text($"Pane {i}").Grid(row: 0, column: i).AutomationId($"Pane{i}"))
+                .ToArray();
+            var cols = Enumerable.Range(0, Math.Max(1, paneCount)).Select(_ => "*").ToArray();
+
+            return VStack(
+                HStack(
+                    Button("Split", () => setPaneCount(paneCount + 1)).AutomationId("SplitBtn"),
+                    Button("Collapse", () => setPaneCount(Math.Max(0, paneCount - 1))).AutomationId("CollapseBtn"),
+                    Text($"Panes: {paneCount}").AutomationId("PaneCount")
+                ),
+                Grid(cols, ["*"], panes).AutomationId("DockGrid")
+            );
+        }
+    }
+
+    internal static Element GridDynamicChildCount(RenderContext ctx) =>
+        Component<GridDynamicChildCountComponent>();
+
+    // Interactive: dynamic child count across all layout types
+    internal class AllLayoutsDynamicChildCountComponent : Component
+    {
+        public override Element Render()
+        {
+            var (count, setCount) = UseState(2);
+
+            var children = Enumerable.Range(0, count)
+                .Select(i => Text($"Item {i}"))
+                .ToArray();
+            var gridChildren = Enumerable.Range(0, count)
+                .Select(i => Text($"G{i}").Grid(row: 0, column: i))
+                .ToArray();
+            var cols = Enumerable.Range(0, Math.Max(1, count)).Select(_ => "*").ToArray();
+
+            return VStack(
+                HStack(
+                    Button("Add", () => setCount(count + 1)).AutomationId("LayoutAddBtn"),
+                    Button("Remove", () => setCount(Math.Max(0, count - 1))).AutomationId("LayoutRemoveBtn"),
+                    Text($"Count: {count}").AutomationId("LayoutCount")
+                ),
+                Text("Stack:"),
+                VStack(children),
+                Text("Grid:"),
+                Grid(cols, ["*"], gridChildren),
+                Text("Flex:"),
+                FlexRow(children),
+                Text("WrapGrid:"),
+                WrapGrid(children),
+                Text("Canvas:"),
+                Canvas(children)
+            );
+        }
+    }
+
+    internal static Element AllLayoutsDynamicChildCount(RenderContext ctx) =>
+        Component<AllLayoutsDynamicChildCountComponent>();
 }
