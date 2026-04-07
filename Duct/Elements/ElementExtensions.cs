@@ -260,6 +260,14 @@ public static class ElementExtensions
     public static T Background<T>(this T el, Brush brush) where T : Element =>
         Modify(el, new ElementModifiers { Background = brush });
 
+    /// <summary>
+    /// Sets the background from a WinUI theme resource. Resolves at render time
+    /// and adapts when the theme changes (Light ↔ Dark).
+    /// Usage: <c>VStack(children).Background(Theme.CardBackground)</c>
+    /// </summary>
+    public static T Background<T>(this T el, ThemeRef theme) where T : Element =>
+        ModifyTheme(el, "Background", theme);
+
     // ── Foreground (Control, TextBlock) ──────────────────────────
 
     public static T Foreground<T>(this T el, string color) where T : Element =>
@@ -267,6 +275,14 @@ public static class ElementExtensions
 
     public static T Foreground<T>(this T el, Brush brush) where T : Element =>
         Modify(el, new ElementModifiers { Foreground = brush });
+
+    /// <summary>
+    /// Sets the foreground from a WinUI theme resource. Resolves at render time
+    /// and adapts when the theme changes (Light ↔ Dark).
+    /// Usage: <c>Text("Hello").Foreground(Theme.PrimaryText)</c>
+    /// </summary>
+    public static T Foreground<T>(this T el, ThemeRef theme) where T : Element =>
+        ModifyTheme(el, "Foreground", theme);
 
     // ── CornerRadius (on Control and Border) ────────────────────────
 
@@ -283,6 +299,17 @@ public static class ElementExtensions
 
     public static T WithBorder<T>(this T el, Brush brush, double thickness = 1) where T : Element =>
         Modify(el, new ElementModifiers { BorderBrush = brush, BorderThickness = new Thickness(thickness) });
+
+    /// <summary>
+    /// Sets the border from a WinUI theme resource. Resolves at render time
+    /// and adapts when the theme changes (Light ↔ Dark).
+    /// Usage: <c>VStack(children).WithBorder(Theme.CardStroke)</c>
+    /// </summary>
+    public static T WithBorder<T>(this T el, ThemeRef theme, double thickness = 1) where T : Element =>
+        ModifyTheme(el with { Modifiers = el.Modifiers is not null
+            ? el.Modifiers.Merge(new ElementModifiers { BorderThickness = new Thickness(thickness) })
+            : new ElementModifiers { BorderThickness = new Thickness(thickness) } },
+            "BorderBrush", theme);
 
     // ── Flex sugar ──────────────────────────────────────────────────
 
@@ -885,4 +912,12 @@ public static class ElementExtensions
 
     private static T Modify<T>(T el, ElementModifiers mods) where T : Element =>
         el with { Modifiers = el.Modifiers is not null ? el.Modifiers.Merge(mods) : mods };
+
+    private static T ModifyTheme<T>(T el, string property, ThemeRef theme) where T : Element
+    {
+        var bindings = el.ThemeBindings is not null
+            ? new Dictionary<string, ThemeRef>(el.ThemeBindings) { [property] = theme }
+            : new Dictionary<string, ThemeRef> { [property] = theme };
+        return el with { ThemeBindings = bindings };
+    }
 }

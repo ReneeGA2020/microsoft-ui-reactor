@@ -27,6 +27,7 @@ public sealed class DuctHost
     private bool _renderPending;
     private bool _isRendering;
     private bool _needsRerender;
+    private bool _themeListenerAttached;
 
     // Render phase timing instrumentation
     private readonly Stopwatch _phaseSw = new();
@@ -164,6 +165,7 @@ public sealed class DuctHost
             if (newControl != _currentControl)
             {
                 _window.Content = newControl;
+                AttachThemeListener(newControl);
             }
 
             _currentControl = newControl;
@@ -209,6 +211,25 @@ public sealed class DuctHost
         {
             _isRendering = false;
         }
+    }
+
+    /// <summary>
+    /// Subscribes to ActualThemeChanged on the root content element so that
+    /// ThemeRef-bound properties are re-resolved when the theme switches.
+    /// WinUI controls handle theme changes natively via {ThemeResource} bindings,
+    /// but Duct's ThemeRef values are resolved once during reconciliation —
+    /// this listener triggers a re-render so they pick up the new theme.
+    /// </summary>
+    private void AttachThemeListener(UIElement? control)
+    {
+        if (_themeListenerAttached || control is not FrameworkElement fe) return;
+        _themeListenerAttached = true;
+
+        fe.ActualThemeChanged += (_, _) =>
+        {
+            _logger.Log(DuctLogLevel.Debug, $"Theme changed to {fe.ActualTheme} — re-rendering");
+            RequestRender();
+        };
     }
 
     private void ShowErrorFallback(Exception ex)

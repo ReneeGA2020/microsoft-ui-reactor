@@ -56,6 +56,13 @@ public abstract record Element
     public ThemeTransitions? ThemeTransitions { get; init; }
 
     /// <summary>
+    /// Theme-resource bindings for brush properties (Background, Foreground, BorderBrush).
+    /// When set, the reconciler resolves from WinUI theme resources instead of using local values.
+    /// Set via fluent extension methods: Text("hi").Background(Theme.Accent)
+    /// </summary>
+    public IReadOnlyDictionary<string, ThemeRef>? ThemeBindings { get; init; }
+
+    /// <summary>
     /// Gets the attached property data of the specified type, or null if not set.
     /// </summary>
     internal T? GetAttached<T>() where T : class =>
@@ -96,6 +103,7 @@ public abstract record Element
         if (a.GetType() != b.GetType()) return false;
         if (!ModifiersEqual(a.Modifiers, b.Modifiers)) return false;
         if (!AttachedEqual(a.Attached, b.Attached)) return false;
+        if (!ThemeBindingsEqual(a.ThemeBindings, b.ThemeBindings)) return false;
 
         return (a, b) switch
         {
@@ -198,6 +206,21 @@ public abstract record Element
         {
             if (!b.TryGetValue(key, out var valB)) return false;
             if (!Equals(valA, valB)) return false; // GridAttached is a record — Equals works
+        }
+        return true;
+    }
+
+    internal static bool ThemeBindingsEqual(IReadOnlyDictionary<string, ThemeRef>? a, IReadOnlyDictionary<string, ThemeRef>? b)
+    {
+        if (ReferenceEquals(a, b)) return true;
+        if (a is null && b is null) return true;
+        if (a is null || b is null) return false;
+        if (a.Count != b.Count) return false;
+
+        foreach (var (key, valA) in a)
+        {
+            if (!b.TryGetValue(key, out var valB)) return false;
+            if (valA.ResourceKey != valB.ResourceKey) return false;
         }
         return true;
     }

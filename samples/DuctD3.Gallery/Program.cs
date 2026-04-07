@@ -26,11 +26,18 @@ class GalleryApp : Component
     public override Element Render()
     {
         var (current, setCurrent) = UseState<GallerySample?>(null);
+        var (isDark, setIsDark) = UseState(false);
 
+        Element page;
         if (current != null)
-            return RenderSamplePage(current, () => setCurrent(null));
+            page = RenderSamplePage(current, () => setCurrent(null), isDark, setIsDark);
+        else
+            page = RenderLanding(setCurrent, isDark, setIsDark);
 
-        return RenderLanding(setCurrent);
+        // Apply theme to the root container
+        return Border(page)
+            .Background(Theme.SolidBackground)
+            .Set(b => b.RequestedTheme = isDark ? ElementTheme.Dark : ElementTheme.Light);
     }
 
     static string IconPath(GallerySample sample) =>
@@ -39,7 +46,7 @@ class GalleryApp : Component
     static Element SampleIcon(GallerySample sample, double size) =>
         Image(IconPath(sample)) with { Width = size, Height = size };
 
-    Element RenderLanding(Action<GallerySample?> navigate)
+    Element RenderLanding(Action<GallerySample?> navigate, bool isDark, Action<bool> setIsDark)
     {
         var categories = SampleRegistry.All
             .GroupBy(s => s.Category)
@@ -47,7 +54,7 @@ class GalleryApp : Component
 
         var sections = categories.Select(group =>
             VStack(8,
-                SubHeading(group.Key),
+                SubHeading(group.Key).Foreground(Theme.PrimaryText),
                 new FlexElement(
                     group.Select(sample =>
                         Button(
@@ -69,51 +76,57 @@ class GalleryApp : Component
         ).ToArray();
 
         return FlexColumn(
-            Heading("DuctD3 Gallery").Padding(24, 24, 24, 0),
-            Caption($"{SampleRegistry.All.Length} samples — powered by D3.js ported to C#").Padding(24, 0, 24, 0),
+            HStack(12,
+                Heading("DuctD3 Gallery").Foreground(Theme.PrimaryText).Flex(grow: 1),
+                ThemeToggle(isDark, setIsDark)
+            ).Padding(24, 24, 24, 0).VAlign(VerticalAlignment.Center),
+            Caption($"{SampleRegistry.All.Length} samples — powered by D3.js ported to C#")
+                .Foreground(Theme.SecondaryText)
+                .Padding(24, 0, 24, 0),
             ScrollView(
                 VStack(24, sections).Padding(24, 12, 24, 24).Margin(4)
             ).Flex(grow: 1, basis: 0)
         );
     }
 
-    Element RenderSamplePage(GallerySample sample, Action goBack)
+    Element RenderSamplePage(GallerySample sample, Action goBack, bool isDark, Action<bool> setIsDark)
     {
         return FlexColumn(
             HStack(12,
                 Button("< Back", goBack),
                 SampleIcon(sample, 28),
-                Heading(sample.Title)
-            ).Padding(24, 24, 24, 0),
-            Caption(sample.Description).Padding(24, 8, 24, 0),
+                Heading(sample.Title).Foreground(Theme.PrimaryText).Flex(grow: 1),
+                ThemeToggle(isDark, setIsDark)
+            ).Padding(24, 24, 24, 0).VAlign(VerticalAlignment.Center),
+            Caption(sample.Description)
+                .Foreground(Theme.SecondaryText)
+                .Padding(24, 8, 24, 0),
             ScrollView(VStack(16,
-                Border(sample.Render()) with
-                {
-                    Padding = new Thickness(16),
-                    Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 248, 249, 250)),
-                    CornerRadius = 8,
-                },
-                SubHeading("Source Code"),
-                new XamlHostElement(
-                    () => new ScrollViewer
-                    {
-                        HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
-                        Content = new TextBlock
+                Border(sample.Render())
+                    .Background(Theme.CardBackground)
+                    .WithBorder(Theme.CardStroke)
+                    .CornerRadius(8)
+                    .Padding(16),
+                SubHeading("Source Code").Foreground(Theme.PrimaryText),
+                Border(
+                    ScrollView(
+                        (Text(sample.SourceCode) with
                         {
-                            Text = sample.SourceCode,
-                            FontFamily = new FontFamily("Cascadia Code, Consolas, monospace"),
-                            FontSize = 12,
                             IsTextSelectionEnabled = true,
                             TextWrapping = TextWrapping.Wrap,
-                            Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 30, 30, 30)),
-                        },
-                        Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 245, 245, 245)),
-                        Padding = new Thickness(16),
-                        CornerRadius = new CornerRadius(6),
-                        MaxHeight = 400,
-                    },
-                    _ => { }
-                ) { TypeKey = $"Code_{sample.Title}" }
+                        })
+                        .Set(tb =>
+                        {
+                            tb.FontFamily = new FontFamily("Cascadia Code, Consolas, monospace");
+                            tb.FontSize = 12;
+                        })
+                        .Foreground(Theme.PrimaryText)
+                    ).Set(sv => sv.MaxHeight = 400)
+                )
+                .Background(Theme.LayerFill)
+                .WithBorder(Theme.SurfaceStroke)
+                .CornerRadius(6)
+                .Padding(16)
             ).Padding(24, 0, 24, 24)).Flex(grow: 1, basis: 0)
         );
     }
@@ -131,6 +144,20 @@ class GalleryApp : Component
         "Controls" => 8,
         "Interactive" => 9,
         "Animation" => 10,
+        "Design" => 11,
         _ => 99,
     };
+
+    static Element ThemeToggle(bool isDark, Action<bool> setIsDark) =>
+        Button(isDark ? "\uE793" : "\uE708", () => setIsDark(!isDark))
+            .Foreground(Theme.AccentText)
+            .Set(b =>
+            {
+                b.FontFamily = new FontFamily("Segoe MDL2 Assets");
+                b.Width = 36;
+                b.Height = 36;
+                b.Padding = new Thickness(0);
+                b.MinWidth = 0;
+                b.MinHeight = 0;
+            });
 }

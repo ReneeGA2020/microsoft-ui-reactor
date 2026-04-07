@@ -30,8 +30,16 @@ public sealed partial class Reconciler
         // Short-circuit: if old and new elements are structurally identical,
         // skip all WinUI property access. This is the critical optimization for
         // large grids where only a fraction of elements change each frame.
+        // Exception: elements with ThemeBindings must always re-apply because
+        // the resolved brush value depends on the control's effective theme,
+        // which can change independently of the element tree (e.g., parent
+        // RequestedTheme toggle).
         if (Element.ShallowEquals(oldEl, newEl))
+        {
+            if (newEl.ThemeBindings is not null && control is FrameworkElement thFeSE)
+                ApplyThemeBindings(thFeSE, newEl.ThemeBindings);
             return null; // null = keep existing control as-is
+        }
 
         UIElement? result;
 
@@ -218,6 +226,10 @@ public sealed partial class Reconciler
         var target = result ?? control;
         if (modifiers is not null && target is FrameworkElement fe)
             ApplyModifiers(fe, oldModifiers, modifiers, requestRerender);
+
+        // Apply theme-resource bindings (ThemeRef → resolved Brush from WinUI resources)
+        if (newEl.ThemeBindings is not null && target is FrameworkElement thFe)
+            ApplyThemeBindings(thFe, newEl.ThemeBindings);
 
         // Apply transitions after update (re-applies when transition config changes)
         if (newEl.ImplicitTransitions is not null || newEl.ThemeTransitions is not null)

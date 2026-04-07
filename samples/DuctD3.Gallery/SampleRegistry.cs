@@ -71,5 +71,8 @@ public static class SampleRegistry
         // ── Animation ─────────────────────────────────────────
         new BarChartRaceSample(),
         new AnimatedDonutSample(),
+
+        // ── Design ────────────────────────────────────────────────
+        new ColorPageSample(),
     ];
 }

@@ -744,6 +744,74 @@ public sealed partial class Reconciler : IDisposable
     }
 
     /// <summary>
+    /// Applies ThemeRef bindings by setting properties through WinUI's {ThemeResource}
+    /// mechanism. Instead of manually resolving from ThemeDictionaries (which doesn't
+    /// handle theme variants correctly), we build a local Style with ThemeResource
+    /// setters and apply it to the element. WinUI then handles theme-reactive resolution
+    /// natively, including per-element RequestedTheme overrides.
+    /// </summary>
+    private static void ApplyThemeBindings(FrameworkElement fe, IReadOnlyDictionary<string, ThemeRef> bindings)
+    {
+        // Build XAML setters for each theme binding
+        var setters = new System.Text.StringBuilder();
+        var targetType = GetStyleTargetType(fe);
+        if (targetType is null) return;
+
+        foreach (var (property, themeRef) in bindings)
+        {
+            var dp = GetDependencyPropertyName(fe, property);
+            if (dp is null) continue;
+            var escapedResourceKey = System.Security.SecurityElement.Escape(themeRef.ResourceKey);
+            setters.Append($"<Setter Property='{dp}' Value='{{ThemeResource {escapedResourceKey}}}'/>");
+        }
+
+        if (setters.Length == 0) return;
+
+        try
+        {
+            var xaml =
+                $"<Style xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' TargetType='{targetType}'>" +
+                setters.ToString() +
+                "</Style>";
+            var style = (Style)Microsoft.UI.Xaml.Markup.XamlReader.Load(xaml);
+            if (fe.Style is Style existingStyle && existingStyle.TargetType == style.TargetType)
+            {
+                style.BasedOn = existingStyle;
+            }
+            fe.Style = style;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Duct.Theme] Failed to apply ThemeBindings: {ex.Message}");
+        }
+    }
+
+    private static string? GetStyleTargetType(FrameworkElement fe) => fe switch
+    {
+        WinUI.Border => "Border",
+        WinUI.StackPanel => "StackPanel",
+        WinUI.Grid => "Grid",
+        WinUI.Button => "Button",
+        WinUI.TextBox => "TextBox",
+        TextBlock => "TextBlock",
+        WinUI.ContentControl => "ContentControl",
+        WinUI.Panel => "Panel",
+        WinUI.Control => "Control",
+        _ => fe.GetType().Name,
+    };
+
+    private static string? GetDependencyPropertyName(FrameworkElement fe, string property)
+    {
+        if (property == "Background" && (fe is WinUI.Panel || fe is WinUI.Control || fe is WinUI.Border))
+            return "Background";
+        if (property == "Foreground" && (fe is WinUI.Control || fe is TextBlock))
+            return "Foreground";
+        if (property == "BorderBrush" && (fe is WinUI.Control || fe is WinUI.Border))
+            return "BorderBrush";
+        return null;
+    }
+
+    /// <summary>
     /// Sets or updates the flyout on a control. On first mount, creates a new flyout.
     /// On update, reconciles the content inside the existing flyout to keep it open.
     /// </summary>

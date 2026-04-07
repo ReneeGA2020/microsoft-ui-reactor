@@ -123,6 +123,10 @@ public sealed partial class Reconciler
         if (modifiers is not null && control is FrameworkElement fe)
             ApplyModifiers(fe, modifiers, requestRerender);
 
+        // Apply theme-resource bindings (ThemeRef → resolved Brush from WinUI resources)
+        if (element.ThemeBindings is not null && control is FrameworkElement thFe)
+            ApplyThemeBindings(thFe, element.ThemeBindings);
+
         // Apply transitions after mounting (runs after .Set() callbacks)
         if (control is not null && (element.ImplicitTransitions is not null || element.ThemeTransitions is not null))
             ApplyTransitions(control, element.ImplicitTransitions, element.ThemeTransitions);
