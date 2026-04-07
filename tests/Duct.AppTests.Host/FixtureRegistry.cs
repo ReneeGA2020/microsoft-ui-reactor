@@ -102,6 +102,14 @@ internal static class FixtureRegistry
         "Demo_Counter",
         "Demo_Conditional",
         "Demo_TabNavigation",
+
+        // Event Handlers (declarative modifiers)
+        "EventHandler_Tapped",
+        "EventHandler_SizeChanged",
+        "EventHandler_PointerPressed",
+        "EventHandler_KeyDown",
+        "EventHandler_Typography",
+        "EventHandler_UseReducer",
     ];
 
     public static Element? Build(string name, RenderContext ctx) => name switch
@@ -195,6 +203,14 @@ internal static class FixtureRegistry
         "Demo_Counter" => DemoFixtures.CounterDemo(ctx),
         "Demo_Conditional" => DemoFixtures.ConditionalDemo(ctx),
         "Demo_TabNavigation" => DemoFixtures.TabNavigation(ctx),
+
+        // Event Handlers (declarative modifiers)
+        "EventHandler_Tapped" => EventHandlerFixtures.TappedTest(ctx),
+        "EventHandler_SizeChanged" => EventHandlerFixtures.SizeChangedTest(ctx),
+        "EventHandler_PointerPressed" => EventHandlerFixtures.PointerPressedTest(ctx),
+        "EventHandler_KeyDown" => EventHandlerFixtures.KeyDownTest(ctx),
+        "EventHandler_Typography" => EventHandlerFixtures.TypographyTest(ctx),
+        "EventHandler_UseReducer" => EventHandlerFixtures.ReducerTest(ctx),
 
         _ => null,
     };

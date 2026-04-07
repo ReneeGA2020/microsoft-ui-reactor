@@ -102,6 +102,45 @@ public sealed class RenderContext
     }
 
     /// <summary>
+    /// Declares a piece of state managed by a reducer function (like Redux).
+    /// The reducer takes (currentState, action) and returns the next state.
+    /// Returns (currentState, dispatch) where dispatch sends an action through the reducer.
+    /// </summary>
+    public (TState Value, Action<TAction> Dispatch) UseReducer<TState, TAction>(
+        Func<TState, TAction, TState> reducer, TState initialValue)
+    {
+        if (_hookIndex >= _hooks.Count)
+        {
+            _hooks.Add(new HookState { Value = initialValue! });
+        }
+
+        var hook = _hooks[_hookIndex];
+        var currentIndex = _hookIndex;
+        _hookIndex++;
+
+        if (hook is not HookState || hook is EffectHookState or MemoHookState)
+            throw new InvalidOperationException(
+                $"Hook at index {currentIndex} is {hook.GetType().Name}, expected HookState (UseReducer). " +
+                "Hooks must be called in the same order every render.");
+
+        TState current = (TState)hook.Value;
+
+        void Dispatch(TAction action)
+        {
+            var h = _hooks[currentIndex];
+            var prev = (TState)h.Value;
+            var next = reducer(prev, action);
+            if (!EqualityComparer<TState>.Default.Equals(prev, next))
+            {
+                h.Value = next!;
+                _requestRerender?.Invoke();
+            }
+        }
+
+        return (current, Dispatch);
+    }
+
+    /// <summary>
     /// Runs a side effect after render. The effect re-runs when any dependency changes.
     /// Pass an empty array for "run once on mount" semantics.
     /// Returns a cleanup action that runs before the next effect or on unmount.

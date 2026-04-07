@@ -598,9 +598,149 @@ public sealed partial class Reconciler : IDisposable
         if (m.ElementSoundMode.HasValue && m.ElementSoundMode != oldM?.ElementSoundMode && fe is WinUI.Control ctrl)
             ctrl.ElementSoundMode = m.ElementSoundMode.Value;
 
+        // ── Typography (FontFamily, FontSize, FontWeight) ──────────
+        if (m.FontFamily is not null && !ReferenceEquals(m.FontFamily, oldM?.FontFamily))
+        {
+            if (fe is WinUI.Control ffCtrl) ffCtrl.FontFamily = m.FontFamily;
+            else if (fe is TextBlock ffTb) ffTb.FontFamily = m.FontFamily;
+        }
+        if (m.FontSize.HasValue && m.FontSize != oldM?.FontSize)
+        {
+            if (fe is WinUI.Control fsCtrl) fsCtrl.FontSize = m.FontSize.Value;
+            else if (fe is TextBlock fsTb) fsTb.FontSize = m.FontSize.Value;
+        }
+        if (m.FontWeight.HasValue && m.FontWeight != oldM?.FontWeight)
+        {
+            if (fe is WinUI.Control fwCtrl) fwCtrl.FontWeight = m.FontWeight.Value;
+            else if (fe is TextBlock fwTb) fwTb.FontWeight = m.FontWeight.Value;
+        }
+
+        // ── Declarative event handlers ────────────────────────────
+        // Detach previous handler (if any) before attaching new one.
+        // Handlers are stored in Tag via a wrapper so we can find them for detach.
+        ApplyEventHandlers(fe, oldM, m);
+
         // OnMountAction — only run on initial mount (oldM is null)
         if (m.OnMountAction is not null && oldM is null)
             m.OnMountAction(fe);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Declarative event handler management
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Tracks the currently-attached event handlers on a FrameworkElement so they
+    /// can be detached before new ones are attached. Stored as the element's Tag
+    /// (or alongside it in a wrapper if Tag is already used for pool identity).
+    /// </summary>
+    internal sealed class EventHandlerState
+    {
+        public SizeChangedEventHandler? SizeChanged;
+        public Microsoft.UI.Xaml.Input.PointerEventHandler? PointerPressed;
+        public Microsoft.UI.Xaml.Input.PointerEventHandler? PointerMoved;
+        public Microsoft.UI.Xaml.Input.PointerEventHandler? PointerReleased;
+        public Microsoft.UI.Xaml.Input.TappedEventHandler? Tapped;
+        public Microsoft.UI.Xaml.Input.KeyEventHandler? KeyDown;
+    }
+
+    // Key for storing EventHandlerState in a dictionary attached to the element.
+    // We use FrameworkElement's Tag only when no setter has claimed it.
+    // To avoid conflicts, we use an attached-property-like pattern via a ConditionalWeakTable.
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<FrameworkElement, EventHandlerState> _eventStates = new();
+
+    private static EventHandlerState GetOrCreateEventState(FrameworkElement fe)
+    {
+        if (!_eventStates.TryGetValue(fe, out var state))
+        {
+            state = new EventHandlerState();
+            _eventStates.AddOrUpdate(fe, state);
+        }
+        return state;
+    }
+
+    private static void ApplyEventHandlers(FrameworkElement fe, ElementModifiers? oldM, ElementModifiers m)
+    {
+        // Fast path: nothing to do
+        if (m.OnSizeChanged is null && m.OnPointerPressed is null && m.OnPointerMoved is null &&
+            m.OnPointerReleased is null && m.OnTapped is null && m.OnKeyDown is null &&
+            oldM?.OnSizeChanged is null && oldM?.OnPointerPressed is null && oldM?.OnPointerMoved is null &&
+            oldM?.OnPointerReleased is null && oldM?.OnTapped is null && oldM?.OnKeyDown is null)
+            return;
+
+        var state = GetOrCreateEventState(fe);
+
+        // SizeChanged
+        if (!ReferenceEquals(m.OnSizeChanged, oldM?.OnSizeChanged))
+        {
+            if (state.SizeChanged is not null) { fe.SizeChanged -= state.SizeChanged; state.SizeChanged = null; }
+            if (m.OnSizeChanged is not null)
+            {
+                var handler = m.OnSizeChanged;
+                state.SizeChanged = (s, e) => handler(s!, e);
+                fe.SizeChanged += state.SizeChanged;
+            }
+        }
+
+        // PointerPressed
+        if (!ReferenceEquals(m.OnPointerPressed, oldM?.OnPointerPressed))
+        {
+            if (state.PointerPressed is not null) { fe.PointerPressed -= state.PointerPressed; state.PointerPressed = null; }
+            if (m.OnPointerPressed is not null)
+            {
+                var handler = m.OnPointerPressed;
+                state.PointerPressed = (s, e) => handler(s!, e);
+                fe.PointerPressed += state.PointerPressed;
+            }
+        }
+
+        // PointerMoved
+        if (!ReferenceEquals(m.OnPointerMoved, oldM?.OnPointerMoved))
+        {
+            if (state.PointerMoved is not null) { fe.PointerMoved -= state.PointerMoved; state.PointerMoved = null; }
+            if (m.OnPointerMoved is not null)
+            {
+                var handler = m.OnPointerMoved;
+                state.PointerMoved = (s, e) => handler(s!, e);
+                fe.PointerMoved += state.PointerMoved;
+            }
+        }
+
+        // PointerReleased
+        if (!ReferenceEquals(m.OnPointerReleased, oldM?.OnPointerReleased))
+        {
+            if (state.PointerReleased is not null) { fe.PointerReleased -= state.PointerReleased; state.PointerReleased = null; }
+            if (m.OnPointerReleased is not null)
+            {
+                var handler = m.OnPointerReleased;
+                state.PointerReleased = (s, e) => handler(s!, e);
+                fe.PointerReleased += state.PointerReleased;
+            }
+        }
+
+        // Tapped
+        if (!ReferenceEquals(m.OnTapped, oldM?.OnTapped))
+        {
+            if (state.Tapped is not null) { fe.Tapped -= state.Tapped; state.Tapped = null; }
+            if (m.OnTapped is not null)
+            {
+                var handler = m.OnTapped;
+                state.Tapped = (s, e) => handler(s!, e);
+                fe.Tapped += state.Tapped;
+            }
+        }
+
+        // KeyDown
+        if (!ReferenceEquals(m.OnKeyDown, oldM?.OnKeyDown))
+        {
+            if (state.KeyDown is not null) { fe.KeyDown -= state.KeyDown; state.KeyDown = null; }
+            if (m.OnKeyDown is not null)
+            {
+                var handler = m.OnKeyDown;
+                state.KeyDown = (s, e) => handler(s!, e);
+                fe.KeyDown += state.KeyDown;
+            }
+        }
     }
 
     /// <summary>

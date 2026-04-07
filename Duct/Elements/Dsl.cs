@@ -197,6 +197,82 @@ public static class UI
         params Element?[] children) =>
         new(new GridDefinition(columns, rows), FilterChildren(children));
 
+    // ── Grid layout builders ────────────────────────────────────────
+
+    /// <summary>
+    /// Creates a grid with items interspersed with separator elements along one axis.
+    /// Commonly used for split panels where children are separated by splitters.
+    ///
+    /// Each item gets a proportional (*) size from <paramref name="proportions"/>,
+    /// and separators get a fixed pixel size of <paramref name="separatorSize"/>.
+    ///
+    /// Example: InterspersedGrid(Orientation.Horizontal, children, proportions, 6,
+    ///              i => MySplitter(i))
+    /// produces columns: "0.33*", "6", "0.33*", "6", "0.34*" with children and splitters placed.
+    /// </summary>
+    public static GridElement InterspersedGrid(
+        Orientation orientation,
+        Element[] items,
+        double[] proportions,
+        double separatorSize,
+        Func<int, Element> separatorFactory)
+    {
+        if (items.Length == 0) return Grid([], [], []);
+        if (items.Length != proportions.Length)
+            throw new ArgumentException("items and proportions must have the same length");
+
+        var sizes = new List<string>();
+        var children = new List<Element>();
+        bool isHorizontal = orientation == Orientation.Horizontal;
+
+        for (int i = 0; i < items.Length; i++)
+        {
+            var starValue = proportions[i];
+            sizes.Add($"{starValue:F6}*");
+
+            children.Add(isHorizontal
+                ? items[i].Grid(row: 0, column: i * 2)
+                : items[i].Grid(row: i * 2, column: 0));
+
+            if (i < items.Length - 1)
+            {
+                sizes.Add($"{separatorSize}");
+                var sep = separatorFactory(i);
+                children.Add(isHorizontal
+                    ? sep.Grid(row: 0, column: i * 2 + 1)
+                    : sep.Grid(row: i * 2 + 1, column: 0));
+            }
+        }
+
+        return isHorizontal
+            ? Grid(sizes.ToArray(), ["*"], children.ToArray())
+            : Grid(["*"], sizes.ToArray(), children.ToArray());
+    }
+
+    /// <summary>
+    /// Creates a uniform grid with equal-sized cells along one axis.
+    /// Shorthand for a grid where all items share equal proportions with no separators.
+    /// </summary>
+    public static GridElement UniformGrid(Orientation orientation, params Element?[] items)
+    {
+        var filtered = FilterChildren(items);
+        if (filtered.Length == 0) return Grid([], [], []);
+
+        var sizes = Enumerable.Repeat("*", filtered.Length).ToArray();
+        bool isHorizontal = orientation == Orientation.Horizontal;
+
+        for (int i = 0; i < filtered.Length; i++)
+        {
+            filtered[i] = isHorizontal
+                ? filtered[i].Grid(row: 0, column: i)
+                : filtered[i].Grid(row: i, column: 0);
+        }
+
+        return isHorizontal
+            ? Grid(sizes, ["*"], filtered)
+            : Grid(["*"], sizes, filtered);
+    }
+
     // ── Navigation ──────────────────────────────────────────────────
 
     public static NavigationViewElement NavigationView(NavigationViewItemData[] menuItems, Element? content = null) =>

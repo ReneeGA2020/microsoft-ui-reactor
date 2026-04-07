@@ -22,6 +22,14 @@ public abstract class Component
     protected (T Value, Action<Func<T, T>> Update) UseReducer<T>(T initialValue)
         => Context.UseReducer(initialValue);
 
+    /// <summary>
+    /// Redux-style reducer: takes a reducer function (state, action) => newState.
+    /// Returns (currentState, dispatch) where dispatch sends an action through the reducer.
+    /// </summary>
+    protected (TState Value, Action<TAction> Dispatch) UseReducer<TState, TAction>(
+        Func<TState, TAction, TState> reducer, TState initialValue)
+        => Context.UseReducer(reducer, initialValue);
+
     protected void UseEffect(Action effect, params object[] dependencies)
         => Context.UseEffect(effect, dependencies);
 

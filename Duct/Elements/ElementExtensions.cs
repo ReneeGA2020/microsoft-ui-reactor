@@ -115,6 +115,57 @@ public static class ElementExtensions
     public static T Opacity<T>(this T el, double opacity) where T : Element =>
         Modify(el, new ElementModifiers { Opacity = opacity });
 
+    // ── Typography (any Control or TextBlock) ─────────────────────
+    // These set font properties via ElementModifiers, so they work on ANY element
+    // (buttons, borders wrapping text, etc.) — not just TextElement.
+
+    /// <summary>
+    /// Sets the font family on any FrameworkElement that supports it (Control, TextBlock).
+    /// For TextElement-specific chaining that preserves the TextElement return type,
+    /// use the TextElement.FontFamily() overload instead.
+    /// </summary>
+    public static T FontFamily<T>(this T el, string family) where T : Element =>
+        Modify(el, new ElementModifiers { FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(family) });
+
+    public static T FontFamily<T>(this T el, Microsoft.UI.Xaml.Media.FontFamily family) where T : Element =>
+        Modify(el, new ElementModifiers { FontFamily = family });
+
+    /// <summary>
+    /// Sets the font size on any FrameworkElement that supports it (Control, TextBlock).
+    /// For TextElement-specific chaining, use the TextElement.FontSize() overload.
+    /// </summary>
+    public static T FontSize<T>(this T el, double size) where T : Element =>
+        Modify(el, new ElementModifiers { FontSize = size });
+
+    /// <summary>
+    /// Sets the font weight on any FrameworkElement that supports it (Control, TextBlock).
+    /// </summary>
+    public static T FontWeight<T>(this T el, Windows.UI.Text.FontWeight weight) where T : Element =>
+        Modify(el, new ElementModifiers { FontWeight = weight });
+
+    // ── Declarative event handlers ──────────────────────────────────
+    // Unlike OnMount(), these re-attach on every update, so closures always
+    // capture fresh state. The reconciler detaches the previous handler before
+    // attaching the new one.
+
+    public static T OnSizeChanged<T>(this T el, Action<object, SizeChangedEventArgs> handler) where T : Element =>
+        Modify(el, new ElementModifiers { OnSizeChanged = handler });
+
+    public static T OnPointerPressed<T>(this T el, Action<object, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs> handler) where T : Element =>
+        Modify(el, new ElementModifiers { OnPointerPressed = handler });
+
+    public static T OnPointerMoved<T>(this T el, Action<object, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs> handler) where T : Element =>
+        Modify(el, new ElementModifiers { OnPointerMoved = handler });
+
+    public static T OnPointerReleased<T>(this T el, Action<object, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs> handler) where T : Element =>
+        Modify(el, new ElementModifiers { OnPointerReleased = handler });
+
+    public static T OnTapped<T>(this T el, Action<object, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs> handler) where T : Element =>
+        Modify(el, new ElementModifiers { OnTapped = handler });
+
+    public static T OnKeyDown<T>(this T el, Action<object, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs> handler) where T : Element =>
+        Modify(el, new ElementModifiers { OnKeyDown = handler });
+
     // ── Decoration ──────────────────────────────────────────────────
 
     public static T ToolTip<T>(this T el, string tip) where T : Element =>

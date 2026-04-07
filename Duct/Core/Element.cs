@@ -166,7 +166,17 @@ public abstract record Element
             && ReferenceEquals(a.Background, b.Background)
             && ReferenceEquals(a.Foreground, b.Foreground)
             && ReferenceEquals(a.BorderBrush, b.BorderBrush)
+            && a.FontSize == b.FontSize
+            && a.FontWeight == b.FontWeight
+            && ReferenceEquals(a.FontFamily, b.FontFamily)
             // Skip OnMountAction — only runs at mount time
+            // Skip event handlers — delegate comparison is unreliable, conservative false
+            && a.OnSizeChanged is null && b.OnSizeChanged is null
+            && a.OnPointerPressed is null && b.OnPointerPressed is null
+            && a.OnPointerMoved is null && b.OnPointerMoved is null
+            && a.OnPointerReleased is null && b.OnPointerReleased is null
+            && a.OnTapped is null && b.OnTapped is null
+            && a.OnKeyDown is null && b.OnKeyDown is null
             // Skip RichToolTip, AttachedFlyout, ContextFlyout — rare, conservative false
             && a.RichToolTip is null && b.RichToolTip is null
             && a.AttachedFlyout is null && b.AttachedFlyout is null
@@ -273,6 +283,19 @@ public record ElementModifiers
     public ElementSoundMode? ElementSoundMode { get; init; }
     public Action<FrameworkElement>? OnMountAction { get; init; }
 
+    // ── Typography (applies to any Control or TextBlock) ────────────
+    public FontFamily? FontFamily { get; init; }
+    public double? FontSize { get; init; }
+    public FontWeight? FontWeight { get; init; }
+
+    // ── Declarative event handlers (re-attached on every update) ────
+    public Action<object, SizeChangedEventArgs>? OnSizeChanged { get; init; }
+    public Action<object, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs>? OnPointerPressed { get; init; }
+    public Action<object, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs>? OnPointerMoved { get; init; }
+    public Action<object, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs>? OnPointerReleased { get; init; }
+    public Action<object, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs>? OnTapped { get; init; }
+    public Action<object, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs>? OnKeyDown { get; init; }
+
     // ── Logical (BiDi-aware) layout properties ──────────────────────
     // These resolve to physical left/right based on FlowDirection at mount/update time.
     // InlineStart = left in LTR, right in RTL. InlineEnd = right in LTR, left in RTL.
@@ -312,6 +335,15 @@ public record ElementModifiers
             AutomationId = other.AutomationId ?? AutomationId,
             ElementSoundMode = other.ElementSoundMode ?? ElementSoundMode,
             OnMountAction = other.OnMountAction ?? OnMountAction,
+            FontFamily = other.FontFamily ?? FontFamily,
+            FontSize = other.FontSize ?? FontSize,
+            FontWeight = other.FontWeight ?? FontWeight,
+            OnSizeChanged = other.OnSizeChanged ?? OnSizeChanged,
+            OnPointerPressed = other.OnPointerPressed ?? OnPointerPressed,
+            OnPointerMoved = other.OnPointerMoved ?? OnPointerMoved,
+            OnPointerReleased = other.OnPointerReleased ?? OnPointerReleased,
+            OnTapped = other.OnTapped ?? OnTapped,
+            OnKeyDown = other.OnKeyDown ?? OnKeyDown,
             MarginInlineStart = other.MarginInlineStart ?? MarginInlineStart,
             MarginInlineEnd = other.MarginInlineEnd ?? MarginInlineEnd,
             PaddingInlineStart = other.PaddingInlineStart ?? PaddingInlineStart,
