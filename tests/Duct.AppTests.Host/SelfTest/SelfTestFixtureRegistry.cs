@@ -132,6 +132,25 @@ internal static class SelfTestFixtureRegistry
         "RareControl_RichTextBlock",
         "RareControl_PasswordBox",
         "RareControl_ComboBoxRadioButtons",
+        // Component hook tests
+        "ComponentHook_UseReducerFunctional",
+        "ComponentHook_UseReducerRedux",
+        "ComponentHook_UseMemoCallbackRef",
+        "ComponentHook_UseEffectWithDeps",
+        "ComponentHook_TypedProps",
+        "ComponentHook_UseWindowSize",
+        "ComponentHook_UseBreakpoint",
+        "ComponentHook_MultipleComponents",
+        // DSL and extension tests
+        "DslExt_FluentModifierChain",
+        "DslExt_TransitionExtensions",
+        "DslExt_FactoryMethods",
+        "DslExt_ShapeExtensions",
+        "DslExt_GridBuilders",
+        "DslExt_MenuDslMethods",
+        "DslExt_AttachedProperties",
+        "DslExt_ErrorBoundaryElement",
+        "DslExt_GroupElement",
     ];
 
     public static SelfTestFixtureBase? Create(string name, Harness harness) => name switch
@@ -259,6 +278,25 @@ internal static class SelfTestFixtureRegistry
         "RareControl_RichTextBlock" => new RareControlFixtures.RichTextBlockUpdate(harness),
         "RareControl_PasswordBox" => new RareControlFixtures.PasswordBoxUpdate(harness),
         "RareControl_ComboBoxRadioButtons" => new RareControlFixtures.ComboBoxRadioButtonsUpdate(harness),
+        // Component hook tests
+        "ComponentHook_UseReducerFunctional" => new ComponentHookFixtures.UseReducerFunctional(harness),
+        "ComponentHook_UseReducerRedux" => new ComponentHookFixtures.UseReducerRedux(harness),
+        "ComponentHook_UseMemoCallbackRef" => new ComponentHookFixtures.UseMemoCallbackRef(harness),
+        "ComponentHook_UseEffectWithDeps" => new ComponentHookFixtures.UseEffectWithDeps(harness),
+        "ComponentHook_TypedProps" => new ComponentHookFixtures.TypedPropsComponent(harness),
+        "ComponentHook_UseWindowSize" => new ComponentHookFixtures.UseWindowSizeHook(harness),
+        "ComponentHook_UseBreakpoint" => new ComponentHookFixtures.UseBreakpointHook(harness),
+        "ComponentHook_MultipleComponents" => new ComponentHookFixtures.MultipleComponents(harness),
+        // DSL and extension tests
+        "DslExt_FluentModifierChain" => new DslExtensionFixtures.FluentModifierChain(harness),
+        "DslExt_TransitionExtensions" => new DslExtensionFixtures.TransitionExtensions(harness),
+        "DslExt_FactoryMethods" => new DslExtensionFixtures.DslFactoryMethods(harness),
+        "DslExt_ShapeExtensions" => new DslExtensionFixtures.ShapeExtensions(harness),
+        "DslExt_GridBuilders" => new DslExtensionFixtures.GridBuilders(harness),
+        "DslExt_MenuDslMethods" => new DslExtensionFixtures.MenuDslMethods(harness),
+        "DslExt_AttachedProperties" => new DslExtensionFixtures.AttachedProperties(harness),
+        "DslExt_ErrorBoundaryElement" => new DslExtensionFixtures.ErrorBoundaryTest(harness),
+        "DslExt_GroupElement" => new DslExtensionFixtures.GroupElementTest(harness),
         _ => null,
     };
 }
