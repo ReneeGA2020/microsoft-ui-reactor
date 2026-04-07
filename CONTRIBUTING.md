@@ -45,42 +45,87 @@ The solution targets `x64` and `ARM64`. MSBuild maps these to Rust target triple
 
 ## Running tests
 
+### Quick reference
+
 ```bash
-# Run ALL tests (unit + UI) — one command, builds everything
-dotnet test tests/Duct.AppTests -p:Platform=x64
+# ── Unit tests (xUnit, no UI window, ~3s) ──
+dotnet test tests/Duct.Tests
+
+# ── Self-tests (in-process WinUI, ~15s) ──
+dotnet test tests/Duct.AppTests --filter "ClassName=Duct.AppTests.Tests.SelfTestBatch"
+
+# ── UIA / interactive tests (Appium + WinAppDriver, ~30s) ──
+dotnet test tests/Duct.AppTests --filter "ClassName=Duct.AppTests.Tests.InteractiveTests"
+
+# ── ALL tests (unit + self-test + UIA) ──
+dotnet test Duct.sln
 ```
 
-This single command:
-1. Builds all dependencies (Duct, DuctD3, AppTests.Host, AppTests)
-2. Runs **57 in-process UI tests** at CPU speed (~50s) — layout, flex, reconciler, error boundary, collections, observable, PropertyGrid, localization, markdown, D3, Monaco
-3. Runs **2 interactive Appium/WinAppDriver tests** (~30s) — counter button clicks, INPC mutation via real cross-process input injection
-4. Reports all results in a single MSTest run
+> **Platform note:** Omit `-p:Platform=...` to use the default (ARM64 on ARM machines,
+> x64 on Intel). Add `-p:Platform=ARM64` or `-p:Platform=x64` to force a specific platform.
 
-> **Requires:** [WinAppDriver](https://github.com/microsoft/WinAppDriver/releases) installed at `C:\Program Files (x86)\Windows Application Driver\WinAppDriver.exe` for the interactive tests. The in-process tests run without it.
+### Unit tests (`Duct.Tests`)
+
+2,200+ xUnit tests covering framework internals without a WinUI window:
+element creation, reconciliation algorithms (LIS, keyed/positional), Yoga layout,
+localization, property hashing, control pooling, hooks.
 
 ```bash
-# Run just the unit tests (no WinUI window needed)
-dotnet test tests/Duct.Tests -p:Platform=x64
+dotnet test tests/Duct.Tests
 
 # Run a specific test class
 dotnet test tests/Duct.Tests --filter "FullyQualifiedName~TreeSerializerTests"
+```
 
-# Run just the in-process UI tests (no WinAppDriver needed)
-dotnet test tests/Duct.AppTests -p:Platform=x64 --filter "ClassName=Duct.AppTests.Tests.SelfTestBatch"
+### Self-tests (`Duct.AppTests` → `Duct.AppTests.Host --self-test`)
 
-# Run just the interactive Appium tests
-dotnet test tests/Duct.AppTests -p:Platform=x64 --filter "ClassName=Duct.AppTests.Tests.InteractiveTests"
+60+ in-process fixtures that run inside a real WinUI window at CPU speed. Each fixture
+mounts UI via `DuctHost`, runs assertions through `VisualTreeHelper`, and outputs TAP
+results. The MSTest runner parses TAP output and maps each check to an individual test.
+
+These exercise the full reconciler pipeline (mount → update → unmount) against real
+WinUI controls — the only way to test the diff system end-to-end.
+
+```bash
+# Via MSTest runner (reports to VS Test Explorer)
+dotnet test tests/Duct.AppTests --filter "ClassName=Duct.AppTests.Tests.SelfTestBatch"
+
+# Or run the host directly (raw TAP output)
+dotnet run --project tests/Duct.AppTests.Host -- --self-test
+```
+
+### UIA / interactive tests (`Duct.AppTests` → Appium)
+
+2 end-to-end tests that use Appium/WinAppDriver to simulate real user input (button
+clicks, INPC mutation) through the cross-process UI Automation pipeline. These verify
+the full input→render→output path.
+
+```bash
+dotnet test tests/Duct.AppTests --filter "ClassName=Duct.AppTests.Tests.InteractiveTests"
+```
+
+> **Requires:** [WinAppDriver](https://github.com/microsoft/WinAppDriver/releases) installed
+> at `C:\Program Files (x86)\Windows Application Driver\WinAppDriver.exe`. The unit tests
+> and self-tests run without it.
+
+### Code coverage
+
+```bash
+# Unit tests (via coverlet, bundled in Duct.Tests.csproj)
+dotnet test tests/Duct.Tests --collect:"XPlat Code Coverage"
+
+# Self-tests (via dotnet-coverage profiler — install once with: dotnet tool install -g dotnet-coverage)
+dotnet-coverage collect --output selftest.cobertura.xml --output-format cobertura \
+  -- dotnet run --project tests/Duct.AppTests.Host -- --self-test
 ```
 
 ### Test architecture
 
-**Unit tests** (`Duct.Tests`) — 2,100+ xUnit tests that verify framework internals without a WinUI window: element creation, reconciliation, Yoga layout, localization, property hashing, control pooling, hooks.
-
-**UI tests** (`Duct.AppTests`) — 59 MSTest tests split into two categories:
-
-- **Self-test batch** (57 tests): The `Duct.AppTests.Host` app launches with `--self-test`, mounts each fixture in a real WinUI window, runs assertions in-process via `VisualTreeHelper` at CPU speed, and outputs TAP results. The MSTest runner parses results and maps them to individual test methods.
-
-- **Interactive tests** (2 tests): Use Appium/WinAppDriver to simulate real user input (button clicks, INPC mutation) through the cross-process UI Automation pipeline. These verify the full end-to-end input path.
+| Layer | Project | Runner | Count | What it tests |
+|-------|---------|--------|-------|---------------|
+| **Unit** | `Duct.Tests` | xUnit | 2,200+ | Algorithms, element equality, Yoga layout, hooks — no WinUI window |
+| **Self-test** | `Duct.AppTests.Host` | TAP → MSTest | 60+ | Full reconciler pipeline against real WinUI controls, in-process |
+| **UIA** | `Duct.AppTests` | Appium/MSTest | 2 | Cross-process input injection via WinAppDriver |
 
 > **No stale binaries:** `Duct.AppTests.csproj` has a `ProjectReference` to the Host app with `ReferenceOutputAssembly="false"`, so `dotnet test` always builds the Host before running tests.
 
