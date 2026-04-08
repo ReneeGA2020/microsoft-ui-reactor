@@ -1,0 +1,6 @@
+<Window x:Class="CmdPerf.Wpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CmdPerf.Wpf - RoutedCommand Benchmark" Width="1200" Height="800">
+    <Grid x:Name="Root" />
+</Window>

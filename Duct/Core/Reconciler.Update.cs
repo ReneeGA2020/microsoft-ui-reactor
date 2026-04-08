@@ -174,8 +174,8 @@ public sealed partial class Reconciler
                 => UpdateContentDialog(o, n, cdFe, requestRerender),
             (TeachingTipElement, TeachingTipElement n, WinUI.TeachingTip tip)
                 => UpdateTeachingTip(n, tip),
-            (MenuBarElement, MenuBarElement, WinUI.MenuBar)
-                => Mount(newEl, requestRerender),
+            (MenuBarElement o, MenuBarElement n, WinUI.MenuBar mb)
+                => UpdateMenuBar(o, n, mb),
             (CommandHostElement o, CommandHostElement n, WinUI.Grid chGrid)
                 => UpdateCommandHost(o, n, chGrid, requestRerender),
             (CommandBarElement o, CommandBarElement n, WinUI.CommandBar cb)
@@ -1195,6 +1195,104 @@ public sealed partial class Reconciler
         SetElementTag(sv, n);
         ApplySetters(n.ScrollViewerSetters, sv);
         return null;
+    }
+
+    private UIElement? UpdateMenuBar(MenuBarElement o, MenuBarElement n, WinUI.MenuBar mb)
+    {
+        int oldCount = o.Items.Length;
+        int newCount = n.Items.Length;
+        int shared = Math.Min(oldCount, newCount);
+
+        // Patch shared top-level menus
+        for (int i = 0; i < shared; i++)
+        {
+            var mbi = (WinUI.MenuBarItem)mb.Items[i];
+            if (o.Items[i].Title != n.Items[i].Title)
+                mbi.Title = n.Items[i].Title;
+            UpdateMenuFlyoutItems(mbi.Items, o.Items[i].Items, n.Items[i].Items);
+        }
+
+        // Remove excess top-level menus
+        for (int i = oldCount - 1; i >= shared; i--)
+            mb.Items.RemoveAt(i);
+
+        // Add new top-level menus
+        for (int i = shared; i < newCount; i++)
+        {
+            var mbi = new WinUI.MenuBarItem { Title = n.Items[i].Title };
+            foreach (var item in n.Items[i].Items)
+                mbi.Items.Add(CreateMenuFlyoutItem(item));
+            mb.Items.Add(mbi);
+        }
+
+        ApplySetters(n.Setters, mb);
+        return null;
+    }
+
+    private void UpdateMenuFlyoutItems(
+        System.Collections.Generic.IList<WinUI.MenuFlyoutItemBase> target,
+        MenuFlyoutItemBase[] oldSource,
+        MenuFlyoutItemBase[] newSource)
+    {
+        int oldCount = oldSource.Length;
+        int newCount = newSource.Length;
+        int shared = Math.Min(oldCount, newCount);
+
+        for (int i = 0; i < shared; i++)
+        {
+            switch (newSource[i])
+            {
+                case MenuFlyoutItemData mfi when target[i] is WinUI.MenuFlyoutItem existing:
+                    existing.Text = mfi.Text;
+                    existing.IsEnabled = mfi.IsEnabled;
+                    existing.Icon = ResolveIcon(mfi.IconElement, mfi.Icon);
+                    if (mfi.AccessKey is not null) existing.AccessKey = mfi.AccessKey;
+                    if (mfi.Description is not null)
+                    {
+                        WinUI.ToolTipService.SetToolTip(existing, mfi.Description);
+                        Microsoft.UI.Xaml.Automation.AutomationProperties.SetHelpText(existing, mfi.Description);
+                    }
+                    existing.Tag = mfi;
+                    break;
+
+                case ToggleMenuFlyoutItemData toggle when target[i] is WinUI.ToggleMenuFlyoutItem toggleItem:
+                    toggleItem.Text = toggle.Text;
+                    toggleItem.IsChecked = toggle.IsChecked;
+                    toggleItem.Icon = ResolveIcon(toggle.IconElement, toggle.Icon);
+                    toggleItem.Tag = toggle;
+                    break;
+
+                case RadioMenuFlyoutItemData radio when target[i] is WinUI.RadioMenuFlyoutItem radioItem:
+                    radioItem.Text = radio.Text;
+                    radioItem.IsChecked = radio.IsChecked;
+                    radioItem.Tag = radio;
+                    break;
+
+                case MenuFlyoutSeparatorData when target[i] is WinUI.MenuFlyoutSeparator:
+                    break; // nothing to update
+
+                case MenuFlyoutSubItemData sub when target[i] is WinUI.MenuFlyoutSubItem subItem:
+                    subItem.Text = sub.Text;
+                    subItem.Icon = ResolveIcon(sub.IconElement, sub.Icon);
+                    // Recursively patch sub-items
+                    var oldSub = oldSource[i] is MenuFlyoutSubItemData oldSubData ? oldSubData.Items : [];
+                    UpdateMenuFlyoutItems(subItem.Items, oldSub, sub.Items);
+                    break;
+
+                default:
+                    // Type mismatch — replace the item
+                    target[i] = CreateMenuFlyoutItem(newSource[i]);
+                    break;
+            }
+        }
+
+        // Remove excess
+        for (int i = oldCount - 1; i >= shared; i--)
+            target.RemoveAt(i);
+
+        // Add new
+        for (int i = shared; i < newCount; i++)
+            target.Add(CreateMenuFlyoutItem(newSource[i]));
     }
 
     private UIElement? UpdateCommandHost(CommandHostElement o, CommandHostElement n, WinUI.Grid host, Action requestRerender)
