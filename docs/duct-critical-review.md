@@ -10,19 +10,20 @@ rather than a principled declarative UI framework.
 ## Executive Summary
 
 Duct is an ambitious attempt to bring React-style declarative UI to WinUI 3.
-It has impressive breadth of control coverage (94% of WinUI controls wrapped) and
-a reasonable hooks system. However, it suffers from several fundamental problems
-that would prevent any serious team from choosing it over the established
-frameworks:
+It has impressive breadth of control coverage (94% of WinUI controls wrapped),
+a now-solid component model foundation, and a faithful hooks system. It has
+closed its most critical architectural gaps but still has significant remaining
+problems:
 
-1. **Theming now works for WinUI's built-in tokens but has real gaps** — custom
-   branded colors still require workarounds, and the implementation has perf cost
+1. **The component model is now a real framework foundation** — context system,
+   memoization, generic hook state, persisted state, and post-render effect
+   cleanup have all landed, closing the most fundamental gaps
 2. **Navigation is non-existent** — the core navigation scenario (pages with back
    stack) is blocked
-3. **No global state mechanism** — no Context, no EnvironmentObject, no
-   CompositionLocal
-4. **The DSL is constrained by C# language limitations** — verbose, repetitive,
+3. **The DSL is constrained by C# language limitations** — verbose, repetitive,
    and leaky compared to JSX, SwiftUI's result builders, or Compose's Kotlin DSL
+4. **Theming works for WinUI's built-in tokens but has real gaps** — custom
+   branded colors still require workarounds, and the implementation has perf cost
 5. **Accessibility has improved significantly but still has structural limits** —
    16 properties exposed with real UIA tests, but hooks, diagnostics, and custom
    automation peers remain unbuilt
@@ -33,14 +34,16 @@ frameworks:
    functionality is only accessible through it, making Duct a thin wrapper rather
    than an abstraction
 
-**Verdict:** Duct is an ambitious framework that maps React's component model
-onto WinUI with impressive breadth. Theming, accessibility, and animation have
-all improved from "missing or broken" to "functional with caveats," and the
-tooling story (hot reload, preview) is stronger than most new frameworks. But
-navigation and global state remain fundamental gaps, and the existing feature
-areas (theming, accessibility, animation) still have significant scope
-limitations. The distance from "impressive demo" to "ships to real users" has
-narrowed meaningfully but hasn't closed.
+**Verdict:** Duct has crossed an important threshold. The component model — the
+foundation that everything else builds on — now has context, memoization, generic
+hooks, state persistence, and proper effect cleanup. These aren't incremental
+improvements; they close the gaps that made Duct a non-starter for any app with
+cross-cutting concerns. Theming, accessibility, and animation have all improved
+from "missing or broken" to "functional with caveats," and the tooling story (hot
+reload, preview) is stronger than most new frameworks. Navigation remains the
+single largest fundamental gap. The distance from "impressive demo" to "ships to
+real users" has narrowed meaningfully — the foundation is now solid, but the
+higher-level features built on top of it still have scope limitations.
 
 ---
 
@@ -199,67 +202,266 @@ requires runtime filtering.
 
 ## 2. Component Model
 
-### What Duct has
+### The component model story: from gaps to genuine framework foundation
+
+The previous version of this review scored Component Model at C and Global State
+at F — "no Context equivalent," "no memoization," "hooks box value types." A
+significant component model diff has landed that addresses these systematically:
+context system, default-on memoization, generic hook state, persisted state, and
+post-render effect cleanup. The honest assessment now: **the component model
+foundation is solid and competitive with the established frameworks on core
+mechanics, but some secondary gaps remain.**
+
+### What Duct has now
 
 - **Class components** extending `Component` with `Render()` method
 - **Props via generics**: `Component<TProps>` for typed props
 - **Function components**: `Func(ctx => { ... })` inline lambdas
+- **Memo function components**: `Memo(ctx => { ... }, deps)` with dependency tracking
 - **Error boundaries**: `ErrorBoundary(child, fallback)`
+- **DuctContext\<T\>** — tree-scoped ambient state (React Context equivalent)
+- **Default-on memoization** — `ShouldUpdate()` on class components, dependency
+  tracking on Memo elements
+- **Generic hook state** — `ValueHookState<T>` eliminates boxing for value types
+- **Persisted state** — `UsePersisted<T>(key, initial)` survives unmount/remount
+- **Post-render effect cleanup** — cleanup runs in `FlushEffects`, not during render
 - **No slots/named children** — no mechanism for multi-slot composition
 
-### What's missing vs the competition
+### What shipped: Context system (DuctContext\<T\>)
 
-**No global state sharing mechanism.** React has Context + useContext. SwiftUI has
-@EnvironmentObject and @Environment. Compose has CompositionLocal. Duct has...
-nothing. There's no way to pass data through the component tree without threading
-it through every intermediate component's props. This is a *fundamental*
-architectural gap — theming, localization, auth state, navigation state, and
-virtually every cross-cutting concern in a real app needs some form of ambient
-state.
+```csharp
+// Define: static, typed, named, with default
+public static readonly DuctContext<ThemeConfig> ThemeContext =
+    new(new ThemeConfig("light"));
 
-The `UseObservable` hook bridges to INotifyPropertyChanged, which could serve as
-a workaround, but it requires every consumer to know about and hold a reference
-to the view model object — it's not ambient, it's explicit dependency passing.
+// Provide: modifier on any element, scoped to subtree
+VStack(children).Provide(ThemeContext, darkTheme)
 
-**LocaleProvider is a one-off hack that proves the need.** The localization
-system implements `LocaleContext.Current` as thread-static state — effectively a
-hand-rolled CompositionLocal for just one use case. If the framework needed this
-for localization, it needs it as a general-purpose mechanism.
+// Consume: hook in any descendant component
+var theme = UseContext(ThemeContext);
+```
 
-**No Suspense or lazy loading.** React's `Suspense` + `React.lazy()` for
-code-split components has no equivalent. In a large app, this means either
-loading everything eagerly or building your own loading state management per
-component. SwiftUI and Compose also lack this, so Duct is not uniquely deficient
-here — but React has had it since 2018.
+The design follows React's mental model with SwiftUI's fluent syntax. Contexts
+are tree-scoped: inner providers shadow outer ones. The `ContextScope` class
+maintains a stack during reconciler traversal — pushed on entering an element
+with `ContextValues`, popped on leaving. `UseContext<T>` reads the nearest
+ancestor's value by walking the stack backward.
 
-**Component props are untyped at the element level.** `ComponentElement` stores
-props as `object?`. Props are set via `IPropsReceiver.SetProps(object props)` with
-a cast. This means:
-- No compile-time validation that the right props type is passed
-- A runtime `InvalidCastException` if you get it wrong
-- The generic `Component<T, TProps>(props)` factory hides this, but the
-  underlying infrastructure is stringly-typed
+The reconciler integrates context into the memo check: `HasConsumedContextChanged`
+compares each `ContextHookState.LastValue` against the current scope value. A
+component that consumes `ThemeContext` re-renders when the theme changes, even
+if its props haven't changed. A component that doesn't consume any context skips
+the check entirely — zero cost for the common case.
 
-**No shouldComponentUpdate / React.memo equivalent.** There's no way to tell the
-framework "this component's output hasn't changed, skip the re-render." Every
-state change re-renders the entire subtree. React's `React.memo()`, SwiftUI's
-`EquatableView`, and Compose's automatic skipping via stable parameters all
-provide this. Duct will render every component on every state change in the
-ancestor chain, regardless of whether the component's inputs changed.
+**LocaleProvider now uses DuctContext.** The localization system has been migrated
+from the hand-rolled `LocaleContext.Current` thread-static hack to a proper
+`DuctContext<IntlAccessor?>`. `UseIntl()` is now `UseContext(IntlContexts.Locale)`
+under the hood. The legacy `LocaleContext.Current` is maintained for backward
+compatibility but marked internal. This validates the context system with a
+real use case — the framework's own localization depends on it.
 
-**Component identity is based on position + type, not key.** Like early React,
-Duct matches components by their position in the tree. If you conditionally
-render different components at the same position, state is lost. Keys exist on
-elements but the component lifecycle implications aren't well-defined — there's
-no documentation on what happens to component state when keys change.
+### What shipped: Default-on memoization
 
-**FuncElement creates a new RenderContext per instance, but identity is
-problematic.** `Func(ctx => ...)` creates a `FuncElement` with a lambda. But
-since the lambda is recreated every render (it captures outer state), the
-function reference changes every time. The reconciler must have special handling
-to avoid remounting FuncElement instances on every parent re-render — and the
-`ShallowEquals` method doesn't even attempt to compare FuncElements (they always
-return false, forcing an update).
+```csharp
+// Propless component: ShouldUpdate() defaults to false
+// → only re-renders from own state changes or context changes
+public class StatusBar : Component { ... }
+
+// Props component: ShouldUpdate(old, new) defaults to Equals(old, new)
+// → record props get structural comparison for free
+public record DashboardProps(string Title, int Count);
+public class Dashboard : Component<DashboardProps> { ... }
+
+// Function component with memo: explicit dependency array
+Memo(ctx => { ... }, count, theme)
+```
+
+Class components have `ShouldUpdate()` which defaults to `false` for propless
+components (never re-render from parent) and `!Equals(oldProps, newProps)` for
+`Component<TProps>` (re-render when props change structurally). This leverages
+C# records — a `record` props type gets value equality for free, so the common
+case requires zero developer effort. The reconciler also checks context changes
+via `HasConsumedContextChanged`, so components re-render when consumed contexts
+change regardless of the `ShouldUpdate` result.
+
+The `ShouldUpdateWithProps` method in the reconciler uses reflection to call the
+typed `ShouldUpdate(TProps?, TProps?)` through the untyped `Component` reference.
+This is a one-time cost per component type (reflection calls are not cached), but
+it runs on every parent re-render for every child component. For deep trees with
+many components, this reflection overhead could add up.
+
+### What shipped: Generic hook state (no boxing)
+
+```csharp
+// Before: HookState.Value was object — boxing for every int, bool, double
+private class HookState { public object Value = default!; }
+
+// After: ValueHookState<T> — no boxing, no allocation for value types
+private class ValueHookState<T> : HookState { public T Value; }
+```
+
+`UseState<int>`, `UseReducer<bool>`, `UseMemo<double>` — none of these box
+anymore. The generic `ValueHookState<T>` stores the value directly. The equality
+check uses `EqualityComparer<T>.Default` instead of `object.Equals`, avoiding
+both boxing for comparison and the allocation of intermediate `object` references.
+
+This also means hook type mismatches (calling `UseState<int>` on one render and
+`UseState<string>` on the next) produce clearer error messages — the exception
+says exactly which generic types conflicted.
+
+### What shipped: Persisted state
+
+```csharp
+var (scrollPos, setScrollPos) = UsePersisted("inbox-scroll", 0.0);
+```
+
+`UsePersisted<T>(key, initialValue)` works like `UseState<T>` but survives
+unmount/remount. Values are stored in `PersistedStateCache` — a static
+`Dictionary<string, object?>` — and saved to cache in `RunCleanups()` (on
+unmount). On next mount, the cached value is used instead of `initialValue`.
+
+### What shipped: Post-render effect cleanup
+
+Previously, effect cleanup ran synchronously during `UseEffect()` — inside the
+render phase. Now, cleanup is deferred: `UseEffect` sets `PendingCleanup` (the
+old cleanup function) and `FlushEffects()` runs all pending cleanups *before*
+running new effects, in a two-phase approach:
+
+```
+Phase 1: Run all PendingCleanup actions (from previous render)
+Phase 2: Run all new pending effects
+```
+
+This matches React's behavior: cleanup from the previous render runs after the
+new render completes, not during it. Expensive cleanup (network cancellation,
+timer disposal) no longer blocks the render.
+
+### What's actually good about this (credit where due)
+
+The context system is well-designed. The `DuctContext<T>` type is simple — a
+static field with a default value and a debug name (via `[CallerMemberName]`).
+The provide mechanism uses the existing element `with` pattern via
+`ContextExtensions.Provide()`, so it composes naturally with other modifiers.
+The `ContextScope` stack is lightweight — a `List<(DuctContextBase, object?)>`
+with version tracking. The consumer hook follows the existing hook pattern
+exactly. This is the right API shape — it mirrors React Context closely enough
+that the mental model transfers, while using Duct's fluent modifier convention
+for providing.
+
+The memoization default is the right call. Making propless components skip
+re-renders by default (unless self-triggered or context-changed) is aggressive
+but correct — it matches Compose's behavior where stable parameters cause
+automatic skipping. Record-based props getting structural equality for free via
+`Equals` is a clever use of C# language features that React and Compose can't
+match (they need explicit `React.memo()` comparators or `@Stable` annotations).
+
+The test coverage is thorough: 24 context unit tests, 12 context self-host tests,
+19 memoization tests, 18 hook refactor tests, 17 persisted state tests, 15
+integration tests exercising realistic multi-hook component patterns. The self-
+host test pattern (manually driving BeginRender → Render → FlushEffects through
+a ContextScope without WinUI controls) is a good strategy for testing framework
+internals without platform dependencies.
+
+### What's still concerning (skeptic's view)
+
+**1. Context values are boxed in the scope stack.** `ContextScope` stores
+`List<(DuctContextBase, object?)>` — the value is `object?`. A
+`DuctContext<int>` provided with value `42` boxes that int. Every `UseContext<T>`
+read casts back from `object?`. The hook state itself is now unboxed
+(`ValueHookState<T>`), but the context delivery mechanism reintroduces boxing
+for value types. For `DuctContext<string>` or `DuctContext<ThemeConfig>` (the
+common cases), this doesn't matter. But the inconsistency is notable — hooks
+went to the effort of eliminating boxing while the context system didn't.
+
+**2. ShouldUpdateWithProps uses reflection on every memo check.** The reconciler
+calls `ShouldUpdateWithProps` which does `compType.GetMethod("ShouldUpdate", ...)`
+via reflection to find the typed `ShouldUpdate(TProps?, TProps?)` method. This
+runs every time a parent re-renders and the child is a `Component<TProps>`. There's
+no caching of the `MethodInfo` — each check does a fresh reflection lookup. For
+a tree with 50 components and a root state change, that's 50 reflection calls per
+render cycle. React's `React.memo()` stores the comparator as a direct function
+reference. Compose's stability check is compile-time. Duct's is a runtime
+reflection walk.
+
+**3. PersistedStateCache is a static Dictionary with no eviction.** The cache
+grows unboundedly — every `UsePersisted` key stays in memory for the process
+lifetime. There's no LRU eviction, no size limit, no TTL. For a long-running
+desktop app where users navigate through many views, the cache accumulates stale
+state from components that will never remount. SwiftUI's `@SceneStorage`
+serializes to disk with OS-managed lifecycle. Compose's `rememberSaveable` ties
+to the `SaveableStateRegistry` which is scoped to the composition. Duct's cache
+is a global singleton that only clears on process exit.
+
+**4. PersistedStateCache keys are stringly-typed with no collision protection.**
+`UsePersisted("scroll-pos", 0.0)` uses a bare string key. Two unrelated
+components that happen to use the same key silently share state — a bug with no
+diagnostic. The cache stores `object?`, so a type mismatch (one component persists
+`int`, another reads `string` with the same key) produces a runtime
+`InvalidCastException` on the next mount. There's no namespacing, no type
+validation, no collision warning.
+
+**5. No Suspense or lazy loading.** Still missing. React's `Suspense` +
+`React.lazy()` for code-split components has no equivalent. SwiftUI and Compose
+also lack this, so Duct is not uniquely deficient — but React has had it since
+2018.
+
+**6. Component props are still untyped at the element level.** `ComponentElement`
+stores props as `object?`. Props are set via `IPropsReceiver.SetProps(object props)`
+with a cast. The generic `Component<T, TProps>(props)` factory hides this, but the
+underlying infrastructure is type-erased. A wrong props type produces a runtime
+`InvalidCastException`, not a compile error.
+
+**7. No slots/named children convention.** The design spec mentions documenting
+a convention for named children using Element-typed props, with `Lazy<Element>`
+as future work. This hasn't materialized. Multi-slot composition (header + body +
+footer) requires ad-hoc props types. SwiftUI has `@ViewBuilder` parameters for
+multiple content slots. Compose has multiple `@Composable` lambda parameters.
+Duct has no convention, pattern, or framework support.
+
+**8. FuncElement identity is still problematic.** `Func(ctx => ...)` creates a
+`FuncElement` with a lambda. The lambda is recreated every render (it captures
+outer state), so the function reference changes every time. `ShallowEquals` still
+returns false for FuncElements, forcing an update. The new `Memo(ctx => ..., deps)`
+provides a workaround — but `Func` remains the first thing developers reach for,
+and it can't memo-skip.
+
+**9. Context change detection compares boxed values with Equals.** The
+`HasConsumedContextChanged` method compares `Equals(currentValue, ctxHook.LastValue)`
+where both values are `object?`. For reference types that don't override `Equals`,
+this is reference equality — meaning a new `ThemeConfig` record with the same
+values still triggers re-renders unless the record type properly implements
+`Equals`. C# records do implement value equality by default, so this works for
+the common case. But a class-based context value type silently breaks the memo
+optimization — every provide creates a new object, which is always "different"
+by reference, defeating the point of memoization.
+
+### Revised component model verdict
+
+**Previously: Component Model C, Global State F, Local State B+.**
+**Now: Component Model B+, Global State B+, Local State A-.**
+
+The improvement is substantial and addresses the most critical gaps
+identified in the previous review. The context system provides a real answer
+to "how do I share state across the tree" — theming, auth, feature flags, and
+localization all have a clean mechanism now. Default-on memoization means
+components skip unnecessary re-renders without developer opt-in. Generic hook
+state eliminates boxing. Post-render effect cleanup matches React's behavior.
+Persisted state handles the unmount/remount scenario.
+
+The grade is B+/B+ rather than A because of implementation concerns: reflection
+for ShouldUpdate dispatch, boxing in the context scope stack, unbounded persisted
+state cache, string-keyed persistence with no collision protection. These are
+solvable problems — caching MethodInfo, using a generic scope entry, adding LRU
+eviction — but they're real costs in the current implementation. The competition
+doesn't have these particular issues: React's memo comparator is a direct
+function reference, Compose's stability is compile-time, SwiftUI's environment
+is type-safe throughout.
+
+Local State moves to A- because the boxing is gone, effect cleanup timing is
+correct, and persisted state exists. The remaining gap is the `object[]`
+dependency array for `UseEffect`/`UseMemo` — dependencies are still boxed into
+`object[]` and compared with `Equals`, which is the same issue React has (but
+React has ESLint rules to catch common mistakes, and Duct has no tooling).
 
 ---
 
@@ -267,50 +469,60 @@ return false, forcing an update).
 
 ### What Duct has
 
-- `UseState<T>` — React's useState equivalent
+- `UseState<T>` — React's useState equivalent, **now generic (no boxing)**
 - `UseReducer<T>` — functional updater variant
 - `UseReducer<TState, TAction>` — Redux-style reducer
-- `UseEffect` — side effects with dependency tracking
+- `UseEffect` — side effects with dependency tracking, **cleanup now post-render**
 - `UseMemo<T>` — memoized computation
 - `UseCallback` — stable callback reference
 - `UseRef<T>` — mutable reference
 - `UseObservable<T>` — INotifyPropertyChanged bridge
+- `UseObservableTree<T>` — deep INotifyPropertyChanged bridge (recursive)
+- `UseObservableProperty<T>` — single-property INotifyPropertyChanged bridge
 - `UseCollection<T>` — ObservableCollection bridge
+- `UseContext<T>` — **NEW** — reads nearest ancestor's context value
+- `UsePersisted<T>` — **NEW** — state that survives unmount/remount
 - `UseWindowSize` / `UseBreakpoint` — responsive hooks
 
-### Critiques
+### What's improved
 
-**1. Hook state is `object`-typed internally.** `HookState.Value` is `object`.
-Every value type (int, bool, double) is boxed on every render. React hooks in
-JavaScript don't have this problem (no boxing). SwiftUI's @State uses generics
-throughout. Compose's `MutableState<T>` is generic. Duct pays a boxing penalty
-for every piece of primitive state, on every render.
+**1. Hook state is now generic — no boxing.** Previously `HookState.Value` was
+`object`, boxing every int/bool/double. Now `ValueHookState<T>` stores the value
+directly. `EqualityComparer<T>.Default` handles comparison without boxing. This
+is a clean fix for a real performance problem.
 
-```csharp
-private class HookState
-{
-    public object Value = default!;  // Boxing for value types
-}
-```
+**2. Effect cleanup timing is now correct.** Previously, cleanup ran synchronously
+during `UseEffect()` — inside the render phase. Now, `UseEffect` stores the old
+cleanup as `PendingCleanup`, and `FlushEffects()` runs all pending cleanups in
+Phase 1 before running new effects in Phase 2. This matches React's behavior:
+cleanup from the previous render runs after the new render completes, not during
+it. The fix is clean and the two-phase approach in FlushEffects is easy to reason
+about.
 
-**2. Dependency comparison uses `object.Equals`.** `UseEffect`, `UseMemo`, and
-other dependency-tracking hooks compare deps with `Equals(prev[i], next[i])`.
-This means:
+**3. State persistence exists.** `UsePersisted<T>(key, initialValue)` stores
+values in a static `PersistedStateCache` that survives unmount/remount. Values
+are saved to cache during `RunCleanups()` (on unmount) and restored on next
+mount. This closes the gap where navigating away and back lost all state.
+
+**4. Global state exists via DuctContext.** Covered in detail in Section 2. The
+`UseContext<T>` hook reads tree-scoped ambient state provided by any ancestor.
+The old "no global state at all" critique is resolved.
+
+### Remaining critiques
+
+**1. Dependency comparison still uses `object.Equals` on `object[]`.** `UseEffect`,
+`UseMemo`, and other dependency-tracking hooks compare deps with
+`Equals(prev[i], next[i])` where deps are `params object[]`. This means:
 - Value types are boxed into the `object[]` dependency array (allocation)
 - Reference types use reference equality by default unless they override Equals
-- Collections as dependencies will compare by reference, not by content
+- Collections as dependencies compare by reference, not by content
 - No warning or guidance about what makes a good dependency
 
-React has the same issue (shallow comparison) but has ESLint rules that catch
-common mistakes. Duct has no tooling support.
+The hook state itself is now unboxed, but the dependency arrays still box. React
+has the same issue (shallow comparison) but has ESLint rules that catch common
+mistakes. Duct has no tooling support.
 
-**3. No state persistence across component unmount/remount.** SwiftUI has
-`@SceneStorage`. Compose has `rememberSaveable`. React has various persistence
-solutions. In Duct, if a component is unmounted and remounted (e.g., navigating
-away and back), all state is lost. For a desktop app framework where window
-restoration is expected, this is a significant gap.
-
-**4. UseCallback is just UseMemo returning the same Action.** The implementation
+**2. UseCallback is just UseMemo returning the same Action.** The implementation
 is literally:
 
 ```csharp
@@ -325,44 +537,19 @@ useCallback does. The `() => callback` lambda captures `callback`, so if
 `callback` is a new closure each render (which it always is), the memoized
 value is the closure captured at first render — meaning it has stale captures
 unless the deps change. This is correct behavior but the documentation doesn't
-explain this nuance, and the implementation is subtly different from React's
-behavior.
+explain this nuance.
 
-**5. Effect cleanup timing is synchronous and during render.** Effects run
-their cleanup during `UseEffect` (the hook call itself, during render), not
-during `FlushEffects`. This means cleanup runs synchronously as part of the
-render phase. React runs cleanups asynchronously after render. This could cause
-issues with effects that have expensive cleanup (network cancellation, timer
-disposal) blocking the render.
-
-Looking at the code:
-```csharp
-if (hook.Dependencies is null || !DepsEqual(hook.Dependencies, dependencies))
-{
-    hook.Cleanup?.Invoke();  // Cleanup runs HERE, during render
-    hook.Dependencies = dependencies.ToArray();
-    hook.Effect = effect;
-    hook.Pending = true;
-}
-```
-
-**6. No batching control or transition API.** React 18 has `startTransition`
+**3. No batching control or transition API.** React 18 has `startTransition`
 for marking non-urgent updates. Duct batches via DispatcherQueue, which is
 all-or-nothing. There's no way to say "this state update is low priority" or
 "this update should not show a loading state."
 
-**7. No global state at all.** This bears repeating because it's so important.
-Every real app needs to share state across the component tree: user session,
-theme preference, feature flags, router state. Duct provides zero mechanism for
-this. The workarounds are:
-
-- Thread props through every intermediate component (prop drilling — exactly what
-  Context was invented to solve)
-- Use static/singleton state (breaks component isolation, no re-render on change)
-- Use `UseObservable` with a shared view model (requires explicit wiring, no
-  tree scoping)
-
-None of these are acceptable for a production framework.
+**4. PersistedStateCache limitations.** Covered in Section 2 — unbounded growth,
+string keys with no collision protection, no disk persistence. For a desktop
+framework where window/session restoration is expected, in-memory-only persistence
+is a partial answer. SwiftUI's `@SceneStorage` and Compose's `rememberSaveable`
+both tie into the platform's state restoration lifecycle. Duct's cache is process-
+scoped only.
 
 ---
 
@@ -371,9 +558,17 @@ None of these are acceptable for a production framework.
 ### Architecture
 
 The reconciler follows React's model: diff old and new element trees, apply
-minimal patches. It's split across `Reconciler.cs` (orchestration),
-`Reconciler.Mount.cs` (~40 mount handlers), `Reconciler.Update.cs` (~30 update
-handlers), and `ChildReconciler.cs` (keyed/unkeyed lists).
+minimal patches. It's split across `Reconciler.cs` (orchestration + component
+lifecycle + memo checks + context scope), `Reconciler.Mount.cs` (~40 mount
+handlers), `Reconciler.Update.cs` (~30 update handlers), and `ChildReconciler.cs`
+(keyed/unkeyed lists).
+
+The reconciler now owns the `ContextScope` and drives context push/pop during
+tree traversal — elements with `ContextValues` push on mount/update entry and
+pop on exit. Components receive the scope via `BeginRender(requestRerender,
+contextScope)` so their `UseContext` hooks read from the correct scope position.
+The component update path includes a memo check that combines props comparison
+(`ShouldUpdate`) with context change detection (`HasConsumedContextChanged`).
 
 ### Critiques
 
@@ -1497,9 +1692,9 @@ SwiftUI, Compose).
 
 | Feature Area | Duct | React | SwiftUI | Compose | Notes |
 |---|---|---|---|---|---|
-| **Component Model** | C | A | A | A | No global state, no slots, no memo |
-| **Local State** | B+ | A | A | A | Hooks work, boxing overhead |
-| **Global State** | F | A | A | A | Nothing — no Context equivalent |
+| **Component Model** | B+ | A | A | A | Context, memoization, generic hooks; reflection in memo check, no slots |
+| **Local State** | A- | A | A | A | Generic hooks, post-render cleanup, persisted state; dep arrays still box |
+| **Global State** | B+ | A | A | A | DuctContext + UseContext + .Provide(); boxing in scope stack, no selector |
 | **Reconciler** | B- | A | A- | A | Works but monolithic, no concurrent mode |
 | **Layout** | B+ | B+ | A | A | Flex is good; Grid is stringly-typed |
 | **Theming** | C+ | B+ | A | A | ThemeRef works; XamlReader.Load perf concern; 3 props only; no custom resources |
@@ -1513,7 +1708,7 @@ SwiftUI, Compose).
 | **Developer Experience** | C+ | A | B+ | B+ | Hot reload works; preview is screenshot-only; no devtools |
 | **Control Coverage** | A | N/A | A | A | 94% of WinUI wrapped |
 | **Error Handling** | B | B+ | D | D | ErrorBoundary exists (rare feature) |
-| **Localization** | B+ | B | B | B | ICU-based, full system |
+| **Localization** | B+ | B | B | B | ICU-based, full system, now using DuctContext |
 | **Responsive Layout** | B | B+ | A | A | Hooks work but force full re-render |
 
 ---
@@ -1536,43 +1731,72 @@ But they also reveal the pain:
   in dark mode — the ThemeRef system helps but only if developers use it
 - **The D3 Gallery Color Page** demonstrates theming well, with a light/dark
   toggle — this is the one sample that showcases the new capability
+- **None of the samples** use the new context system, memoization, or persisted
+  state — the component model improvements are validated by tests but not by the
+  showcase apps
 - **None of the other samples** demonstrate the new accessibility modifiers or
   the new animation capabilities beyond basic implicit transitions
 
-These are showcase apps for the framework, and they can't demonstrate
-navigation because the framework doesn't support it. Theming, accessibility,
-and animation now have real implementations, but the showcase apps haven't been
-updated to dogfood them broadly — which undermines confidence in the features.
+The showcase apps are the framework's best foot forward, and they haven't been
+updated to use the new component model features. The Outlook clone could use
+`DuctContext` for user session and theme preference instead of prop drilling.
+The file manager could use `UsePersisted` for scroll position and expanded
+tree nodes. The word puzzle game could use `Memo` to skip re-rendering the
+keyboard when only the board changes. These are exactly the scenarios the new
+features are designed for — demonstrating them in the showcase apps would
+significantly increase confidence in the component model.
 
 ### What Duct gets right
 
-1. **Control coverage is impressive.** 94% of WinUI controls wrapped with
+1. **The component model foundation is now solid.** Context, memoization, generic
+   hooks, persisted state, post-render effect cleanup — these are the core
+   mechanics that every declarative UI framework needs, and they're now
+   implemented with correct semantics. The context system is well-designed (tree-
+   scoped, shadow-capable, automatic re-render on change). Default-on memoization
+   leverages C# records for zero-effort structural comparison. The test coverage
+   (105+ tests across 6 new test files) validates realistic component patterns.
+
+2. **Control coverage is impressive.** 94% of WinUI controls wrapped with
    clean factory APIs. This is a huge amount of tedious work done well.
 
-2. **The hooks system is faithful to React.** UseState, UseReducer, UseEffect,
-   UseMemo, UseRef — all work as expected. The React mental model transfers
-   cleanly.
+3. **The hooks system is faithful to React and now correctly implemented.**
+   UseState, UseReducer, UseEffect, UseMemo, UseRef, UseContext, UsePersisted
+   — all work as expected. Generic hook state eliminates boxing. Effect cleanup
+   runs post-render. The React mental model transfers cleanly.
 
-3. **ErrorBoundary exists.** Neither SwiftUI nor Compose has this. Duct's error
+4. **ErrorBoundary exists.** Neither SwiftUI nor Compose has this. Duct's error
    boundary is a genuine differentiator for resilient UIs.
 
-4. **FlexPanel is ambitious and useful.** A full Flexbox implementation on WinUI
+5. **FlexPanel is ambitious and useful.** A full Flexbox implementation on WinUI
    provides layout capabilities that WinUI itself doesn't have.
 
-5. **Type safety over XAML.** No more binding errors, DataContext confusion, or
+6. **Type safety over XAML.** No more binding errors, DataContext confusion, or
    resource-not-found runtime failures. The C# compiler catches real mistakes.
 
-6. **Observable interop.** UseObservable and UseCollection bridge cleanly to
-   MVVM, which is essential for incremental adoption.
+7. **Observable interop.** UseObservable, UseObservableTree, UseObservableProperty,
+   and UseCollection bridge cleanly to MVVM, which is essential for incremental
+   adoption. UseObservableTree provides deep recursive subscription that goes
+   beyond what React offers out of the box.
 
-7. **Hot reload and preview tooling.** The `MetadataUpdateHandler` integration
+8. **Hot reload and preview tooling.** The `MetadataUpdateHandler` integration
    preserves hook state across code edits, `--preview` isolates components, and
    the VS Code extension with HTTP frame streaming is a thoughtful developer
    experience investment. This is more than most new frameworks ship with.
 
+9. **The localization system validates the framework's own abstractions.** The
+   migration of LocaleProvider from a hand-rolled hack to `DuctContext<IntlAccessor?>`
+   proves the context system works for real use cases. When a framework's own
+   features are built on its own primitives, that's a sign of good architecture.
+
 ### What prevents Duct from being production-ready
 
-1. **Theming works for built-in tokens but has gaps.** The ThemeRef system
+1. **No navigation system.** The core scenario of multi-page apps with back
+   stack is blocked. Building your own router is not acceptable for a framework.
+   This is now the single biggest gap — and with the context system in place,
+   a navigation system could plausibly be built on top of DuctContext for router
+   state. The foundation is there; the feature isn't.
+
+2. **Theming works for built-in tokens but has gaps.** The ThemeRef system
    closes the P0 blocker — `Theme.Accent`, `Theme.PrimaryText`, etc. resolve
    correctly across Light/Dark/HighContrast. But the implementation uses
    XamlReader.Load per element per render (perf concern), only covers 3 brush
@@ -1580,25 +1804,24 @@ updated to dogfood them broadly — which undermines confidence in the features.
    offers no guardrails against hard-coded colors that silently break theming.
    It's functional, not polished.
 
-2. **No navigation system.** The core scenario of multi-page apps with back
-   stack is blocked. Building your own router is not acceptable for a framework.
-
-3. **No global state.** Without Context/EnvironmentObject/CompositionLocal, Duct
-   can't handle cross-cutting concerns that every real app has.
-
-4. **Accessibility has a solid annotation layer but no semantic, imperative,
+3. **Accessibility has a solid annotation layer but no semantic, imperative,
    or diagnostic layers.** 16 modifiers and 12 UIA tests cover WCAG A
    annotations, but custom automation peers are blocked, accessibility hooks
    are unbuilt, and there's no diagnostics or linting.
 
-5. **Animation covers layout motion but not general-purpose state animation.**
+4. **Animation covers layout motion but not general-purpose state animation.**
    Layout animations with springs and connected animations are real capabilities,
    but value-driven animation, enter/exit for individual elements, keyframes,
    and easing control are all missing. The 5-property implicit transition limit
    is a WinUI platform constraint that the framework hasn't worked around.
 
-6. **.Set() carries too much weight.** When the escape hatch is required for the
+5. **.Set() carries too much weight.** When the escape hatch is required for the
    majority of platform features, the abstraction isn't thick enough.
+
+6. **Component model implementation has performance concerns.** Reflection-based
+   `ShouldUpdateWithProps`, boxing in context scope, unbounded persisted state
+   cache — the designs are right but the implementations have costs that will
+   show up in large apps. These are all fixable, but they need to be fixed.
 
 ### The fundamental question
 
@@ -1612,20 +1835,28 @@ A wrapper provides a different syntax for the same platform with a thinner API.
 You still need to understand the underlying platform, and you reach through the
 wrapper constantly via escape hatches.
 
-Duct is currently closer to a wrapper. The reconciler and hooks system are
-genuine framework-level abstractions. Theming, accessibility, and animation
-have all moved from "just use .Set()" to "real modifier systems with reconciler
-integration" — a meaningful shift that shows the framework is growing. But
-navigation, global state, and a large fraction of input handling are still
-"just use WinUI through .Set()." That's not a framework — it's a different way
-to call the same APIs, with fewer capabilities.
+Duct has moved meaningfully toward "framework" with this diff. The component
+model — context, memoization, generic hooks, persisted state, effect lifecycle
+— is now a real framework foundation, not just a thin veneer over WinUI. A
+developer building a Duct app can now think in Duct's model for state management,
+cross-cutting concerns, and component composition. The reconciler, hooks system,
+and now the context system are genuine framework-level abstractions.
 
-To become a production framework, Duct needs to either:
-1. Build real abstractions for navigation and global state, and finish the
-   accessibility, animation, and theming stories (substantial effort), or
-2. Accept that it's a thin wrapper and optimize for that (embrace .Set(), provide
-   better escape hatches, focus on the reconciler as the value-add)
+But navigation and a large fraction of input handling are still "just use WinUI
+through .Set()." Theming, accessibility, and animation have all moved from "just
+use .Set()" to "real modifier systems with reconciler integration," but they each
+have significant scope limitations. The framework is growing outward from a
+now-solid core, but the outer layers are still incomplete.
 
-The current position — claiming to be a declarative framework while requiring
-imperative escape hatches for most real-world scenarios — is the worst of both
-worlds.
+To become production-ready, Duct needs to:
+1. Build a navigation system (the context infrastructure now makes this feasible)
+2. Finish the theming story (style caching, custom resources, more properties)
+3. Continue expanding the accessibility and animation surfaces
+4. Address the performance concerns in the component model (cache reflection,
+   eliminate context boxing)
+
+The trajectory is right. The foundation was the hardest and most important part,
+and it's now in place. The remaining work is substantial but incremental — each
+feature area needs to be deepened, not rethought from scratch. That's a
+meaningfully different position than "claiming to be a declarative framework
+while requiring imperative escape hatches for most real-world scenarios."
