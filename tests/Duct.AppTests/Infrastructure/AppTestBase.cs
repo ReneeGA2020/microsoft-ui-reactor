@@ -21,15 +21,32 @@ public class AppTestBase
     // No TestInitialize/TestCleanup — NavigateToFixture handles fixture switching.
     // Resetting between every test wastes ~5s on the implicit wait timeout.
 
+    private static string? _currentFixture;
+
     /// <summary>
     /// Navigates to a named test fixture by clicking its nav element and waiting
-    /// for the fixture status to indicate it has loaded.
+    /// for the fixture status to indicate it has loaded. Skips if already on
+    /// the requested fixture (safe for read-only tests like accessibility checks).
     /// </summary>
     protected void NavigateToFixture(string name)
     {
+        if (_currentFixture == name)
+            return;
+
         var navElement = Session.FindElement(MobileBy.AccessibilityId($"Nav_{name}"));
         navElement.Click();
         WaitForText("FixtureStatus", $"Loaded: {name}");
+        _currentFixture = name;
+    }
+
+    /// <summary>
+    /// Forces re-navigation to the fixture even if it's the current one.
+    /// Use when the test modifies fixture state and needs a fresh start.
+    /// </summary>
+    protected void NavigateToFixtureFresh(string name)
+    {
+        _currentFixture = null;
+        NavigateToFixture(name);
     }
 
     /// <summary>
@@ -73,7 +90,7 @@ public class AppTestBase
         var wait = new DefaultWait<WindowsDriver<WindowsElement>>(Session)
         {
             Timeout = TimeSpan.FromMilliseconds(timeoutMs),
-            PollingInterval = TimeSpan.FromMilliseconds(200),
+            PollingInterval = TimeSpan.FromMilliseconds(100),
         };
         wait.IgnoreExceptionTypes(typeof(WebDriverException));
 
@@ -88,7 +105,7 @@ public class AppTestBase
         var wait = new DefaultWait<WindowsDriver<WindowsElement>>(Session)
         {
             Timeout = TimeSpan.FromMilliseconds(timeoutMs),
-            PollingInterval = TimeSpan.FromMilliseconds(200),
+            PollingInterval = TimeSpan.FromMilliseconds(100),
         };
         wait.IgnoreExceptionTypes(typeof(WebDriverException));
 
@@ -97,6 +114,29 @@ public class AppTestBase
             var element = driver.FindElement(MobileBy.AccessibilityId(automationId));
             return element.Text == expectedText ? element : null;
         });
+    }
+
+    /// <summary>
+    /// Waits until the element's text contains the expected substring.
+    /// Returns the element text for use in assertion messages.
+    /// </summary>
+    protected string WaitForTextContaining(string automationId, string substring, int timeoutMs = 5000)
+    {
+        var wait = new DefaultWait<WindowsDriver<WindowsElement>>(Session)
+        {
+            Timeout = TimeSpan.FromMilliseconds(timeoutMs),
+            PollingInterval = TimeSpan.FromMilliseconds(100),
+        };
+        wait.IgnoreExceptionTypes(typeof(WebDriverException));
+
+        string lastText = "";
+        wait.Until(driver =>
+        {
+            var element = driver.FindElement(MobileBy.AccessibilityId(automationId));
+            lastText = element.Text ?? "";
+            return lastText.Contains(substring) ? element : null;
+        });
+        return lastText;
     }
 
     /// <summary>
@@ -154,18 +194,18 @@ public class AppTestBase
     }
 
     /// <summary>
-    /// Clicks a button by Name first, falling back to AccessibilityId.
+    /// Clicks a button by AccessibilityId first, falling back to Name.
     /// </summary>
     protected void ClickButton(string nameOrId)
     {
         try
         {
-            var element = Session.FindElement(MobileBy.Name(nameOrId));
+            var element = Session.FindElement(MobileBy.AccessibilityId(nameOrId));
             element.Click();
         }
         catch (WebDriverException)
         {
-            var element = Session.FindElement(MobileBy.AccessibilityId(nameOrId));
+            var element = Session.FindElement(MobileBy.Name(nameOrId));
             element.Click();
         }
     }

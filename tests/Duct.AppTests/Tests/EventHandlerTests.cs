@@ -34,25 +34,13 @@ public class EventHandlerTests : AppTestBase
     {
         NavigateToFixture("EventHandler_Tapped");
 
-        // Initial state
-        var display = WaitForElement("TapCount");
-        Assert.IsTrue(display.Text.Contains("0"), $"Expected initial tap count 0, got: {display.Text}");
+        WaitForText("TapCount", "Tap count: 0");
 
-        // Tap the button
-        var target = FindById("TapBtn");
-        target.Click();
-        Thread.Sleep(300);
+        FindById("TapBtn").Click();
+        WaitForText("TapCount", "Tap count: 1");
 
-        display = FindById("TapCount");
-        Assert.IsTrue(display.Text.Contains("1"), $"Expected tap count 1, got: {display.Text}");
-
-        // Tap again
-        target = FindById("TapBtn");
-        target.Click();
-        Thread.Sleep(300);
-
-        display = FindById("TapCount");
-        Assert.IsTrue(display.Text.Contains("2"), $"Expected tap count 2, got: {display.Text}");
+        FindById("TapBtn").Click();
+        WaitForText("TapCount", "Tap count: 2");
     }
 
     /// <summary>
@@ -64,25 +52,16 @@ public class EventHandlerTests : AppTestBase
     {
         NavigateToFixture("EventHandler_SizeChanged");
 
-        // Wait for initial size to be reported
-        Thread.Sleep(500);
-        var display = WaitForElement("SizeDisplay");
-        // Initial width is 200
-        Assert.IsTrue(display.Text.Contains("200"), $"Expected initial width 200, got: {display.Text}");
+        // Wait for initial size to be reported (format: "Size: 200xNNN")
+        WaitForTextContaining("SizeDisplay", "200x");
 
         // Expand to 400
         ClickButton("SizeToggleBtn");
-        Thread.Sleep(500);
-
-        display = FindById("SizeDisplay");
-        Assert.IsTrue(display.Text.Contains("400"), $"Expected expanded width 400, got: {display.Text}");
+        WaitForTextContaining("SizeDisplay", "400x");
 
         // Shrink back to 200
         ClickButton("SizeToggleBtn");
-        Thread.Sleep(500);
-
-        display = FindById("SizeDisplay");
-        Assert.IsTrue(display.Text.Contains("200"), $"Expected shrunk width 200, got: {display.Text}");
+        WaitForTextContaining("SizeDisplay", "200x");
     }
 
     /// <summary>
@@ -96,16 +75,10 @@ public class EventHandlerTests : AppTestBase
     {
         NavigateToFixture("EventHandler_PointerPressed");
 
-        var display = WaitForElement("PressCount");
-        Assert.IsTrue(display.Text.Contains("0"), $"Expected initial press count 0, got: {display.Text}");
+        WaitForText("PressCount", "Press count: 0");
 
-        // Press the button
-        var target = FindById("PointerBtn");
-        target.Click();
-        Thread.Sleep(300);
-
-        display = FindById("PressCount");
-        Assert.IsTrue(display.Text.Contains("1"), $"Expected press count 1, got: {display.Text}");
+        FindById("PointerBtn").Click();
+        WaitForText("PressCount", "Press count: 1");
     }
 
     /// <summary>
@@ -117,18 +90,13 @@ public class EventHandlerTests : AppTestBase
     {
         NavigateToFixture("EventHandler_KeyDown");
 
-        var display = WaitForElement("KeyDisplay");
-        Assert.IsTrue(display.Text.Contains("none"), $"Expected initial 'none', got: {display.Text}");
+        WaitForText("KeyDisplay", "Last key: none");
 
         // Click the text field to focus it, then type a key
         var target = FindById("KeyInput");
         target.Click();
-        Thread.Sleep(200);
         target.SendKeys("a");
-        Thread.Sleep(300);
-
-        display = FindById("KeyDisplay");
-        Assert.IsTrue(display.Text.Contains("A"), $"Expected key 'A', got: {display.Text}");
+        WaitForText("KeyDisplay", "Last key: A");
     }
 
     /// <summary>
@@ -140,23 +108,16 @@ public class EventHandlerTests : AppTestBase
         NavigateToFixture("EventHandler_UseReducer");
 
         // Initial state: 1 item
-        var countDisplay = WaitForElement("TodoCount");
-        Assert.IsTrue(countDisplay.Text.Contains("1"), $"Expected initial count 1, got: {countDisplay.Text}");
+        WaitForText("TodoCount", "Count: 1");
 
         // Add items
         ClickButton("AddBtn");
-        Thread.Sleep(300);
+        WaitForText("TodoCount", "Count: 2");
         ClickButton("AddBtn");
-        Thread.Sleep(300);
-
-        countDisplay = FindById("TodoCount");
-        Assert.IsTrue(countDisplay.Text.Contains("3"), $"Expected count 3, got: {countDisplay.Text}");
+        WaitForText("TodoCount", "Count: 3");
 
         // Clear all
         ClickButton("ClearBtn");
-        Thread.Sleep(300);
-
-        countDisplay = FindById("TodoCount");
-        Assert.IsTrue(countDisplay.Text.Contains("0"), $"Expected count 0 after clear, got: {countDisplay.Text}");
+        WaitForText("TodoCount", "Count: 0");
     }
 }

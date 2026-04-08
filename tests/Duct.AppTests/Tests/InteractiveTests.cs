@@ -34,33 +34,19 @@ public class InteractiveTests : AppTestBase
     {
         NavigateToFixture("Demo_Counter");
 
-        // Initial state
-        var display = WaitForElement("CountDisplay");
-        Assert.IsTrue(display.Text.Contains("0"), $"Expected initial count 0, got: {display.Text}");
+        WaitForText("CountDisplay", "Current count: 0");
 
-        // Increment
         ClickButton("IncrementBtn");
-        Thread.Sleep(300);
-        display = FindById("CountDisplay");
-        Assert.IsTrue(display.Text.Contains("1"), $"Expected count 1 after increment, got: {display.Text}");
+        WaitForText("CountDisplay", "Current count: 1");
 
-        // Increment again
         ClickButton("IncrementBtn");
-        Thread.Sleep(300);
-        display = FindById("CountDisplay");
-        Assert.IsTrue(display.Text.Contains("2"), $"Expected count 2, got: {display.Text}");
+        WaitForText("CountDisplay", "Current count: 2");
 
-        // Decrement
         ClickButton("DecrementBtn");
-        Thread.Sleep(300);
-        display = FindById("CountDisplay");
-        Assert.IsTrue(display.Text.Contains("1"), $"Expected count 1 after decrement, got: {display.Text}");
+        WaitForText("CountDisplay", "Current count: 1");
 
-        // Reset
         ClickButton("ResetBtn");
-        Thread.Sleep(300);
-        display = FindById("CountDisplay");
-        Assert.IsTrue(display.Text.Contains("0"), $"Expected count 0 after reset, got: {display.Text}");
+        WaitForText("CountDisplay", "Current count: 0");
     }
 
     /// <summary>
@@ -71,14 +57,9 @@ public class InteractiveTests : AppTestBase
     {
         NavigateToFixture("Observable_UseObservable_Rerender");
 
-        // Initial state
-        var nameDisplay = WaitForElement("NameDisplay");
-        Assert.IsTrue(nameDisplay.Text.Contains("Alice"), $"Expected initial name Alice, got: {nameDisplay.Text}");
+        WaitForText("NameDisplay", "Name: Alice");
 
-        // Click mutation button
         ClickButton("ChangeNameBtn");
-        Thread.Sleep(300);
-        nameDisplay = FindById("NameDisplay");
-        Assert.IsTrue(nameDisplay.Text.Contains("Bob"), $"Expected name Bob after mutation, got: {nameDisplay.Text}");
+        WaitForText("NameDisplay", "Name: Bob");
     }
 }

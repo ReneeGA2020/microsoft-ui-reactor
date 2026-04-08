@@ -11,6 +11,9 @@ namespace Duct.AppTests.Infrastructure;
 /// Uses a two-step approach: launches the Host app as a process, then creates
 /// a WinAppDriver Desktop session and attaches to the app window. This avoids
 /// WinAppDriver's app-launch session which can fail with WinUI3 apps.
+///
+/// The session is shared across all test classes — the first ClassInitialize
+/// call starts it, and the last ClassCleanup call tears it down.
 /// </summary>
 public class TestSession
 {
@@ -18,17 +21,29 @@ public class TestSession
 
     private static WindowsDriver<WindowsElement>? _session;
     private static Process? _appProcess;
+    private static int _refCount;
 
     public static WindowsDriver<WindowsElement> Session =>
         _session ?? throw new InvalidOperationException(
-            "Test session has not been initialized. Ensure [AssemblyInitialize] has run.");
+            "Test session has not been initialized. Ensure [ClassInitialize] has run.");
 
     /// <summary>
-    /// Called by InteractiveTests.ClassInitialize to start the Appium session.
-    /// Not [AssemblyInitialize] — self-test batch doesn't need Appium.
+    /// Called by each test class's ClassInitialize. Only the first call actually
+    /// starts the session; subsequent calls increment the ref count.
     /// </summary>
     public static void AssemblyInit(TestContext context)
     {
+        _refCount++;
+
+        if (_session != null)
+        {
+            Console.WriteLine($"Session already active (ref {_refCount}), reusing.");
+            return;
+        }
+
+        // Kill any orphaned processes from a previous failed run
+        KillOrphanedProcesses();
+
         WinAppDriverHelper.Start();
 
         // Step 1: Launch the Host app as a regular process
@@ -41,8 +56,8 @@ public class TestSession
         });
         Console.WriteLine($"Host app launched (PID {_appProcess?.Id}).");
 
-        // Wait for the app to initialize
-        Thread.Sleep(3000);
+        // Poll for the app window instead of a fixed sleep
+        WaitForHostWindow();
 
         // Step 2: Create a Desktop session and find the app window
         var desktopOptions = new AppiumOptions();
@@ -63,13 +78,35 @@ public class TestSession
         appOptions.AddAdditionalCapability("deviceName", "WindowsPC");
 
         _session = new WindowsDriver<WindowsElement>(new Uri(WinAppDriverUrl), appOptions);
-        _session.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(5);
+        _session.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(2);
 
         Console.WriteLine("WindowsDriver session attached to Host app.");
     }
 
+    /// <summary>
+    /// Called by each test class's ClassCleanup. Only the last call (ref count
+    /// drops to zero) actually tears down the session and kills processes.
+    /// </summary>
     public static void AssemblyCleanup()
     {
+        _refCount--;
+
+        if (_refCount > 0)
+        {
+            Console.WriteLine($"Session still in use (ref {_refCount}), skipping cleanup.");
+            return;
+        }
+
+        ForceCleanup();
+    }
+
+    /// <summary>
+    /// Unconditionally tears down the session and kills all processes.
+    /// </summary>
+    public static void ForceCleanup()
+    {
+        _refCount = 0;
+
         if (_session != null)
         {
             try { _session.Quit(); }
@@ -96,6 +133,45 @@ public class TestSession
         }
 
         WinAppDriverHelper.Stop();
+    }
+
+    private static void KillOrphanedProcesses()
+    {
+        foreach (var proc in Process.GetProcessesByName("Duct.AppTests.Host"))
+        {
+            try
+            {
+                Console.WriteLine($"Killing orphaned Host app (PID {proc.Id}).");
+                proc.Kill();
+                proc.WaitForExit(3000);
+            }
+            catch { }
+            finally { proc.Dispose(); }
+        }
+    }
+
+    private static void WaitForHostWindow()
+    {
+        // Poll for the window to appear rather than a fixed 3s sleep.
+        // The app typically renders in ~1s; we poll up to 5s as a safety net.
+        for (int i = 0; i < 25; i++)
+        {
+            Thread.Sleep(200);
+            try
+            {
+                var opts = new AppiumOptions();
+                opts.AddAdditionalCapability("app", "Root");
+                opts.AddAdditionalCapability("deviceName", "WindowsPC");
+                using var desktop = new WindowsDriver<WindowsElement>(
+                    new Uri(WinAppDriverUrl), opts);
+                desktop.FindElementByName("Duct Test Host");
+                Console.WriteLine($"Host window found after {(i + 1) * 200}ms.");
+                return;
+            }
+            catch { }
+        }
+
+        throw new TimeoutException("Host app window did not appear within 5 seconds.");
     }
 
     private static string FindHostExe()
