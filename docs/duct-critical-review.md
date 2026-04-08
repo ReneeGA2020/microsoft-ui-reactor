@@ -23,20 +23,24 @@ frameworks:
    CompositionLocal
 4. **The DSL is constrained by C# language limitations** — verbose, repetitive,
    and leaky compared to JSX, SwiftUI's result builders, or Compose's Kotlin DSL
-5. **Accessibility is a checkbox, not a feature** — 1 out of 12 accessibility
-   properties exposed
-6. **Animation story is thin** — implicit transitions exist, but no declarative
-   animation system
+5. **Accessibility has improved significantly but still has structural limits** —
+   16 properties exposed with real UIA tests, but hooks, diagnostics, and custom
+   automation peers remain unbuilt
+6. **Animation has broadened but remains limited in scope** — layout animations,
+   springs, and connected animations now exist, but still no value-driven
+   animation, no keyframe DSL, and implicit transitions are capped at 5 properties
 7. **The `.Set()` escape hatch is load-bearing** — a huge fraction of WinUI's
    functionality is only accessible through it, making Duct a thin wrapper rather
    than an abstraction
 
 **Verdict:** Duct is an ambitious framework that maps React's component model
-onto WinUI with impressive breadth. Theming has improved from "broken" to
-"functional with caveats," and the tooling story (hot reload, preview) is
-stronger than most new frameworks. But navigation, global state, accessibility,
-and animation remain fundamental gaps that prevent production use. The distance
-from "impressive demo" to "ships to real users" is still significant.
+onto WinUI with impressive breadth. Theming, accessibility, and animation have
+all improved from "missing or broken" to "functional with caveats," and the
+tooling story (hot reload, preview) is stronger than most new frameworks. But
+navigation and global state remain fundamental gaps, and the existing feature
+areas (theming, accessibility, animation) still have significant scope
+limitations. The distance from "impressive demo" to "ships to real users" has
+narrowed meaningfully but hasn't closed.
 
 ---
 
@@ -812,115 +816,497 @@ could provide a convenience API like `ListView(items, template, emptyState)`.
 
 ## 9. Animation
 
-### What Duct has
+### The animation story: from 5 transitions to a real (if narrow) system
 
-- **Implicit transitions:** `.OpacityTransition()`, `.ScaleTransition()`,
-  `.RotationTransition()`, `.TranslationTransition()`, `.BackgroundTransition()`
-- **Theme transitions:** entrance, content, reposition, etc.
-- **Passthrough:** composition animations, storyboards, spring via `.Set()`
+The previous version of this review said Duct had "5 implicit transitions and
+nothing else" — everything beyond opacity/scale/rotation/translation/background
+required `.Set()`. That's no longer the full picture. A significant animation
+diff has landed that adds composition-layer layout animations with spring
+physics, connected animations for cross-container transitions, and proper
+reconciler lifecycle integration. The honest assessment now: **animation has
+genuine new capabilities that go beyond what most new frameworks ship with, but
+the scope is still narrow compared to the competition, and the fundamental
+"animate any value" problem remains unsolved.**
 
-### Critiques
+### What Duct has now
 
-**1. No declarative animation API.** React has Framer Motion and React Spring.
-SwiftUI has `withAnimation { }` and `.animation(.spring, value: x)`. Compose has
-`animateXAsState`, `AnimatedVisibility`, `AnimatedContent`, `Transition`. Duct has
-implicit transitions (property changes animate smoothly) and that's it.
+**Tier 1: Implicit transitions (5 properties, unchanged).**
 
-There is no way in Duct to:
-- Animate a value from A to B with a custom curve
-- Coordinate multiple property animations
-- Run a sequence of animations
-- Drive an animation from a gesture
-- Animate the appearance/disappearance of an element (enter/exit transitions)
+- `.OpacityTransition(duration?)` — ScalarTransition on UIElement.Opacity
+- `.RotationTransition(duration?)` — ScalarTransition on UIElement.Rotation
+- `.ScaleTransition(transition?)` — Vector3Transition on UIElement.Scale
+- `.TranslationTransition(transition?)` — Vector3Transition on UIElement.Translation
+- `.BackgroundTransition(duration?)` — BrushTransition on Grid/StackPanel only
 
-All of these require dropping down to WinUI's composition layer via `.Set()`.
+These are thin wrappers over WinUI's built-in implicit transition properties.
+When you change a value (e.g., `.Opacity(isVisible ? 1.0 : 0.0)`), the
+transition animates the change smoothly. They run on the composition thread —
+zero managed-code involvement.
 
-**2. No enter/exit transitions.** When an element conditionally appears or
-disappears (e.g., `isVisible ? Text("Hello") : null`), it just pops in and out.
-SwiftUI's `.transition(.slide)` and Compose's `AnimatedVisibility` solve this
-elegantly. Duct has no mechanism for animating element insertion and removal.
+**Tier 2: Theme transitions (structural enter/exit).**
 
-**3. No connected animations.** Moving an element from one position to another
-(e.g., a shared element transition between "pages") is a common pattern. WinUI
-supports this via `ConnectedAnimationService`. Duct doesn't wrap it and there's
-no cross-component coordination mechanism to support it.
+- `.WithTransitions(params Transition[])` — sets ChildrenTransitions on
+  panels/borders/content controls
+- `.ItemContainerTransitions(params Transition[])` — sets ItemContainerTransitions
+  on ListView/GridView
 
-**4. Implicit transitions are limited to 5 properties.** Opacity, rotation,
-scale, translation, and background. That's it. You can't implicitly animate
-width, height, corner radius, margin, or any other property. SwiftUI animates
-*any* state change that produces a different value. Duct's 5-property limit is a
-severe restriction.
+These use WinUI's `EntranceThemeTransition`, `AddDeleteThemeTransition`,
+`RepositionThemeTransition`, etc. directly — no shadow types. When items are
+added to or removed from a container, WinUI animates them automatically.
 
-**5. The VSM replacement is expensive.** Duct replaces WinUI's Visual State
-Manager with state + conditional rendering. The gap analysis acknowledges the
-trade-off: "VSM transitions are declarative and run on the composition thread;
-Duct's approach requires a full re-render cycle for state changes." A hover
-effect that changes background color triggers a full reconciliation cycle in
-Duct. In WinUI XAML, it's handled entirely on the composition thread with no
-managed code involved.
+**Tier 3: Layout animations (NEW — composition-layer position/size).**
+
+```csharp
+// Linear offset animation (300ms default)
+Border(child).LayoutAnimation()
+
+// Custom duration
+Border(child).LayoutAnimation(TimeSpan.FromMilliseconds(500))
+
+// Spring physics
+Border(child).SpringLayoutAnimation(dampingRatio: 0.8f, period: 0.1f)
+
+// Full config: spring + size animation
+Border(child).LayoutAnimation(new LayoutAnimationConfig
+{
+    UseSpring = true,
+    DampingRatio = 0.6f,
+    Period = 0.08f,
+    AnimateOffset = true,
+    AnimateSize = true
+})
+```
+
+This is the most substantial new capability. `LayoutAnimationConfig` is a
+declarative record that the reconciler applies via
+`ElementCompositionPreview.GetElementVisual()` — it sets up
+`ImplicitAnimationCollection` entries for "Offset" and optionally "Size" on the
+element's composition Visual. When WinUI's layout engine repositions or resizes
+the element (list reorder, grid reflow, responsive layout change), the visual
+animates smoothly from old to new position. It runs entirely on the composition
+thread with zero managed callbacks during animation.
+
+The spring option uses `CreateSpringVector3Animation()` with configurable
+damping ratio and period. The linear option uses `CreateVector3KeyFrameAnimation()`
+with `InsertExpressionKeyFrame(1.0f, "this.FinalValue")`. Both are correct
+composition patterns.
+
+**Tier 4: Connected animations (NEW — cross-container transitions).**
+
+```csharp
+// Source (before navigation/switch)
+Border(avatar).ConnectedAnimation("hero-image")
+
+// Destination (after navigation/switch — same key)
+Border(largeAvatar).ConnectedAnimation("hero-image")
+```
+
+The reconciler coordinates with `ConnectedAnimationService`:
+- **On unmount:** captures a visual snapshot via
+  `service.PrepareToAnimate(key, control)` while the element is still in the
+  visual tree
+- **On mount:** queues the animation start via `service.GetAnimation(key)`
+- **After tree attach:** `DuctHost` calls `FlushConnectedAnimations()` to
+  start all queued animations once the new tree is in the visual tree
+
+This two-phase approach handles the timing problem correctly — you can't start
+a connected animation until the destination element is laid out, and the
+reconciler can't know that during mount. The deferred flush solves it.
+
+### What's actually good about this (credit where due)
+
+The layout animation system is well-engineered. Using composition-layer implicit
+animations is the right technical approach for WinUI — it's the same mechanism
+WinUI's own XAML controls use internally for layout transitions. The spring
+physics option provides natural motion that feels native. And the
+`LayoutAnimationConfig` record is cleanly declarative — you set it once on the
+element, the reconciler wires up the composition plumbing, and layout changes
+animate automatically with no imperative code.
+
+The connected animation integration is thoughtful. The two-phase
+prepare-on-unmount / start-after-mount pattern correctly handles the lifecycle
+timing that makes connected animations tricky. Other frameworks either don't
+support this (React has no built-in equivalent) or require significant
+boilerplate (Compose's `SharedTransitionLayout`). Duct's
+`.ConnectedAnimation("key")` modifier is genuinely simple.
+
+The reconciler lifecycle ordering is correct and important: transitions are
+applied AFTER modifiers and theme bindings but the code is structured so they're
+in place before property values change. On update, layout animations are
+properly cleared when the config is removed (`ClearLayoutAnimation()`). This
+attention to lifecycle detail prevents subtle animation bugs.
+
+The `LayoutAnimationConfig` documentation is honest about limitations: "Hit-
+testing uses the final layout position, not the animated visual position" and
+"Size animation is cosmetic: content does not re-layout during the Size
+animation." Documenting known limitations is better than hiding them.
+
+### What's still concerning (skeptic's view)
+
+**1. Implicit transitions are still limited to 5 properties.** This is
+unchanged and it's the single biggest animation gap. You can't implicitly
+animate width, height, corner radius, margin, padding, font size, color (on
+non-background elements), or any other property. SwiftUI animates *any* state
+change that produces a different view body with `.animation(.spring, value: x)`.
+Compose's `animateXAsState` works for any type with a `TwoWayConverter`. Duct
+can only implicitly animate the 5 properties that WinUI exposes transition
+properties for on UIElement.
+
+This isn't a Duct design limitation — it's a WinUI platform constraint. WinUI
+only provides `OpacityTransition`, `RotationTransition`, `ScaleTransition`, and
+`TranslationTransition` on UIElement, and `BackgroundTransition` on a few
+panel types. There's no general-purpose "animate this dependency property"
+mechanism. But the result is the same: developers who want to animate anything
+outside these 5 properties must drop to the composition layer via `.Set()`.
+
+**2. No declarative value-driven animation API.** The layout animation and
+implicit transitions handle *reactive* animation (the value changes, the
+animation follows). But there's no way to declaratively say "animate this value
+from A to B with this curve over this duration":
+
+```csharp
+// None of these exist in Duct:
+var opacity = UseAnimatedValue(1.0, target: isVisible ? 1.0 : 0.0);
+var offset = UseSpring(targetX, stiffness: 200, damping: 20);
+withAnimation(.easeInOut(0.3)) { setExpanded(true); }
+```
+
+React has Framer Motion's `motion.div` with `animate` prop. SwiftUI has
+`withAnimation { }` that wraps any state change in an animation context.
+Compose has `animateAsState`, `AnimatedContent`, and `Transition`. Duct has no
+equivalent — animation is tied to specific properties with specific transition
+objects, not to arbitrary state changes.
+
+**3. No enter/exit animations for individual elements.** Theme transitions
+provide container-level enter/exit (items appearing in a list animate in). But
+conditional rendering of a single element — `isVisible ? Text("Hello") : null`
+— still pops in and out with no animation. SwiftUI's `.transition(.slide)` +
+`withAnimation` and Compose's `AnimatedVisibility` both solve this elegantly
+at the individual element level. Duct's theme transitions only work at the
+*container* level — when items are added to or removed from a panel.
+
+You can fake it with `.Opacity(isVisible ? 1 : 0).OpacityTransition()` +
+keeping the element mounted, but this means the element is always in the tree
+consuming layout space and resources. True enter/exit animation needs the
+reconciler to delay unmounting until an exit animation completes — a feature
+that doesn't exist.
+
+**4. No keyframe or sequenced animation DSL.** Complex animations often need
+keyframes (value at 0%, 30%, 100%) or sequences (fade in, then slide, then
+scale). Duct has no declarative syntax for this. React's Framer Motion supports
+keyframe arrays. SwiftUI has `KeyframeAnimator` (iOS 17+). Compose has
+`keyframes {}` blocks. Duct requires dropping to WinUI's `Storyboard` /
+`DoubleAnimation` / `DoubleAnimationUsingKeyFrames` via `.Set()`.
+
+**5. No easing function DSL.** Implicit transitions accept `Duration` but not
+custom easing curves. The WinUI `ScalarTransition` and `Vector3Transition`
+types support basic duration configuration but not cubic bezier or spring curves
+(except through layout animations, which only affect Offset/Size). SwiftUI's
+`.easeInOut`, `.easeIn`, `.spring(duration:bounce:)` and Compose's
+`FastOutSlowInEasing`, `tween(easing = CubicBezierEasing(...))` provide rich
+easing control on any animation. Duct's implicit transitions are linear-ish by
+default with no way to customize the curve.
+
+**6. Layout animation has honest but real limitations.** The documentation
+correctly notes:
+- Hit-testing uses the final layout position, not the animated visual — clicking
+  "where the element visually is" during animation may miss
+- Size animation is cosmetic — content doesn't re-layout during the Size
+  animation, so text may clip or overflow during the transition
+- Elements need stable keys (`.WithKey()`) for the reconciler to match them
+  across reorders — forgetting keys silently breaks layout animations
+
+These are inherent to composition-layer visual animations (the layout is
+committed immediately, only the visual representation animates). But they mean
+layout animations work well for "list items reorder" and less well for
+"sidebar expands from collapsed to full width."
+
+**7. Connected animations require string-key coordination.** Source and
+destination must use the same string key. A typo in the key silently produces
+no animation (the `try/catch` in `QueueConnectedAnimationStart` swallows the
+failure). There's no compile-time validation that source and destination keys
+match. SwiftUI's `matchedGeometryEffect(id:in:)` uses typed Namespace objects;
+Compose's `SharedTransitionScope` uses typed keys. Duct uses bare strings.
+
+**8. The VSM replacement is still expensive.** This is unchanged. Duct replaces
+WinUI's Visual State Manager with state + conditional rendering. A hover effect
+that changes background color triggers a full reconciliation cycle. In WinUI
+XAML, VSM transitions run entirely on the composition thread. The new layout
+animations help with position changes but don't address the VSM gap for visual
+state changes (hover, pressed, disabled, focused states).
+
+**9. No UseAnimation hook.** There's no hook that drives an animation from
+component state:
+
+```csharp
+// Doesn't exist:
+var progress = UseAnimation(0.0, 1.0, duration: 300ms, easing: EaseOut);
+// progress smoothly animates from 0 to 1, re-rendering at each frame
+```
+
+React Spring's `useSpring`, Framer Motion's `useAnimation`, and Compose's
+`Animatable` all provide imperative animation control from component code. Duct
+has no bridge between the hooks system and the animation system — they're
+completely separate mechanisms.
+
+### Revised animation verdict
+
+**Previously: D (5 implicit transitions, nothing else). Now: C.**
+
+The improvement is meaningful. Layout animations with spring physics are a
+genuinely useful capability — list reordering, grid reflows, and responsive
+layout changes now animate smoothly with a single modifier. Connected animations
+provide cross-container transitions that most declarative frameworks don't have
+built-in. The reconciler lifecycle integration is correct and well-considered.
+
+But the grade is C, not B, because the animation system only covers *layout*
+motion and 5 specific property transitions. The broader problem — "animate any
+state change" — is unsolved. No value-driven animation, no enter/exit at the
+element level, no keyframes, no easing control, no animation hooks. A developer
+who wants to animate a sidebar opening, a color shifting, a badge counting up,
+or a card flipping still needs `.Set()` and WinUI's imperative composition API.
+The animation system handles what the composition layer gives you for free and
+nothing more.
+
+SwiftUI's `withAnimation { state = newValue }` makes *any* state change
+animatable with one line. Compose's `animateAsState` does the same. Duct can't
+match this because WinUI doesn't provide a general-purpose "animate this
+dependency property" mechanism — but that's a reason, not an excuse. The
+framework could provide a `UseAnimation` hook that drives re-renders with
+interpolated values, bridging the gap between WinUI's limited implicit
+transitions and the rich animation expectations of modern UI development.
 
 ---
 
 ## 10. Accessibility
 
-### Current state
+### The accessibility story: from checkbox to credible foundation (with limits)
 
-**1 out of 12+ accessibility properties have first-class modifiers.**
+The previous version of this review called accessibility "an afterthought, not a
+design principle" — 2 out of 12+ properties exposed, zero tests, everything
+else behind `.Set()`. That's no longer accurate. A significant accessibility
+diff has landed that implements 16 first-class modifiers, a tiered storage
+architecture, and 12 end-to-end UIA tests mapped to specific WCAG 2.1 success
+criteria. The honest assessment now: **accessibility has a solid modifier layer
+and real validation, but the harder problems — hooks, diagnostics, custom
+automation peers, and focus management — remain unbuilt.**
 
-| Property | Duct Status |
-|---|---|
-| AutomationProperties.Name | `.AutomationName()` — **Exposed** |
-| AutomationProperties.AutomationId | `.AutomationId()` — **Exposed** |
-| AutomationProperties.HelpText | Missing — `.Set()` only |
-| AutomationProperties.HeadingLevel | Missing |
-| AutomationProperties.LandmarkType | Missing |
-| AutomationProperties.LiveSetting | Missing |
-| AutomationProperties.AccessibilityView | Missing |
-| AutomationProperties.IsRequiredForForm | Missing |
-| AutomationProperties.LabeledBy | Missing |
-| AutomationProperties.FullDescription | Missing |
-| AutomationProperties.PositionInSet/SizeOfSet | Missing |
-| Custom AutomationPeer | **Blocked** — components aren't Controls |
-| IsTabStop / TabIndex | Missing |
-| Access keys | Missing |
+### What shipped
 
-### Critiques
+**16 first-class accessibility modifiers across two storage tiers:**
 
-**1. Accessibility is an afterthought, not a design principle.** SwiftUI makes
-every standard control accessible by default and provides `.accessibilityLabel()`,
-`.accessibilityHint()`, `.accessibilityValue()`, `.accessibilityAddTraits()` as
-first-class modifiers. Compose has `Modifier.semantics { }` as a core concept.
-Duct exposes 2 out of 12+ properties and requires `.Set()` for everything else.
+| Property | Modifier | Tier |
+|---|---|---|
+| AutomationProperties.Name | `.AutomationName()` | Tier 1 (inline) |
+| AutomationProperties.AutomationId | `.AutomationId()` | Tier 1 (inline) |
+| AutomationProperties.HeadingLevel | `.HeadingLevel()` | Tier 1 (inline) |
+| Control.IsTabStop | `.IsTabStop()` | Tier 1 (inline) |
+| Control.TabIndex | `.TabIndex()` | Tier 1 (inline) |
+| UIElement.AccessKey | `.AccessKey()` | Tier 1 (inline) |
+| AutomationProperties.HelpText | `.HelpText()` | Tier 2 (lazy) |
+| AutomationProperties.FullDescription | `.FullDescription()` | Tier 2 (lazy) |
+| AutomationProperties.LandmarkType | `.Landmark()` | Tier 2 (lazy) |
+| AutomationProperties.AccessibilityView | `.AccessibilityView()` | Tier 2 (lazy) |
+| Shorthand: hide from AT | `.AccessibilityHidden()` | Tier 2 (lazy) |
+| AutomationProperties.IsRequiredForForm | `.Required()` | Tier 2 (lazy) |
+| AutomationProperties.LiveSetting | `.LiveRegion()` | Tier 2 (lazy) |
+| AutomationProperties.PositionInSet/SizeOfSet | `.PositionInSet()` | Tier 2 (lazy) |
+| AutomationProperties.Level | `.HierarchyLevel()` | Tier 2 (lazy) |
+| AutomationProperties.ItemStatus | `.ItemStatus()` | Tier 2 (lazy) |
+| AutomationProperties.LabeledBy | `.LabeledBy()` | Tier 2 (lazy) — **defined but not reconciler-applied** |
+| UIElement.TabFocusNavigation | `.TabNavigation()` | Tier 2 (lazy) |
+| Custom AutomationPeer | N/A | **Blocked** — components aren't Controls |
 
-**2. Custom AutomationPeer is architecturally blocked.** WinUI controls provide
-accessibility by overriding `OnCreateAutomationPeer()` on their `Control` base
-class. Duct components don't subclass `Control` — they're pure C# classes that
-output element trees. There's no way to create a custom automation peer for a
-Duct component. This means:
-- Custom composite controls (e.g., a color picker built from primitives) can't
-  describe their accessible role
-- Screen readers see the individual primitives, not the semantic component
-- There's no way to create accessible custom controls
+**Lazy sub-record architecture.** Tier 1 properties (HeadingLevel, IsTabStop,
+TabIndex, AccessKey) are stored inline on `ElementModifiers` — zero allocation
+overhead for elements that don't use them. Tier 2/3 properties live in a
+separate `AccessibilityModifiers` record that is only allocated when an advanced
+modifier is first applied. A `ModifyA11y()` helper merges sub-records
+automatically, and the developer sees a completely flat API surface — all
+modifiers look identical at the call site:
 
-**3. Focus management is completely missing.** No `IsTabStop` modifier, no
-`TabIndex`, no `TabFocusNavigation`, no `XYFocusUp/Down/Left/Right`. Keyboard
-navigation in a Duct app depends entirely on WinUI's default behavior, with no
-way to customize it through the framework's API. In SwiftUI, `@FocusState` and
-`.focused()` provide programmatic focus control. In Compose, `FocusRequester`
-and `Modifier.focusable()` do the same.
+```csharp
+Button("Search", doSearch)
+    .AutomationName("Search documents")
+    .AccessKey("S")               // Tier 1 — inline
+    .HelpText("Search all files") // Tier 2 — lazy sub-record
+    .LiveRegion()                 // Tier 2 — same flat API
+```
 
-**4. No accessibility diagnostics or linting.** The accessibility design spec
-proposes a diagnostic system, but it's not implemented. There's no way to detect
-at build time or runtime that a control is missing an accessible name. React has
-`eslint-plugin-jsx-a11y`. SwiftUI has Xcode's accessibility inspector. Duct has
-nothing.
+**12 end-to-end UIA tests via Appium/WinAppDriver.** These are real
+out-of-process tests that read properties through the Windows UI Automation
+client API — the same pipeline used by Narrator, NVDA, and automated testing
+tools. Each test maps to a specific WCAG 2.1 success criterion:
 
-**5. Zero accessibility tests in a 2,400+ test suite.** The test suite has
-extensive coverage of the reconciler, layout, hooks, and even localization. But
-there are exactly zero tests for accessibility — no tests for AutomationId
-coverage, screen reader announcements, keyboard navigation, high contrast mode,
-or focus management. When a framework has 2,400+ tests and none of them touch
-accessibility, that tells you where accessibility sits in the priority stack.
+| Test | WCAG | Validates |
+|---|---|---|
+| `A11y_1_1_1_IconButtonHasAccessibleName` | 1.1.1 | Name on icon-only buttons |
+| `A11y_1_1_1_DecorativeImageHiddenFromUIA` | 1.1.1 | AccessibilityView.Raw hides decorative elements |
+| `A11y_1_3_1_HeadingLevelsExposed` | 1.3.1 | HeadingLevel (Level1, Level2) |
+| `A11y_1_3_1_LandmarksExposed` | 1.3.1 | Navigation & Main landmarks |
+| `A11y_1_3_1_FormFieldRequired` | 1.3.1 | IsRequiredForForm |
+| `A11y_1_3_1_HierarchyLevels` | 1.3.1 | Level property for tree structures |
+| `A11y_2_1_1_AccessKeysExposed` | 2.1.1 | Access key shortcuts (Alt+F, Alt+E) |
+| `A11y_3_3_2_FormFieldHasNameAndHelpText` | 3.3.2 | Name + HelpText on form fields |
+| `A11y_3_3_2_FullDescriptionExposed` | 3.3.2 | FullDescription for complex elements |
+| `A11y_4_1_2_ItemStatusExposed` | 4.1.2 | ItemStatus announcements |
+| `A11y_4_1_2_PositionInSetExposed` | 4.1.2 | PositionInSet / SizeOfSet |
+| `A11y_4_1_3_LiveRegionPolite` | 4.1.3 | Live region (Polite mode) |
+| `A11y_4_1_3_LiveRegionAssertive` | 4.1.3 | Live region (Assertive mode) |
+
+**Reconciler integration with change detection.** `ApplyAccessibilityModifiers()`
+in the reconciler compares each property against the previous value before
+calling the WinUI `AutomationProperties.Set*()` methods. This avoids redundant
+COM interop calls on re-render, following the same pattern used for other
+modifiers.
+
+### What's actually good about this (credit where due)
+
+The tiered storage design is smart engineering. Most elements in a typical UI
+need zero accessibility annotations (WinUI's built-in automation peers handle
+the basics). The few that need annotations usually need only Tier 1 (a heading
+level, a tab stop). The rare elements that need advanced annotations (landmarks,
+live regions, position-in-set) get a lazy sub-record. This means the common
+case (no a11y modifiers) pays zero cost, the typical case (one or two modifiers)
+pays minimal cost, and only the advanced case allocates the sub-record. This is
+better than a flat struct with 16 nullable fields on every element.
+
+The E2E test approach is genuinely rigorous. Testing through the real UIA
+pipeline (out-of-process via WinAppDriver) validates what assistive technology
+actually sees, not what the framework thinks it set. This is a higher bar than
+React's `eslint-plugin-jsx-a11y` (which checks markup, not runtime behavior) or
+SwiftUI's accessibility inspector (which is a developer tool, not a CI test).
+If these tests pass, Narrator will actually read the right values. That matters.
+
+The WCAG criterion mapping in the tests is good practice. Each test says
+*which* accessibility requirement it validates. This makes it possible to answer
+"do we cover WCAG 1.3.1?" by grepping the test file rather than reading
+implementation code.
+
+### What's still concerning (skeptic's view)
+
+**1. LabeledBy is defined but not wired.** The `AccessibilityModifiers` record
+has a `LabeledBy` property, the `.LabeledBy("EmailLabel")` fluent method exists,
+but `ApplyAccessibilityModifiers()` in the reconciler has no code to apply it.
+The property is accepted silently and does nothing. This is worse than not
+having the API at all — a developer who writes `.LabeledBy("EmailLabel")`
+believes they've associated a label with a field, but screen readers see nothing.
+No test covers it (because it can't pass). The implementation note suggests it
+requires a post-mount tree walk to resolve AutomationId references to elements,
+which is non-trivial in a declarative framework. But shipping a no-op API
+without a warning is a trap.
+
+**2. Custom AutomationPeer remains architecturally blocked.** This is unchanged
+and it's the hardest problem in the accessibility story. WinUI controls provide
+screen reader semantics by overriding `OnCreateAutomationPeer()` on `Control`.
+Duct components are pure C# classes that emit element trees — they can't override
+anything on `Control`. This means:
+
+- A custom "StarRating" component built from Image and Text primitives can't tell
+  screen readers "I am a slider with value 3 of 5"
+- A custom "DatePicker" built from TextBox and Popup can't announce its role
+- Screen readers see the primitive controls, not the semantic composite
+
+This is a fundamental architectural limitation, not a missing feature. React
+solves it with ARIA roles on DOM elements. SwiftUI solves it with
+`.accessibilityRepresentation {}`. Compose solves it with `Modifier.semantics {
+role = Role.Slider }`. Duct has no mechanism at all. The 16 modifiers help with
+annotating individual controls, but they can't describe what a *composite
+component* is.
+
+**3. No accessibility hooks — the imperative side is missing.** The modifier
+system covers declarative annotations (setting static properties). But
+production accessibility also needs imperative operations:
+
+- `UseAnnounce()` — triggering a live-region announcement from code (e.g., "3
+  items deleted") without needing a visible element
+- `UseFocusTrap()` — trapping focus within a modal dialog
+- `UseHighContrast()` — detecting high contrast mode in render logic
+- `UseReducedMotion()` — respecting user's motion preferences
+- `UseScreenReaderActive()` — adapting UI when a screen reader is running
+
+These are all specified in the 7-layer accessibility design doc but none are
+implemented. The modifier system is Layer 1. Layers 2–7 (hooks, diagnostics,
+convenience DSL) are spec only. A developer who needs to announce a toast
+message to screen readers today has no option except `.Set()` on a hidden
+live-region element — which is exactly the kind of workaround the framework
+should eliminate.
+
+**4. No accessibility diagnostics or linting.** Still unimplemented. There's no
+way to detect at build time or runtime that an Image lacks an accessible name,
+that a Button has no label, or that a live region is missing. The design spec
+describes a diagnostic system with JSON export and even Roslyn analyzers, but
+none of it exists. React has `eslint-plugin-jsx-a11y` catching problems at edit
+time. SwiftUI has the Accessibility Inspector. Duct has nothing — you discover
+accessibility bugs when a screen reader user reports them or when you manually
+run the test suite.
+
+**5. Focus management is limited to basic Tab properties.** `.IsTabStop()`,
+`.TabIndex()`, and `.TabNavigation()` now exist, which is a significant
+improvement over "completely missing." But there's still no:
+
+- Programmatic focus control (`FocusRequester` / `@FocusState` equivalent)
+- Focus trapping for modal dialogs
+- `XYFocusUp/Down/Left/Right` for directional D-pad/gamepad navigation
+- Focus restoration on back-navigation
+
+SwiftUI's `@FocusState` + `.focused()` and Compose's `FocusRequester` +
+`Modifier.focusable()` both provide programmatic focus management. Duct covers
+the Tab order basics but not the programmatic side. For a framework that
+doesn't have a navigation system (see Section 7), the inability to manage focus
+programmatically compounds the problem — you can't even build your own
+navigation with proper focus restoration.
+
+**6. The test suite validates modifiers but not interaction patterns.** The 12
+E2E tests are good at verifying that UIA properties are set correctly. But they
+don't test:
+
+- Keyboard navigation flow (can you Tab through a form in order?)
+- Live region announcements after state changes (does Narrator actually speak
+  when content updates?)
+- Focus behavior (does focus move to a dialog when it opens?)
+- High contrast rendering (are all elements visible in HC mode?)
+
+These are the accessibility behaviors that break in real apps. Property
+annotations are necessary but not sufficient — a button can have a perfect
+accessible name and still be unreachable by keyboard. The test suite validates
+Layer 1 (annotations) but not Layers 2+ (behavior).
+
+**7. No sample apps demonstrate accessibility.** The Outlook clone, file
+manager, registry editor, and word puzzle game don't use any of the new
+accessibility modifiers. None of the showcase apps demonstrate heading
+structure, landmark regions, live regions, or accessible forms. When the
+framework's own demo apps don't dogfood accessibility, it sends a clear signal
+about maturity.
+
+### Revised accessibility verdict
+
+**Previously: D- (afterthought). Now: C+.**
+
+The jump is real. Going from 2 properties and zero tests to 16 modifiers, a
+tiered architecture, and 12 WCAG-mapped E2E tests is a genuine investment. The
+modifier API is well-designed — the lazy sub-record avoids overhead, the flat
+fluent surface is discoverable, and the reconciler integration follows the
+framework's established patterns. The UIA test approach is rigorous and the
+right call for a Windows-native framework.
+
+But the grade is C+, not B, because the modifier system is the *easy* part of
+accessibility. Setting `HeadingLevel` on a TextBlock is straightforward WinUI
+plumbing. The hard problems — custom automation peers for composite components,
+imperative announcements, focus management, diagnostics, high contrast
+adaptation — are all unbuilt. Layers 2–7 of the accessibility spec are still
+spec-only. And fundamentally, the custom automation peer gap means Duct
+components can't describe their own semantics to screen readers, which limits
+accessibility to annotating individual primitives rather than building
+accessible composites.
+
+The competition's gap has narrowed but not closed. SwiftUI's accessibility
+story includes `.accessibilityRepresentation {}` for composite semantics,
+`@FocusState` for focus management, and the Accessibility Inspector for
+diagnostics. Compose has `Modifier.semantics {}` with full role/state/action
+descriptions. React has ARIA on DOM elements plus `eslint-plugin-jsx-a11y`.
+Duct now has the annotation layer but lacks the semantic, imperative, and
+diagnostic layers that those frameworks provide.
 
 ---
 
@@ -1081,10 +1467,7 @@ hook for this — no "cleanup on unmount" for Set-based side effects.
 - All gesture events (tapped, double-tapped, right-tapped, holding)
 - All manipulation events
 - All keyboard events (except OnKeyDown modifier)
-- Focus management (IsTabStop, TabIndex, TabFocusNavigation)
-- Access keys
 - Drag and drop
-- 9 out of 12 accessibility properties
 - Custom storyboard animations
 - Composition layer access
 - Materials and effects
@@ -1122,8 +1505,8 @@ SwiftUI, Compose).
 | **Theming** | C+ | B+ | A | A | ThemeRef works; XamlReader.Load perf concern; 3 props only; no custom resources |
 | **Navigation** | F | A | A | A | Blocked; roll your own |
 | **Lists/Collections** | B | B+ | A | A | Virtualization exists, no sections |
-| **Animation** | D | B | A | A | 5 implicit transitions, nothing else |
-| **Accessibility** | D- | B | A | A | 2/12+ properties, custom peers blocked |
+| **Animation** | C | B | A | A | Layout animations + springs + connected; still no value-driven, no enter/exit, 5-property limit |
+| **Accessibility** | C+ | B | A | A | 16 modifiers, UIA E2E tests; no custom peers, no hooks, no diagnostics |
 | **Input/Events** | C+ | B | A | A | Semantic events good, rest is .Set() |
 | **Commands** | F | N/A | N/A | N/A | No ICommand equivalent |
 | **Styling** | C- | B+ | A | A | No style composition; no lightweight styling; ApplyStyle is stringly-typed |
@@ -1153,12 +1536,13 @@ But they also reveal the pain:
   in dark mode — the ThemeRef system helps but only if developers use it
 - **The D3 Gallery Color Page** demonstrates theming well, with a light/dark
   toggle — this is the one sample that showcases the new capability
-- **None of the other samples** demonstrate accessibility or animation beyond
-  basic implicit transitions
+- **None of the other samples** demonstrate the new accessibility modifiers or
+  the new animation capabilities beyond basic implicit transitions
 
-These are showcase apps for the framework, and they can't demonstrate theming,
-navigation, accessibility, or animation because the framework doesn't support
-them.
+These are showcase apps for the framework, and they can't demonstrate
+navigation because the framework doesn't support it. Theming, accessibility,
+and animation now have real implementations, but the showcase apps haven't been
+updated to dogfood them broadly — which undermines confidence in the features.
 
 ### What Duct gets right
 
@@ -1202,12 +1586,16 @@ them.
 3. **No global state.** Without Context/EnvironmentObject/CompositionLocal, Duct
    can't handle cross-cutting concerns that every real app has.
 
-4. **Accessibility is almost entirely missing.** 2 out of 12+ properties
-   exposed, custom automation peers blocked. This fails WCAG compliance.
+4. **Accessibility has a solid annotation layer but no semantic, imperative,
+   or diagnostic layers.** 16 modifiers and 12 UIA tests cover WCAG A
+   annotations, but custom automation peers are blocked, accessibility hooks
+   are unbuilt, and there's no diagnostics or linting.
 
-5. **No animation system.** Five implicit transitions don't constitute an
-   animation framework. Everything else requires `.Set()` escape to WinUI's
-   imperative animation API.
+5. **Animation covers layout motion but not general-purpose state animation.**
+   Layout animations with springs and connected animations are real capabilities,
+   but value-driven animation, enter/exit for individual elements, keyframes,
+   and easing control are all missing. The 5-property implicit transition limit
+   is a WinUI platform constraint that the framework hasn't worked around.
 
 6. **.Set() carries too much weight.** When the escape hatch is required for the
    majority of platform features, the abstraction isn't thick enough.
@@ -1225,14 +1613,16 @@ You still need to understand the underlying platform, and you reach through the
 wrapper constantly via escape hatches.
 
 Duct is currently closer to a wrapper. The reconciler and hooks system are
-genuine framework-level abstractions. But theming, navigation, accessibility,
-animation, global state, and a large fraction of input handling are all
+genuine framework-level abstractions. Theming, accessibility, and animation
+have all moved from "just use .Set()" to "real modifier systems with reconciler
+integration" — a meaningful shift that shows the framework is growing. But
+navigation, global state, and a large fraction of input handling are still
 "just use WinUI through .Set()." That's not a framework — it's a different way
 to call the same APIs, with fewer capabilities.
 
 To become a production framework, Duct needs to either:
-1. Build real abstractions for theming, navigation, accessibility, animation,
-   and global state (massive effort), or
+1. Build real abstractions for navigation and global state, and finish the
+   accessibility, animation, and theming stories (substantial effort), or
 2. Accept that it's a thin wrapper and optimize for that (embrace .Set(), provide
    better escape hatches, focus on the reconciler as the value-add)
 
