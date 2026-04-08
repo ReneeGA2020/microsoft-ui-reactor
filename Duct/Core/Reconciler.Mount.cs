@@ -94,6 +94,7 @@ public sealed partial class Reconciler
             ViewboxElement vb => MountViewbox(vb, requestRerender),
             CanvasElement cvs => MountCanvas(cvs, requestRerender),
             FlexElement flex => MountFlex(flex, requestRerender),
+            NavigationHostElement navHost => MountNavigationHost(navHost, requestRerender),
             NavigationViewElement nav => MountNavigationView(nav, requestRerender),
             TitleBarElement tb => MountTitleBar(tb, requestRerender),
             TabViewElement tab => MountTabView(tab, requestRerender),
@@ -875,6 +876,62 @@ public sealed partial class Reconciler
         SetElementTag(panel, flex);
         ApplySetters(flex.Setters, panel);
         return panel;
+    }
+
+    private WinUI.Grid MountNavigationHost(NavigationHostElement element, Action requestRerender)
+    {
+        var grid = new WinUI.Grid();
+        var handle = (Navigation.INavigationHandle)element.NavigationHandle;
+        var routeMap = element.RouteMap;
+        var currentRoute = handle.CurrentRoute;
+
+        // Resolve and mount the initial route's element
+        var childElement = routeMap(currentRoute);
+        var childControl = Mount(childElement, requestRerender);
+        if (childControl is not null)
+            grid.Children.Add(childControl);
+
+        // Track state for update/unmount
+        var node = new NavigationHostNode
+        {
+            Handle = handle,
+            LastRenderedRoute = currentRoute,
+            CurrentChildElement = childElement,
+            CurrentChildControl = childControl,
+            RouteMap = routeMap,
+            RequestRerender = requestRerender,
+            HostTransition = element.Transition,
+            CacheMode = element.CacheMode,
+        };
+
+        // Create page cache when caching is enabled
+        if (element.CacheMode != Navigation.NavigationCacheMode.Disabled)
+        {
+            node.Cache = new Navigation.NavigationCache(
+                element.CacheSize, evicted => Unmount(evicted));
+        }
+
+        // Subscribe to route changes so NavigationHost updates even if an intermediate
+        // component's ShouldUpdate blocks the re-render propagation.
+        void onRouteChanged() => requestRerender();
+        handle.RouteChanged += onRouteChanged;
+        node.RouteChangedHandler = onRouteChanged;
+
+        // Wire lifecycle guard: invokes onNavigatingFrom callbacks from the current
+        // page's component tree before the stack mutation. Records the navigation mode
+        // and previous route for post-swap onNavigatedTo/onNavigatedFrom invocation.
+        handle.LifecycleGuard = ctx =>
+        {
+            InvokeNavigatingFrom(node.CurrentChildControl, ctx);
+            if (!ctx.IsCancelled)
+            {
+                node.PendingNavigationMode = ctx.Mode;
+                node.PendingPreviousRoute = ctx.Route;
+            }
+        };
+
+        _navigationHostNodes[grid] = node;
+        return grid;
     }
 
     private WinUI.NavigationView MountNavigationView(NavigationViewElement nav, Action requestRerender)

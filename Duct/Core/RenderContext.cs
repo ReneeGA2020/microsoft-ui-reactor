@@ -374,6 +374,137 @@ public sealed class RenderContext
     }
 
     // ════════════════════════════════════════════════════════════════
+    //  Navigation hooks
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Root mode: creates a navigation stack with the given initial route.
+    /// Returns a stable <see cref="Navigation.NavigationHandle{TRoute}"/> across re-renders.
+    /// Wire this handle to a <c>NavigationHost</c> in the DSL to render route content.
+    /// The handle is automatically provided to descendants via context so child components
+    /// can call <c>UseNavigation&lt;TRoute&gt;()</c> (parameterless) to access it.
+    /// </summary>
+    public Navigation.NavigationHandle<TRoute> UseNavigation<TRoute>(TRoute initial) where TRoute : notnull
+    {
+        var stackRef = UseRef<Navigation.NavigationStack<TRoute>?>(null);
+        if (stackRef.Current is null)
+            stackRef.Current = new Navigation.NavigationStack<TRoute>(initial);
+
+        var handleRef = UseRef<Navigation.NavigationHandle<TRoute>?>(null);
+        if (handleRef.Current is null)
+            handleRef.Current = new Navigation.NavigationHandle<TRoute>(stackRef.Current);
+
+        // Capture the latest rerender callback every render so navigation mutations
+        // that originate from event handlers always trigger a re-render of this component.
+        stackRef.Current.OnChanged = _requestRerender;
+
+        return handleRef.Current;
+    }
+
+    /// <summary>
+    /// Child mode: retrieves an ancestor's <see cref="Navigation.NavigationHandle{TRoute}"/>
+    /// from context. Throws if no ancestor provides one (i.e., no root <c>UseNavigation</c>
+    /// with a <c>NavigationHost</c> exists above this component in the tree).
+    /// </summary>
+    public Navigation.NavigationHandle<TRoute> UseNavigation<TRoute>() where TRoute : notnull
+    {
+        var handle = UseContext(Navigation.NavigationContext<TRoute>.Instance);
+        if (handle is null)
+            throw new InvalidOperationException(
+                $"UseNavigation<{typeof(TRoute).Name}>() (child mode) found no ancestor NavigationHost " +
+                $"providing NavigationContext<{typeof(TRoute).Name}>. " +
+                "Ensure a parent component calls UseNavigation<T>(initialRoute) and renders a NavigationHost.");
+        return handle;
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Navigation system back button
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Subscribes to Alt+Left and VirtualKey.GoBack keyboard events on the given window's content
+    /// to call <see cref="Navigation.NavigationHandle{TRoute}.GoBack"/>. Unsubscribes on unmount.
+    /// </summary>
+    public void UseSystemBackButton<TRoute>(
+        Navigation.NavigationHandle<TRoute> nav,
+        Microsoft.UI.Xaml.Window window) where TRoute : notnull
+    {
+        UseEffect(() =>
+        {
+            void handler(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+            {
+                if (e.Key == Windows.System.VirtualKey.GoBack ||
+                    (e.Key == Windows.System.VirtualKey.Left &&
+                     Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Menu)
+                         .HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down)))
+                {
+                    if (nav.CanGoBack)
+                    {
+                        nav.GoBack();
+                        e.Handled = true;
+                    }
+                }
+            }
+
+            if (window.Content is Microsoft.UI.Xaml.UIElement rootElement)
+            {
+                rootElement.KeyDown += handler;
+                return () => rootElement.KeyDown -= handler;
+            }
+            return () => { };
+        }, nav, window);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Navigation lifecycle hooks
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Registers lifecycle callbacks that fire during navigation events.
+    /// <list type="bullet">
+    /// <item><c>onNavigatedTo</c> — fires after this page becomes active.</item>
+    /// <item><c>onNavigatingFrom</c> — fires before navigating away. Call <c>ctx.Cancel()</c> to block.</item>
+    /// <item><c>onNavigatedFrom</c> — fires after this page is no longer active.</item>
+    /// </list>
+    /// Callbacks are always updated to the latest references on every render.
+    /// </summary>
+    public void UseNavigationLifecycle(
+        Action<Navigation.NavigatedToContext>? onNavigatedTo = null,
+        Action<Navigation.NavigatingFromContext>? onNavigatingFrom = null,
+        Action<Navigation.NavigatedFromContext>? onNavigatedFrom = null)
+    {
+        if (_hookIndex >= _hooks.Count)
+        {
+            _hooks.Add(new NavigationLifecycleHookState());
+        }
+
+        if (_hooks[_hookIndex] is not NavigationLifecycleHookState hook)
+            throw new InvalidOperationException(
+                $"Hook at index {_hookIndex} is {_hooks[_hookIndex].GetType().Name}, expected NavigationLifecycleHookState. " +
+                "Hooks must be called in the same order every render.");
+        _hookIndex++;
+
+        // Always update to latest callbacks so closures capture current state
+        hook.OnNavigatedTo = onNavigatedTo;
+        hook.OnNavigatingFrom = onNavigatingFrom;
+        hook.OnNavigatedFrom = onNavigatedFrom;
+    }
+
+    /// <summary>
+    /// Returns the navigation lifecycle hook state if one was registered, or null.
+    /// Used by the reconciler to collect lifecycle callbacks from a component tree.
+    /// </summary>
+    internal NavigationLifecycleHookState? GetNavigationLifecycleHook()
+    {
+        for (int i = 0; i < _hooks.Count; i++)
+        {
+            if (_hooks[i] is NavigationLifecycleHookState hook)
+                return hook;
+        }
+        return null;
+    }
+
+    // ════════════════════════════════════════════════════════════════
     //  Context hooks
     // ════════════════════════════════════════════════════════════════
 
@@ -667,6 +798,13 @@ public sealed class RenderContext
     {
         public DuctContextBase Context = default!;
         public object? LastValue;
+    }
+
+    internal class NavigationLifecycleHookState : HookState
+    {
+        public Action<Navigation.NavigatedToContext>? OnNavigatedTo;
+        public Action<Navigation.NavigatingFromContext>? OnNavigatingFrom;
+        public Action<Navigation.NavigatedFromContext>? OnNavigatedFrom;
     }
 
     internal abstract class PersistedHookStateBase : HookState

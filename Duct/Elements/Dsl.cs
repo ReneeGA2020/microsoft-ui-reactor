@@ -289,6 +289,20 @@ public static class UI
 
     // ── Navigation ──────────────────────────────────────────────────
 
+    /// <summary>
+    /// Creates a navigation host that renders the current route's content.
+    /// Automatically provides the navigation handle via context so child components
+    /// can retrieve it with <c>UseNavigation&lt;TRoute&gt;()</c>.
+    /// Use <c>with { }</c> to set Transition, CacheMode, and CacheSize.
+    /// </summary>
+    public static NavigationHostElement NavigationHost<TRoute>(
+        Core.Navigation.NavigationHandle<TRoute> nav,
+        Func<TRoute, Element> routeMap) where TRoute : notnull
+    {
+        return new NavigationHostElement(nav, route => routeMap((TRoute)route))
+            .Provide(Core.Navigation.NavigationContext<TRoute>.Instance, nav);
+    }
+
     public static NavigationViewElement NavigationView(NavigationViewItemData[] menuItems, Element? content = null) =>
         new(menuItems, content);
 

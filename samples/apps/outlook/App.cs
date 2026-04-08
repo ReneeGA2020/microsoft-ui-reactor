@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using Duct;
 using Duct.Core;
+using Duct.Core.Navigation;
 using DuctOutlook.Components;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -67,18 +68,31 @@ static class AppSettings
     public static string ScreenshotPath = "screenshot.png";
 }
 
+abstract record OutlookRoute;
+sealed record MailRoute : OutlookRoute;
+sealed record CalendarRoute : OutlookRoute;
+
 class OutlookApp : Component
 {
+    static string? RouteToTag(OutlookRoute route) => route switch
+    {
+        MailRoute => "mail",
+        CalendarRoute => "calendar",
+        _ => null,
+    };
+
+    static OutlookRoute TagToRoute(string tag) => tag switch
+    {
+        "calendar" => new CalendarRoute(),
+        _ => new MailRoute(),
+    };
+
     public override Element Render()
     {
-        var initialView = AppSettings.ScreenshotMode ? AppSettings.ScreenshotView : "mail";
-        var (activeView, setActiveView) = UseState(initialView);
-
-        var content = activeView switch
-        {
-            "calendar" => (Element)Component<DuctOutlook.Components.Calendar.CalendarViewComponent>(),
-            _ => Component<DuctOutlook.Components.Email.EmailView>(),
-        };
+        var initialRoute = AppSettings.ScreenshotMode && AppSettings.ScreenshotView == "calendar"
+            ? (OutlookRoute)new CalendarRoute()
+            : new MailRoute();
+        var nav = UseNavigation(initialRoute);
 
         // Left NavigationView rail for Mail/Calendar switching
         return (NavigationView(
@@ -86,11 +100,23 @@ class OutlookApp : Component
                 NavItem("Mail", icon: "\uE715", tag: "mail"),
                 NavItem("Calendar", icon: "\uE787", tag: "calendar"),
             ],
-            content
+            NavigationHost(nav, route => route switch
+            {
+                CalendarRoute => (Element)Component<DuctOutlook.Components.Calendar.CalendarViewComponent>(),
+                _ => Component<DuctOutlook.Components.Email.EmailView>(),
+            }) with { Transition = NavigationTransition.Slide() }
         ) with
         {
-            SelectedTag = activeView,
-            OnSelectionChanged = tag => { if (tag is not null) setActiveView(tag); },
+            SelectedTag = RouteToTag(nav.CurrentRoute),
+            OnSelectionChanged = tag =>
+            {
+                if (tag is not null)
+                {
+                    var route = TagToRoute(tag);
+                    if (!Equals(route, nav.CurrentRoute))
+                        nav.Navigate(route, new NavigateOptions { PushToBackStack = false });
+                }
+            },
             PaneDisplayMode = NavigationViewPaneDisplayMode.LeftCompact,
             IsSettingsVisible = false,
             IsBackEnabled = false,

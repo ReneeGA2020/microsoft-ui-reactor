@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using Duct;
 using Duct.Core;
+using Duct.Core.Navigation;
 using Duct.Flex;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
@@ -26,7 +27,7 @@ else
 
 // ─── Root application component ────────────────────────────────────────────────
 
-enum Tab { Counter, TodoList, ConditionalUI, Form, DynamicList, PerfStress, Virtualization, Flyout, DataTemplate, FlexPanel, Transitions, PropertyGrid, Context, Memo, Persisted, Slots }
+enum Tab { Counter, TodoList, ConditionalUI, Form, DynamicList, PerfStress, Virtualization, Flyout, DataTemplate, FlexPanel, Transitions, PropertyGrid, Context, Memo, Persisted, Slots, Navigation }
 
 class DemoApp : Component
 {
@@ -50,6 +51,7 @@ class DemoApp : Component
         Tab.Memo => "Memo",
         Tab.Persisted => "Persisted",
         Tab.Slots => "Slots",
+        Tab.Navigation => "Navigation",
         _ => tab.ToString()
     };
 
@@ -77,7 +79,8 @@ class DemoApp : Component
                     TabButton(Tab.Context, currentTab, setTab),
                     TabButton(Tab.Memo, currentTab, setTab),
                     TabButton(Tab.Persisted, currentTab, setTab),
-                    TabButton(Tab.Slots, currentTab, setTab)
+                    TabButton(Tab.Slots, currentTab, setTab),
+                    TabButton(Tab.Navigation, currentTab, setTab)
                 ),
                 ComboBox(Languages, langIndex, setLangIndex)
             ).Margin(16, 16, 16, 0),
@@ -103,6 +106,7 @@ class DemoApp : Component
                     Tab.Memo => Component<MemoDemo>(),
                     Tab.Persisted => Component<PersistedDemo>(),
                     Tab.Slots => Component<SlotsDemo>(),
+                    Tab.Navigation => Component<NavigationDemo>(),
                     _ => Text("Select a tab")
                 }
             ).Padding(24).Margin(16).Flex(grow: 1)
@@ -2230,6 +2234,93 @@ class PropertyGridDemo : Component
                     }
                 )
             ).Padding(12).Background("#f0f0f0")
+        );
+    }
+}
+
+// ─── Navigation demo ──────────────────────────────────────────────────────────
+
+abstract record NavRoute;
+sealed record NavHome : NavRoute;
+sealed record NavDetail(int Id) : NavRoute;
+sealed record NavSettings : NavRoute;
+
+class NavigationDemo : Component
+{
+    public override Element Render()
+    {
+        var nav = UseNavigation<NavRoute>(new NavHome());
+
+        return VStack(12,
+            Heading("Navigation Demo"),
+            Text($"Route: {nav.CurrentRoute}  |  Depth: {nav.Depth}"),
+
+            HStack(8,
+                Button("Back", () => nav.GoBack()).Disabled(!nav.CanGoBack),
+                Button("Forward", () => nav.GoForward()).Disabled(!nav.CanGoForward),
+                Button("Reset", () => nav.Reset(new NavHome())).Disabled(nav.CurrentRoute is NavHome && nav.Depth == 1)
+            ),
+
+            NavigationHost(nav, route => route switch
+            {
+                NavHome => Component<NavHomePage>(),
+                NavDetail d => Component<NavDetailPage, int>(d.Id),
+                NavSettings => Component<NavSettingsPage>(),
+                _ => Text("Unknown route"),
+            }) with { Transition = NavigationTransition.None }
+        );
+    }
+}
+
+class NavHomePage : Component
+{
+    public override Element Render()
+    {
+        var nav = UseNavigation<NavRoute>();
+
+        return VStack(8,
+            Text("Home Page").FontSize(20).SemiBold(),
+            Text("Select an item to view details:"),
+            VStack(4,
+                Button("Item #1", () => nav.Navigate(new NavDetail(1))),
+                Button("Item #2", () => nav.Navigate(new NavDetail(2))),
+                Button("Item #3", () => nav.Navigate(new NavDetail(3)))
+            ),
+            Button("Go to Settings", () => nav.Navigate(new NavSettings()))
+        );
+    }
+}
+
+class NavDetailPage : Component<int>
+{
+    public override Element Render()
+    {
+        var nav = UseNavigation<NavRoute>();
+        var id = Props;
+
+        return VStack(8,
+            Text($"Detail Page — Item #{id}").FontSize(20).SemiBold(),
+            Text($"Viewing details for item {id}."),
+            HStack(8,
+                Button("Home", () => nav.Reset(new NavHome())),
+                id < 3
+                    ? Button($"Next (Item #{id + 1})", () => nav.Navigate(new NavDetail(id + 1)))
+                    : Empty()
+            )
+        );
+    }
+}
+
+class NavSettingsPage : Component
+{
+    public override Element Render()
+    {
+        var nav = UseNavigation<NavRoute>();
+
+        return VStack(8,
+            Text("Settings Page").FontSize(20).SemiBold(),
+            Text("Application settings would go here."),
+            Button("Back to Home", () => nav.Reset(new NavHome()))
         );
     }
 }

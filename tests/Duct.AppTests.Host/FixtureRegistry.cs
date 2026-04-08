@@ -103,6 +103,11 @@ internal static class FixtureRegistry
         "Demo_Conditional",
         "Demo_TabNavigation",
 
+        // Navigation (UseNavigation + NavigationHost)
+        "Navigation_MultiLevel",
+        "Navigation_Guard",
+        "Navigation_ViewIntegration",
+
         // Event Handlers (declarative modifiers)
         "EventHandler_Tapped",
         "EventHandler_SizeChanged",
@@ -206,6 +211,11 @@ internal static class FixtureRegistry
         "Demo_Counter" => DemoFixtures.CounterDemo(ctx),
         "Demo_Conditional" => DemoFixtures.ConditionalDemo(ctx),
         "Demo_TabNavigation" => DemoFixtures.TabNavigation(ctx),
+
+        // Navigation (UseNavigation + NavigationHost)
+        "Navigation_MultiLevel" => NavigationFixtures.MultiLevelNav(ctx),
+        "Navigation_Guard" => NavigationFixtures.NavGuard(ctx),
+        "Navigation_ViewIntegration" => NavigationFixtures.NavViewIntegration(ctx),
 
         // Event Handlers (declarative modifiers)
         "EventHandler_Tapped" => EventHandlerFixtures.TappedTest(ctx),

@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinUI = Microsoft.UI.Xaml.Controls;
 using WinPrim = Microsoft.UI.Xaml.Controls.Primitives;
@@ -148,6 +149,8 @@ public sealed partial class Reconciler
                 => UpdateExpander(o, n, exp, requestRerender),
             (SplitViewElement, SplitViewElement, WinUI.SplitView)
                 => Mount(newEl, requestRerender),
+            (NavigationHostElement o, NavigationHostElement n, WinUI.Grid navGrid)
+                => UpdateNavigationHost(o, n, navGrid, requestRerender),
             (NavigationViewElement o, NavigationViewElement n, WinUI.NavigationView nv)
                 => UpdateNavigationView(o, n, nv, requestRerender),
             (TitleBarElement o, TitleBarElement n, WinUI.TitleBar tb)
@@ -904,6 +907,226 @@ public sealed partial class Reconciler
         SetElementTag(exp, n);
         ApplySetters(n.Setters, exp);
         return null;
+    }
+
+    private UIElement? UpdateNavigationHost(
+        NavigationHostElement oldEl, NavigationHostElement newEl,
+        WinUI.Grid grid, Action requestRerender)
+    {
+        if (!_navigationHostNodes.TryGetValue(grid, out var node))
+        {
+            // Lost tracking — remount from scratch
+            return Mount(newEl, requestRerender);
+        }
+
+        var handle = (Navigation.INavigationHandle)newEl.NavigationHandle;
+        var currentRoute = handle.CurrentRoute;
+
+        // Update the RouteMap if the delegate reference changed (rare but possible if
+        // the parent component recreates the lambda every render).
+        node.RouteMap = newEl.RouteMap;
+
+        // If the handle changed (different navigation stack wired up), re-subscribe
+        if (!ReferenceEquals(node.Handle, handle))
+        {
+            if (node.RouteChangedHandler is not null)
+                node.Handle.RouteChanged -= node.RouteChangedHandler;
+            node.Handle.LifecycleGuard = null;
+
+            node.Handle = handle;
+            void onRouteChanged() => requestRerender();
+            handle.RouteChanged += onRouteChanged;
+            node.RouteChangedHandler = onRouteChanged;
+
+            // Re-wire lifecycle guard for the new handle
+            handle.LifecycleGuard = ctx =>
+            {
+                InvokeNavigatingFrom(node.CurrentChildControl, ctx);
+                if (!ctx.IsCancelled)
+                {
+                    node.PendingNavigationMode = ctx.Mode;
+                    node.PendingPreviousRoute = ctx.Route;
+                }
+            };
+        }
+
+        node.RequestRerender = requestRerender;
+
+        if (Equals(currentRoute, node.LastRenderedRoute) && node.CurrentChildElement is not null)
+        {
+            // Route unchanged — reconcile the existing child element in place
+            var newChildElement = node.RouteMap(currentRoute);
+            var replacement = node.CurrentChildControl is not null
+                ? Update(node.CurrentChildElement, newChildElement, node.CurrentChildControl, requestRerender)
+                : Mount(newChildElement, requestRerender);
+
+            if (replacement is not null && node.CurrentChildControl is not null)
+            {
+                // Child control type changed — swap in grid
+                var idx = grid.Children.IndexOf(node.CurrentChildControl);
+                if (idx >= 0)
+                    grid.Children[idx] = replacement;
+                else
+                    grid.Children.Add(replacement);
+                Unmount(node.CurrentChildControl);
+                node.CurrentChildControl = replacement;
+            }
+            else if (replacement is not null)
+            {
+                grid.Children.Add(replacement);
+                node.CurrentChildControl = replacement;
+            }
+
+            node.CurrentChildElement = newChildElement;
+        }
+        else
+        {
+            // Route changed — transition from old page to new page.
+            // Lifecycle sequence per spec:
+            //   1. onNavigatingFrom (already done by LifecycleGuard before stack mutation)
+            //   2-3. Stack mutation (already done)
+            //   4-5. Resolve + mount new element (or restore from cache)
+            //   6. Run transition animation
+            //   7. onNavigatedTo (new page)
+            //   8. onNavigatedFrom (old page)
+            //   9. Unmount or cache old element
+
+            var oldChildControl = node.CurrentChildControl;
+            var oldChildElement = node.CurrentChildElement;
+            var previousRoute = node.LastRenderedRoute;
+            var pendingMode = node.PendingNavigationMode;
+            var pendingPreviousRoute = node.PendingPreviousRoute;
+            node.PendingNavigationMode = null;
+            node.PendingPreviousRoute = null;
+
+            // Collect lifecycle hooks from old page BEFORE detach/unmount
+            var oldHooks = pendingMode is not null
+                ? CollectLifecycleHooks(oldChildControl)
+                : null;
+
+            // Resolve transition: per-navigation override > host default
+            var transitionOverride = handle.PendingTransitionOverride;
+            handle.PendingTransitionOverride = null;
+            var transition = transitionOverride ?? node.HostTransition;
+            var mode = pendingMode ?? Navigation.NavigationMode.Push;
+
+            // Resolve new child: check cache first, then mount fresh
+            UIElement? newChildControl;
+            Element? newChildElement;
+            bool restoredFromCache = false;
+
+            if (node.Cache is not null && node.Cache.TryGet(currentRoute, out var cached))
+            {
+                // Cache hit — restore the mounted control
+                newChildControl = cached.MountedControl;
+                newChildElement = cached.LastElement;
+                node.Cache.Remove(currentRoute);
+                restoredFromCache = true;
+            }
+            else
+            {
+                // Cache miss — mount fresh
+                newChildElement = node.RouteMap(currentRoute);
+                newChildControl = Mount(newChildElement, requestRerender);
+            }
+
+            // Update node state immediately
+            node.CurrentChildElement = newChildElement;
+            node.CurrentChildControl = newChildControl;
+            node.LastRenderedRoute = currentRoute;
+
+            // Action to finalize the old page (cache or unmount)
+            void FinalizeOldPage(UIElement? oldCtrl, Element? oldElem, object? oldRoute)
+            {
+                if (oldCtrl is null) return;
+                grid.Children.Remove(oldCtrl);
+
+                if (node.Cache is not null && node.CacheMode != Navigation.NavigationCacheMode.Disabled
+                    && oldRoute is not null)
+                {
+                    // Store in cache instead of unmounting
+                    node.Cache.Add(oldRoute, new Navigation.CachedPage
+                    {
+                        MountedControl = oldCtrl,
+                        LastElement = oldElem,
+                        LastAccessed = DateTime.UtcNow,
+                        CacheMode = node.CacheMode,
+                    });
+                }
+                else
+                {
+                    Unmount(oldCtrl);
+                }
+            }
+
+            // Determine whether to run an animated transition
+            bool useAnimation = transition is not Navigation.SuppressTransition
+                && oldChildControl is not null
+                && newChildControl is not null;
+
+            if (useAnimation)
+            {
+                // Mount new content at Opacity 0 alongside old content
+                var inVisual = ElementCompositionPreview.GetElementVisual(newChildControl!);
+                inVisual.Opacity = 0;
+                grid.Children.Add(newChildControl!);
+                node.TransitionInProgress = true;
+
+                // Capture references for the completion callback
+                var capturedOldControl = oldChildControl;
+                var capturedOldElement = oldChildElement;
+                var capturedOldRoute = previousRoute;
+                var capturedNewControl = newChildControl!;
+                var capturedMode = mode;
+                var capturedCurrentRoute = currentRoute;
+                var capturedPreviousRoute = pendingPreviousRoute;
+                var capturedOldHooks = oldHooks;
+
+                Navigation.TransitionEngine.RunTransition(
+                    capturedOldControl!, capturedNewControl, transition, capturedMode,
+                    onComplete: () =>
+                    {
+                        node.TransitionInProgress = false;
+                        FinalizeOldPage(capturedOldControl, capturedOldElement, capturedOldRoute);
+
+                        InvokePostNavigationLifecycle(
+                            capturedNewControl, capturedOldHooks,
+                            capturedCurrentRoute, capturedPreviousRoute, capturedMode);
+                    });
+            }
+            else
+            {
+                // Instant swap (SuppressTransition or missing controls)
+                FinalizeOldPage(oldChildControl, oldChildElement, previousRoute);
+
+                if (newChildControl is not null)
+                    grid.Children.Add(newChildControl);
+
+                InvokePostNavigationLifecycle(
+                    newChildControl, oldHooks,
+                    currentRoute, pendingPreviousRoute, mode);
+            }
+        }
+
+        // Update host properties if changed
+        node.HostTransition = newEl.Transition;
+        if (node.CacheMode != newEl.CacheMode)
+        {
+            node.CacheMode = newEl.CacheMode;
+            if (newEl.CacheMode == Navigation.NavigationCacheMode.Disabled && node.Cache is not null)
+            {
+                node.Cache.Clear();
+                node.Cache = null;
+            }
+            else if (newEl.CacheMode != Navigation.NavigationCacheMode.Disabled && node.Cache is null)
+            {
+                node.Cache = new Navigation.NavigationCache(newEl.CacheSize, evicted => Unmount(evicted));
+            }
+        }
+        if (node.Cache is not null)
+            node.Cache.MaxSize = newEl.CacheSize;
+
+        return null; // Patched in place
     }
 
     private UIElement? UpdateNavigationView(NavigationViewElement o, NavigationViewElement n, WinUI.NavigationView nv, Action requestRerender)

@@ -77,6 +77,23 @@ public abstract class Component
     protected T UseContext<T>(DuctContext<T> context)
         => Context.UseContext(context);
 
+    protected Navigation.NavigationHandle<TRoute> UseNavigation<TRoute>(TRoute initial) where TRoute : notnull
+        => Context.UseNavigation(initial);
+
+    protected Navigation.NavigationHandle<TRoute> UseNavigation<TRoute>() where TRoute : notnull
+        => Context.UseNavigation<TRoute>();
+
+    protected void UseNavigationLifecycle(
+        Action<Navigation.NavigatedToContext>? onNavigatedTo = null,
+        Action<Navigation.NavigatingFromContext>? onNavigatingFrom = null,
+        Action<Navigation.NavigatedFromContext>? onNavigatedFrom = null)
+        => Context.UseNavigationLifecycle(onNavigatedTo, onNavigatingFrom, onNavigatedFrom);
+
+    protected void UseSystemBackButton<TRoute>(
+        Navigation.NavigationHandle<TRoute> nav,
+        Microsoft.UI.Xaml.Window window) where TRoute : notnull
+        => Context.UseSystemBackButton(nav, window);
+
     protected (T Value, Action<T> Set) UsePersisted<T>(string key, T initialValue)
         => Context.UsePersisted(key, initialValue);
 

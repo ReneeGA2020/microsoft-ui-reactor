@@ -1221,6 +1221,21 @@ public record CanvasElement(Element[] Children) : Element
 //  Navigation elements
 // ════════════════════════════════════════════════════════════════════════
 
+/// <summary>
+/// Renders the content for the current route of a <see cref="Navigation.NavigationHandle{TRoute}"/>.
+/// Created via <c>NavigationHost&lt;TRoute&gt;(nav, routeMap)</c> in the DSL.
+/// The reconciler uses a Grid container so outgoing/incoming pages can overlap during transitions (Phase 4).
+/// </summary>
+public record NavigationHostElement(
+    object NavigationHandle,
+    Func<object, Element> RouteMap
+) : Element
+{
+    public Navigation.NavigationTransition Transition { get; init; } = Navigation.NavigationTransition.Default;
+    public Navigation.NavigationCacheMode CacheMode { get; init; } = Navigation.NavigationCacheMode.Disabled;
+    public int CacheSize { get; init; } = 10;
+}
+
 public record NavigationViewElement(
     NavigationViewItemData[] MenuItems,
     Element? Content = null

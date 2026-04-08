@@ -388,10 +388,55 @@ public static class ElementExtensions
     public static NavigationViewElement PaneTitle(this NavigationViewElement el, string title) =>
         el with { PaneTitle = title };
 
+    /// <summary>
+    /// Auto-syncs this NavigationView with a NavigationHandle: sets <c>SelectedTag</c>
+    /// from the current route, wires <c>OnSelectionChanged</c> to navigate,
+    /// <c>OnBackRequested</c> to <c>GoBack</c>, and <c>IsBackEnabled</c> to <c>CanGoBack</c>.
+    /// </summary>
+    /// <param name="el">The NavigationView element to configure.</param>
+    /// <param name="nav">The navigation handle obtained from <c>UseNavigation</c>.</param>
+    /// <param name="routeToTag">Maps a route to its NavigationViewItem tag. Return null for routes without a corresponding menu item.</param>
+    /// <param name="tagToRoute">Maps a NavigationViewItem tag back to a route for <c>OnSelectionChanged</c>.</param>
+    public static NavigationViewElement WithNavigation<TRoute>(
+        this NavigationViewElement el,
+        Core.Navigation.NavigationHandle<TRoute> nav,
+        Func<TRoute, string?> routeToTag,
+        Func<string, TRoute> tagToRoute) where TRoute : notnull
+    => el with
+    {
+        SelectedTag = routeToTag(nav.CurrentRoute),
+        IsBackEnabled = nav.CanGoBack,
+        OnSelectionChanged = tag =>
+        {
+            if (tag is not null)
+            {
+                var route = tagToRoute(tag);
+                if (!EqualityComparer<TRoute>.Default.Equals(route, nav.CurrentRoute))
+                    nav.Navigate(route);
+            }
+        },
+        OnBackRequested = () => nav.GoBack(),
+    };
+
     // ── TitleBar sugar ──────────────────────────────────────────────
 
     public static TitleBarElement Subtitle(this TitleBarElement el, string subtitle) =>
         el with { Subtitle = subtitle };
+
+    /// <summary>
+    /// Auto-syncs this TitleBar's back button with a NavigationHandle: sets
+    /// <c>IsBackButtonVisible</c> and <c>IsBackButtonEnabled</c> from <c>CanGoBack</c>,
+    /// and wires <c>OnBackRequested</c> to <c>GoBack</c>.
+    /// </summary>
+    public static TitleBarElement WithNavigation<TRoute>(
+        this TitleBarElement el,
+        Core.Navigation.NavigationHandle<TRoute> nav) where TRoute : notnull
+    => el with
+    {
+        IsBackButtonVisible = nav.CanGoBack,
+        IsBackButtonEnabled = nav.CanGoBack,
+        OnBackRequested = () => nav.GoBack(),
+    };
 
     public static TitleBarElement Set(this TitleBarElement el, Action<WinUI.TitleBar> configure) =>
         el with { Setters = [.. el.Setters, configure] };

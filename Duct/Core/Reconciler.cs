@@ -22,6 +22,7 @@ public sealed partial class Reconciler : IDisposable
 {
     private readonly Dictionary<UIElement, ComponentNode> _componentNodes = new();
     private readonly Dictionary<UIElement, ErrorBoundaryNode> _errorBoundaryNodes = new();
+    private readonly Dictionary<UIElement, NavigationHostNode> _navigationHostNodes = new();
     private readonly ElementPool _pool = new();
     private readonly Dictionary<Type, ITypeRegistration> _typeRegistry = new();
     private readonly IDuctLogger _logger;
@@ -421,6 +422,18 @@ public sealed partial class Reconciler : IDisposable
         }
 
         _errorBoundaryNodes.Remove(control);
+
+        if (_navigationHostNodes.TryGetValue(control, out var navNode))
+        {
+            if (navNode.RouteChangedHandler is not null)
+                navNode.Handle.RouteChanged -= navNode.RouteChangedHandler;
+            navNode.Handle.LifecycleGuard = null;
+            navNode.Cache?.Clear();
+            if (navNode.CurrentChildControl is not null)
+                UnmountRecursive(navNode.CurrentChildControl);
+            _navigationHostNodes.Remove(control);
+            return; // Children already handled above; don't recurse into Grid children again
+        }
 
         // Check registered type unmount handlers via Tag
         if (control is FrameworkElement fe && fe.Tag is Element tagEl
@@ -1316,6 +1329,155 @@ public sealed partial class Reconciler : IDisposable
         public Func<Exception, Element> Fallback { get; set; } = null!;
     }
 
+    /// <summary>
+    /// Tracks the state of a mounted NavigationHost in the tree.
+    /// Stores the current child control/element and the subscription to route changes
+    /// so content can be swapped when navigation occurs.
+    /// </summary>
+    internal class NavigationHostNode
+    {
+        /// <summary>The type-erased navigation handle (implements INavigationHandle internally).</summary>
+        public Navigation.INavigationHandle Handle { get; set; } = null!;
+        /// <summary>The route that was last rendered.</summary>
+        public object LastRenderedRoute { get; set; } = null!;
+        /// <summary>The element returned by routeMap for the current route.</summary>
+        public Element? CurrentChildElement { get; set; }
+        /// <summary>The mounted WinUI control for the current route.</summary>
+        public UIElement? CurrentChildControl { get; set; }
+        /// <summary>The route-mapping function (type-erased).</summary>
+        public Func<object, Element> RouteMap { get; set; } = null!;
+        /// <summary>The rerender callback for triggering content swap.</summary>
+        public Action? RequestRerender { get; set; }
+        /// <summary>Handler attached to INavigationHandle.RouteChanged for cleanup.</summary>
+        public Action? RouteChangedHandler { get; set; }
+        /// <summary>Navigation mode recorded by the lifecycle guard before stack mutation.</summary>
+        public Navigation.NavigationMode? PendingNavigationMode { get; set; }
+        /// <summary>Previous route recorded by the lifecycle guard before stack mutation.</summary>
+        public object? PendingPreviousRoute { get; set; }
+        /// <summary>The host-level default transition.</summary>
+        public Navigation.NavigationTransition HostTransition { get; set; } = Navigation.NavigationTransition.Default;
+        /// <summary>True if a transition animation is currently running.</summary>
+        public bool TransitionInProgress { get; set; }
+        /// <summary>The host-level cache mode.</summary>
+        public Navigation.NavigationCacheMode CacheMode { get; set; } = Navigation.NavigationCacheMode.Disabled;
+        /// <summary>Page cache for this NavigationHost (null when CacheMode is Disabled).</summary>
+        public Navigation.NavigationCache? Cache { get; set; }
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  Navigation lifecycle hook traversal
+    // ════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Collects all <see cref="RenderContext.NavigationLifecycleHookState"/> instances from
+    /// the component subtree rooted at <paramref name="root"/>.
+    /// </summary>
+    internal List<RenderContext.NavigationLifecycleHookState> CollectLifecycleHooks(UIElement? root)
+    {
+        var hooks = new List<RenderContext.NavigationLifecycleHookState>();
+        CollectLifecycleHooksRecursive(root, hooks);
+        return hooks;
+    }
+
+    private void CollectLifecycleHooksRecursive(UIElement? control, List<RenderContext.NavigationLifecycleHookState> hooks)
+    {
+        if (control is null) return;
+
+        if (_componentNodes.TryGetValue(control, out var node))
+        {
+            var ctx = node.Component?.Context ?? node.Context;
+            var hook = ctx?.GetNavigationLifecycleHook();
+            if (hook is not null)
+                hooks.Add(hook);
+        }
+
+        // Recurse into children (Border wraps components, Panel/Grid wraps layouts)
+        if (control is WinUI.Panel panel)
+        {
+            foreach (UIElement child in panel.Children)
+                CollectLifecycleHooksRecursive(child, hooks);
+        }
+        else if (control is WinUI.Border border && border.Child is not null)
+        {
+            CollectLifecycleHooksRecursive(border.Child, hooks);
+        }
+        else if (control is WinUI.ContentControl cc && cc.Content is UIElement content)
+        {
+            CollectLifecycleHooksRecursive(content, hooks);
+        }
+    }
+
+    /// <summary>
+    /// Invokes post-navigation lifecycle callbacks: onNavigatedTo on the new page,
+    /// then onNavigatedFrom on the old page (using pre-collected hooks).
+    /// </summary>
+    internal void InvokePostNavigationLifecycle(
+        UIElement? newChildControl,
+        List<RenderContext.NavigationLifecycleHookState>? oldHooks,
+        object currentRoute, object? previousRoute, Navigation.NavigationMode mode)
+    {
+        // onNavigatedTo on the new page's component tree
+        var newHooks = CollectLifecycleHooks(newChildControl);
+        var navigatedToCtx = new Navigation.NavigatedToContext(currentRoute, previousRoute, mode);
+        foreach (var hook in newHooks)
+        {
+            try { hook.OnNavigatedTo?.Invoke(navigatedToCtx); }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Duct] onNavigatedTo threw: {ex}");
+            }
+        }
+
+        // onNavigatedFrom on the old page (callbacks captured at last render)
+        if (oldHooks is not null)
+        {
+            var navigatedFromCtx = new Navigation.NavigatedFromContext(
+                previousRoute!, currentRoute, mode);
+            foreach (var hook in oldHooks)
+            {
+                try { hook.OnNavigatedFrom?.Invoke(navigatedFromCtx); }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Duct] onNavigatedFrom threw: {ex}");
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Invokes <c>onNavigatingFrom</c> on all lifecycle hooks in the subtree.
+    /// Sets <see cref="Navigation.NavigatingFromContext.IsCancelled"/> if any callback cancels.
+    /// </summary>
+    internal void InvokeNavigatingFrom(UIElement? root, Navigation.NavigatingFromContext ctx)
+    {
+        if (root is null) return;
+
+        if (_componentNodes.TryGetValue(root, out var node))
+        {
+            var renderCtx = node.Component?.Context ?? node.Context;
+            var hook = renderCtx?.GetNavigationLifecycleHook();
+            hook?.OnNavigatingFrom?.Invoke(ctx);
+            if (ctx.IsCancelled) return;
+        }
+
+        if (root is WinUI.Panel panel)
+        {
+            foreach (UIElement child in panel.Children)
+            {
+                InvokeNavigatingFrom(child, ctx);
+                if (ctx.IsCancelled) return;
+            }
+        }
+        else if (root is WinUI.Border border && border.Child is not null)
+        {
+            InvokeNavigatingFrom(border.Child, ctx);
+        }
+        else if (root is WinUI.ContentControl cc && cc.Content is UIElement content)
+        {
+            InvokeNavigatingFrom(content, ctx);
+        }
+    }
+
     public void Dispose()
     {
         foreach (var node in _componentNodes.Values)
@@ -1325,5 +1487,13 @@ public sealed partial class Reconciler : IDisposable
         }
         _componentNodes.Clear();
         _errorBoundaryNodes.Clear();
+        foreach (var node in _navigationHostNodes.Values)
+        {
+            if (node.RouteChangedHandler is not null)
+                node.Handle.RouteChanged -= node.RouteChangedHandler;
+            node.Handle.LifecycleGuard = null;
+            node.Cache?.Clear();
+        }
+        _navigationHostNodes.Clear();
     }
 }
