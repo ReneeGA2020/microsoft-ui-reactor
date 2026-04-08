@@ -79,6 +79,12 @@ public abstract class Component
 
     protected (T Value, Action<T> Set) UsePersisted<T>(string key, T initialValue)
         => Context.UsePersisted(key, initialValue);
+
+    protected DuctCommand UseCommand(DuctCommand command)
+        => Context.UseCommand(command);
+
+    protected DuctCommand<T> UseCommand<T>(DuctCommand<T> command)
+        => Context.UseCommand(command);
 }
 
 /// <summary>

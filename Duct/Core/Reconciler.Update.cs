@@ -176,6 +176,8 @@ public sealed partial class Reconciler
                 => UpdateTeachingTip(n, tip),
             (MenuBarElement, MenuBarElement, WinUI.MenuBar)
                 => Mount(newEl, requestRerender),
+            (CommandHostElement o, CommandHostElement n, WinUI.Grid chGrid)
+                => UpdateCommandHost(o, n, chGrid, requestRerender),
             (CommandBarElement o, CommandBarElement n, WinUI.CommandBar cb)
                 => UpdateCommandBar(o, n, cb, requestRerender),
             (Core.GridElement o, Core.GridElement n, WinUI.Grid g)
@@ -608,6 +610,9 @@ public sealed partial class Reconciler
         if (n.IsReadOnly.HasValue) tb.IsReadOnly = n.IsReadOnly.Value;
         if (n.AcceptsReturn.HasValue) tb.AcceptsReturn = n.AcceptsReturn.Value;
         if (n.TextWrapping.HasValue) tb.TextWrapping = n.TextWrapping.Value;
+        // Apply selection position after text — must come after Text is set so the range is valid
+        if (n.SelectionStart.HasValue) tb.SelectionStart = Math.Min(n.SelectionStart.Value, tb.Text.Length);
+        if (n.SelectionLength.HasValue) tb.SelectionLength = Math.Min(n.SelectionLength.Value, tb.Text.Length - tb.SelectionStart);
         SetElementTag(tb, n);
         ApplySetters(n.Setters, tb);
         return null;
@@ -1192,6 +1197,32 @@ public sealed partial class Reconciler
         return null;
     }
 
+    private UIElement? UpdateCommandHost(CommandHostElement o, CommandHostElement n, WinUI.Grid host, Action requestRerender)
+    {
+        // Update child element
+        if (host.Children.Count > 0 && host.Children[0] is UIElement existingChild)
+        {
+            var replacement = UpdateChild(o.Child, n.Child, existingChild, requestRerender);
+            if (replacement is not null)
+            {
+                UnmountChild(existingChild);
+                host.Children[0] = replacement;
+            }
+        }
+        else
+        {
+            var child = Mount(n.Child, requestRerender);
+            if (child is not null) host.Children.Add(child);
+        }
+
+        // Rebuild accelerators — clear and re-add (commands may have changed enabled state or handlers)
+        host.KeyboardAccelerators.Clear();
+        AddCommandHostAccelerators(host, n.Commands);
+
+        SetElementTag(host, n);
+        return null;
+    }
+
     private UIElement? UpdateCommandBar(CommandBarElement o, CommandBarElement n, WinUI.CommandBar cb, Action requestRerender)
     {
         cb.DefaultLabelPosition = n.DefaultLabelPosition;
@@ -1222,7 +1253,14 @@ public sealed partial class Reconciler
             {
                 case AppBarButtonData cmd when target[i] is WinUI.AppBarButton abb:
                     abb.Label = cmd.Label;
-                    if (cmd.Icon is not null) abb.Icon = new WinUI.SymbolIcon(ParseSymbol(cmd.Icon));
+                    abb.IsEnabled = cmd.IsEnabled;
+                    abb.Icon = ResolveIcon(cmd.IconElement, cmd.Icon);
+                    if (cmd.AccessKey is not null) abb.AccessKey = cmd.AccessKey;
+                    if (cmd.Description is not null)
+                    {
+                        WinUI.ToolTipService.SetToolTip(abb, cmd.Description);
+                        Microsoft.UI.Xaml.Automation.AutomationProperties.SetHelpText(abb, cmd.Description);
+                    }
                     abb.Tag = cmd;
                     break;
                 case AppBarToggleButtonData toggle when target[i] is WinUI.AppBarToggleButton atb:

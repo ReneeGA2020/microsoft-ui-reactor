@@ -443,6 +443,79 @@ public sealed class RenderContext
     });
 
     // ════════════════════════════════════════════════════════════════
+    //  Command hooks
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Processes a DuctCommand for use in a component. For sync-only commands, returns
+    /// the command unchanged (no hook slots consumed). For async commands, wraps ExecuteAsync
+    /// with automatic IsExecuting tracking and re-entrance guards. The returned command
+    /// always has a sync Execute action and ExecuteAsync = null.
+    /// </summary>
+    public DuctCommand UseCommand(DuctCommand command)
+    {
+        // Sync-only commands pass through unchanged — no hooks consumed
+        if (command.ExecuteAsync is null)
+            return command;
+
+        var (isExecuting, setIsExecuting) = UseState(false);
+        var asyncAction = command.ExecuteAsync;
+
+        var wrappedExecute = UseMemo<Action>(() => () =>
+        {
+            // Re-entrance guard: don't start if already executing
+            if (isExecuting) return;
+            setIsExecuting(true);
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await asyncAction();
+                }
+                finally
+                {
+                    setIsExecuting(false);
+                }
+            });
+        }, command.ExecuteAsync, isExecuting);
+
+        return command with { Execute = wrappedExecute, ExecuteAsync = null, IsExecuting = isExecuting };
+    }
+
+    /// <summary>
+    /// Processes a parameterized DuctCommand for use in a component. For sync-only commands,
+    /// returns unchanged. For async commands, wraps ExecuteAsync with IsExecuting tracking
+    /// and re-entrance guards.
+    /// </summary>
+    public DuctCommand<T> UseCommand<T>(DuctCommand<T> command)
+    {
+        if (command.ExecuteAsync is null)
+            return command;
+
+        var (isExecuting, setIsExecuting) = UseState(false);
+        var asyncAction = command.ExecuteAsync;
+
+        var wrappedExecute = UseMemo<Action<T>>(() => (arg) =>
+        {
+            if (isExecuting) return;
+            setIsExecuting(true);
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await asyncAction(arg);
+                }
+                finally
+                {
+                    setIsExecuting(false);
+                }
+            });
+        }, command.ExecuteAsync, isExecuting);
+
+        return command with { Execute = wrappedExecute, ExecuteAsync = null, IsExecuting = isExecuting };
+    }
+
+    // ════════════════════════════════════════════════════════════════
     //  Responsive layout hooks
     // ════════════════════════════════════════════════════════════════
 

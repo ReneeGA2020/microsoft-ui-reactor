@@ -64,6 +64,13 @@ public static class UI
     public static ButtonElement Button(Element content, Action? onClick = null) =>
         new("", onClick) { ContentElement = content };
 
+    /// <summary>
+    /// Creates a Button driven by a DuctCommand. Maps Label → Content, Execute → Click,
+    /// IsEnabled → IsEnabled, Description → Tooltip.
+    /// </summary>
+    public static ButtonElement Button(Core.DuctCommand command) =>
+        new(command.Label, command.Execute) { IsEnabled = command.IsEnabled };
+
     public static HyperlinkButtonElement HyperlinkButton(string content, Uri? navigateUri = null, Action? onClick = null) =>
         new(content, navigateUri, onClick);
 
@@ -344,6 +351,34 @@ public static class UI
 
     public static MenuFlyoutItemData MenuItem(string text, Action? onClick = null, string? icon = null) => new(text, onClick, icon);
 
+    /// <summary>
+    /// Creates a MenuFlyoutItem driven by a DuctCommand. Maps Label → Text, Icon,
+    /// Execute → OnClick, Accelerator, IsEnabled, AccessKey.
+    /// </summary>
+    public static MenuFlyoutItemData MenuItem(Core.DuctCommand command) =>
+        new(command.Label, command.Execute)
+        {
+            IsEnabled = command.IsEnabled,
+            IconElement = command.Icon,
+            KeyboardAccelerators = command.Accelerator is not null ? [command.Accelerator] : null,
+            AccessKey = command.AccessKey,
+            Description = command.Description,
+        };
+
+    /// <summary>
+    /// Creates a MenuFlyoutItem driven by a parameterized DuctCommand. Wraps the action
+    /// to invoke with the bound parameter.
+    /// </summary>
+    public static MenuFlyoutItemData MenuItem<T>(Core.DuctCommand<T> command, T parameter) =>
+        new(command.Label, command.Execute is not null ? () => command.Execute(parameter) : null)
+        {
+            IsEnabled = command.IsEnabled,
+            IconElement = command.Icon,
+            KeyboardAccelerators = command.Accelerator is not null ? [command.Accelerator] : null,
+            AccessKey = command.AccessKey,
+            Description = command.Description,
+        };
+
     public static ToggleMenuFlyoutItemData ToggleMenuItem(string text, bool isChecked = false, Action<bool>? onToggled = null, string? icon = null) => new(text, isChecked, onToggled, icon);
 
     public static RadioMenuFlyoutItemData RadioMenuItem(string text, string groupName, bool isChecked = false, Action? onClick = null, string? icon = null) => new(text, groupName, isChecked, onClick, icon);
@@ -358,6 +393,20 @@ public static class UI
         new(primaryCommands, secondaryCommands);
 
     public static AppBarButtonData AppBarButton(string label, Action? onClick = null, string? icon = null) => new(label, onClick, icon);
+
+    /// <summary>
+    /// Creates an AppBarButton driven by a DuctCommand. Maps Label, Icon, Execute,
+    /// Accelerator, IsEnabled, AccessKey, and Description.
+    /// </summary>
+    public static AppBarButtonData AppBarButton(Core.DuctCommand command) =>
+        new(command.Label, command.Execute)
+        {
+            IsEnabled = command.IsEnabled,
+            IconElement = command.Icon,
+            KeyboardAccelerators = command.Accelerator is not null ? [command.Accelerator] : null,
+            AccessKey = command.AccessKey,
+            Description = command.Description,
+        };
 
     public static AppBarToggleButtonData AppBarToggleButton(string label, bool isChecked = false, Action<bool>? onToggled = null, string? icon = null) =>
         new(label, isChecked, onToggled, icon);
@@ -409,6 +458,15 @@ public static class UI
     /// </summary>
     public static MemoElement Memo(Func<RenderContext, Element> render, params object?[] dependencies)
         => new(render, dependencies.Length == 0 ? null : dependencies);
+
+    // ── Command host ─────────────────────────────────────────────────
+
+    /// <summary>
+    /// Scopes keyboard accelerators from the given commands to the child subtree.
+    /// Only commands with an Accelerator produce keyboard accelerators on the host element.
+    /// </summary>
+    public static Core.CommandHostElement CommandHost(Core.DuctCommand[] commands, Element child) =>
+        new(commands, child);
 
     // ── Conditional helpers ─────────────────────────────────────────
 

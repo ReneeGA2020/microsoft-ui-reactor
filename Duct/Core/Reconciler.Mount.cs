@@ -134,6 +134,7 @@ public sealed partial class Reconciler
             ParallaxViewElement pv => MountParallaxView(pv, requestRerender),
             MapControlElement mc => MountMapControl(mc),
             FrameElement frame => MountFrame(frame),
+            CommandHostElement ch => MountCommandHost(ch, requestRerender),
             ErrorBoundaryElement eb => MountErrorBoundary(eb, requestRerender),
             ComponentElement comp => MountComponent(comp, requestRerender),
             FuncElement func => MountFuncComponent(func, requestRerender),
@@ -329,9 +330,14 @@ public sealed partial class Reconciler
         if (tf.IsReadOnly == true) textBox.IsReadOnly = true;
         if (tf.AcceptsReturn == true) textBox.AcceptsReturn = true;
         if (tf.TextWrapping.HasValue) textBox.TextWrapping = tf.TextWrapping.Value;
+        if (tf.SelectionStart.HasValue) textBox.SelectionStart = tf.SelectionStart.Value;
+        if (tf.SelectionLength.HasValue) textBox.SelectionLength = tf.SelectionLength.Value;
         SetElementTag(textBox, tf);
         if (rented is null) // Only wire events on fresh controls — pooled controls retain their handler
+        {
             textBox.TextChanged += (_, _) => (GetElementTag(textBox) as TextFieldElement)?.OnChanged?.Invoke(textBox.Text);
+            textBox.SelectionChanged += (_, _) => (GetElementTag(textBox) as TextFieldElement)?.OnSelectionChanged?.Invoke(textBox.SelectedText, textBox.SelectionStart, textBox.SelectionLength);
+        }
         ApplySetters(tf.Setters, textBox);
         return textBox;
     }
@@ -1468,6 +1474,60 @@ public sealed partial class Reconciler
         return menuBar;
     }
 
+    private WinUI.Grid MountCommandHost(CommandHostElement ch, Action requestRerender)
+    {
+        var host = new WinUI.Grid();
+        var child = Mount(ch.Child, requestRerender);
+        if (child is not null) host.Children.Add(child);
+
+        AddCommandHostAccelerators(host, ch.Commands);
+
+        SetElementTag(host, ch);
+        return host;
+    }
+
+    private static void AddCommandHostAccelerators(WinUI.Grid host, DuctCommand[] commands)
+    {
+        foreach (var cmd in commands)
+        {
+            if (cmd.Accelerator is null) continue;
+            var ka = new Microsoft.UI.Xaml.Input.KeyboardAccelerator
+            {
+                Key = cmd.Accelerator.Key,
+                Modifiers = cmd.Accelerator.Modifiers,
+            };
+            var command = cmd;
+            ka.Invoked += (s, e) =>
+            {
+                // Scope check: only fire if focus is within this CommandHost subtree
+                var xamlRoot = host.XamlRoot;
+                if (xamlRoot is null) return;
+                var focused = Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(xamlRoot) as DependencyObject;
+                if (focused is null || !IsDescendantOf(focused, host))
+                {
+                    // Don't mark handled — let other handlers process it
+                    return;
+                }
+
+                e.Handled = true;
+                if (command.IsEnabled)
+                    command.Execute?.Invoke();
+            };
+            host.KeyboardAccelerators.Add(ka);
+        }
+    }
+
+    private static bool IsDescendantOf(DependencyObject element, DependencyObject ancestor)
+    {
+        var current = element;
+        while (current is not null)
+        {
+            if (ReferenceEquals(current, ancestor)) return true;
+            current = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(current);
+        }
+        return false;
+    }
+
     private WinUI.CommandBar MountCommandBar(CommandBarElement cmdEl, Action requestRerender)
     {
         var commandBar = new WinUI.CommandBar
@@ -1492,10 +1552,17 @@ public sealed partial class Reconciler
             case AppBarButtonData cmd:
             {
                 var abb = new WinUI.AppBarButton { Label = cmd.Label };
+                abb.IsEnabled = cmd.IsEnabled;
                 abb.Icon = ResolveIcon(cmd.IconElement, cmd.Icon);
                 if (cmd.KeyboardAccelerators is not null)
                     foreach (var ka in cmd.KeyboardAccelerators)
                         abb.KeyboardAccelerators.Add(new Microsoft.UI.Xaml.Input.KeyboardAccelerator { Key = ka.Key, Modifiers = ka.Modifiers });
+                if (cmd.AccessKey is not null) abb.AccessKey = cmd.AccessKey;
+                if (cmd.Description is not null)
+                {
+                    WinUI.ToolTipService.SetToolTip(abb, cmd.Description);
+                    Microsoft.UI.Xaml.Automation.AutomationProperties.SetHelpText(abb, cmd.Description);
+                }
                 abb.Tag = cmd;
                 abb.Click += (s, _) => ((AppBarButtonData)((WinUI.AppBarButton)s!).Tag!).OnClick?.Invoke();
                 return abb;
@@ -1537,10 +1604,17 @@ public sealed partial class Reconciler
             case MenuFlyoutItemData mfi:
             {
                 var flyoutItem = new WinUI.MenuFlyoutItem { Text = mfi.Text };
+                flyoutItem.IsEnabled = mfi.IsEnabled;
                 flyoutItem.Icon = ResolveIcon(mfi.IconElement, mfi.Icon);
                 if (mfi.KeyboardAccelerators is not null)
                     foreach (var ka in mfi.KeyboardAccelerators)
                         flyoutItem.KeyboardAccelerators.Add(new Microsoft.UI.Xaml.Input.KeyboardAccelerator { Key = ka.Key, Modifiers = ka.Modifiers });
+                if (mfi.AccessKey is not null) flyoutItem.AccessKey = mfi.AccessKey;
+                if (mfi.Description is not null)
+                {
+                    WinUI.ToolTipService.SetToolTip(flyoutItem, mfi.Description);
+                    Microsoft.UI.Xaml.Automation.AutomationProperties.SetHelpText(flyoutItem, mfi.Description);
+                }
                 flyoutItem.Tag = mfi;
                 flyoutItem.Click += (s, _) => ((MenuFlyoutItemData)((WinUI.MenuFlyoutItem)s!).Tag!).OnClick?.Invoke();
                 return flyoutItem;

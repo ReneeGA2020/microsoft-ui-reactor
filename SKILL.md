@@ -1448,3 +1448,214 @@ class SettingsPage : Component
 | `flex-grow: 1` | `.Flex(grow: 1)` |
 | `style={{margin: 10}}` | `.Margin(10)` |
 | JSX | C# method calls + `using static Duct.UI` |
+
+## Commands
+
+### When to Use Commands vs Bare Actions
+
+Use **DuctCommand** when:
+- An action appears in multiple surfaces (toolbar, menu, context menu)
+- The action needs a keyboard shortcut
+- The action needs CanExecute disabling (e.g., "Copy" disabled when no selection)
+- It's a standard operation (Cut/Copy/Paste/Undo/Redo/Save/etc.)
+
+Use **bare `Action`** when:
+- Simple one-off button click with no reuse
+- No need for metadata, keyboard shortcuts, or enabled/disabled state
+
+### DuctCommand Record
+
+Immutable command descriptor that bundles an action with metadata:
+
+```csharp
+var save = new DuctCommand
+{
+    Label = "Save",                           // required
+    Execute = () => Save(),                   // sync action (mutually exclusive with ExecuteAsync)
+    ExecuteAsync = async () => await SaveAsync(), // async action (use UseCommand hook)
+    CanExecute = hasChanges,                  // default: true
+    IsExecuting = false,                      // managed by UseCommand hook
+    Icon = SymbolIcon("Save"),                // optional icon
+    Description = "Save the document",        // tooltip + accessibility
+    Accelerator = Accelerator(VirtualKey.S, VirtualKeyModifiers.Control), // keyboard shortcut
+    AccessKey = "S",                          // Alt+key
+};
+// Computed: IsEnabled = CanExecute && !IsExecuting
+```
+
+### DuctCommand\<T\> — Parameterized Commands
+
+Same as DuctCommand but Execute/ExecuteAsync receive a parameter:
+
+```csharp
+var delete = new DuctCommand<Item>
+{
+    Label = "Delete",
+    Execute = item => Remove(item),
+    Icon = SymbolIcon("Delete"),
+};
+MenuItem(delete, selectedItem)  // binds the parameter
+```
+
+### StandardCommand Factory
+
+Pre-built commands with correct labels, icons, and keyboard accelerators:
+
+```csharp
+// Sync overloads
+var cut   = StandardCommand.Cut(() => CutSelection());
+var copy  = StandardCommand.Copy(() => CopySelection());
+var paste = StandardCommand.Paste(() => PasteFromClipboard());
+var undo  = StandardCommand.Undo(() => UndoLastAction());
+var redo  = StandardCommand.Redo(() => RedoAction());
+var del   = StandardCommand.Delete(() => DeleteSelected());
+var selAll = StandardCommand.SelectAll(() => SelectAll());
+var save  = StandardCommand.Save(() => SaveFile());
+var open  = StandardCommand.Open(() => OpenFile());
+var close = StandardCommand.Close(() => CloseTab());
+var share = StandardCommand.Share(() => ShareContent());
+var play  = StandardCommand.Play(() => PlayMedia());
+var pause = StandardCommand.Pause(() => PauseMedia());
+var stop  = StandardCommand.Stop(() => StopMedia());
+var fwd   = StandardCommand.Forward(() => GoForward());
+var back  = StandardCommand.Backward(() => GoBack());
+
+// Async overloads
+var save = StandardCommand.Save(async () => await SaveAsync());
+
+// CanExecute parameter
+var cut = StandardCommand.Cut(() => CutSelection(), canExecute: hasSelection);
+```
+
+### Command-Aware DSL Overloads
+
+Define once, use in any surface:
+
+```csharp
+var save = StandardCommand.Save(() => SaveFile());
+
+Button(save)           // label → content, execute → click, isEnabled → isEnabled
+AppBarButton(save)     // + icon, accelerator, accessKey, description
+MenuItem(save)         // + icon, accelerator, accessKey, description
+MenuItem(deleteCmd, item)  // parameterized: binds item as argument
+```
+
+### Per-Site Overrides with `with`
+
+```csharp
+var delete = StandardCommand.Delete(() => DeleteSelected());
+MenuItem(delete)                                           // "Delete" with Delete icon
+MenuItem(delete with { Label = "Remove permanently" })     // custom label
+AppBarButton(delete with { Icon = SymbolIcon("Clear") })   // custom icon
+```
+
+### UseCommand Hook — Async Lifecycle
+
+**When needed:** Only for commands with `ExecuteAsync`. Sync-only commands pass through unchanged.
+
+```csharp
+class MyComponent : Component
+{
+    public override Element Render()
+    {
+        var saveCmd = UseCommand(StandardCommand.Save(async () =>
+        {
+            await SaveAsync();
+        }));
+
+        // saveCmd.Execute is now sync (wraps the async)
+        // saveCmd.ExecuteAsync is null
+        // saveCmd.IsExecuting is true while the async operation is in-flight
+        // saveCmd.IsEnabled is false while executing (auto-disables)
+
+        return HStack(
+            Button(saveCmd),
+            saveCmd.IsExecuting ? ProgressRing() : Empty()
+        );
+    }
+}
+```
+
+**How it works:**
+- Consumes 2 hook slots (UseState for isExecuting, UseMemo for wrapped action)
+- Re-entrance guard: ignores clicks while already executing
+- Error handling: IsExecuting resets to false even if ExecuteAsync throws
+
+### CommandHost — Keyboard Accelerator Scoping
+
+Scopes keyboard accelerators to a subtree:
+
+```csharp
+var save = StandardCommand.Save(() => SaveFile());
+var undo = StandardCommand.Undo(() => UndoAction());
+
+CommandHost([save, undo],
+    VStack(
+        Text("Ctrl+S and Ctrl+Z only work in this region"),
+        TextField(value, onChange)
+    )
+)
+```
+
+Only commands with an `Accelerator` register keyboard accelerators. Commands without accelerators are ignored by CommandHost.
+
+### Context-Based Command Sharing via DuctContext
+
+Editor-provides / toolbar-consumes pattern:
+
+```csharp
+// 1. Define a command set record and context
+record EditorCommands(DuctCommand Save, DuctCommand Undo, DuctCommand Redo);
+static readonly DuctContext<EditorCommands?> EditorCtx = new(null);
+
+// 2. Editor provides commands
+class Editor : Component
+{
+    public override Element Render()
+    {
+        var save = UseCommand(StandardCommand.Save(async () => await SaveAsync()));
+        var undo = StandardCommand.Undo(() => Undo());
+        var redo = StandardCommand.Redo(() => Redo(), canExecute: false);
+
+        return TextField(text, onChange)
+            .Provide(EditorCtx, new EditorCommands(save, undo, redo));
+    }
+}
+
+// 3. Toolbar consumes commands
+class Toolbar : Component
+{
+    public override Element Render()
+    {
+        var cmds = UseContext(EditorCtx);
+        if (cmds is null) return Empty();
+
+        return CommandBar(primaryCommands: [
+            AppBarButton(cmds.Save),
+            AppBarButton(cmds.Undo),
+            AppBarButton(cmds.Redo),
+        ]);
+    }
+}
+```
+
+### CommandInterop.FromCommand — ICommand Migration
+
+Bridge existing ICommand (MVVM/CommunityToolkit) to DuctCommand:
+
+```csharp
+var ductCmd = CommandInterop.FromCommand(
+    viewModel.SaveCommand,  // ICommand
+    "Save",
+    icon: SymbolIcon("Save"),
+    description: "Save the document",
+    accelerator: Accelerator(VirtualKey.S, VirtualKeyModifiers.Control)
+);
+```
+
+### Common Anti-Patterns
+
+- **Don't** create commands inside loops — define once, bind per-item with `MenuItem(cmd, item)`
+- **Don't** use `UseCommand` for sync-only commands — it wastes hook slots
+- **Don't** call `UseCommand` conditionally — hooks must be called in the same order every render
+- **Don't** mix `Execute` and `ExecuteAsync` on the same command — pick one

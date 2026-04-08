@@ -656,8 +656,11 @@ public record MenuBarItemData(string Title, MenuFlyoutItemBase[] Items);
 public abstract record MenuFlyoutItemBase;
 public record MenuFlyoutItemData(string Text, Action? OnClick = null, string? Icon = null) : MenuFlyoutItemBase
 {
+    public bool IsEnabled { get; init; } = true;
     public IconData? IconElement { get; init; }
     public KeyboardAcceleratorData[]? KeyboardAccelerators { get; init; }
+    public string? AccessKey { get; init; }
+    public string? Description { get; init; }
 }
 public record MenuFlyoutSeparatorData() : MenuFlyoutItemBase;
 public record MenuFlyoutSubItemData(string Text, MenuFlyoutItemBase[] Items, string? Icon = null) : MenuFlyoutItemBase
@@ -687,14 +690,23 @@ public record ImageIconData(System.Uri Source) : IconData;
 public abstract record AppBarItemBase;
 public record AppBarButtonData(string Label, Action? OnClick = null, string? Icon = null) : AppBarItemBase
 {
+    public bool IsEnabled { get; init; } = true;
     public IconData? IconElement { get; init; }
     public KeyboardAcceleratorData[]? KeyboardAccelerators { get; init; }
+    public string? AccessKey { get; init; }
+    public string? Description { get; init; }
 }
 public record AppBarToggleButtonData(string Label, bool IsChecked = false, Action<bool>? OnToggled = null, string? Icon = null) : AppBarItemBase
 {
     public IconData? IconElement { get; init; }
 }
 public record AppBarSeparatorData() : AppBarItemBase;
+
+/// <summary>
+/// Scopes keyboard accelerators from a set of commands to a subtree.
+/// Accelerators are only active when the host or its descendants have focus.
+/// </summary>
+public record CommandHostElement(DuctCommand[] Commands, Element Child) : Element;
 
 // ════════════════════════════════════════════════════════════════════════
 //  Text elements
@@ -838,6 +850,12 @@ public record TextFieldElement(
     public bool? IsReadOnly { get; init; }
     public bool? AcceptsReturn { get; init; }
     public TextWrapping? TextWrapping { get; init; }
+    /// <summary>Fires when the text selection changes. Receives (selectedText, selectionStart, selectionLength).</summary>
+    public Action<string, int, int>? OnSelectionChanged { get; init; }
+    /// <summary>Caret / selection start position. Set this to control where the caret sits after a text update.</summary>
+    public int? SelectionStart { get; init; }
+    /// <summary>Selection length. Set alongside SelectionStart to control the selection range.</summary>
+    public int? SelectionLength { get; init; }
     internal Action<WinUI.TextBox>[] Setters { get; init; } = [];
 }
 
