@@ -1,5 +1,8 @@
 namespace Duct.Core.Localization;
 
+/// <summary>
+/// Options for IntlAccessor.FormatDate(). Maps to .NET DateTimeFormatInfo styles.
+/// </summary>
 public enum DateStyle
 {
     Default,

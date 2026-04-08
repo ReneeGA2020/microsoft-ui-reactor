@@ -6,8 +6,19 @@ using WinPrim = Microsoft.UI.Xaml.Controls.Primitives;
 using WinShapes = Microsoft.UI.Xaml.Shapes;
 namespace Duct.Core;
 
+// AI-HINT: Reconciler.Mount.cs — creates real WinUI controls from Element descriptions.
+// Mount() is a big switch over all Element subtypes → MountXxx() methods.
+// Each MountXxx allocates (or rents from pool) a WinUI control, sets properties,
+// wires event handlers via Tag pattern, and recurses for children.
+// The Tag pattern: event handlers read the current Element from control.Tag to
+// dispatch callbacks, so handlers are wired once and survive element recycling.
+// Context values are pushed/popped around child processing.
+
 public sealed partial class Reconciler
 {
+    /// <summary>
+    /// Creates a WinUI control tree from an Element tree. Returns null for EmptyElement.
+    /// </summary>
     public UIElement? Mount(Element element, Action requestRerender)
     {
         // Unwrap legacy ModifiedElement (backward compat)

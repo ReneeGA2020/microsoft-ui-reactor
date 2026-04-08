@@ -1,5 +1,13 @@
 // C# port of Martin Mitáš's md4c Markdown parser.
 // Ported from md4c/src/md4c.c
+//
+// AI-HINT: Faithful C# port of md4c — a CommonMark-compliant SAX-style Markdown parser.
+// Split across 3 partial files: Md4cParser.cs (orchestration, core structs),
+// Md4cParser.Block.cs (block-level parsing: headings, lists, code blocks, HTML blocks),
+// Md4cParser.Inline.cs (inline parsing: emphasis, links, code spans, autolinks).
+// The parser works in phases: lines → blocks → inlines → callbacks.
+// Mark struct tracks potential opener/closer positions for inline delimiters.
+// Uses flag bitmasks extensively (MARK_OPENER, MARK_CLOSER, etc.).
 
 namespace Duct.Markdown;
 

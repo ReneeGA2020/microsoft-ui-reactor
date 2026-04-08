@@ -10,6 +10,11 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace Duct.Localization.Generator;
 
+// AI-HINT: Roslyn incremental source generator. Reads .resw files as AdditionalTexts,
+//   emits a static Loc class with nested classes per .resw namespace, each containing
+//   MessageKey constants. Also emits diagnostics for missing keys across locales.
+//   Pipeline: AdditionalTexts → ReswParser → grouped by locale → diff default vs other → emit C#.
+
 [Generator(LanguageNames.CSharp)]
 public sealed class LocSourceGenerator : IIncrementalGenerator
 {

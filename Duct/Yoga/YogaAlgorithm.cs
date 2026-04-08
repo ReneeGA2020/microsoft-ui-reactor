@@ -1,10 +1,24 @@
 // C# port of Meta's Yoga layout engine main algorithm.
 // Ported from yoga/algorithm/CalculateLayout.cpp and yoga/algorithm/AbsoluteLayout.cpp
+//
+// AI-HINT: This is a faithful C# translation of Meta's Yoga flexbox layout engine.
+// Method names map 1:1 to the C++ original (e.g. CalculateLayoutImpl = calculateLayoutImpl).
+// The algorithm follows CSS Flexbox spec: resolve sizes → compute flex basis → distribute
+// free space (two-pass) → position children on main+cross axes → recurse for absolutes.
+// Key flow: CalculateLayout → CalculateLayoutInternal (cache check) → CalculateLayoutImpl
+//   → ComputeFlexBasisForChildren → ResolveFlexibleLength (DistributeFreeSpaceFirstPass +
+//     DistributeFreeSpaceSecondPass) → JustifyMainAxis → cross-axis alignment → absolute positioning.
+// SizingMode maps to CSS sizing: StretchFit=definite, FitContent=max-content-clamped, MaxContent=intrinsic.
+// All float math uses YogaFloat helpers (NaN = undefined, InexactEquals for float tolerance).
 
 using Duct.Flex;
 
 namespace Duct.Layout;
 
+/// <summary>
+/// Pure-static Yoga flexbox layout algorithm. Entry point: CalculateLayout().
+/// Mutates YogaNode.Layout in-place. Thread-unsafe (uses static generation counter).
+/// </summary>
 internal static class YogaAlgorithm
 {
     private static uint s_currentGenerationCount;
@@ -13,6 +27,9 @@ internal static class YogaAlgorithm
     // Public entry point
     // ──────────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Entry point. Resolves root sizing mode, runs layout, applies pixel-grid rounding.
+    /// </summary>
     public static void CalculateLayout(
         YogaNode node, float availableWidth, float availableHeight, FlexLayoutDirection ownerDirection)
     {
@@ -76,6 +93,10 @@ internal static class YogaAlgorithm
     // calculateLayoutInternal — cache wrapper
     // ──────────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Cache wrapper: checks if previous layout results are reusable before running full algo.
+    /// performLayout=false is a measure-only pass (no position assignment).
+    /// </summary>
     private static bool CalculateLayoutInternal(
         YogaNode node, float availableWidth, float availableHeight,
         FlexLayoutDirection ownerDirection,
@@ -225,9 +246,13 @@ internal static class YogaAlgorithm
     }
 
     // ──────────────────────────────────────────────────────────────────────
-    // calculateLayoutImpl — the main algorithm
+    // calculateLayoutImpl — the main algorithm (~600 lines, the core flexbox loop)
     // ──────────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Main flexbox algorithm. Handles: padding/border computation, flex basis for all children,
+    /// multi-line wrapping, free space distribution, cross-axis alignment, and absolute positioning.
+    /// </summary>
     private static void CalculateLayoutImpl(
         YogaNode node, float availableWidth, float availableHeight,
         FlexLayoutDirection ownerDirection,
@@ -863,6 +888,9 @@ internal static class YogaAlgorithm
     // constrainMaxSizeForMode
     // ──────────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Clamps size to max-dimension and adjusts sizing mode accordingly.
+    /// </summary>
     private static void ConstrainMaxSizeForMode(
         YogaNode node, FlexLayoutDirection direction, FlexDirection axis,
         float ownerAxisSize, float ownerWidth,
@@ -894,6 +922,10 @@ internal static class YogaAlgorithm
     // computeFlexBasisForChild
     // ──────────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Determines flex basis for a single child. Handles explicit basis, aspect ratio,
+    /// and measure-only recursive layout. Sets child.Layout.ComputedFlexBasis.
+    /// </summary>
     private static void ComputeFlexBasisForChild(
         YogaNode node, YogaNode child,
         float width, SizingMode widthMode, float height,
@@ -1054,9 +1086,12 @@ internal static class YogaAlgorithm
     }
 
     // ──────────────────────────────────────────────────────────────────────
-    // measureNodeWithMeasureFunc
+    // measureNodeWithMeasureFunc — leaf nodes with custom measure (e.g. text)
     // ──────────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Invokes the node's custom MeasureFunc for leaf nodes. Applies padding/border and max constraints.
+    /// </summary>
     private static void MeasureNodeWithMeasureFunc(
         YogaNode node, FlexLayoutDirection direction,
         float availableWidth, float availableHeight,
@@ -1349,6 +1384,9 @@ internal static class YogaAlgorithm
     // distributeFreeSpaceFirstPass
     // ──────────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Pass 1: finds clamped children (those hitting min/max bounds) and adjusts remaining free space.
+    /// </summary>
     private static void DistributeFreeSpaceFirstPass(
         FlexLine flexLine, FlexLayoutDirection direction, FlexDirection mainAxis,
         float ownerWidth, float mainAxisOwnerSize,
@@ -1417,6 +1455,10 @@ internal static class YogaAlgorithm
     // distributeFreeSpaceSecondPass
     // ──────────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Pass 2: distributes remaining free space among unclamped flexible children.
+    /// Returns total delta applied. Also triggers recursive layout for children needing it.
+    /// </summary>
     private static float DistributeFreeSpaceSecondPass(
         FlexLine flexLine, YogaNode node,
         FlexDirection mainAxis, FlexDirection crossAxis,
@@ -1569,6 +1611,10 @@ internal static class YogaAlgorithm
     // resolveFlexibleLength
     // ──────────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Orchestrates the two-pass free space distribution (first pass finds clamped items,
+    /// second pass allocates to remaining). Called once per flex line.
+    /// </summary>
     private static void ResolveFlexibleLength(
         YogaNode node, FlexLine flexLine,
         FlexDirection mainAxis, FlexDirection crossAxis,
@@ -1598,6 +1644,10 @@ internal static class YogaAlgorithm
     // justifyMainAxis
     // ──────────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Positions children along the main axis based on justify-content.
+    /// Handles: flex-start, center, flex-end, space-between, space-around, space-evenly.
+    /// </summary>
     private static void JustifyMainAxis(
         YogaNode node, FlexLine flexLine,
         FlexDirection mainAxis, FlexDirection crossAxis,
@@ -1799,6 +1849,10 @@ internal static class YogaAlgorithm
         child.SetLayoutPosition(position, FlexDirectionHelper.FlexStartEdge(axis));
     }
 
+    /// <summary>
+    /// Positions an absolutely-positioned child on the main axis using parent's justify-content.
+    /// Only called when the child has no inset on that axis.
+    /// </summary>
     private static void JustifyAbsoluteChild(
         YogaNode parent, YogaNode child,
         FlexLayoutDirection direction, FlexDirection mainAxis, float containingBlockWidth)
@@ -1906,6 +1960,11 @@ internal static class YogaAlgorithm
         }
     }
 
+    /// <summary>
+    /// Measures and positions a single absolutely-positioned child.
+    /// Resolves containing block, computes available space, runs recursive layout,
+    /// then positions using insets or fallback to justify/align.
+    /// </summary>
     private static void LayoutAbsoluteChild(
         YogaNode containingNode, YogaNode node, YogaNode child,
         float containingBlockWidth, float containingBlockHeight,

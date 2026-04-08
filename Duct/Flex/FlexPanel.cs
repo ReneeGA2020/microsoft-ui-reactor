@@ -1,5 +1,12 @@
 // Standalone FlexPanel for WinUI3, powered by Duct.Layout (Yoga engine).
 // No dependency on Duct.Core — usable in any WinUI3 app.
+//
+// AI-HINT: This is a WinUI Panel that delegates layout to Yoga.
+// Two-pass measure: Pass 1 = content-size (NaN width/height), Pass 2 = flex distribution
+// (definite main axis to enable grow/shrink). Arrange reads cached results from Yoga.
+// Each child has a cached YogaNode; attached properties (Grow, Shrink, Basis, etc.)
+// are synced to Yoga nodes in SyncYogaTree(). MeasureFunc bridge lets Yoga call
+// back into WinUI Measure for leaf children that need intrinsic sizing.
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;

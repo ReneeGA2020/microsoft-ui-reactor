@@ -1,5 +1,10 @@
 // C# port of Martin Mitas's md4c Markdown parser inline processing.
 // Ported from md4c/src/md4c.c
+//
+// AI-HINT: Inline-level parsing: emphasis (*, _, ~), code spans, links, images, autolinks,
+// HTML entities, raw HTML. Uses a Mark-based approach: first pass collects potential
+// opener/closer marks, second pass resolves them using delimiter stack rules from
+// CommonMark spec §6. FNV1A hashing used for reference link label matching.
 
 using System;
 using System.Collections.Generic;

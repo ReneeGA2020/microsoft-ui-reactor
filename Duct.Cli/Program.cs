@@ -1,3 +1,7 @@
+// AI-HINT: Top-level Program.cs for the `duct` CLI tool.
+// Dispatches subcommands: loc (localization), --create (project scaffolding),
+// --skill (output SKILL.md for AI agents), --version, --help.
+// Uses top-level statements pattern. Entry point returns int exit code.
 using System.Reflection;
 
 var assembly = Assembly.GetExecutingAssembly();

@@ -1,6 +1,7 @@
 // C# port of Meta's Yoga layout engine enums.
 // Ported from yoga/enums/*.h
 // Public user-facing enums (FlexAlign, FlexDirection, etc.) have been moved to Duct.Flex.
+// AI-HINT: Internal enums used by the Yoga algorithm. User-facing enums are in Duct.Flex.FlexEnums.
 
 namespace Duct.Layout;
 

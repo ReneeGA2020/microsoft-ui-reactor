@@ -8,8 +8,19 @@ using Windows.UI.WebUI;
 
 namespace Duct.Core;
 
+// AI-HINT: Reconciler.Update.cs — patches existing WinUI controls to match new Elements.
+// Update() diffs old vs new Element and mutates the existing control in-place.
+// Critical optimization: Element.ShallowEquals short-circuits when nothing changed.
+// Returns null if existing control was patched; returns a new UIElement if the
+// control type changed (caller must swap). Each UpdateXxx method mirrors its
+// MountXxx counterpart but only touches properties that differ.
+
 public sealed partial class Reconciler
 {
+    /// <summary>
+    /// Diffs oldEl vs newEl and patches the existing control. Returns null if patched in-place,
+    /// or a replacement UIElement if the control type changed at runtime.
+    /// </summary>
     private UIElement? Update(Element oldEl, Element newEl, UIElement control, Action requestRerender)
     {
         // Unwrap legacy ModifiedElement (backward compat)

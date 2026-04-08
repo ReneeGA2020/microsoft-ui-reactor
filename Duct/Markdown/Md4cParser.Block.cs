@@ -1,5 +1,10 @@
 // C# port of Martin Mitáš's md4c Markdown parser block processing.
 // Ported from md4c/src/md4c.c
+//
+// AI-HINT: Block-level parsing: identifies block structure (headings, lists, code fences,
+// block quotes, tables, HTML blocks) by analyzing line prefixes and indentation.
+// Key method: ProcessLine() classifies each line. AnalyzeLine() handles nesting.
+// Block types are tracked in a container stack. CommonMark spec §1-§5.
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;

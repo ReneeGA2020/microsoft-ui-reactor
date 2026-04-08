@@ -5,6 +5,14 @@ using static Duct.UI;
 
 namespace Duct.Markdown;
 
+// AI-HINT: SAX-style visitor that receives md4c parser callbacks and builds a Duct Element tree.
+//   Pattern: md4c calls OnEnterBlock/OnLeaveBlock/OnEnterSpan/OnLeaveSpan/OnText in document order.
+//   _blockStack: push on EnterBlock, pop on LeaveBlock; children accumulate at each level.
+//   _inlines: accumulates RichTextInline runs for the current text-bearing block.
+//   Formatting state (_boldDepth, _italicDepth, _isCode, etc.) toggles in Enter/LeaveSpan.
+//   Special accumulators: _codeAccum for code blocks, _htmlAccum for HTML blocks.
+//   MarkdownOptions allows per-block-type render customization via callbacks.
+
 /// <summary>
 /// Options for customizing how markdown is rendered to Duct elements.
 /// All callback properties are optional — null means use the default rendering.

@@ -3,6 +3,14 @@ using WinUI = Microsoft.UI.Xaml.Controls;
 
 namespace Duct.Core;
 
+// AI-HINT: React-like child list diffing. Two strategies:
+//   Unkeyed: O(n) positional match by index — simple but can't detect reorders.
+//   Keyed:   4-phase algorithm — (1) common prefix, (2) common suffix,
+//            (3) pure insert/remove middle, (4) LIS-based minimal moves.
+//   LIS finds the longest subsequence of old children that are already in order
+//   in the new list; only children NOT in the LIS need to be moved.
+//   UnmountAndPool returns controls to ElementPool for reuse.
+
 /// <summary>
 /// Keyed child reconciliation using Longest Increasing Subsequence (LIS).
 ///

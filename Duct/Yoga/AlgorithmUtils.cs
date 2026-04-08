@@ -1,6 +1,16 @@
 // C# port of Meta's Yoga layout engine algorithm utilities.
 // Ported from yoga/algorithm/BoundAxis.h, Align.h, TrailingPosition.h, SizingMode.h,
 // Cache.cpp, Baseline.cpp, FlexLine.h/cpp, PixelGrid.cpp
+//
+// AI-HINT: Utility statics consumed by YogaAlgorithm.cs. Key classes:
+//   SizingModeHelper — converts SizingMode ↔ YogaMeasureMode
+//   AlignHelper      — resolves alignment fallbacks (Auto → parent, Baseline → FlexStart)
+//   BoundAxisHelper   — clamps a dimension by min/max + padding+border
+//   TrailingPositionHelper — sets reverse-direction edge positions
+//   BaselineHelper    — recursive baseline search (first baseline-aligned child)
+//   PixelGridHelper   — DPI-aware rounding (text nodes round differently)
+//   CacheHelper       — validates cached measurements to skip re-layout
+//   FlexLineHelper    — builds FlexLine by accumulating children until wrap threshold
 
 using Duct.Flex;
 

@@ -1,5 +1,8 @@
 namespace Duct.Core.Localization;
 
+/// <summary>
+/// Options for IntlAccessor.FormatNumber(). Mirrors ICU/Intl.NumberFormat options.
+/// </summary>
 public enum NumberStyle
 {
     Default,

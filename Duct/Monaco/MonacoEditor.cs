@@ -5,6 +5,14 @@ using Microsoft.Web.WebView2.Core;
 
 namespace Duct.Monaco;
 
+// AI-HINT: WebView2 wrapper around VS Code's Monaco editor.
+//   Communication: C# ↔ JS via CoreWebView2.WebMessageReceived / ExecuteScriptAsync.
+//   Initialization: OnLoaded → EnsureCoreWebView2Async → SetVirtualHostNameToFolderMapping
+//     → Navigate to monaco-editor.html with config in URL fragment.
+//   Two-way sync: _lastKnownText prevents echo loops between DependencyProperty and JS.
+//   _pendingCommands queue: commands issued before editor is ready are replayed on "ready" message.
+//   Recycling: OnLoaded detects already-initialized WebView2 and pushes state without re-init.
+
 /// <summary>
 /// A standalone WinUI 3 control that hosts the Monaco code editor inside a WebView2.
 /// Can be used directly in XAML without any Duct dependency.

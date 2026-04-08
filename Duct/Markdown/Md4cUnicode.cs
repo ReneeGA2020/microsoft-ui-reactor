@@ -1,5 +1,9 @@
 // C# port of Martin Mitas's md4c Markdown parser Unicode support.
 // Ported from md4c/src/md4c.c (Unicode Support section)
+//
+// AI-HINT: Unicode property tables for case folding, whitespace, and punctuation classification.
+// Uses packed range encoding (high bits = range markers) for compact storage.
+// Binary search via UnicodeBsearch(). Do not edit tables by hand.
 
 namespace Duct.Markdown
 {

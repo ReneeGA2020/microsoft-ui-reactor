@@ -1,5 +1,6 @@
 // Public flex layout enums, originally from Yoga.
 // These are the user-facing enum types for flex layout configuration.
+// AI-HINT: Maps 1:1 to CSS Flexbox enum values. Used by FlexPanel and YogaStyle.
 
 namespace Duct.Flex;
 

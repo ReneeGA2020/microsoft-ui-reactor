@@ -9,6 +9,13 @@ using MenuFlyoutItemBase = Duct.Core.MenuFlyoutItemBase;
 
 namespace Duct;
 
+// AI-HINT: This is the main DSL entry point. All Duct UI is built via:
+//   using static Duct.UI;
+// Factory methods return Element records (virtual DOM), never real WinUI controls.
+// Organization: Text → Buttons → Input → Layout → Navigation → Dialogs → Data → Media → Markdown.
+// Layout helpers: VStack/HStack/Grid/Canvas/RelativePanel produce container elements.
+// FlexRow/FlexColumn are Yoga-based flexbox containers (see FlexPanel.cs).
+
 /// <summary>
 /// Static factory methods that form the Duct DSL.
 /// Import with: using static Duct.UI;

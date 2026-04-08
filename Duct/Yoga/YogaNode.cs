@@ -1,5 +1,13 @@
 // C# port of Meta's Yoga layout engine Node.
 // Ported from yoga/node/Node.h, yoga/node/Node.cpp
+//
+// AI-HINT: YogaNode is a mutable tree node. Key relationships:
+//   - _owner = parent (null for root), _children = child list
+//   - _style (YogaStyle) = input CSS-like properties, Layout (LayoutResults) = computed output
+//   - _measureFunc = leaf-node sizing callback (mutually exclusive with children)
+//   - Dirty propagation: MarkDirtyAndPropagate() walks up to root
+//   - ProcessedDimensions: min/max collapsed — if min==max, dimension is locked
+//   - GetLayoutChildren() flattens Display.Contents nodes (like CSS display:contents)
 
 using Duct.Flex;
 
