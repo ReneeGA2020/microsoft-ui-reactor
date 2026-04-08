@@ -26,7 +26,7 @@ else
 
 // ─── Root application component ────────────────────────────────────────────────
 
-enum Tab { Counter, TodoList, ConditionalUI, Form, DynamicList, PerfStress, Virtualization, Flyout, DataTemplate, FlexPanel, Transitions, PropertyGrid }
+enum Tab { Counter, TodoList, ConditionalUI, Form, DynamicList, PerfStress, Virtualization, Flyout, DataTemplate, FlexPanel, Transitions, PropertyGrid, Context, Memo, Persisted, Slots }
 
 class DemoApp : Component
 {
@@ -46,6 +46,10 @@ class DemoApp : Component
         Tab.FlexPanel => "FlexPanel",
         Tab.Transitions => "Transitions",
         Tab.PropertyGrid => "PropertyGrid",
+        Tab.Context => "Context",
+        Tab.Memo => "Memo",
+        Tab.Persisted => "Persisted",
+        Tab.Slots => "Slots",
         _ => tab.ToString()
     };
 
@@ -69,7 +73,11 @@ class DemoApp : Component
                     TabButton(Tab.DataTemplate, currentTab, setTab),
                     TabButton(Tab.FlexPanel, currentTab, setTab),
                     TabButton(Tab.Transitions, currentTab, setTab),
-                    TabButton(Tab.PropertyGrid, currentTab, setTab)
+                    TabButton(Tab.PropertyGrid, currentTab, setTab),
+                    TabButton(Tab.Context, currentTab, setTab),
+                    TabButton(Tab.Memo, currentTab, setTab),
+                    TabButton(Tab.Persisted, currentTab, setTab),
+                    TabButton(Tab.Slots, currentTab, setTab)
                 ),
                 ComboBox(Languages, langIndex, setLangIndex)
             ).Margin(16, 16, 16, 0),
@@ -91,6 +99,10 @@ class DemoApp : Component
                     Tab.FlexPanel => Component<FlexPanelDemo>(),
                     Tab.Transitions => Component<TransitionsDemo>(),
                     Tab.PropertyGrid => Component<PropertyGridDemo>(),
+                    Tab.Context => Component<ContextDemo>(),
+                    Tab.Memo => Component<MemoDemo>(),
+                    Tab.Persisted => Component<PersistedDemo>(),
+                    Tab.Slots => Component<SlotsDemo>(),
                     _ => Text("Select a tab")
                 }
             ).Padding(24).Margin(16).Flex(grow: 1)
@@ -1605,6 +1617,388 @@ class TransitionsDemo : Component
             byte.Parse(hex[0..2], System.Globalization.NumberStyles.HexNumber),
             byte.Parse(hex[2..4], System.Globalization.NumberStyles.HexNumber),
             byte.Parse(hex[4..6], System.Globalization.NumberStyles.HexNumber));
+    }
+}
+
+// ─── Context demo ─────────────────────────────────────────────────────────────
+// Demonstrates DuctContext: define a typed context, provide it to a subtree, and
+// consume it from any descendant via UseContext — no prop drilling required.
+
+class ContextDemo : Component
+{
+    static readonly DuctContext<string> AccentContext = new("#0078D4");
+    static readonly DuctContext<string> UserNameContext = new("Guest");
+
+    public override Element Render()
+    {
+        var (accent, setAccent) = UseState("#0078D4");
+        var (userName, setUserName) = UseState("Alice");
+
+        return ScrollView(VStack(16,
+            Heading("Context System"),
+            Text("DuctContext passes values through the tree without prop drilling."),
+
+            // ── 1. Controls ──
+            SubHeading("1. Provide context values"),
+            HStack(8,
+                Text("Accent color:"),
+                Button("Blue", () => setAccent("#0078D4")).Disabled(accent == "#0078D4"),
+                Button("Red", () => setAccent("#E74C3C")).Disabled(accent == "#E74C3C"),
+                Button("Green", () => setAccent("#50C878")).Disabled(accent == "#50C878"),
+                Border(Empty()).Background(accent).CornerRadius(4).Size(24, 24)
+            ),
+            HStack(8,
+                Text("User name:"),
+                TextField(userName, setUserName, placeholder: "Enter name").Width(200)
+            ),
+
+            // ── 2. Consumers ──
+            SubHeading("2. Consume in descendants"),
+            Text("These components call UseContext() — no props passed from parent."),
+            VStack(8,
+                Component<AccentBadge>(),
+                Component<UserGreeting>()
+            ).Provide(AccentContext, accent).Provide(UserNameContext, userName),
+
+            // ── 3. Nested override ──
+            SubHeading("3. Nested provider overrides outer"),
+            Text("An inner .Provide() shadows the outer for its subtree only."),
+            HStack(16,
+                VStack(8,
+                    Text("Outer scope").SemiBold(),
+                    Component<AccentBadge>()
+                ).Provide(AccentContext, accent).Provide(UserNameContext, userName),
+                VStack(8,
+                    Text("Inner scope (forced purple)").SemiBold(),
+                    Component<AccentBadge>()
+                ).Provide(AccentContext, "#9B59B6").Provide(UserNameContext, userName)
+            ),
+
+            // ── 4. Default value ──
+            SubHeading("4. Default value (no provider)"),
+            Text("Without a .Provide() ancestor, UseContext returns the DuctContext default."),
+            Component<AccentBadge>()
+        ));
+    }
+
+    class AccentBadge : Component
+    {
+        public override Element Render()
+        {
+            var accent = UseContext(AccentContext);
+            return HStack(8,
+                Border(Empty()).Background(accent).CornerRadius(4).Size(24, 24),
+                Text($"Accent = {accent}").SemiBold()
+            );
+        }
+    }
+
+    class UserGreeting : Component
+    {
+        public override Element Render()
+        {
+            var accent = UseContext(AccentContext);
+            var name = UseContext(UserNameContext);
+            return Border(
+                Text($"Hello, {name}!").Foreground(accent).SemiBold().FontSize(18)
+            ).Padding(12).CornerRadius(6).Background("#f0f0f0");
+        }
+    }
+}
+
+// ─── Memo demo ────────────────────────────────────────────────────────────────
+// Demonstrates component memoization: ShouldUpdate on class components, Memo()
+// for function components, and UseCallback for stable delegate references.
+
+class MemoDemo : Component
+{
+    public override Element Render()
+    {
+        var (parentRenders, setParentRenders) = UseState(0);
+        var (childProp, setChildProp) = UseState("A");
+
+        // Force parent re-render (increments counter)
+        void BumpParent() => setParentRenders(parentRenders + 1);
+
+        return ScrollView(VStack(12,
+            Heading("Component Memoization"),
+            Text("Memo skips re-rendering children when their inputs haven't changed."),
+
+            // ── Parent controls ──
+            SubHeading("Parent state"),
+            Text($"Parent has rendered {parentRenders + 1} time(s)."),
+            HStack(8,
+                Button("Re-render parent", BumpParent),
+                Button($"Change child prop (now \"{childProp}\")",
+                    () => setChildProp(childProp == "A" ? "B" : "A"))
+            ),
+
+            // ── 1. Memoized class component ──
+            SubHeading("1. Memoized class component (ShouldUpdate)"),
+            Text("Component<TProps> uses record equality by default. Renders only when Props changes."),
+            Component<RenderCounter, RenderCounterProps>(new(childProp)),
+
+            // ── 2. Propless component ──
+            SubHeading("2. Propless component (auto-memo)"),
+            Text("Components without props return ShouldUpdate() => false — never re-render from parent."),
+            Component<ProplessCounter>(),
+
+            // ── 3. Memo() with deps ──
+            SubHeading("3. Memo() function component with deps"),
+            Text("Re-renders only when the dependency (childProp) changes."),
+            Memo(ctx =>
+            {
+                var count = ctx.UseRef(0);
+                count.Current++;
+                return Border(
+                    Text($"Memo(dep: \"{childProp}\") — rendered {count.Current} time(s)").SemiBold()
+                ).Padding(8).CornerRadius(4).Background("#e3f2fd");
+            }, childProp),
+
+            // ── 4. Memo() with no deps ──
+            SubHeading("4. Memo() with no deps (render once)"),
+            Text("No dependencies = renders once on mount, then only from own state changes."),
+            Memo(ctx =>
+            {
+                var count = ctx.UseRef(0);
+                count.Current++;
+                var (localCount, setLocal) = ctx.UseState(0);
+                return VStack(4,
+                    Text($"Memo(no deps) — rendered {count.Current} time(s)").SemiBold(),
+                    HStack(8,
+                        Button("Self-trigger", () => setLocal(localCount + 1)),
+                        Text($"Local state: {localCount}")
+                    )
+                );
+            }),
+
+            // ── 5. UseCallback ──
+            SubHeading("5. UseCallback stabilizes delegates"),
+            Text("Without UseCallback, new Action instances defeat memo on every parent render."),
+            Component<RenderCounter, RenderCounterProps>(
+                new(childProp, UseCallback(BumpParent, parentRenders)))
+        ));
+    }
+
+    record RenderCounterProps(string Label, Action? OnClick = null);
+
+    class RenderCounter : Component<RenderCounterProps>
+    {
+        int _renderCount;
+
+        public override Element Render()
+        {
+            _renderCount++;
+            return Border(
+                VStack(4,
+                    Text($"Prop=\"{Props.Label}\"  rendered {_renderCount} time(s)").SemiBold(),
+                    When(Props.OnClick is not null,
+                        () => Button("Invoke callback", Props.OnClick!))
+                )
+            ).Padding(8).CornerRadius(4).Background("#f5f5f5");
+        }
+    }
+
+    class ProplessCounter : Component
+    {
+        int _renderCount;
+
+        public override Element Render()
+        {
+            _renderCount++;
+            return Border(
+                Text($"ProplessCounter — rendered {_renderCount} time(s)").SemiBold()
+            ).Padding(8).CornerRadius(4).Background("#fff3e0");
+        }
+    }
+}
+
+// ─── Persisted state demo ─────────────────────────────────────────────────────
+// Demonstrates UsePersisted: state that survives component unmount/remount.
+// Switch to another tab and back — persisted values are preserved.
+
+class PersistedDemo : Component
+{
+    public override Element Render()
+    {
+        // Persisted state — survives tab switches
+        var (pName, setPName) = UsePersisted("demo.p.name", "");
+        var (pEmail, setPEmail) = UsePersisted("demo.p.email", "");
+        var (pColor, setPColor) = UsePersisted("demo.p.color", "Blue");
+
+        // Regular state — lost on tab switch
+        var (rName, setRName) = UseState("");
+        var (rEmail, setREmail) = UseState("");
+        var (rColor, setRColor) = UseState("Blue");
+
+        string[] colors = ["Blue", "Red", "Green", "Purple"];
+
+        Element FormColumn(string heading, string bg,
+            string name, Action<string> setName,
+            string email, Action<string> setEmail,
+            string color, Action<string> setColor)
+        {
+            return VStack(12,
+                SubHeading(heading),
+                VStack(4, Text("Name"), TextField(name, setName, placeholder: "Enter name").Width(220)),
+                VStack(4, Text("Email"), TextField(email, setEmail, placeholder: "you@example.com").Width(220)),
+                VStack(4,
+                    Text("Color"),
+                    HStack(4, colors.Select(c =>
+                        Button(c, () => setColor(c)).Disabled(color == c)
+                    ).ToArray())
+                ),
+                Border(VStack(4,
+                    Text("Current values:").SemiBold(),
+                    Text($"Name: {(string.IsNullOrEmpty(name) ? "(empty)" : name)}"),
+                    Text($"Email: {(string.IsNullOrEmpty(email) ? "(empty)" : email)}"),
+                    Text($"Color: {color}")
+                )).Padding(12).CornerRadius(6).Background(bg)
+            );
+        }
+
+        return ScrollView(VStack(16,
+            Heading("Persisted State"),
+            Text("UsePersisted keeps values across unmount/remount (tab switches)."),
+
+            HStack(32,
+                FormColumn("UsePersisted (survives)", "#e8f5e9",
+                    pName, setPName, pEmail, setPEmail, pColor, setPColor),
+                FormColumn("UseState (lost on switch)", "#ffebee",
+                    rName, setRName, rEmail, setREmail, rColor, setRColor)
+            ),
+
+            Border(
+                Text("Fill in both sides, switch to another tab, then come back. Left persists, right resets.")
+            ).Padding(12).CornerRadius(6).Background("#fff3e0")
+        ));
+    }
+}
+
+// ─── Slots pattern demo ───────────────────────────────────────────────────────
+// Demonstrates the slots pattern: components accept Element? props as named
+// content areas, like React's children/render props.
+
+class SlotsDemo : Component
+{
+    record CardProps(
+        Element? Header = null,
+        Element? Body = null,
+        Element? Footer = null
+    );
+
+    class Card : Component<CardProps>
+    {
+        public override Element Render()
+        {
+            return Border(VStack(0,
+                Props.Header is not null
+                    ? Border(Props.Header)
+                        .Padding(12, 10).Background("#f5f5f5")
+                        .WithBorder("#e6e6e6")
+                    : Empty(),
+                Props.Body is not null
+                    ? Border(Props.Body).Padding(16)
+                    : Empty(),
+                Props.Footer is not null
+                    ? Border(Props.Footer)
+                        .Padding(10, 12).Background("#fafafa")
+                        .WithBorder("#e6e6e6")
+                    : Empty()
+            )).CornerRadius(8).WithBorder("#d0d0d0");
+        }
+    }
+
+    record InfoRowProps(Element? Leading = null, Element? Title = null, Element? Trailing = null);
+
+    class InfoRow : Component<InfoRowProps>
+    {
+        public override Element Render()
+        {
+            return HStack(12,
+                Props.Leading ?? Empty(),
+                Props.Title is not null
+                    ? Border(Props.Title).Flex(grow: 1)
+                    : Empty(),
+                Props.Trailing ?? Empty()
+            ).Padding(8).VAlign(VerticalAlignment.Center);
+        }
+    }
+
+    public override Element Render()
+    {
+        var (name, setName) = UseState("World");
+        var (expanded, setExpanded) = UseState(false);
+
+        return ScrollView(VStack(16,
+            Heading("Slots Pattern"),
+            Text("Components accept Element? props as named content areas — like React children/render props."),
+
+            // ── 1. Card with all three slots ──
+            SubHeading("1. Card — Header / Body / Footer"),
+            Component<Card, CardProps>(new(
+                Header: Text("User Profile").SemiBold(),
+                Body: VStack(8,
+                    Text("Name: Alice Johnson"),
+                    Text("Email: alice@example.com"),
+                    Text("Role: Software Engineer")
+                ),
+                Footer: HStack(8,
+                    Button("Edit", () => { }),
+                    Button("Delete", () => { })
+                )
+            )),
+
+            // ── 2. Partial slots ──
+            SubHeading("2. Partial slots — omit Footer"),
+            Component<Card, CardProps>(new(
+                Header: Text("Notification").SemiBold(),
+                Body: Text("Build completed successfully. No footer needed.")
+            )),
+
+            // ── 3. Dynamic slot content ──
+            SubHeading("3. Dynamic slot content"),
+            TextField(name, setName, placeholder: "Type a name...").Width(220),
+            Component<Card, CardProps>(new(
+                Header: HStack(8,
+                    Border(Empty()).Background("#0078D4").CornerRadius(12).Size(24, 24),
+                    Text($"Hello, {name}!").SemiBold()
+                ),
+                Body: Text($"The slot content updates when you type. Name length: {name.Length} characters."),
+                Footer: Button("Reset", () => setName("World"))
+            )),
+
+            // ── 4. InfoRow — Leading / Title / Trailing ──
+            SubHeading("4. InfoRow — Leading / Title / Trailing"),
+            Text("Another slot pattern: a row with optional leading icon, title area, and trailing action."),
+            VStack(4,
+                Component<InfoRow, InfoRowProps>(new(
+                    Leading: Text("\uE77B").Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets")),
+                    Title: Text("Inbox").SemiBold(),
+                    Trailing: Text("12").Opacity(0.5)
+                )),
+                Component<InfoRow, InfoRowProps>(new(
+                    Leading: Text("\uE724").Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets")),
+                    Title: Text("Sent"),
+                    Trailing: Text("3").Opacity(0.5)
+                )),
+                Component<InfoRow, InfoRowProps>(new(
+                    Leading: Text("\uE74D").Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets")),
+                    Title: Text("Deleted"),
+                    Trailing: Text("0").Opacity(0.5)
+                ))
+            ),
+
+            // ── 5. Naming conventions ──
+            SubHeading("5. Slot naming conventions"),
+            VStack(4,
+                Text("Single default slot: params Element?[] children").FontSize(12),
+                Text("Named slots: Element?-typed props on a record").FontSize(12),
+                Text("Common names: Header, Body/Content, Footer/Actions, Leading, Trailing, Icon, Label, Title").FontSize(12),
+                Text("Optional slots: Element? with = null default, skip rendering when null").FontSize(12),
+                Text("Memo tip: static slot content (Text) → memo works. Slots with handlers → use UseCallback.").FontSize(12).SemiBold()
+            )
+        ));
     }
 }
 

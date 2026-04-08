@@ -9,8 +9,8 @@ internal sealed class CalendarViewComponent : Component
 {
     public override Element Render()
     {
-        var (weekStart, setWeekStart) = UseState(MockData.GetCurrentWeekStart());
-        var (viewMode, setViewMode) = UseState("Week");
+        var (weekStart, setWeekStart) = UsePersisted("outlook.cal.weekStart", MockData.GetCurrentWeekStart());
+        var (viewMode, setViewMode) = UsePersisted("outlook.cal.viewMode", "Week");
 
         var sources = UseMemo(() => MockData.GetCalendarSources(), 0);
         var (enabledIds, setEnabledIds) = UseState(

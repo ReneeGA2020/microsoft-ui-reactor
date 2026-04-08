@@ -354,11 +354,11 @@ unmount, and remount components.
 - [ ] Document `Lazy<Element>` as future work for deferred slot evaluation (TabView use case)
 
 ### 4.7 Sample app updates
-- [ ] Update D3 Gallery or create new sample page demonstrating DuctContext (provide + consume)
-- [ ] Update or create sample demonstrating memoized components (before/after render count)
-- [ ] Update or create sample demonstrating UsePersisted (tab switch preserving scroll position or form state)
-- [ ] Update or create sample demonstrating slots pattern (Dialog or Card with named content areas)
-- [ ] Verify all existing sample apps still compile and run after framework changes
+- [x] Update D3 Gallery or create new sample page demonstrating DuctContext (provide + consume)
+- [x] Update or create sample demonstrating memoized components (before/after render count)
+- [x] Update or create sample demonstrating UsePersisted (tab switch preserving scroll position or form state)
+- [x] Update or create sample demonstrating slots pattern (Dialog or Card with named content areas)
+- [x] Verify all existing sample apps still compile and run after framework changes (2354 passed, 0 failed)
 
 ---
 

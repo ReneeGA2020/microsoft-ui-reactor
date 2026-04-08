@@ -9,10 +9,10 @@ internal sealed class EmailView : Component
 {
     public override Element Render()
     {
-        var (selectedFolderId, setSelectedFolderId) = UseState("inbox");
+        var (selectedFolderId, setSelectedFolderId) = UsePersisted("outlook.email.folderId", "inbox");
         var autoSelect = AppSettings.ScreenshotMode ? "m1" : null;
-        var (selectedMessageId, setSelectedMessageId) = UseState<string?>(autoSelect);
-        var (activeTab, setActiveTab) = UseState(MessageTab.Focused);
+        var (selectedMessageId, setSelectedMessageId) = UsePersisted("outlook.email.messageId", autoSelect);
+        var (activeTab, setActiveTab) = UsePersisted("outlook.email.tab", MessageTab.Focused);
 
         var folders = UseMemo(() => MockData.GetFolders(), 0);
         var messages = UseMemo(() => MockData.GetMessages(selectedFolderId), selectedFolderId);
