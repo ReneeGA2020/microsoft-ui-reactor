@@ -63,6 +63,23 @@ public abstract record Element
     public IReadOnlyDictionary<string, ThemeRef>? ThemeBindings { get; init; }
 
     /// <summary>
+    /// Composition-layer layout animation configuration.
+    /// When set, the reconciler attaches implicit animations to the element's Visual
+    /// so that layout-driven position (and optionally size) changes animate smoothly.
+    /// Set via fluent extension methods: Border(child).LayoutAnimation()
+    /// </summary>
+    public LayoutAnimationConfig? LayoutAnimation { get; init; }
+
+    /// <summary>
+    /// Connected animation key for cross-container transitions.
+    /// When set, the reconciler automatically captures a visual snapshot on unmount
+    /// (via ConnectedAnimationService.PrepareToAnimate) and starts the animation on
+    /// mount if a prepared animation with the same key exists.
+    /// Set via fluent extension method: Border(child).ConnectedAnimation("hero")
+    /// </summary>
+    public string? ConnectedAnimationKey { get; init; }
+
+    /// <summary>
     /// Gets the attached property data of the specified type, or null if not set.
     /// </summary>
     internal T? GetAttached<T>() where T : class =>
@@ -493,6 +510,39 @@ public record ThemeTransitions
     public Microsoft.UI.Xaml.Media.Animation.Transition[]? ItemContainer { get; init; }
 }
 // Note: Transition is in Microsoft.UI.Xaml.Media.Animation (not imported by default in Element.cs)
+
+/// <summary>
+/// Configuration for Composition-layer layout animations.
+/// When applied to an element, the reconciler sets up implicit animations on the element's
+/// Visual so that layout-driven Offset (position) and optionally Size changes animate smoothly.
+/// Runs entirely on the Composition thread — zero managed-code involvement during animation.
+///
+/// Limitations:
+/// - Hit-testing uses the final layout position, not the animated visual position.
+/// - Elements must have stable keys (.WithKey()) for the reconciler to match them across reorders.
+/// - Size animation is cosmetic: content does not re-layout during the Size animation.
+/// - Only handles position changes for persistent elements; use theme transitions for enter/exit.
+/// </summary>
+public record LayoutAnimationConfig
+{
+    /// <summary>Duration of the layout animation. Default: 300ms.</summary>
+    public TimeSpan Duration { get; init; } = TimeSpan.FromMilliseconds(300);
+
+    /// <summary>When true, use a spring natural motion animation instead of linear keyframes.</summary>
+    public bool UseSpring { get; init; }
+
+    /// <summary>Spring damping ratio (0..1). Only used when UseSpring is true. Default: 0.6.</summary>
+    public float DampingRatio { get; init; } = 0.6f;
+
+    /// <summary>Spring period in seconds. Only used when UseSpring is true. Default: 0.08.</summary>
+    public float Period { get; init; } = 0.08f;
+
+    /// <summary>Animate Offset (position) changes. Default: true.</summary>
+    public bool AnimateOffset { get; init; } = true;
+
+    /// <summary>Animate Size changes. Default: false (content won't re-layout during animation).</summary>
+    public bool AnimateSize { get; init; }
+}
 
 // Duct reuses WinUI types directly — no shadow enums.
 // See: Microsoft.UI.Xaml (Thickness, HorizontalAlignment, VerticalAlignment)

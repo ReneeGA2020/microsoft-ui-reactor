@@ -839,14 +839,76 @@ public static class ElementExtensions
         el with { ImplicitTransitions = (el.ImplicitTransitions ?? new()) with { Translation = transition ?? new Vector3Transition() } };
 
     /// <summary>
-    /// Adds an implicit BrushTransition on Background (Grid, StackPanel, ContentPresenter).
+    /// Adds an implicit BrushTransition on Background.
+    /// Only available on Grid and Stack (VStack/HStack) — WinUI only supports
+    /// BackgroundTransition on Grid, StackPanel, and ContentPresenter.
     /// </summary>
-    public static T BackgroundTransition<T>(this T el, TimeSpan? duration = null) where T : Element
+    public static GridElement BackgroundTransition(this GridElement el, TimeSpan? duration = null)
     {
         var t = new BrushTransition();
         if (duration.HasValue) t.Duration = duration.Value;
         return el with { ImplicitTransitions = (el.ImplicitTransitions ?? new()) with { Background = t } };
     }
+
+    /// <inheritdoc cref="BackgroundTransition(GridElement, TimeSpan?)"/>
+    public static StackElement BackgroundTransition(this StackElement el, TimeSpan? duration = null)
+    {
+        var t = new BrushTransition();
+        if (duration.HasValue) t.Duration = duration.Value;
+        return el with { ImplicitTransitions = (el.ImplicitTransitions ?? new()) with { Background = t } };
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Layout animations (Composition-layer implicit animations on Offset/Size)
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Enables smooth layout animation: when WinUI repositions this element
+    /// (e.g., list reorder, grid reflow), it animates from the old position to the
+    /// new position via the Composition layer. Default duration: 300ms.
+    /// Elements should have stable keys (.WithKey()) for the reconciler to match
+    /// them across reorders.
+    /// </summary>
+    public static T LayoutAnimation<T>(this T el) where T : Element =>
+        el with { LayoutAnimation = new LayoutAnimationConfig() };
+
+    /// <summary>
+    /// Enables layout animation with a custom duration.
+    /// </summary>
+    public static T LayoutAnimation<T>(this T el, TimeSpan duration) where T : Element =>
+        el with { LayoutAnimation = new LayoutAnimationConfig { Duration = duration } };
+
+    /// <summary>
+    /// Enables layout animation with spring physics for a natural, bouncy feel.
+    /// </summary>
+    public static T SpringLayoutAnimation<T>(this T el,
+        float dampingRatio = 0.6f, float period = 0.08f) where T : Element =>
+        el with { LayoutAnimation = new LayoutAnimationConfig
+        {
+            UseSpring = true,
+            DampingRatio = dampingRatio,
+            Period = period
+        } };
+
+    /// <summary>
+    /// Enables layout animation with a fully custom configuration.
+    /// </summary>
+    public static T LayoutAnimation<T>(this T el, LayoutAnimationConfig config) where T : Element =>
+        el with { LayoutAnimation = config };
+
+    // ════════════════════════════════════════════════════════════════
+    //  Connected animations (cross-container transitions)
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Declares this element as a participant in a connected animation.
+    /// When the element is unmounted (e.g., parent container changes type),
+    /// the reconciler captures its visual snapshot. When a new element with the
+    /// same key is mounted, the snapshot animates to the new element's position.
+    /// Both source and destination must use the same key string.
+    /// </summary>
+    public static T ConnectedAnimation<T>(this T el, string key) where T : Element =>
+        el with { ConnectedAnimationKey = key };
 
     // ════════════════════════════════════════════════════════════════
     //  ScrollView zoom/scroll modifiers

@@ -131,6 +131,14 @@ public sealed partial class Reconciler
         if (control is not null && (element.ImplicitTransitions is not null || element.ThemeTransitions is not null))
             ApplyTransitions(control, element.ImplicitTransitions, element.ThemeTransitions);
 
+        // Apply Composition-layer layout animation (implicit Offset/Size animation on Visual)
+        if (control is not null && element.LayoutAnimation is not null)
+            ApplyLayoutAnimation(control, element.LayoutAnimation);
+
+        // Queue connected animation start if a prepared animation exists with this key
+        if (control is not null && element.ConnectedAnimationKey is not null)
+            QueueConnectedAnimationStart(control, element.ConnectedAnimationKey);
+
         return control;
     }
 

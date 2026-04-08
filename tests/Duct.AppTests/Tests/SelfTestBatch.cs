@@ -208,6 +208,12 @@ public class SelfTestBatch
     [TestMethod] public void PropertyGrid_DeepNesting_RecordInRecord() => AssertChecks("PropGrid_Deep");
     [TestMethod] public void PropertyGrid_INPC_ExternalMutation() => AssertChecks("PropGrid_INPC");
 
+    // ── Layout Animation ──
+    [TestMethod] public void LayoutAnimation_OffsetSetup() => AssertChecks("LayoutAnim_Target");
+    [TestMethod] public void LayoutAnimation_SpringSetup() => AssertChecks("LayoutAnim_Spring");
+    [TestMethod] public void LayoutAnimation_SizeSetup() => AssertChecks("LayoutAnim_Size");
+    [TestMethod] public void ConnectedAnimation_MountUnmount() => AssertChecks("ConnectedAnim_");
+
     // ── Localization ──
     [TestMethod] public void Localization_LocaleSwitching() => AssertChecks("Loc_");
 

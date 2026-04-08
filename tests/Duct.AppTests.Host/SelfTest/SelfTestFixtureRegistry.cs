@@ -151,6 +151,11 @@ internal static class SelfTestFixtureRegistry
         "DslExt_AttachedProperties",
         "DslExt_ErrorBoundaryElement",
         "DslExt_GroupElement",
+        // Layout animation
+        "LayoutAnimation_OffsetSetup",
+        "LayoutAnimation_SpringSetup",
+        "LayoutAnimation_SizeSetup",
+        "ConnectedAnimation_MountUnmount",
     ];
 
     public static SelfTestFixtureBase? Create(string name, Harness harness) => name switch
@@ -297,6 +302,11 @@ internal static class SelfTestFixtureRegistry
         "DslExt_AttachedProperties" => new DslExtensionFixtures.AttachedProperties(harness),
         "DslExt_ErrorBoundaryElement" => new DslExtensionFixtures.ErrorBoundaryTest(harness),
         "DslExt_GroupElement" => new DslExtensionFixtures.GroupElementTest(harness),
+        // Layout animation
+        "LayoutAnimation_OffsetSetup" => new LayoutAnimationFixtures.OffsetAnimationSetup(harness),
+        "LayoutAnimation_SpringSetup" => new LayoutAnimationFixtures.SpringAnimationSetup(harness),
+        "LayoutAnimation_SizeSetup" => new LayoutAnimationFixtures.SizeAnimationSetup(harness),
+        "ConnectedAnimation_MountUnmount" => new LayoutAnimationFixtures.ConnectedAnimationMountUnmount(harness),
         _ => null,
     };
 }

@@ -54,7 +54,7 @@ class DemoApp : Component
         var (currentTab, setTab) = UseState(Tab.Counter);
         var (langIndex, setLangIndex) = UseState(0);
 
-        return VStack(12,
+        return FlexColumn(
             // App chrome: tab bar + language selector
             HStack(8,
                 HStack(8,
@@ -70,11 +70,12 @@ class DemoApp : Component
                     TabButton(Tab.FlexPanel, currentTab, setTab),
                     TabButton(Tab.Transitions, currentTab, setTab),
                     TabButton(Tab.PropertyGrid, currentTab, setTab)
-                ).Flex(grow: 1),
+                ),
                 ComboBox(Languages, langIndex, setLangIndex)
             ).Margin(16, 16, 16, 0),
 
-            // Content area with padding
+            // Content area — Flex(grow:1) fills remaining vertical space
+            // so ScrollView inside each demo gets a bounded height and can scroll.
             Border(
                 currentTab switch
                 {
@@ -92,7 +93,7 @@ class DemoApp : Component
                     Tab.PropertyGrid => Component<PropertyGridDemo>(),
                     _ => Text("Select a tab")
                 }
-            ).Padding(24).Margin(16)
+            ).Padding(24).Margin(16).Flex(grow: 1)
         );
     }
 
@@ -1365,6 +1366,12 @@ class TransitionsDemo : Component
         var (comboScale, setComboScale) = UseState(1.0);
         var (comboBgIndex, setComboBgIndex) = UseState(0);
 
+        // State for layout animation demos
+        var (shuffleItems, setShuffleItems) = UseState(new[] { "Alpha", "Beta", "Gamma", "Delta", "Epsilon" });
+        var (useWrap, setUseWrap) = UseState(true);
+        var (springItems, setSpringItems) = UseState(new[] { "One", "Two", "Three", "Four", "Five" });
+        var (useGrid, setUseGrid) = UseState(false);
+
         string[] colors = ["#4A90D9", "#E8834A", "#50C878", "#9B59B6", "#E74C3C"];
         var currentBg = colors[bgIndex % colors.Length];
         var comboBg = colors[comboBgIndex % colors.Length];
@@ -1490,9 +1497,106 @@ class TransitionsDemo : Component
                 })
                 .OpacityTransition(TimeSpan.FromMilliseconds(400))
                 .ScaleTransition()
-                .BackgroundTransition(TimeSpan.FromMilliseconds(400))
-        ));
+                .BackgroundTransition(TimeSpan.FromMilliseconds(400)),
+
+            // ── Section 7: Layout animation — list reorder ──
+            SubHeading("Layout Animation — List Reorder"),
+            Text("Keyed items in a VStack. Click Shuffle — items slide to new positions."),
+            Button("Shuffle", () => setShuffleItems(shuffleItems.OrderBy(_ => Random.Shared.Next()).ToArray())),
+            VStack(8,
+                shuffleItems.Select(item =>
+                    Border(
+                        Text(item).Bold()
+                            .HAlign(HorizontalAlignment.Center)
+                            .VAlign(VerticalAlignment.Center)
+                    )
+                        .Height(50).Background(ItemColor(item))
+                        .CornerRadius(6).Padding(12)
+                        .WithKey(item)
+                        .LayoutAnimation(TimeSpan.FromMilliseconds(400))
+                ).ToArray()
+            ),
+
+            // ── Section 8: Layout animation — flex reflow ──
+            SubHeading("Layout Animation — Flex Reflow"),
+            Text("Toggle item width — items reflow within the same FlexPanel, animating to new positions."),
+            Button(useWrap ? "Shrink items (fit one row)" : "Expand items (wrap to rows)",
+                () => setUseWrap(!useWrap)),
+            new FlexElement(
+                Enumerable.Range(0, 6).Select(i =>
+                    Border(
+                        Text($"Item {i}").Bold()
+                            .HAlign(HorizontalAlignment.Center)
+                            .VAlign(VerticalAlignment.Center)
+                    )
+                        .Background(colors[i % colors.Length]).CornerRadius(6)
+                        .Size(useWrap ? 250 : 120, 70)
+                        .LayoutAnimation(TimeSpan.FromMilliseconds(400))
+                ).ToArray()
+            ) { Wrap = Duct.Flex.FlexWrap.Wrap, ColumnGap = 8, RowGap = 8 },
+
+            // ── Section 9: Connected animation — FlexPanel ↔ UniformGrid ──
+            SubHeading("Connected Animation — Layout Switch"),
+            Text("Switch between FlexPanel (wrapped) and UniformGrid. Items fly from old to new positions via ConnectedAnimationService."),
+            Button(useGrid ? "Switch to FlexPanel (wrap)" : "Switch to UniformGrid",
+                () => setUseGrid(!useGrid)),
+            useGrid
+                ? UniformGrid(Microsoft.UI.Xaml.Controls.Orientation.Horizontal,
+                    Enumerable.Range(0, 6).Select(i =>
+                        Border(
+                            Text($"Item {i}").Bold()
+                                .HAlign(HorizontalAlignment.Center)
+                                .VAlign(VerticalAlignment.Center)
+                        )
+                            .Background(colors[i % colors.Length]).CornerRadius(6)
+                            .Height(70)
+                            .ConnectedAnimation($"layout-item-{i}")
+                    ).ToArray()
+                )
+                : new FlexElement(
+                    Enumerable.Range(0, 6).Select(i =>
+                        Border(
+                            Text($"Item {i}").Bold()
+                                .HAlign(HorizontalAlignment.Center)
+                                .VAlign(VerticalAlignment.Center)
+                        )
+                            .Background(colors[i % colors.Length]).CornerRadius(6)
+                            .Size(250, 70)
+                            .ConnectedAnimation($"layout-item-{i}")
+                    ).ToArray()
+                ) { Wrap = Duct.Flex.FlexWrap.Wrap, ColumnGap = 8, RowGap = 8 },
+
+            // ── Section 9: Layout animation — slow reorder ──
+            SubHeading("Layout Animation — Slow Reorder"),
+            Text("Same reorder with a slower 800ms animation so you can clearly see items sliding."),
+            Button("Shuffle (Slow)", () => setSpringItems(springItems.OrderBy(_ => Random.Shared.Next()).ToArray())),
+            VStack(8,
+                springItems.Select(item =>
+                    Border(
+                        Text(item).Bold()
+                            .HAlign(HorizontalAlignment.Center)
+                            .VAlign(VerticalAlignment.Center)
+                    )
+                        .Height(50).Background(ItemColor(item))
+                        .CornerRadius(6).Padding(12)
+                        .WithKey($"slow-{item}")
+                        .LayoutAnimation(TimeSpan.FromMilliseconds(800))
+                ).ToArray()
+            )
+        )).HorizontalScrollMode(Microsoft.UI.Xaml.Controls.ScrollMode.Disabled)
+          .Set(sv => sv.HorizontalScrollBarVisibility = Microsoft.UI.Xaml.Controls.ScrollBarVisibility.Disabled);
     }
+
+    /// <summary>Stable color per item identity — doesn't change when position changes.</summary>
+    static string ItemColor(string item) => item switch
+    {
+        "Alpha" or "One" => "#4A90D9",
+        "Beta" or "Two" => "#E8834A",
+        "Gamma" or "Three" => "#50C878",
+        "Delta" or "Four" => "#9B59B6",
+        "Epsilon" or "Five" => "#E74C3C",
+        _ => "#4A90D9"
+    };
 
     static Windows.UI.Color ColorFromHex(string hex)
     {

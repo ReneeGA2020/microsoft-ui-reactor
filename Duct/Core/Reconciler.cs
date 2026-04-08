@@ -1,6 +1,9 @@
+using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinUI = Microsoft.UI.Xaml.Controls;
 using WinPrim = Microsoft.UI.Xaml.Controls.Primitives;
@@ -22,6 +25,7 @@ public sealed partial class Reconciler : IDisposable
     private readonly ElementPool _pool = new();
     private readonly Dictionary<Type, ITypeRegistration> _typeRegistry = new();
     private readonly IDuctLogger _logger;
+    private readonly List<(ConnectedAnimation Animation, UIElement Target)> _pendingConnectedAnimationStarts = new();
     private int _errorBoundaryDepth;
 
     /// <summary>
@@ -283,6 +287,18 @@ public sealed partial class Reconciler : IDisposable
 
     private void UnmountRecursive(UIElement control)
     {
+        // Capture connected animation snapshot while element is still in the visual tree
+        if (control is FrameworkElement caFe && caFe.Tag is Element caEl
+            && caEl.ConnectedAnimationKey is not null)
+        {
+            try
+            {
+                var service = ConnectedAnimationService.GetForCurrentView();
+                service.PrepareToAnimate(caEl.ConnectedAnimationKey, control);
+            }
+            catch { /* ConnectedAnimationService may not be available in all contexts */ }
+        }
+
         if (_componentNodes.TryGetValue(control, out var node))
         {
             node.Component?.Context.RunCleanups();
@@ -342,6 +358,18 @@ public sealed partial class Reconciler : IDisposable
 
     private void UnmountAndCollect(UIElement control, List<FrameworkElement> toPool)
     {
+        // Capture connected animation snapshot while element is still in the visual tree
+        if (control is FrameworkElement caFe && caFe.Tag is Element caEl
+            && caEl.ConnectedAnimationKey is not null)
+        {
+            try
+            {
+                var service = ConnectedAnimationService.GetForCurrentView();
+                service.PrepareToAnimate(caEl.ConnectedAnimationKey, control);
+            }
+            catch { /* ConnectedAnimationService may not be available in all contexts */ }
+        }
+
         // Run cleanup logic (component teardown, etc.)
         if (_componentNodes.TryGetValue(control, out var node))
         {
@@ -457,6 +485,109 @@ public sealed partial class Reconciler : IDisposable
             if (uie is WinUI.ListViewBase lvb)
                 lvb.ItemContainerTransitions = tc;
         }
+    }
+
+    /// <summary>
+    /// Sets up Composition-layer implicit animations on the element's Visual so that
+    /// layout-driven Offset (and optionally Size) changes animate smoothly.
+    /// Runs entirely on the Composition thread — zero managed-code callbacks during animation.
+    /// </summary>
+    internal static void ApplyLayoutAnimation(UIElement uie, LayoutAnimationConfig config)
+    {
+        var visual = ElementCompositionPreview.GetElementVisual(uie);
+        var compositor = visual.Compositor;
+
+        var implicitAnimations = compositor.CreateImplicitAnimationCollection();
+
+        if (config.AnimateOffset)
+        {
+            if (config.UseSpring)
+            {
+                var spring = compositor.CreateSpringVector3Animation();
+                spring.DampingRatio = config.DampingRatio;
+                spring.Period = TimeSpan.FromSeconds(config.Period);
+                spring.Target = "Offset";
+                implicitAnimations["Offset"] = spring;
+            }
+            else
+            {
+                var anim = compositor.CreateVector3KeyFrameAnimation();
+                anim.InsertExpressionKeyFrame(1.0f, "this.FinalValue");
+                anim.Duration = config.Duration;
+                anim.Target = "Offset";
+                implicitAnimations["Offset"] = anim;
+            }
+        }
+
+        if (config.AnimateSize)
+        {
+            if (config.UseSpring)
+            {
+                var spring = compositor.CreateSpringVector2Animation();
+                spring.DampingRatio = config.DampingRatio;
+                spring.Period = TimeSpan.FromSeconds(config.Period);
+                spring.Target = "Size";
+                implicitAnimations["Size"] = spring;
+            }
+            else
+            {
+                var anim = compositor.CreateVector2KeyFrameAnimation();
+                anim.InsertExpressionKeyFrame(1.0f, "this.FinalValue");
+                anim.Duration = config.Duration;
+                anim.Target = "Size";
+                implicitAnimations["Size"] = anim;
+            }
+        }
+
+        visual.ImplicitAnimations = implicitAnimations;
+    }
+
+    /// <summary>
+    /// Clears Composition-layer implicit animations from an element's Visual.
+    /// Called when an element previously had LayoutAnimation but no longer does
+    /// (e.g., after a state change removes the modifier, or a pooled control is reused).
+    /// </summary>
+    internal static void ClearLayoutAnimation(UIElement uie)
+    {
+        var visual = ElementCompositionPreview.GetElementVisual(uie);
+        visual.ImplicitAnimations = null;
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Connected animations (cross-container transitions)
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Queues a connected animation start for an element that was just mounted.
+    /// Called from Mount() when the element has a ConnectedAnimationKey and a
+    /// prepared animation exists with that key.
+    /// </summary>
+    internal void QueueConnectedAnimationStart(UIElement target, string key)
+    {
+        try
+        {
+            var service = ConnectedAnimationService.GetForCurrentView();
+            var anim = service.GetAnimation(key);
+            if (anim is not null)
+                _pendingConnectedAnimationStarts.Add((anim, target));
+        }
+        catch { /* ConnectedAnimationService may not be available */ }
+    }
+
+    /// <summary>
+    /// Starts all queued connected animations. Call AFTER the new tree has been
+    /// attached to the visual tree (e.g., after Window.Content = newControl).
+    /// </summary>
+    public void FlushConnectedAnimations()
+    {
+        if (_pendingConnectedAnimationStarts.Count == 0) return;
+
+        foreach (var (anim, target) in _pendingConnectedAnimationStarts)
+        {
+            try { anim.TryStart(target); }
+            catch { /* target may not be in visual tree */ }
+        }
+        _pendingConnectedAnimationStarts.Clear();
     }
 
     internal void ApplyModifiers(FrameworkElement fe, ElementModifiers m, Action requestRerender)

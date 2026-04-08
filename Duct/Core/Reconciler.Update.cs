@@ -235,6 +235,12 @@ public sealed partial class Reconciler
         if (newEl.ImplicitTransitions is not null || newEl.ThemeTransitions is not null)
             ApplyTransitions(target, newEl.ImplicitTransitions, newEl.ThemeTransitions);
 
+        // Apply or clear Composition-layer layout animation
+        if (newEl.LayoutAnimation is not null)
+            ApplyLayoutAnimation(target, newEl.LayoutAnimation);
+        else if (oldEl.LayoutAnimation is not null)
+            ClearLayoutAnimation(target);
+
         return result;
     }
 

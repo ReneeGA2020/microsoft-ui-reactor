@@ -171,6 +171,9 @@ public sealed class DuctHost
             _currentControl = newControl;
             _currentTree = newTree;
 
+            // Start any connected animations now that the new tree is in the visual tree
+            _reconciler.FlushConnectedAnimations();
+
             double reconcileMs = _phaseSw.Elapsed.TotalMilliseconds;
 
             _phaseSw.Restart();
