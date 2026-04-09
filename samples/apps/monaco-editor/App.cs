@@ -6,7 +6,9 @@ using Duct.Core;
 using Duct.Flex;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Windows.System;
 using static Duct.UI;
+using static Duct.Core.Theme;
 using Path = System.IO.Path;
 
 public static class Program
@@ -140,6 +142,22 @@ class EditorApp : Component
 
         void OnNew() { setText(""); setFilePath(null); setIsDirty(false); setLangIndex(0); setStatus("New file"); }
 
+        // ── Commands ─────────────────────────────────────────────
+        var newCmd = new DuctCommand
+        {
+            Label = "New",
+            Execute = OnNew,
+            Accelerator = Accelerator(VirtualKey.N, VirtualKeyModifiers.Control),
+        };
+        var openCmd = StandardCommand.Open((Action)OnOpen);
+        var saveCmd = StandardCommand.Save((Action)OnSave);
+        var saveAsCmd = new DuctCommand
+        {
+            Label = "Save As...",
+            Execute = (Action)OnSaveAs,
+            Accelerator = Accelerator(VirtualKey.S, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift),
+        };
+
         var title = filePath is not null
             ? $"{Path.GetFileName(filePath)}{(isDirty ? " *" : "")}"
             : isDirty ? "Untitled *" : "Untitled";
@@ -158,10 +176,10 @@ class EditorApp : Component
             .Grid(row: 0, columnSpan: columns.Length);
 
         var toolbar = (FlexRow(
-            Button("New", OnNew),
-            Button("Open...", OnOpen),
-            Button("Save", OnSave),
-            Button("Save As...", OnSaveAs),
+            Button(newCmd),
+            Button(openCmd),
+            Button(saveCmd),
+            Button(saveAsCmd),
             Text("").Flex(grow: 1),
             Text("Language:").VAlign(VerticalAlignment.Center),
             ComboBox(
@@ -194,22 +212,24 @@ class EditorApp : Component
 
         if (!showPreview)
         {
-            return Grid(columns, ["Auto", "Auto", "*", "Auto"],
-                titleBar, toolbar, editor, statusBar
-            ).Background("Transparent");
+            return CommandHost([newCmd, openCmd, saveCmd, saveAsCmd],
+                Grid(columns, ["Auto", "Auto", "*", "Auto"],
+                    titleBar, toolbar, editor, statusBar
+                ));
         }
 
         var previewPane = ScrollView(
-            Markdown(text).Margin(16).Foreground("#D4D4D4")
+            Markdown(text).Margin(16).Foreground(PrimaryText)
         ).Set(sv => sv.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled)
-         .Background("White");
+         .Background(CardBackground);
 
-        return FlexColumn(
-            VStack(titleBar).Flex(shrink:0),
-            VStack(toolbar).Flex(shrink:0),
-            FlexRow(editor.Flex(grow:1, basis:0), previewPane.Flex(grow: 1, basis:0)).Flex(grow:1, basis:0),
-            VStack(statusBar).Flex(shrink:0)
-        );
+        return CommandHost([newCmd, openCmd, saveCmd, saveAsCmd],
+            FlexColumn(
+                VStack(titleBar).Flex(shrink:0),
+                VStack(toolbar).Flex(shrink:0),
+                FlexRow(editor.Flex(grow:1, basis:0), previewPane.Flex(grow: 1, basis:0)).Flex(grow:1, basis:0),
+                VStack(statusBar).Flex(shrink:0)
+            ));
     }
 
     static void InitPicker(object picker)

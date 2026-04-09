@@ -2,6 +2,7 @@ using Duct;
 using Duct.Core;
 using DuctOutlook.Models;
 using static Duct.UI;
+using static Duct.Core.Theme;
 
 namespace DuctOutlook.Components.Calendar;
 
@@ -111,10 +112,10 @@ internal sealed class CalendarViewComponent : Component
                 .FontSize(20);
 
             if (isToday)
-                dayNum = dayNum.Foreground("#0078D4");
+                dayNum = dayNum.Foreground(AccentText);
 
             var header = VStack(0,
-                Text(dayNames[d]).FontSize(12).Foreground("#888"),
+                Text(dayNames[d]).FontSize(12).Foreground(TertiaryText),
                 dayNum
             ).HAlign(Microsoft.UI.Xaml.HorizontalAlignment.Center)
              .Padding(4);

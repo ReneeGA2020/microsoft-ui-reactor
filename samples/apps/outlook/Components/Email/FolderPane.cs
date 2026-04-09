@@ -4,6 +4,7 @@ using DuctOutlook.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using static Duct.UI;
+using static Duct.Core.Theme;
 
 namespace DuctOutlook.Components.Email;
 
@@ -51,17 +52,17 @@ internal sealed class FolderPane : Component<FolderPaneProps>
 
             // Favorites section
             Text("Favorites")
-                .SemiBold().FontSize(13).Foreground("#555")
+                .SemiBold().FontSize(13).Foreground(SecondaryText)
                 .Padding(18, 6, 18, 6),
 
             VStack(0, favorites.Select(FolderRow).ToArray()),
 
             // Divider
-            Border(Empty()).Height(1).Background("#E8E8E8").Margin(16, 10, 16, 10),
+            Border(Empty()).Height(1).Background(DividerStroke).Margin(16, 10, 16, 10),
 
             // All folders section
             Text("Folders")
-                .SemiBold().FontSize(13).Foreground("#555")
+                .SemiBold().FontSize(13).Foreground(SecondaryText)
                 .Padding(18, 4, 18, 6),
 
             ScrollView(
@@ -77,11 +78,11 @@ internal sealed class FolderPane : Component<FolderPaneProps>
 
         return Button(
             (FlexRow(
-                MdlIcon(folder.Icon, 16, "#555"),
+                MdlIcon(folder.Icon, 16, SecondaryText),
                 Text(folder.DisplayName).FontSize(14).Flex(grow: 1),
                 folder.UnreadCount > 0
                     ? Text(folder.UnreadCount.ToString())
-                        .SemiBold().FontSize(13).Foreground("#0078D4")
+                        .SemiBold().FontSize(13).Foreground(AccentText)
                     : Empty()
             ) with { ColumnGap = 10 }).Padding(18, 7, 18, 7),
             () => Props.OnFolderSelected(folder.Id)
@@ -101,6 +102,10 @@ internal sealed class FolderPane : Component<FolderPaneProps>
     }
 
     static Element MdlIcon(string glyph, double size, string color) =>
+        Text(glyph).FontSize(size).Foreground(color)
+            .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets"));
+
+    static Element MdlIcon(string glyph, double size, ThemeRef color) =>
         Text(glyph).FontSize(size).Foreground(color)
             .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets"));
 }

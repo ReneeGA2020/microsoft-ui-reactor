@@ -2,6 +2,7 @@ using Duct;
 using Duct.Core;
 using DuctOutlook.Models;
 using static Duct.UI;
+using static Duct.Core.Theme;
 
 namespace DuctOutlook.Components.Calendar;
 
@@ -41,7 +42,7 @@ internal sealed class WeekGrid : Component<WeekGridProps>
                 : $"{h - 12} PM";
 
             children.Add(
-                Text(label).FontSize(11).Foreground("#888")
+                Text(label).FontSize(11).Foreground(TertiaryText)
                     .Padding(4, 0, 8, 0)
                     .VAlign(Microsoft.UI.Xaml.VerticalAlignment.Top)
                     .HAlign(Microsoft.UI.Xaml.HorizontalAlignment.Right)
@@ -52,7 +53,7 @@ internal sealed class WeekGrid : Component<WeekGridProps>
             children.Add(
                 Border(Empty())
                     .Height(1)
-                    .Background("#E8E8E8")
+                    .Background(DividerStroke)
                     .VAlign(Microsoft.UI.Xaml.VerticalAlignment.Top)
                     .Grid(row: row, column: 1, columnSpan: 7)
             );
@@ -64,7 +65,7 @@ internal sealed class WeekGrid : Component<WeekGridProps>
             children.Add(
                 Border(Empty())
                     .Width(1)
-                    .Background("#E8E8E8")
+                    .Background(DividerStroke)
                     .HAlign(Microsoft.UI.Xaml.HorizontalAlignment.Left)
                     .Grid(row: 0, column: d, rowSpan: visibleSlots)
             );

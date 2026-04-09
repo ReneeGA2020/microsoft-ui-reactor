@@ -11,6 +11,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Duct.PropertyGrid;
 using static Duct.UI;
+using static Duct.Core.Theme;
 
 if (args.Contains("--self-test"))
 {
@@ -27,7 +28,7 @@ else
 
 // ─── Root application component ────────────────────────────────────────────────
 
-enum Tab { Counter, TodoList, ConditionalUI, Form, DynamicList, PerfStress, Virtualization, Flyout, DataTemplate, FlexPanel, Transitions, PropertyGrid, Context, Memo, Persisted, Slots, Navigation }
+enum Tab { Counter, TodoList, ConditionalUI, Form, DynamicList, PerfStress, Virtualization, Flyout, DataTemplate, FlexPanel, Transitions, PropertyGrid, Context, Memo, Persisted, Slots, Navigation, Commanding }
 
 class DemoApp : Component
 {
@@ -52,6 +53,7 @@ class DemoApp : Component
         Tab.Persisted => "Persisted",
         Tab.Slots => "Slots",
         Tab.Navigation => "Navigation",
+        Tab.Commanding => "Commanding",
         _ => tab.ToString()
     };
 
@@ -80,7 +82,8 @@ class DemoApp : Component
                     TabButton(Tab.Memo, currentTab, setTab),
                     TabButton(Tab.Persisted, currentTab, setTab),
                     TabButton(Tab.Slots, currentTab, setTab),
-                    TabButton(Tab.Navigation, currentTab, setTab)
+                    TabButton(Tab.Navigation, currentTab, setTab),
+                    TabButton(Tab.Commanding, currentTab, setTab)
                 ),
                 ComboBox(Languages, langIndex, setLangIndex)
             ).Margin(16, 16, 16, 0),
@@ -107,6 +110,7 @@ class DemoApp : Component
                     Tab.Persisted => Component<PersistedDemo>(),
                     Tab.Slots => Component<SlotsDemo>(),
                     Tab.Navigation => Component<NavigationDemo>(),
+                    Tab.Commanding => Component<CommandingTestDemo>(),
                     _ => Text("Select a tab")
                 }
             ).Padding(24).Margin(16).Flex(grow: 1)
@@ -280,7 +284,7 @@ class ConditionalDemo : Component
                               ).CornerRadius(4).Background("#e3f2fd").Padding(12)
                             : null
                     )
-                  ).CornerRadius(8).Background("#f5f5f5").Padding(16)
+                  ).CornerRadius(8).Background(SubtleFill).Padding(16)
                 : Text("Check the box above to reveal advanced options.").Opacity(0.6),
 
             // ── 2. Switch expression → completely different sub-trees ───
@@ -443,7 +447,7 @@ class DynamicListDemo : Component
                             Text($"Item {i + 1}"),
                             Text($"(created dynamically)").Opacity(0.5)
                         )
-                    ).CornerRadius(4).Background("#f0f0f0").Padding(12, 8)
+                    ).CornerRadius(4).Background(SubtleFill).Padding(12, 8)
                 ).ToArray()
             ),
 
@@ -881,7 +885,7 @@ class VirtualizationDemo : Component
             // The list itself
             Border(list)
                 .CornerRadius(8)
-                .Background("#ffffff")
+                .Background(CardBackground)
                 .Height(500)
         );
     }
@@ -1025,7 +1029,7 @@ class FlyoutDemo : Component
                     Text("Right-click me!").SemiBold(),
                     Text($"Color: {color} | Tick: {tick}")
                 )
-            ).CornerRadius(8).Background("#f5f5f5").Padding(24)
+            ).CornerRadius(8).Background(SubtleFill).Padding(24)
              .WithContextFlyout(MenuItems(
                 MenuItem("Reset color", () => setColor("Red")),
                 MenuItem("Reset timer", () => updateTick(_ => 0)),
@@ -1192,7 +1196,7 @@ class DataTemplateDemo : Component
                             Text(animal.Name).FontSize(24).SemiBold().HAlign(HorizontalAlignment.Center),
                             Text($"{animal.Species} (#{animal.Id})").Opacity(0.6).HAlign(HorizontalAlignment.Center)
                         ).HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
-                    ).Background("#f5f5f5").Padding(32)
+                    ).Background(SubtleFill).Padding(32)
                 ) with
                 {
                     SelectedIndex = flipIndex,
@@ -1326,7 +1330,7 @@ class FlexPanelDemo : Component
                     ColumnGap = 8,
                     RowGap = 8,
                 }
-            ).Background("#f0f0f0").CornerRadius(8).Padding(8).Height(300),
+            ).Background(SubtleFill).CornerRadius(8).Padding(8).Height(300),
 
             // ── Grow ratio demo ──
             SubHeading("Grow Ratios"),
@@ -1705,7 +1709,7 @@ class ContextDemo : Component
             var name = UseContext(UserNameContext);
             return Border(
                 Text($"Hello, {name}!").Foreground(accent).SemiBold().FontSize(18)
-            ).Padding(12).CornerRadius(6).Background("#f0f0f0");
+            ).Padding(12).CornerRadius(6).Background(SubtleFill);
         }
     }
 }
@@ -1799,7 +1803,7 @@ class MemoDemo : Component
                     When(Props.OnClick is not null,
                         () => Button("Invoke callback", Props.OnClick!))
                 )
-            ).Padding(8).CornerRadius(4).Background("#f5f5f5");
+            ).Padding(8).CornerRadius(4).Background(SubtleFill);
         }
     }
 
@@ -1898,18 +1902,18 @@ class SlotsDemo : Component
             return Border(VStack(0,
                 Props.Header is not null
                     ? Border(Props.Header)
-                        .Padding(12, 10).Background("#f5f5f5")
-                        .WithBorder("#e6e6e6")
+                        .Padding(12, 10).Background(SubtleFill)
+                        .WithBorder(ControlStroke)
                     : Empty(),
                 Props.Body is not null
                     ? Border(Props.Body).Padding(16)
                     : Empty(),
                 Props.Footer is not null
                     ? Border(Props.Footer)
-                        .Padding(10, 12).Background("#fafafa")
-                        .WithBorder("#e6e6e6")
+                        .Padding(10, 12).Background(LayerFill)
+                        .WithBorder(ControlStroke)
                     : Empty()
-            )).CornerRadius(8).WithBorder("#d0d0d0");
+            )).CornerRadius(8).WithBorder(ControlStroke);
         }
     }
 
@@ -2233,7 +2237,7 @@ class PropertyGridDemo : Component
                         _ => Empty()
                     }
                 )
-            ).Padding(12).Background("#f0f0f0")
+            ).Padding(12).Background(SubtleFill)
         );
     }
 }
@@ -2250,15 +2254,34 @@ class NavigationDemo : Component
     public override Element Render()
     {
         var nav = UseNavigation<NavRoute>(new NavHome());
+        var (transition, setTransition) = UsePersisted("navTransition", "Slide");
+
+        var activeTransition = transition switch
+        {
+            "Fade" => NavigationTransition.Fade(),
+            "DrillIn" => NavigationTransition.DrillIn(),
+            "Spring" => NavigationTransition.Spring(),
+            "None" => NavigationTransition.None,
+            _ => NavigationTransition.Slide()
+        };
 
         return VStack(12,
             Heading("Navigation Demo"),
-            Text($"Route: {nav.CurrentRoute}  |  Depth: {nav.Depth}"),
+            Text($"Route: {nav.CurrentRoute}  |  Depth: {nav.Depth}  |  Back stack: {nav.BackStack.Count}"),
 
             HStack(8,
                 Button("Back", () => nav.GoBack()).Disabled(!nav.CanGoBack),
                 Button("Forward", () => nav.GoForward()).Disabled(!nav.CanGoForward),
                 Button("Reset", () => nav.Reset(new NavHome())).Disabled(nav.CurrentRoute is NavHome && nav.Depth == 1)
+            ),
+
+            // Transition selector (persisted across tab switches)
+            HStack(8,
+                Text("Transition:").VAlign(VerticalAlignment.Center),
+                ComboBox(["Slide", "Fade", "DrillIn", "Spring", "None"],
+                    Array.IndexOf(new[] { "Slide", "Fade", "DrillIn", "Spring", "None" }, transition),
+                    i => setTransition(new[] { "Slide", "Fade", "DrillIn", "Spring", "None" }[i])
+                ).Width(140)
             ),
 
             NavigationHost(nav, route => route switch
@@ -2267,7 +2290,7 @@ class NavigationDemo : Component
                 NavDetail d => Component<NavDetailPage, int>(d.Id),
                 NavSettings => Component<NavSettingsPage>(),
                 _ => Text("Unknown route"),
-            }) with { Transition = NavigationTransition.None }
+            }) with { Transition = activeTransition }
         );
     }
 }
@@ -2277,9 +2300,14 @@ class NavHomePage : Component
     public override Element Render()
     {
         var nav = UseNavigation<NavRoute>();
+        var (visitCount, setVisitCount) = UsePersisted("homeVisits", 0);
+
+        UseNavigationLifecycle(
+            onNavigatedTo: ctx => setVisitCount(visitCount + 1));
 
         return VStack(8,
             Text("Home Page").FontSize(20).SemiBold(),
+            Text($"Visit count: {visitCount} (persisted across navigations)").Foreground(SecondaryText),
             Text("Select an item to view details:"),
             VStack(4,
                 Button("Item #1", () => nav.Navigate(new NavDetail(1))),
@@ -2297,10 +2325,19 @@ class NavDetailPage : Component<int>
     {
         var nav = UseNavigation<NavRoute>();
         var id = Props;
+        var (notes, setNotes) = UsePersisted($"detail-notes-{id}", "");
+
+        UseNavigationLifecycle(
+            onNavigatingFrom: ctx =>
+            {
+                // Example: could block navigation if notes are unsaved
+            });
 
         return VStack(8,
             Text($"Detail Page — Item #{id}").FontSize(20).SemiBold(),
             Text($"Viewing details for item {id}."),
+            TextField(notes, setNotes)
+                .Set(t => t.PlaceholderText = "Notes (persisted via UsePersisted)"),
             HStack(8,
                 Button("Home", () => nav.Reset(new NavHome())),
                 id < 3
@@ -2317,10 +2354,113 @@ class NavSettingsPage : Component
     {
         var nav = UseNavigation<NavRoute>();
 
+        UseNavigationLifecycle(
+            onNavigatedTo: _ => Debug.WriteLine("[Nav] Settings: navigated to"),
+            onNavigatedFrom: _ => Debug.WriteLine("[Nav] Settings: navigated from"));
+
         return VStack(8,
             Text("Settings Page").FontSize(20).SemiBold(),
             Text("Application settings would go here."),
+            Text("Lifecycle hooks log to debug output.").Foreground(TertiaryText),
             Button("Back to Home", () => nav.Reset(new NavHome()))
+        );
+    }
+}
+
+// ─── Commanding demo ────────────────────────────────────────────────────────
+
+class CommandingTestDemo : Component
+{
+    public override Element Render()
+    {
+        var (log, setLog) = UseState<string[]>([]);
+
+        void Log(string msg) => setLog([.. log, msg]);
+
+        // StandardCommand — pre-built with label, icon, accelerator
+        var copyCmd = StandardCommand.Copy(() => Log("Copy executed (Ctrl+C)"));
+        var pasteCmd = StandardCommand.Paste(() => Log("Paste executed (Ctrl+V)"));
+        var saveCmd = StandardCommand.Save(() => Log("Save executed (Ctrl+S)"));
+
+        // Custom DuctCommand with accelerator
+        var customCmd = new DuctCommand
+        {
+            Label = "Custom Action",
+            Execute = () => Log("Custom action executed (Ctrl+Shift+K)"),
+            Accelerator = Accelerator(Windows.System.VirtualKey.K,
+                Windows.System.VirtualKeyModifiers.Control | Windows.System.VirtualKeyModifiers.Shift),
+        };
+
+        // Async command with UseCommand for IsExecuting tracking
+        var asyncCmd = UseCommand(new DuctCommand
+        {
+            Label = "Async Task",
+            ExecuteAsync = async () =>
+            {
+                Log("Async started...");
+                await Task.Delay(1500);
+                Log("Async completed!");
+            },
+        });
+
+        // Parameterized command
+        var deleteCmd = new DuctCommand<string>
+        {
+            Label = "Delete",
+            Execute = item => Log($"Deleted: {item}"),
+        };
+
+        var clearLogCmd = new DuctCommand
+        {
+            Label = "Clear Log",
+            Execute = () => setLog([]),
+            CanExecute = log.Length > 0,
+        };
+
+        return CommandHost([copyCmd, pasteCmd, saveCmd, customCmd],
+            VStack(12,
+                Heading("Commanding Demo"),
+
+                // Standard commands
+                SubHeading("StandardCommand (built-in label, icon, accelerator)"),
+                HStack(8,
+                    Button(copyCmd),
+                    Button(pasteCmd),
+                    Button(saveCmd)
+                ),
+
+                // Custom command with accelerator
+                SubHeading("DuctCommand (custom accelerator: Ctrl+Shift+K)"),
+                Button(customCmd),
+
+                // Async command
+                SubHeading("UseCommand (async with IsExecuting tracking)"),
+                HStack(8,
+                    Button(asyncCmd),
+                    When(asyncCmd.IsExecuting, () =>
+                        ProgressRing().Width(20).Height(20).Active(true))
+                ),
+
+                // Parameterized command
+                SubHeading("Parameterized DuctCommand<T>"),
+                HStack(8,
+                    Button("Delete 'Alpha'", () => deleteCmd.Execute?.Invoke("Alpha")),
+                    Button("Delete 'Beta'", () => deleteCmd.Execute?.Invoke("Beta"))
+                ),
+
+                // Log
+                SubHeading("Event Log"),
+                HStack(8,
+                    Button(clearLogCmd),
+                    Text($"{log.Length} event(s)").Foreground(TertiaryText)
+                        .VAlign(VerticalAlignment.Center)
+                ),
+                VStack(2,
+                    log.TakeLast(10).Select(entry =>
+                        Text($"→ {entry}").FontSize(12).Foreground(SecondaryText)
+                    ).ToArray()
+                )
+            )
         );
     }
 }

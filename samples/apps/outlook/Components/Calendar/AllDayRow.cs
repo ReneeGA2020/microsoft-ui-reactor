@@ -2,6 +2,7 @@ using Duct;
 using Duct.Core;
 using DuctOutlook.Models;
 using static Duct.UI;
+using static Duct.Core.Theme;
 
 namespace DuctOutlook.Components.Calendar;
 
@@ -21,7 +22,7 @@ internal sealed class AllDayRow : Component<AllDayRowProps>
         var children = new List<Element>
         {
             // Label
-            Text("").FontSize(11).Foreground("#888")
+            Text("").FontSize(11).Foreground(TertiaryText)
                 .Grid(row: 0, column: 0)
                 .Padding(4, 2, 4, 2)
         };

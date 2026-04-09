@@ -9,7 +9,6 @@
     <Nullable>enable</Nullable>
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
-    <PublishAot>true</PublishAot>
   </PropertyGroup>
 
   <ItemGroup>

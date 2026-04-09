@@ -2,6 +2,7 @@ using Duct;
 using Duct.Core;
 using Microsoft.UI.Xaml;
 using static Duct.UI;
+using static Duct.Core.Theme;
 
 namespace DuctOutlook.Components.Calendar;
 
@@ -42,7 +43,7 @@ internal sealed class CalendarToolbar : Component<CalendarToolbarProps>
             }),
 
             // Separator
-            Border(Empty()).Width(1).Height(24).Background("#E0E0E0").Margin(4, 0, 4, 0),
+            Border(Empty()).Width(1).Height(24).Background(DividerStroke).Margin(4, 0, 4, 0),
 
             // View mode selector
             SelectorBar(
@@ -52,7 +53,7 @@ internal sealed class CalendarToolbar : Component<CalendarToolbarProps>
             ),
 
             // Separator
-            Border(Empty()).Width(1).Height(24).Background("#E0E0E0").Margin(4, 0, 4, 0),
+            Border(Empty()).Width(1).Height(24).Background(DividerStroke).Margin(4, 0, 4, 0),
 
             // Navigation
             Button(MdlIcon("\uE76B", 12), Props.GoPrev)

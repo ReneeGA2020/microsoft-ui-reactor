@@ -5,6 +5,7 @@
 using Duct;
 using Duct.Core;
 using static Duct.UI;
+using static Duct.Core.Theme;
 using Windows.System;
 
 DuctApp.Run<CommandingDemoApp>("Commanding Demo", width: 900, height: 700);
@@ -24,9 +25,7 @@ class CommandingDemoApp : Component
             HStack(8,
                 tabs.Select((tab, i) =>
                     Button(tab, () => setSelectedTab(i))
-                        .Background(i == selectedTab
-                            ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.CornflowerBlue)
-                            : new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Transparent))
+                        .Background(i == selectedTab ? Accent : SubtleFill)
                         .Margin(0, 0, 0, 8)
                 ).ToArray()
             ).Margin(16, 0),

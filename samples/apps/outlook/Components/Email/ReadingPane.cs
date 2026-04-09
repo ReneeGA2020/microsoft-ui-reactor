@@ -4,6 +4,7 @@ using DuctOutlook.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using static Duct.UI;
+using static Duct.Core.Theme;
 
 namespace DuctOutlook.Components.Email;
 
@@ -21,10 +22,10 @@ internal sealed class ReadingPane : Component<ReadingPaneProps>
         if (Props.Message is not { } msg)
         {
             return VStack(
-                MdlIcon("\uE715", 48, "#CCC")
+                MdlIcon("\uE715", 48, DisabledText)
                     .HAlign(HorizontalAlignment.Center),
                 Text("Select a message to read")
-                    .FontSize(15).Foreground("#999")
+                    .FontSize(15).Foreground(TertiaryText)
                     .HAlign(HorizontalAlignment.Center)
             ).Spacing(16).Center();
         }
@@ -58,14 +59,14 @@ internal sealed class ReadingPane : Component<ReadingPaneProps>
                 VStack(2,
                     (FlexRow(
                         Text(msg.SenderName).SemiBold().FontSize(14),
-                        Text($"<{msg.SenderEmail}>").FontSize(12).Foreground("#888")
+                        Text($"<{msg.SenderEmail}>").FontSize(12).Foreground(TertiaryText)
                     ) with { ColumnGap = 6 }),
-                    Text($"To: {toLine}").FontSize(12).Foreground("#666")
+                    Text($"To: {toLine}").FontSize(12).Foreground(SecondaryText)
                 ).Flex(grow: 1),
                 // Date + action buttons
                 VStack(4,
                     Text(msg.ReceivedDate.ToString("M/d/yyyy h:mm tt"))
-                        .FontSize(12).Foreground("#888")
+                        .FontSize(12).Foreground(TertiaryText)
                         .HAlign(HorizontalAlignment.Right),
                     (FlexRow(
                         SmallBtn("\uE97A"),
@@ -76,7 +77,7 @@ internal sealed class ReadingPane : Component<ReadingPaneProps>
             ) with { ColumnGap = 14 }).Padding(28, 6, 28, 16),
 
             // Separator
-            Border(Empty()).Height(1).Background("#E8E8E8"),
+            Border(Empty()).Height(1).Background(DividerStroke),
 
             // HTML body via WebView2
             WebView2()
@@ -98,9 +99,13 @@ internal sealed class ReadingPane : Component<ReadingPaneProps>
         Text(glyph).FontSize(size).Foreground(color)
             .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets"));
 
+    static Element MdlIcon(string glyph, double size, ThemeRef color) =>
+        Text(glyph).FontSize(size).Foreground(color)
+            .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets"));
+
     static Element SmallBtn(string icon) =>
         Button(
-            Text(icon).FontSize(15).Foreground("#555")
+            Text(icon).FontSize(15).Foreground(SecondaryText)
                 .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets")),
             null
         ).Set(b =>

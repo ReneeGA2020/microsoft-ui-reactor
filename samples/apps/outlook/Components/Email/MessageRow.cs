@@ -4,6 +4,7 @@ using DuctOutlook.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using static Duct.UI;
+using static Duct.Core.Theme;
 
 namespace DuctOutlook.Components.Email;
 
@@ -39,7 +40,7 @@ internal sealed class MessageRow : Component<MessageRowProps>
 
         // Unread indicator bar
         var unreadBar = !msg.IsRead && !Props.IsSelected
-            ? Border(Empty()).Width(3).Background("#0078D4")
+            ? Border(Empty()).Width(3).Background(Accent)
                 .VAlign(VerticalAlignment.Stretch)
                 .HAlign(HorizontalAlignment.Left)
             : Empty();
@@ -60,7 +61,7 @@ internal sealed class MessageRow : Component<MessageRowProps>
             Text(msg.SenderName).FontSize(14)
                 .Set(t => { t.FontWeight = bold; t.TextTrimming = TextTrimming.CharacterEllipsis; })
                 .Flex(grow: 1),
-            Text(dateStr).FontSize(12).Foreground("#888")
+            Text(dateStr).FontSize(12).Foreground(TertiaryText)
         ) with { ColumnGap = 8 };
 
         // Line 2: Subject
@@ -69,15 +70,15 @@ internal sealed class MessageRow : Component<MessageRowProps>
 
         // Line 3: Preview + badges — use FlexRow so grow works
         var previewLine = FlexRow(
-            Text(msg.PreviewText).FontSize(12).Foreground("#777")
+            Text(msg.PreviewText).FontSize(12).Foreground(TertiaryText)
                 .Set(t => { t.TextTrimming = TextTrimming.CharacterEllipsis; t.MaxLines = 1; })
                 .Flex(grow: 1),
             msg.HasAttachments
-                ? MdlIcon("\uE723", 12, "#888")
+                ? MdlIcon("\uE723", 12, TertiaryText)
                 : Empty(),
             msg.HasRsvp
-                ? Border(Text("RSVP").FontSize(9).Foreground("#0078D4"))
-                    .Padding(4, 1, 4, 1).CornerRadius(2).WithBorder("#0078D4", 1)
+                ? Border(Text("RSVP").FontSize(9).Foreground(AccentText))
+                    .Padding(4, 1, 4, 1).CornerRadius(2).WithBorder(Accent, 1)
                 : Empty()
         ) with { ColumnGap = 6 };
 
@@ -110,6 +111,10 @@ internal sealed class MessageRow : Component<MessageRowProps>
     }
 
     static Element MdlIcon(string glyph, double size, string color) =>
+        Text(glyph).FontSize(size).Foreground(color)
+            .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets"));
+
+    static Element MdlIcon(string glyph, double size, ThemeRef color) =>
         Text(glyph).FontSize(size).Foreground(color)
             .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets"));
 

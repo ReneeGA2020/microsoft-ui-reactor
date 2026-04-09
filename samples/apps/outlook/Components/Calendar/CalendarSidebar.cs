@@ -3,6 +3,7 @@ using Duct.Core;
 using DuctOutlook.Models;
 using Microsoft.UI.Xaml;
 using static Duct.UI;
+using static Duct.Core.Theme;
 
 namespace DuctOutlook.Components.Calendar;
 
@@ -50,7 +51,7 @@ internal sealed class CalendarSidebar : Component<CalendarSidebarProps>
 
             // Show all link
             Button(
-                Text("Show all").FontSize(12).Foreground("#0078D4"),
+                Text("Show all").FontSize(12).Foreground(AccentText),
                 null
             ).Set(b =>
             {
@@ -58,7 +59,7 @@ internal sealed class CalendarSidebar : Component<CalendarSidebarProps>
                 b.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(
                     Windows.UI.Color.FromArgb(0, 0, 0, 0));
             }).Margin(12, 4, 0, 0)
-        ).Background("#FAFAFA");
+        ).Background(LayerFill);
     }
 
     static Element MdlIcon(string glyph, double size = 14) =>

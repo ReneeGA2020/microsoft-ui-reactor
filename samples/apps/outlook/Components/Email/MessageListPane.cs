@@ -4,6 +4,7 @@ using DuctOutlook.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using static Duct.UI;
+using static Duct.Core.Theme;
 
 namespace DuctOutlook.Components.Email;
 
@@ -42,11 +43,11 @@ internal sealed class MessageListPane : Component<MessageListPaneProps>
             // Sort indicator
             (FlexRow(
                 MdlIcon("\uE8CB", 12),
-                Text("By Date").FontSize(12).Foreground("#888")
+                Text("By Date").FontSize(12).Foreground(TertiaryText)
             ) with { ColumnGap = 5 }).Padding(16, 4, 16, 6),
 
             // Separator
-            Border(Empty()).Height(1).Background("#E8E8E8"),
+            Border(Empty()).Height(1).Background(DividerStroke),
 
             // Virtualized message list
             LazyVStack<MessageListItem>(
@@ -56,7 +57,7 @@ internal sealed class MessageListPane : Component<MessageListPaneProps>
                 {
                     DateHeaderItem dh => (FlexRow(
                         MdlIcon("\uE76C", 10),
-                        Text(dh.Label).FontSize(13).SemiBold().Foreground("#555")
+                        Text(dh.Label).FontSize(13).SemiBold().Foreground(SecondaryText)
                     ) with { ColumnGap = 5 }).Padding(16, 12, 16, 4),
 
                     MessageItem mi => Component<MessageRow, MessageRowProps>(new(
@@ -72,7 +73,7 @@ internal sealed class MessageListPane : Component<MessageListPaneProps>
     }
 
     static Element MdlIcon(string glyph, double size) =>
-        Text(glyph).FontSize(size).Foreground("#888")
+        Text(glyph).FontSize(size).Foreground(TertiaryText)
             .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets"));
 
     static IReadOnlyList<MessageListItem> BuildFlatList(EmailMessage[] messages)

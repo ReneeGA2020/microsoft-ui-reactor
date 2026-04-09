@@ -6,6 +6,7 @@ using Duct.Core;
 using Duct.Core.Navigation;
 using Microsoft.UI.Xaml;
 using static Duct.UI;
+using static Duct.Core.Theme;
 
 // ─── Deep link map (configured once, immutable) ───────────────────────────────
 
@@ -344,7 +345,7 @@ class ProfilePage : Component<string>
                     TextField(bio, v => { setBio(v); setSaved(false); }).Width(300),
                     When(hasUnsavedChanges, () =>
                         Text("You have unsaved changes. Navigation is blocked until you save or discard.")
-                            .Foreground("#d13438")),
+                            .Foreground(SystemCritical)),
                     HStack(8,
                         Button("Save", () => setSaved(true)),
                         Button("Discard Changes", () =>

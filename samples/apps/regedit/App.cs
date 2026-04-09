@@ -11,6 +11,7 @@ using DuctRegedit.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.Win32;
 using static Duct.UI;
+using static Duct.Core.Theme;
 
 DuctApp.Run<RegeditApp>("Registry Editor", width: 1000, height: 600,
     configure: host => CursorBorderRegistration.Register(host.Reconciler));
@@ -25,8 +26,8 @@ class RegeditApp : Component
         var (currentKeyPath, setCurrentKeyPath) = UseState("");
         var (values, setValues) = UseState<RegistryValueEntry[]>([]);
         var (selectedValueIndex, setSelectedValueIndex) = UseState(-1);
-        var (showAddressBar, setShowAddressBar) = UseState(true);
-        var (showStatusBar, setShowStatusBar) = UseState(true);
+        var (showAddressBar, setShowAddressBar) = UsePersisted("showAddressBar", true);
+        var (showStatusBar, setShowStatusBar) = UsePersisted("showStatusBar", true);
         var (addressBarText, setAddressBarText) = UseState("");
         var (isLoading, setIsLoading) = UseState(false);
 
@@ -649,12 +650,8 @@ class RegeditApp : Component
                     }),
                 When(isLoading, () => ProgressRing().Width(16).Height(16).Active(true))
             )
-            .Set(sp =>
-            {
-                sp.Padding = new Thickness(8, 4, 8, 4);
-                sp.BorderThickness = new Thickness(0, 1, 0, 0);
-                sp.BorderBrush = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["DividerStrokeColorDefaultBrush"];
-            })
+            .Padding(8, 4, 8, 4)
+            .WithBorder(DividerStroke)
         );
 
         // ── Dialogs ─────────────────────────────────────────────────

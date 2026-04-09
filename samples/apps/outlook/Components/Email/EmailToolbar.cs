@@ -3,6 +3,7 @@ using Duct.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using static Duct.UI;
+using static Duct.Core.Theme;
 
 namespace DuctOutlook.Components.Email;
 
@@ -23,16 +24,16 @@ internal sealed class EmailToolbar : Component
                 ToolbarBtn("\uE8A3", "Read / Unread"),
                 ToolbarBtn("\uE129", "Flag")
             ) with { ColumnGap = 4 }).Padding(10, 6, 10, 6),
-            Border(Empty()).Height(1).Background("#E8E8E8")
+            Border(Empty()).Height(1).Background(DividerStroke)
         );
     }
 
     static Element ToolbarBtn(string icon, string label) =>
         Button(
             (FlexRow(
-                Text(icon).FontSize(16).Foreground("#555")
+                Text(icon).FontSize(16).Foreground(SecondaryText)
                     .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets")),
-                Text(label).FontSize(13).Foreground("#333")
+                Text(label).FontSize(13).Foreground(PrimaryText)
             ) with { ColumnGap = 6 }),
             null
         ).Set(b =>
@@ -48,5 +49,5 @@ internal sealed class EmailToolbar : Component
         });
 
     static Element Separator() =>
-        Border(Empty()).Width(1).Height(22).Background("#DDD").Margin(4, 0, 4, 0);
+        Border(Empty()).Width(1).Height(22).Background(DividerStroke).Margin(4, 0, 4, 0);
 }

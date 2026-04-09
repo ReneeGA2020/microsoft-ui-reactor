@@ -4,7 +4,6 @@
 using Duct;
 using Duct.Core;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Text;
 using static Duct.UI;
 
@@ -172,10 +171,12 @@ class WordPuzzleApp : Component
             ? elapsed.ToString(@"mm\:ss")
             : hasWon ? "You win! 🎉" : "";
 
+        var randomizeCmd = new DuctCommand { Label = "Randomize", Execute = OnRandomize };
+
         return VStack(12,
             // Header
             VStack(8,
-                Button("Randomize", OnRandomize)
+                Button(randomizeCmd)
                     .HAlign(HorizontalAlignment.Center),
                 Text(timeDisplay).FontSize(26).Bold()
                     .HAlign(HorizontalAlignment.Center)
@@ -187,13 +188,8 @@ class WordPuzzleApp : Component
                 ["*", "*", "*", "*"],
                 BuildCells(tiles, showWinText, OnTileClicked)
             )
-            .Set(g =>
-            {
-                g.Width = 440;
-                g.Height = 440;
-                g.RowSpacing = 4;
-                g.ColumnSpacing = 4;
-            })
+            .Width(440).Height(440)
+            .Set(g => { g.RowSpacing = 4; g.ColumnSpacing = 4; })
             .HAlign(HorizontalAlignment.Center)
         );
     }
@@ -213,12 +209,11 @@ class WordPuzzleApp : Component
             int capturedPos = pos;
 
             var tile = Button(label, () => onTileClicked(capturedPos))
+                .FontSize(32).FontWeight(FontWeights.Bold)
+                .HAlign(HorizontalAlignment.Stretch)
+                .VAlign(VerticalAlignment.Stretch)
                 .Set(b =>
                 {
-                    b.FontSize = 32;
-                    b.FontWeight = FontWeights.Bold;
-                    b.HorizontalAlignment = HorizontalAlignment.Stretch;
-                    b.VerticalAlignment = VerticalAlignment.Stretch;
                     b.HorizontalContentAlignment = HorizontalAlignment.Center;
                     b.VerticalContentAlignment = VerticalAlignment.Center;
                     b.CornerRadius = new CornerRadius(6);

@@ -2,6 +2,7 @@ using Duct;
 using Duct.Core;
 using DuctOutlook.Models;
 using static Duct.UI;
+using static Duct.Core.Theme;
 
 namespace DuctOutlook.Components.Calendar;
 
@@ -35,7 +36,7 @@ internal sealed class EventBlock : Component<EventBlockProps>
                 )
             ).Concat(
                 evt.Location is not null
-                    ? [Text(evt.Location).FontSize(10).Foreground("#555")
+                    ? [Text(evt.Location).FontSize(10).Foreground(SecondaryText)
                         .Set(t =>
                         {
                             t.TextTrimming = Microsoft.UI.Xaml.TextTrimming.CharacterEllipsis;

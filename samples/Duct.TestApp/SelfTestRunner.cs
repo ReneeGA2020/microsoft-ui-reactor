@@ -329,7 +329,8 @@ static class SelfTestRunner
 
     static void SelectComboBoxItem(int index)
     {
-        var cb = FindControl<ComboBox>(_ => true);
+        // Find the PropertyGrid target ComboBox (3 items), not the Language selector (1 item)
+        var cb = FindControl<ComboBox>(c => c.Items.Count >= 3);
         if (cb != null)
             cb.SelectedIndex = index;
     }

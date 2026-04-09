@@ -3,6 +3,7 @@ using Duct.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using static Duct.UI;
+using static Duct.Core.Theme;
 
 namespace DuctOutlook.Components;
 
@@ -29,7 +30,7 @@ internal sealed class NavStrip : Component<NavStripProps>
     Element NavBtn(string icon, string label, string view)
     {
         var isActive = Props.ActiveView == view;
-        var fg = isActive ? "#0078D4" : "#666";
+        var fg = isActive ? AccentText : SecondaryText;
 
         return Button(
             VStack(0,
