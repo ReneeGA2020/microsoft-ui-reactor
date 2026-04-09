@@ -23,19 +23,19 @@ public abstract class Component
 
     // ── Hook convenience methods (delegate to Context) ─────────────
 
-    protected (T Value, Action<T> Set) UseState<T>(T initialValue)
-        => Context.UseState(initialValue);
+    protected (T Value, Action<T> Set) UseState<T>(T initialValue, bool threadSafe = false)
+        => Context.UseState(initialValue, threadSafe);
 
-    protected (T Value, Action<Func<T, T>> Update) UseReducer<T>(T initialValue)
-        => Context.UseReducer(initialValue);
+    protected (T Value, Action<Func<T, T>> Update) UseReducer<T>(T initialValue, bool threadSafe = false)
+        => Context.UseReducer(initialValue, threadSafe);
 
     /// <summary>
     /// Redux-style reducer: takes a reducer function (state, action) => newState.
     /// Returns (currentState, dispatch) where dispatch sends an action through the reducer.
     /// </summary>
     protected (TState Value, Action<TAction> Dispatch) UseReducer<TState, TAction>(
-        Func<TState, TAction, TState> reducer, TState initialValue)
-        => Context.UseReducer(reducer, initialValue);
+        Func<TState, TAction, TState> reducer, TState initialValue, bool threadSafe = false)
+        => Context.UseReducer(reducer, initialValue, threadSafe);
 
     protected void UseEffect(Action effect, params object[] dependencies)
         => Context.UseEffect(effect, dependencies);

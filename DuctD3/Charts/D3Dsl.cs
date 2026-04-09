@@ -79,6 +79,7 @@ public static class D3
         new()
         {
             Data = pathData != null ? PathDataParser.Parse(pathData) : null,
+            PathDataString = pathData,
             Stroke = stroke,
             Fill = fill,
             StrokeThickness = strokeWidth,
@@ -89,6 +90,7 @@ public static class D3
         new()
         {
             Data = pathData != null ? PathDataParser.Parse(pathData) : null,
+            PathDataString = pathData,
             Stroke = stroke,
             Fill = fill,
             StrokeThickness = strokeWidth,

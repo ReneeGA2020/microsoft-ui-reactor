@@ -161,6 +161,12 @@ internal static class SelfTestFixtureRegistry
         "LayoutAnimation_SpringSetup",
         "LayoutAnimation_SizeSetup",
         "ConnectedAnimation_MountUnmount",
+        // Thread-safe hook stress tests — real WinUI rendering + background threads
+        "ThreadSafe_RapidBackgroundSetState",
+        "ThreadSafe_MultipleHooksConcurrent",
+        "ThreadSafe_ReducerSerializationStress",
+        "ThreadSafe_HighFrequencyLargeTree",
+        "ThreadSafe_RenderCoalescing",
     ];
 
     public static SelfTestFixtureBase? Create(string name, Harness harness) => name switch
@@ -317,6 +323,12 @@ internal static class SelfTestFixtureRegistry
         "LayoutAnimation_SpringSetup" => new LayoutAnimationFixtures.SpringAnimationSetup(harness),
         "LayoutAnimation_SizeSetup" => new LayoutAnimationFixtures.SizeAnimationSetup(harness),
         "ConnectedAnimation_MountUnmount" => new LayoutAnimationFixtures.ConnectedAnimationMountUnmount(harness),
+        // Thread-safe hook stress tests
+        "ThreadSafe_RapidBackgroundSetState" => new ThreadSafeHookFixtures.RapidBackgroundSetState(harness),
+        "ThreadSafe_MultipleHooksConcurrent" => new ThreadSafeHookFixtures.MultipleHooksConcurrent(harness),
+        "ThreadSafe_ReducerSerializationStress" => new ThreadSafeHookFixtures.ReducerSerializationStress(harness),
+        "ThreadSafe_HighFrequencyLargeTree" => new ThreadSafeHookFixtures.HighFrequencyLargeTree(harness),
+        "ThreadSafe_RenderCoalescing" => new ThreadSafeHookFixtures.RenderCoalescing(harness),
         _ => null,
     };
 }

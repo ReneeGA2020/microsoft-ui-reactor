@@ -10,11 +10,13 @@ public sealed class RenderContext
     private int _hookIndex;
     private Action? _requestRerender;
     private ContextScope? _contextScope;
+    private int _uiThreadId;
 
     internal void BeginRender(Action requestRerender)
     {
         _hookIndex = 0;
         _requestRerender = requestRerender;
+        _uiThreadId = Environment.CurrentManagedThreadId;
     }
 
     internal void BeginRender(Action requestRerender, ContextScope contextScope)
@@ -22,6 +24,16 @@ public sealed class RenderContext
         _hookIndex = 0;
         _requestRerender = requestRerender;
         _contextScope = contextScope;
+        _uiThreadId = Environment.CurrentManagedThreadId;
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void AssertUIThread(string hookName)
+    {
+        if (Environment.CurrentManagedThreadId != _uiThreadId)
+            throw new InvalidOperationException(
+                $"{hookName} setter was called from thread {Environment.CurrentManagedThreadId}, " +
+                $"but the UI thread is {_uiThreadId}. Use threadSafe: true to allow cross-thread calls.");
     }
 
     /// <summary>
@@ -40,12 +52,15 @@ public sealed class RenderContext
     /// <summary>
     /// Declares a piece of state. Returns (currentValue, setter).
     /// Must be called in the same order every render (just like React hooks).
+    /// When <paramref name="threadSafe"/> is true, the setter can be called from any thread
+    /// and reads/writes are synchronized. When false (default), the setter must be called
+    /// from the UI thread — in DEBUG builds, a cross-thread call throws.
     /// </summary>
-    public (T Value, Action<T> Set) UseState<T>(T initialValue)
+    public (T Value, Action<T> Set) UseState<T>(T initialValue, bool threadSafe = false)
     {
         if (_hookIndex >= _hooks.Count)
         {
-            _hooks.Add(new ValueHookState<T>(initialValue));
+            _hooks.Add(new ValueHookState<T>(initialValue, threadSafe));
         }
 
         var currentIndex = _hookIndex;
@@ -56,15 +71,33 @@ public sealed class RenderContext
                 $"Hook at index {currentIndex} is {_hooks[currentIndex].GetType().Name}, expected ValueHookState<{typeof(T).Name}> (UseState). " +
                 "Hooks must be called in the same order every render.");
 
-        T current = hook.Value;
+        T current;
+        if (hook.ThreadSafe)
+            lock (hook.Lock) { current = hook.Value; }
+        else
+            current = hook.Value;
 
         void Setter(T newValue)
         {
             var h = (ValueHookState<T>)_hooks[currentIndex];
-            if (!EqualityComparer<T>.Default.Equals(h.Value, newValue))
+            if (h.ThreadSafe)
             {
-                h.Value = newValue;
-                _requestRerender?.Invoke();
+                bool changed;
+                lock (h.Lock)
+                {
+                    changed = !EqualityComparer<T>.Default.Equals(h.Value, newValue);
+                    if (changed) h.Value = newValue;
+                }
+                if (changed) _requestRerender?.Invoke();
+            }
+            else
+            {
+                AssertUIThread("UseState");
+                if (!EqualityComparer<T>.Default.Equals(h.Value, newValue))
+                {
+                    h.Value = newValue;
+                    _requestRerender?.Invoke();
+                }
             }
         }
 
@@ -74,12 +107,13 @@ public sealed class RenderContext
     /// <summary>
     /// Declares a piece of state with a functional updater variant.
     /// The updater receives the previous value and returns the next.
+    /// When <paramref name="threadSafe"/> is true, the updater can be called from any thread.
     /// </summary>
-    public (T Value, Action<Func<T, T>> Update) UseReducer<T>(T initialValue)
+    public (T Value, Action<Func<T, T>> Update) UseReducer<T>(T initialValue, bool threadSafe = false)
     {
         if (_hookIndex >= _hooks.Count)
         {
-            _hooks.Add(new ValueHookState<T>(initialValue));
+            _hooks.Add(new ValueHookState<T>(initialValue, threadSafe));
         }
 
         var currentIndex = _hookIndex;
@@ -90,17 +124,37 @@ public sealed class RenderContext
                 $"Hook at index {currentIndex} is {_hooks[currentIndex].GetType().Name}, expected ValueHookState<{typeof(T).Name}> (UseReducer). " +
                 "Hooks must be called in the same order every render.");
 
-        T current = hook.Value;
+        T current;
+        if (hook.ThreadSafe)
+            lock (hook.Lock) { current = hook.Value; }
+        else
+            current = hook.Value;
 
         void Updater(Func<T, T> reducer)
         {
             var h = (ValueHookState<T>)_hooks[currentIndex];
-            var prev = h.Value;
-            var next = reducer(prev);
-            if (!EqualityComparer<T>.Default.Equals(prev, next))
+            if (h.ThreadSafe)
             {
-                h.Value = next;
-                _requestRerender?.Invoke();
+                bool changed;
+                lock (h.Lock)
+                {
+                    var prev = h.Value;
+                    var next = reducer(prev);
+                    changed = !EqualityComparer<T>.Default.Equals(prev, next);
+                    if (changed) h.Value = next;
+                }
+                if (changed) _requestRerender?.Invoke();
+            }
+            else
+            {
+                AssertUIThread("UseReducer");
+                var prev = h.Value;
+                var next = reducer(prev);
+                if (!EqualityComparer<T>.Default.Equals(prev, next))
+                {
+                    h.Value = next;
+                    _requestRerender?.Invoke();
+                }
             }
         }
 
@@ -111,13 +165,14 @@ public sealed class RenderContext
     /// Declares a piece of state managed by a reducer function (like Redux).
     /// The reducer takes (currentState, action) and returns the next state.
     /// Returns (currentState, dispatch) where dispatch sends an action through the reducer.
+    /// When <paramref name="threadSafe"/> is true, dispatch can be called from any thread.
     /// </summary>
     public (TState Value, Action<TAction> Dispatch) UseReducer<TState, TAction>(
-        Func<TState, TAction, TState> reducer, TState initialValue)
+        Func<TState, TAction, TState> reducer, TState initialValue, bool threadSafe = false)
     {
         if (_hookIndex >= _hooks.Count)
         {
-            _hooks.Add(new ValueHookState<TState>(initialValue));
+            _hooks.Add(new ValueHookState<TState>(initialValue, threadSafe));
         }
 
         var currentIndex = _hookIndex;
@@ -128,17 +183,37 @@ public sealed class RenderContext
                 $"Hook at index {currentIndex} is {_hooks[currentIndex].GetType().Name}, expected ValueHookState<{typeof(TState).Name}> (UseReducer). " +
                 "Hooks must be called in the same order every render.");
 
-        TState current = hook.Value;
+        TState current;
+        if (hook.ThreadSafe)
+            lock (hook.Lock) { current = hook.Value; }
+        else
+            current = hook.Value;
 
         void Dispatch(TAction action)
         {
             var h = (ValueHookState<TState>)_hooks[currentIndex];
-            var prev = h.Value;
-            var next = reducer(prev, action);
-            if (!EqualityComparer<TState>.Default.Equals(prev, next))
+            if (h.ThreadSafe)
             {
-                h.Value = next;
-                _requestRerender?.Invoke();
+                bool changed;
+                lock (h.Lock)
+                {
+                    var prev = h.Value;
+                    var next = reducer(prev, action);
+                    changed = !EqualityComparer<TState>.Default.Equals(prev, next);
+                    if (changed) h.Value = next;
+                }
+                if (changed) _requestRerender?.Invoke();
+            }
+            else
+            {
+                AssertUIThread("UseReducer");
+                var prev = h.Value;
+                var next = reducer(prev, action);
+                if (!EqualityComparer<TState>.Default.Equals(prev, next))
+                {
+                    h.Value = next;
+                    _requestRerender?.Invoke();
+                }
             }
         }
 
@@ -775,7 +850,13 @@ public sealed class RenderContext
     private class ValueHookState<T> : HookState
     {
         public T Value;
-        public ValueHookState(T value) => Value = value;
+        public readonly bool ThreadSafe;
+        public readonly object Lock = new();
+        public ValueHookState(T value, bool threadSafe = false)
+        {
+            Value = value;
+            ThreadSafe = threadSafe;
+        }
     }
 
     private class EffectHookState : HookState

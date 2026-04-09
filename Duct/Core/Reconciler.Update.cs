@@ -212,8 +212,8 @@ public sealed partial class Reconciler
                 => UpdateEllipse(n, e),
             (LineElement, LineElement n, WinShapes.Line l)
                 => UpdateLine(n, l),
-            (PathElement, PathElement n, WinShapes.Path p)
-                => UpdatePath(n, p),
+            (PathElement o, PathElement n, WinShapes.Path p)
+                => UpdatePath(o, n, p),
             (RelativePanelElement, RelativePanelElement, WinUI.RelativePanel)
                 => Mount(newEl, requestRerender),
             (MediaPlayerElementElement, MediaPlayerElementElement n, WinUI.MediaPlayerElement mpe)
@@ -1881,9 +1881,16 @@ public sealed partial class Reconciler
         return null;
     }
 
-    private UIElement? UpdatePath(PathElement n, WinShapes.Path p)
+    private UIElement? UpdatePath(PathElement o, PathElement n, WinShapes.Path p)
     {
-        if (n.Data is not null) p.Data = n.Data;
+        // Skip expensive COM Geometry property set when the path data string hasn't changed.
+        // PathDataParser.Parse creates a new PathGeometry COM object every call, so
+        // reference equality is never true — compare the source string instead.
+        bool pathChanged = n.PathDataString is null
+            ? n.Data is not null
+            : !string.Equals(n.PathDataString, o.PathDataString, StringComparison.Ordinal);
+        if (pathChanged && n.Data is not null) p.Data = n.Data;
+
         if (n.Fill is not null) p.Fill = n.Fill;
         if (n.Stroke is not null) p.Stroke = n.Stroke;
         p.StrokeThickness = n.StrokeThickness;

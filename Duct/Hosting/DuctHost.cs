@@ -24,10 +24,11 @@ public sealed class DuctHost
 
     private Element? _currentTree;
     private UIElement? _currentControl;
-    private bool _renderPending;
-    private bool _isRendering;
-    private bool _needsRerender;
+    private int _renderPending;    // 0 or 1 — Interlocked for thread-safe access
+    private bool _isRendering;     // only touched on UI thread
+    private bool _needsRerender;   // only touched on UI thread
     private bool _themeListenerAttached;
+    private volatile bool _disposed;
 
     // Render phase timing instrumentation
     private readonly Stopwatch _phaseSw = new();
@@ -36,6 +37,16 @@ public sealed class DuctHost
     private double _effectsSum;
     private int _renderCount;
     private readonly Stopwatch _reportClock = Stopwatch.StartNew();
+    private long _totalRenderCount;
+
+    // Public perf snapshot — updated every ~1 second, readable from components
+    private RenderStats _stats;
+
+    /// <summary>
+    /// Live render performance snapshot, updated every ~1 second.
+    /// Always available (FPS, frame time). DEBUG builds include per-reconcile element counters.
+    /// </summary>
+    public ref readonly RenderStats Stats => ref _stats;
 
     /// <summary>
     /// Provides access to the underlying reconciler for RegisterType calls.
@@ -55,6 +66,10 @@ public sealed class DuctHost
         _window = window;
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         DuctApp.ActiveHost = this;
+
+        // Stop the render loop when the window closes — background threads
+        // may still call setState after this, but RequestRender will bail out.
+        _window.Closed += (_, _) => _disposed = true;
     }
 
     public void Mount(Component component)
@@ -70,45 +85,53 @@ public sealed class DuctHost
         RequestRender();
     }
 
+    /// <summary>
+    /// Thread-safe: can be called from any thread. Coalesces multiple calls into
+    /// a single render. At most one RenderLoop is ever pending on the dispatcher.
+    ///
+    /// During render: setState calls set _needsRerender (no enqueue).
+    /// Between renders: first setState CAS-flips _renderPending 0→1 and enqueues.
+    /// _renderPending stays 1 throughout the render, blocking duplicate enqueues.
+    /// </summary>
     internal void RequestRender()
     {
+        if (_disposed) return;
+
+        // During render: just flag — the render loop will re-enqueue after Render().
         if (_isRendering)
         {
             _needsRerender = true;
             return;
         }
 
-        if (_renderPending) return;
-        _renderPending = true;
+        // Between renders: CAS 0→1 gates a single TryEnqueue.
+        if (Interlocked.CompareExchange(ref _renderPending, 1, 0) != 0) return;
 
         _dispatcherQueue.TryEnqueue(RenderLoop);
     }
 
-    private const int MaxRenderIterations = 50;
-
     private void RenderLoop()
     {
-        if (_isRendering)
-        {
-            _needsRerender = true;
-            _renderPending = false;
-            return;
-        }
+        if (_disposed) return;
 
-        _renderPending = false;
-        int iteration = 0;
+        // _renderPending is 1 here — all concurrent RequestRender calls are
+        // blocked from enqueuing duplicates. Render once, then decide.
+        _needsRerender = false;
+        Render();
 
-        do
+        // Reset the gate so future setState calls can enqueue.
+        Interlocked.Exchange(ref _renderPending, 0);
+
+        // If state changed during render, re-enqueue at LOW priority so WinUI
+        // layout/paint/input (normal priority + WM_PAINT) run first. Without this,
+        // high-frequency setState sources cause back-to-back renders that starve the
+        // compositor — layout never runs, property sets on dirty elements get
+        // progressively slower, and reconcile time blows up non-linearly.
+        if (_needsRerender)
         {
-            _needsRerender = false;
-            Render();
-            if (++iteration >= MaxRenderIterations)
-            {
-                _logger.Log(DuctLogLevel.Warning, "Maximum re-render limit exceeded — possible infinite loop in component state.");
-                break;
-            }
+            if (Interlocked.CompareExchange(ref _renderPending, 1, 0) == 0)
+                _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, RenderLoop);
         }
-        while (_needsRerender);
     }
 
     private void Render()
@@ -195,11 +218,34 @@ public sealed class DuctHost
             _reconcileSum += reconcileMs;
             _effectsSum += effectsMs;
             _renderCount++;
+            _totalRenderCount++;
 
             if (_reportClock.Elapsed.TotalSeconds >= 1.0 && _renderCount > 0)
             {
-                var line = $"PERF [{_renderCount} renders]: tree={_treeBuildSum / _renderCount:F2}ms  reconcile={_reconcileSum / _renderCount:F2}ms  effects={_effectsSum / _renderCount:F2}ms  total={(_treeBuildSum + _reconcileSum + _effectsSum) / _renderCount:F2}ms";
-                _logger.Log(DuctLogLevel.Debug, line);
+                double avgTree = _treeBuildSum / _renderCount;
+                double avgReconcile = _reconcileSum / _renderCount;
+                double avgEffects = _effectsSum / _renderCount;
+                double avgTotal = avgTree + avgReconcile + avgEffects;
+
+                _stats = new RenderStats
+                {
+                    Fps = _renderCount / _reportClock.Elapsed.TotalSeconds,
+                    RendersInWindow = _renderCount,
+                    TotalRenders = _totalRenderCount,
+                    AvgTreeBuildMs = avgTree,
+                    AvgReconcileMs = avgReconcile,
+                    AvgEffectsMs = avgEffects,
+                    AvgTotalMs = avgTotal,
+#if DEBUG
+                    LastDiffed = _reconciler.DebugElementsDiffed,
+                    LastSkipped = _reconciler.DebugElementsSkipped,
+                    LastCreated = _reconciler.DebugUIElementsCreated,
+                    LastModified = _reconciler.DebugUIElementsModified,
+#endif
+                };
+
+                _logger.Log(DuctLogLevel.Debug,
+                    $"PERF [{_renderCount} renders]: tree={avgTree:F2}ms  reconcile={avgReconcile:F2}ms  effects={avgEffects:F2}ms  total={avgTotal:F2}ms");
                 _treeBuildSum = 0;
                 _reconcileSum = 0;
                 _effectsSum = 0;

@@ -1758,7 +1758,17 @@ public record LineElement() : Element
 
 public record PathElement() : Element
 {
+    /// <summary>
+    /// Pre-parsed WinUI Geometry. When null, the reconciler resolves from <see cref="PathDataString"/>.
+    /// Callers that construct PathElement directly (not via D3Path) can set this for non-SVG geometries.
+    /// </summary>
     public Geometry? Data { get; init; }
+    /// <summary>
+    /// The original SVG path data string. When set, geometry is parsed lazily by the reconciler —
+    /// only when mounting or when the string changes between renders. This avoids expensive
+    /// PathDataParser.Parse + COM Geometry creation on every tree build.
+    /// </summary>
+    public string? PathDataString { get; init; }
     public Brush? Fill { get; init; }
     public Brush? Stroke { get; init; }
     public double StrokeThickness { get; init; } = 1;
