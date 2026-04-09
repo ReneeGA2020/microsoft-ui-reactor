@@ -82,10 +82,9 @@ public sealed class ElementPool
     public FrameworkElement? TryRent(Type type)
     {
         if (!Enabled) return null;
-        if (!PoolableTypes.Contains(type)) { System.Diagnostics.Debug.WriteLine($"[Pool] TryRent({type.Name}) — not poolable"); return null; }
-        if (!_pools.TryGetValue(type, out var stack) || stack.Count == 0) { System.Diagnostics.Debug.WriteLine($"[Pool] TryRent({type.Name}) — pool empty"); return null; }
+        if (!PoolableTypes.Contains(type)) return null;
+        if (!_pools.TryGetValue(type, out var stack) || stack.Count == 0) return null;
         var item = stack.Pop();
-        System.Diagnostics.Debug.WriteLine($"[Pool] TryRent({type.Name}) — GOT {item.GetHashCode()}, {stack.Count} remaining");
         return item;
     }
 
@@ -97,7 +96,7 @@ public sealed class ElementPool
     {
         if (!Enabled) return;
         var type = element.GetType();
-        if (!PoolableTypes.Contains(type)) { System.Diagnostics.Debug.WriteLine($"[Pool] Return({type.Name} {element.GetHashCode()}) — not poolable, DROPPED"); return; }
+        if (!PoolableTypes.Contains(type)) return;
 
         if (!_pools.TryGetValue(type, out var stack))
         {
@@ -105,7 +104,7 @@ public sealed class ElementPool
             _pools[type] = stack;
         }
 
-        if (stack.Count >= MaxPerType) { System.Diagnostics.Debug.WriteLine($"[Pool] Return({type.Name} {element.GetHashCode()}) — pool full, DROPPED"); return; }
+        if (stack.Count >= MaxPerType) return;
 
         // Detach from parent before pooling — WinUI doesn't allow an element in two parents.
         // Use FrameworkElement.Parent (works even for detached trees, unlike VisualTreeHelper).
@@ -117,11 +116,9 @@ public sealed class ElementPool
         // If the round-trip fails, the element is broken and must not be pooled.
         if (!ForceDetach(element))
         {
-            System.Diagnostics.Debug.WriteLine($"[Pool] Return({type.Name} {element.GetHashCode()}) — BROKEN (ForceDetach failed), DROPPED");
             return;
         }
 
-        System.Diagnostics.Debug.WriteLine($"[Pool] Return({type.Name} {element.GetHashCode()}) — POOLED, {stack.Count + 1} in pool");
         CleanElement(element);
         stack.Push(element);
     }

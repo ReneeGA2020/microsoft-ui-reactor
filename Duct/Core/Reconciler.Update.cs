@@ -24,6 +24,9 @@ public sealed partial class Reconciler
     /// </summary>
     private UIElement? Update(Element oldEl, Element newEl, UIElement control, Action requestRerender)
     {
+#if DEBUG
+        DebugElementsDiffed++;
+#endif
         // Unwrap legacy ModifiedElement (backward compat)
         ElementModifiers? oldModifiers = oldEl.Modifiers;
         ElementModifiers? modifiers = newEl.Modifiers;
@@ -48,10 +51,16 @@ public sealed partial class Reconciler
         // RequestedTheme toggle).
         if (Element.ShallowEquals(oldEl, newEl))
         {
+#if DEBUG
+            DebugElementsSkipped++;
+#endif
             if (newEl.ThemeBindings is not null && control is FrameworkElement thFeSE)
                 ApplyThemeBindings(thFeSE, newEl.ThemeBindings);
             return null; // null = keep existing control as-is
         }
+#if DEBUG
+        DebugUIElementsModified++;
+#endif
 
         // Push context values onto scope before processing children
         var ctxValues = newEl.ContextValues;
@@ -369,8 +378,8 @@ public sealed partial class Reconciler
             var oldPara = oldParas[pi];
             var newPara = newParas[pi];
 
-            // Skip paragraphs whose element trees are identical (reference equal records).
-            if (oldPara == newPara) continue;
+            // Skip paragraphs whose content is structurally identical.
+            if (Element.ParagraphEqual(oldPara, newPara)) continue;
 
             if (rtbBlocks.Count <= pi) break;
             var winPara = (Microsoft.UI.Xaml.Documents.Paragraph)rtbBlocks[pi];
@@ -500,7 +509,8 @@ public sealed partial class Reconciler
             case RichTextHyperlink link:
                 var l = link?.NavigateUri ?? new Uri("about:blank");
                 l = l.ToString().Length < 1 ? l = new Uri("about:blank") : l;
-                var hl = new Microsoft.UI.Xaml.Documents.Hyperlink { NavigateUri = l };
+                var hl = new Microsoft.UI.Xaml.Documents.Hyperlink();
+                try { hl.NavigateUri = l; } catch { hl.NavigateUri = new Uri("about:blank"); }
                 hl.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = link?.Text ?? ""});
                 return hl;
             case RichTextLineBreak:

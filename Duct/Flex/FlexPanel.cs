@@ -248,35 +248,17 @@ public partial class FlexPanel : Panel
         bool hasDefiniteWidth = !float.IsInfinity((float)availableSize.Width);
         bool hasDefiniteHeight = !float.IsInfinity((float)availableSize.Height);
 
-        // ── Pass 1: Content-size layout ──
-        // NaN = undefined: Yoga computes the root's size from children's intrinsic
-        // sizes, matching CSS default where a flex container is content-sized.
-        // MaxWidth/MaxHeight cap the result so it won't exceed available space.
-        _rootNode.MaxWidth = hasDefiniteWidth
-            ? YogaValue.Point((float)availableSize.Width)
-            : YogaValue.Undefined;
-        _rootNode.MaxHeight = hasDefiniteHeight
-            ? YogaValue.Point((float)availableSize.Height)
-            : YogaValue.Undefined;
-
-        _rootNode.CalculateLayout(float.NaN, float.NaN, LayoutDirection);
-
-        // ── Pass 2: Flex distribution layout ──
-        // Like Grid's ResolveStar pass: distribute definite space on the MAIN
-        // axis so grow/shrink work, but keep the CROSS axis as NaN so Yoga
-        // content-sizes it from children measured at resolved main-axis widths.
-        // This mirrors Grid where Auto rows (cross) get their height from cells
-        // measured at resolved star column widths (main).
-        //
-        // Without this split, a FlexRow given 600×400 would claim 400px height
-        // even if content only needs 30px — expanding to fill like a star row.
         bool isRow = Direction == FlexDirection.Row || Direction == FlexDirection.RowReverse;
         bool hasDefiniteMain = isRow ? hasDefiniteWidth : hasDefiniteHeight;
 
         if (hasDefiniteMain)
         {
-            // Main axis: definite for grow/shrink distribution.
-            // Cross axis: NaN for content-sizing, but capped by available space.
+            // ── Single-pass layout when main axis is definite ──
+            // Go straight to flex distribution: definite main axis for grow/shrink,
+            // NaN cross axis for content-sizing (capped by available space).
+            // Skipping the content-size pass avoids measuring children at infinite
+            // constraints first — critical for children like ScrollViewer+RichTextBlock
+            // where infinite-width measurement triggers expensive text reflow.
             if (isRow)
             {
                 _rootNode.MaxWidth = YogaValue.Undefined;
@@ -297,6 +279,21 @@ public partial class FlexPanel : Panel
                 _rootNode.CalculateLayout(
                     float.NaN, (float)availableSize.Height, LayoutDirection);
             }
+        }
+        else
+        {
+            // ── Content-size layout (no definite main axis) ──
+            // NaN = undefined: Yoga computes the root's size from children's
+            // intrinsic sizes, matching CSS default where a flex container
+            // is content-sized. MaxWidth/MaxHeight cap the result.
+            _rootNode.MaxWidth = hasDefiniteWidth
+                ? YogaValue.Point((float)availableSize.Width)
+                : YogaValue.Undefined;
+            _rootNode.MaxHeight = hasDefiniteHeight
+                ? YogaValue.Point((float)availableSize.Height)
+                : YogaValue.Undefined;
+
+            _rootNode.CalculateLayout(float.NaN, float.NaN, LayoutDirection);
         }
 
         // Capture desired size from whichever pass just ran. When Pass 2 ran,

@@ -30,6 +30,18 @@ public sealed partial class Reconciler : IDisposable
     private readonly ContextScope _contextScope = new();
     private int _errorBoundaryDepth;
 
+#if DEBUG
+    /// <summary>
+    /// Per-reconcile counters for diagnosing diff and mount/update volume.
+    /// Reset before each top-level Reconcile() call; read afterward.
+    /// </summary>
+    public int DebugElementsDiffed;
+    public int DebugElementsSkipped;
+    public int DebugUIElementsCreated;
+    public int DebugUIElementsModified;
+    private int _debugReconcileDepth;
+#endif
+
     /// <summary>
     /// The element pool used by this reconciler. Disable via Pool.Enabled = false
     /// to prevent recycled controls from retaining stale property state.
@@ -148,6 +160,16 @@ public sealed partial class Reconciler : IDisposable
         UIElement? existingControl,
         Action requestRerender)
     {
+#if DEBUG
+        if (_debugReconcileDepth++ == 0)
+        {
+            DebugElementsDiffed = 0;
+            DebugElementsSkipped = 0;
+            DebugUIElementsCreated = 0;
+            DebugUIElementsModified = 0;
+        }
+        try {
+#endif
         if (newElement is null or EmptyElement)
         {
             if (existingControl is not null)
@@ -159,6 +181,9 @@ public sealed partial class Reconciler : IDisposable
             return Mount(newElement, requestRerender);
 
         return ReconcileImperative(oldElement, newElement, existingControl, requestRerender);
+#if DEBUG
+        } finally { _debugReconcileDepth--; }
+#endif
     }
 
     /// <summary>

@@ -185,6 +185,11 @@ public sealed class DuctHost
 
             double effectsMs = _phaseSw.Elapsed.TotalMilliseconds;
 
+#if DEBUG
+            _logger.Log(DuctLogLevel.Debug,
+                $"RECONCILE: tree={treeBuildMs:F2}ms  reconcile={reconcileMs:F2}ms  effects={effectsMs:F2}ms  total={treeBuildMs + reconcileMs + effectsMs:F2}ms  |  diffed={_reconciler.DebugElementsDiffed}  skipped={_reconciler.DebugElementsSkipped}  created={_reconciler.DebugUIElementsCreated}  modified={_reconciler.DebugUIElementsModified}");
+#endif
+
             // Accumulate and report every ~1 second
             _treeBuildSum += treeBuildMs;
             _reconcileSum += reconcileMs;
@@ -194,10 +199,7 @@ public sealed class DuctHost
             if (_reportClock.Elapsed.TotalSeconds >= 1.0 && _renderCount > 0)
             {
                 var line = $"PERF [{_renderCount} renders]: tree={_treeBuildSum / _renderCount:F2}ms  reconcile={_reconcileSum / _renderCount:F2}ms  effects={_effectsSum / _renderCount:F2}ms  total={(_treeBuildSum + _reconcileSum + _effectsSum) / _renderCount:F2}ms";
-                System.Diagnostics.Debug.WriteLine(line);
-#if DEBUG
                 _logger.Log(DuctLogLevel.Debug, line);
-#endif
                 _treeBuildSum = 0;
                 _reconcileSum = 0;
                 _effectsSum = 0;

@@ -157,6 +157,63 @@ public abstract record Element
             (EllipseElement ea, EllipseElement eb) =>
                 ea.Setters.Length == 0 && eb.Setters.Length == 0,
 
+            (RichTextBlockElement ra, RichTextBlockElement rb) =>
+                ra.Text == rb.Text
+                && ra.FontSize == rb.FontSize
+                && ra.IsTextSelectionEnabled == rb.IsTextSelectionEnabled
+                && ra.TextWrapping == rb.TextWrapping
+                && ParagraphsEqual(ra.Paragraphs, rb.Paragraphs)
+                && ra.Setters.Length == 0 && rb.Setters.Length == 0,
+
+            // Container elements: compare own props + children by reference.
+            // Same children reference = truly unchanged subtree = safe to skip entirely.
+            // Different children reference = fall through to UpdateXxx which recurses.
+            (StackElement sa, StackElement sb) =>
+                sa.Orientation == sb.Orientation
+                && sa.Spacing == sb.Spacing
+                && sa.HorizontalAlignment == sb.HorizontalAlignment
+                && sa.VerticalAlignment == sb.VerticalAlignment
+                && ReferenceEquals(sa.Children, sb.Children)
+                && sa.Setters.Length == 0 && sb.Setters.Length == 0,
+
+            (BorderElement ba, BorderElement bb) =>
+                ReferenceEquals(ba.Background, bb.Background)
+                && ReferenceEquals(ba.BorderBrush, bb.BorderBrush)
+                && ba.CornerRadius == bb.CornerRadius
+                && ba.Padding == bb.Padding
+                && ba.BorderThickness == bb.BorderThickness
+                && ReferenceEquals(ba.Child, bb.Child)
+                && ba.Setters.Length == 0 && bb.Setters.Length == 0,
+
+            (GridElement ga, GridElement gb) =>
+                ga.RowSpacing == gb.RowSpacing
+                && ga.ColumnSpacing == gb.ColumnSpacing
+                && ReferenceEquals(ga.Definition, gb.Definition)
+                && ReferenceEquals(ga.Children, gb.Children)
+                && ga.Setters.Length == 0 && gb.Setters.Length == 0,
+
+            (ScrollViewElement sva, ScrollViewElement svb) =>
+                sva.Orientation == svb.Orientation
+                && sva.HorizontalScrollBarVisibility == svb.HorizontalScrollBarVisibility
+                && sva.VerticalScrollBarVisibility == svb.VerticalScrollBarVisibility
+                && sva.HorizontalScrollMode == svb.HorizontalScrollMode
+                && sva.VerticalScrollMode == svb.VerticalScrollMode
+                && sva.ZoomMode == svb.ZoomMode
+                && ReferenceEquals(sva.Child, svb.Child)
+                && sva.Setters.Length == 0 && svb.Setters.Length == 0,
+
+            (FlexElement fa, FlexElement fb) =>
+                fa.Direction == fb.Direction
+                && fa.JustifyContent == fb.JustifyContent
+                && fa.AlignItems == fb.AlignItems
+                && fa.AlignContent == fb.AlignContent
+                && fa.Wrap == fb.Wrap
+                && fa.ColumnGap == fb.ColumnGap
+                && fa.RowGap == fb.RowGap
+                && fa.FlexPadding == fb.FlexPadding
+                && ReferenceEquals(fa.Children, fb.Children)
+                && fa.Setters.Length == 0 && fb.Setters.Length == 0,
+
             (EmptyElement, EmptyElement) => true,
 
             // ErrorBoundary contains delegates — always update
@@ -165,6 +222,38 @@ public abstract record Element
             // Conservative: unknown element types always update
             _ => false,
         };
+    }
+
+    /// <summary>
+    /// Structural comparison of RichTextParagraph arrays.
+    /// Compares each paragraph's inlines using record equality.
+    /// </summary>
+    private static bool ParagraphsEqual(RichTextParagraph[]? a, RichTextParagraph[]? b)
+    {
+        if (ReferenceEquals(a, b)) return true;
+        if (a is null || b is null) return false;
+        if (a.Length != b.Length) return false;
+        for (int i = 0; i < a.Length; i++)
+        {
+            if (!ParagraphEqual(a[i], b[i])) return false;
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Structural comparison of a single RichTextParagraph (inline-by-inline record equality).
+    /// </summary>
+    internal static bool ParagraphEqual(RichTextParagraph a, RichTextParagraph b)
+    {
+        if (ReferenceEquals(a, b)) return true;
+        var ai = a.Inlines;
+        var bi = b.Inlines;
+        if (ai.Length != bi.Length) return false;
+        for (int j = 0; j < ai.Length; j++)
+        {
+            if (!ai[j].Equals(bi[j])) return false;
+        }
+        return true;
     }
 
     /// <summary>
