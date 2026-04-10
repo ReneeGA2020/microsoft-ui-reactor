@@ -26,6 +26,13 @@ class StockGridApp : Component
     private static readonly string[] Cols = Enumerable.Range(0, StockDataSource.Columns).Select(_ => "64").ToArray();
     private static readonly string[] RowDefs = Enumerable.Range(0, StockDataSource.Rows).Select(_ => "18").ToArray();
 
+    // Cache brushes to avoid creating 4,800 new SolidColorBrush COM objects per frame.
+    // Lazy because SolidColorBrush (a DependencyObject) requires the WinUI thread to exist.
+    private static SolidColorBrush? _greenBrush;
+    private static SolidColorBrush? _redBrush;
+    private static SolidColorBrush GreenBrush => _greenBrush ??= new(Windows.UI.Color.FromArgb(255, 0, 128, 0));
+    private static SolidColorBrush RedBrush => _redBrush ??= new(Windows.UI.Color.FromArgb(255, 255, 0, 0));
+
     public override Element Render()
     {
         // The data source is stored in a ref so it survives across renders without triggering re-render.
@@ -125,7 +132,7 @@ class StockGridApp : Component
             ref readonly var item = ref data[i];
             children[i] = Text(StockDataSource.FormatCell(in item))
                 .FontSize(8)
-                .Foreground(item.IsUp ? "Green" : "Red")
+                .Foreground(item.IsUp ? GreenBrush : RedBrush)
                 .Padding(2, 1, 2, 1)
                 .Grid(row: r, column: c);
         }
