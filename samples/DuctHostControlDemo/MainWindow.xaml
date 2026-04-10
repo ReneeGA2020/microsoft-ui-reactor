@@ -1,0 +1,55 @@
+<Window
+    x:Class="DuctHostControlDemo.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="DuctHostControl Demo">
+
+    <!--
+        This is a vanilla WinUI 3 window with standard XAML layout.
+        The DuctHostControl instances are created in code-behind and
+        placed into the named Border containers. Each one hosts its
+        own Duct reconciler and render loop — no DuctApp needed.
+    -->
+
+    <Grid RowSpacing="12" Padding="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Normal XAML header -->
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="DuctHostControl Demo" FontSize="28" FontWeight="Bold" />
+            <TextBlock Text="Each panel below is a Duct component hosted inside vanilla WinUI XAML."
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Margin="0,4,0,0" />
+        </StackPanel>
+
+        <!-- Two panels side-by-side — Duct hosts added from code-behind -->
+        <Grid Grid.Row="1" ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border x:Name="CounterPanel" Grid.Column="0" CornerRadius="8"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+
+            <Border x:Name="TodoPanel" Grid.Column="1" CornerRadius="8"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+        </Grid>
+
+        <!-- Normal XAML footer -->
+        <TextBlock Grid.Row="2"
+                   Text="This footer is plain XAML — Duct and XAML coexist in the same window."
+                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                   HorizontalAlignment="Center"
+                   Margin="0,8,0,0" />
+    </Grid>
+
+</Window>
