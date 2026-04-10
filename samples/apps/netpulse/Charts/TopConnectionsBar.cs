@@ -44,7 +44,7 @@ sealed class TopConnectionsBar : Component<TopConnectionsBarProps>
         if (connections.Count == 0)
         {
             return D3Canvas(W, H,
-                D3Text(Left, Top + PlotH / 2, "No TCP connections", 12, Gray(100)));
+                D3Text(Left, Top + PlotH / 2, "No TCP connections", 12, Brushes.Gray100));
         }
 
         // Filter out listeners, take top N sorted by remote port (causes constant reordering)
@@ -58,7 +58,7 @@ sealed class TopConnectionsBar : Component<TopConnectionsBarProps>
         if (top.Length == 0)
         {
             return D3Canvas(W, H,
-                D3Text(Left, Top + PlotH / 2, "No active connections", 12, Gray(100)));
+                D3Text(Left, Top + PlotH / 2, "No active connections", 12, Brushes.Gray100));
         }
 
         double maxPort = top.Max(c => (double)c.RemotePort);
@@ -71,7 +71,7 @@ sealed class TopConnectionsBar : Component<TopConnectionsBarProps>
         var elements = new List<Element>();
 
         // Grid lines
-        var gridBrush = Gray(128, 40);
+        var gridBrush = Brushes.Gray128A40;
         foreach (var t in xs.Ticks(5))
         {
             elements.Add(D3Line(Left + xs.Map(t), Top, Left + xs.Map(t), Top + PlotH) with
@@ -92,7 +92,7 @@ sealed class TopConnectionsBar : Component<TopConnectionsBarProps>
             elements.Add(
                 D3Rect(Left, y, Math.Max(1, barW), barH) with
                 {
-                    Fill = Brush(Palette[colorIdx % Palette.Length], 0.85),
+                    Fill = Brushes.Palette085(colorIdx),
                     RadiusX = 2,
                     RadiusY = 2,
                 });
@@ -100,16 +100,16 @@ sealed class TopConnectionsBar : Component<TopConnectionsBarProps>
             // Label
             elements.Add(
                 D3TextRight(2, y + barH / 2 - 7,
-                    TruncateLabel(conn.ShortRemote, 22), Left - 6, 9, Gray(60)));
+                    TruncateLabel(conn.ShortRemote, 22), Left - 6, 9, Brushes.Gray60));
 
             // State badge
             elements.Add(
                 D3Text(Left + barW + 4, y + barH / 2 - 7,
-                    conn.State.ToString(), 8, Brush(Palette[colorIdx % Palette.Length])));
+                    conn.State.ToString(), 8, Brushes.PaletteFull(colorIdx)));
         }
 
         // Axes
-        var axisBrush = Gray(100, 180);
+        var axisBrush = Brushes.Gray100A180;
         elements.Add(D3Line(Left, Top + PlotH, Left + PlotW, Top + PlotH) with
         {
             Stroke = axisBrush, StrokeThickness = 1
@@ -125,7 +125,7 @@ sealed class TopConnectionsBar : Component<TopConnectionsBarProps>
                 Fmt(t), 9, axisBrush));
         }
 
-        elements.Add(D3Text(Left, 4, $"Top {top.Length} Connections (by remote port)", 13, Gray(40)));
+        elements.Add(D3Text(Left, 4, $"Top {top.Length} Connections (by remote port)", 13, Brushes.Gray40));
 
         return D3Canvas(W, H, elements.ToArray());
     }

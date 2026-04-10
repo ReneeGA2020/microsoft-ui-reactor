@@ -97,10 +97,10 @@ sealed class App : Component
             // Header bar with FPS meter
             HStack(12,
                 Text("NetPulse").FontSize(18).Bold().Margin(12, 8, 0, 4),
-                Text($"TCP: {tcpActive}").FontSize(11).Foreground(Gray(100)).Margin(0, 10, 0, 0),
-                Text($"UDP: {udpEndpoints.Length}").FontSize(11).Foreground(Gray(100)).Margin(0, 10, 0, 0),
-                Text($"Sparklines: {sparklineData.Length}").FontSize(11).Foreground(Gray(100)).Margin(0, 10, 0, 0),
-                Text($"History: {trafficHistory.Count}").FontSize(11).Foreground(Gray(80)).Margin(0, 10, 0, 0),
+                Text($"TCP: {tcpActive}").FontSize(11).Foreground(Brushes.Gray100).Margin(0, 10, 0, 0),
+                Text($"UDP: {udpEndpoints.Length}").FontSize(11).Foreground(Brushes.Gray100).Margin(0, 10, 0, 0),
+                Text($"Sparklines: {sparklineData.Length}").FontSize(11).Foreground(Brushes.Gray100).Margin(0, 10, 0, 0),
+                Text($"History: {trafficHistory.Count}").FontSize(11).Foreground(Brushes.Gray80).Margin(0, 10, 0, 0),
                 RenderFpsMeter(stats)
             ),
 
@@ -146,27 +146,27 @@ sealed class App : Component
         double barW = Math.Clamp(fps / maxFps, 0, 1) * (W - 130);
 
         var barBrush = fps >= 30
-            ? Brush("#2ecc71")
-            : fps >= 15 ? Brush("#f39c12") : Brush("#e74c3c");
+            ? Brushes.Green
+            : fps >= 15 ? Brushes.Orange : Brushes.Red;
 
         var elements = new Element[]
         {
             // Bar background
-            D3Rect(0, 6, W - 130, 10) with { Fill = Brush("#e0e0e0"), RadiusX = 3, RadiusY = 3 },
+            D3Rect(0, 6, W - 130, 10) with { Fill = Brushes.BarBg, RadiusX = 3, RadiusY = 3 },
             // Bar fill
             D3Rect(0, 6, Math.Max(1, barW), 10) with { Fill = barBrush, RadiusX = 3, RadiusY = 3 },
             // FPS number
             D3Text(0, 20, $"{fps:F0} fps", 9, barBrush),
             // Frame time
-            D3Text(44, 20, $"{s.AvgTotalMs:F1}ms", 9, Gray(100)),
+            D3Text(44, 20, $"{s.AvgTotalMs:F1}ms", 9, Brushes.Gray100),
             // Renders total
-            D3Text(96, 20, $"#{s.TotalRenders}", 9, Gray(140)),
+            D3Text(96, 20, $"#{s.TotalRenders}", 9, Brushes.Gray140),
 #if DEBUG
             // Element counters (debug only)
-            D3Text(W - 126, 2, $"diffed:{s.LastDiffed}", 8, Gray(120)),
-            D3Text(W - 126, 12, $"skip:{s.LastSkipped}", 8, Gray(120)),
-            D3Text(W - 62, 2, $"new:{s.LastCreated}", 8, Gray(120)),
-            D3Text(W - 62, 12, $"mod:{s.LastModified}", 8, Gray(120)),
+            D3Text(W - 126, 2, $"diffed:{s.LastDiffed}", 8, Brushes.Gray120),
+            D3Text(W - 126, 12, $"skip:{s.LastSkipped}", 8, Brushes.Gray120),
+            D3Text(W - 62, 2, $"new:{s.LastCreated}", 8, Brushes.Gray120),
+            D3Text(W - 62, 12, $"mod:{s.LastModified}", 8, Brushes.Gray120),
 #endif
         };
 

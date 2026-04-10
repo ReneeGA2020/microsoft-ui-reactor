@@ -44,7 +44,7 @@ sealed class ConnectionSparklines : Component<ConnectionSparklinesProps>
         if (entries.Count == 0)
         {
             return D3Canvas(100, 40,
-                D3Text(4, 12, "No connection history yet...", 11, Gray(100)));
+                D3Text(4, 12, "No connection history yet...", 11, Brushes.Gray100));
         }
 
         // Compute grid dimensions — fill available width (~1340px minus margins)
@@ -54,7 +54,7 @@ sealed class ConnectionSparklines : Component<ConnectionSparklinesProps>
         double totalH = rows * (CellH + Pad) + 26;
 
         var elements = new List<Element>(entries.Count * 12 + 1);
-        elements.Add(D3Text(4, 4, $"Connection Sparklines ({entries.Count})", 13, Gray(40)));
+        elements.Add(D3Text(4, 4, $"Connection Sparklines ({entries.Count})", 13, Brushes.Gray40));
 
         for (int i = 0; i < entries.Count; i++)
         {
@@ -68,7 +68,7 @@ sealed class ConnectionSparklines : Component<ConnectionSparklinesProps>
             elements.Add(
                 D3Rect(cx, cy, CellW, CellH) with
                 {
-                    Fill = Gray(245),
+                    Fill = Brushes.Gray245,
                     RadiusX = 4,
                     RadiusY = 4,
                 });
@@ -78,7 +78,7 @@ sealed class ConnectionSparklines : Component<ConnectionSparklinesProps>
                 ? string.Concat(entry.Label.AsSpan(0, 23), "\u2026")
                 : entry.Label;
             elements.Add(
-                D3Text(cx + 4, cy + 2, label, 8, Gray(80)));
+                D3Text(cx + 4, cy + 2, label, 8, Brushes.Gray80));
 
             var history = entry.StateHistory;
             if (history.Length >= 2)
@@ -88,8 +88,8 @@ sealed class ConnectionSparklines : Component<ConnectionSparklinesProps>
 
                 int latestState = history[^1];
                 int colorIdx = StateColor.GetValueOrDefault(latestState, 0);
-                var strokeBrush = Brush(Palette[colorIdx % Palette.Length], 0.8);
-                var fillBrush = Brush(Palette[colorIdx % Palette.Length], 0.15);
+                var strokeBrush = Brushes.Palette080(colorIdx);
+                var fillBrush = Brushes.Palette015(colorIdx);
 
                 var pts = history.Select((s, j) => (
                     x: cx + SparkLeft + j * xStep,
@@ -100,13 +100,13 @@ sealed class ConnectionSparklines : Component<ConnectionSparklinesProps>
                 elements.Add(
                     D3Line(cx + SparkLeft, cy + SparkTop + SparkH,
                            cx + SparkLeft + SparkW, cy + SparkTop + SparkH)
-                    with { Stroke = Gray(220), StrokeThickness = 0.5 });
+                    with { Stroke = Brushes.Gray220, StrokeThickness = 0.5 });
 
                 // 4. Midpoint grid line
                 elements.Add(
                     D3Line(cx + SparkLeft, cy + SparkTop + SparkH / 2,
                            cx + SparkLeft + SparkW, cy + SparkTop + SparkH / 2)
-                    with { Stroke = Gray(230), StrokeThickness = 0.5 });
+                    with { Stroke = Brushes.Gray230, StrokeThickness = 0.5 });
 
                 // 5. Filled area under sparkline
                 elements.Add(
@@ -134,7 +134,7 @@ sealed class ConnectionSparklines : Component<ConnectionSparklinesProps>
                     {
                         elements.Add(
                             D3Circle(pts[j].x, pts[j].y, 1.5)
-                            with { Fill = Gray(180) });
+                            with { Fill = Brushes.Gray180 });
                         break; // one marker per card to keep element count bounded
                     }
                 }
@@ -143,12 +143,12 @@ sealed class ConnectionSparklines : Component<ConnectionSparklinesProps>
                 string stateName = ((TcpState)latestState).ToString();
                 elements.Add(
                     D3Text(cx + 4, cy + CellH - 16, stateName, 8,
-                        Brush(Palette[colorIdx % Palette.Length])));
+                        Brushes.PaletteFull(colorIdx)));
 
                 // 10. Sample count
                 elements.Add(
                     D3Text(cx + SparkLeft + SparkW - 24, cy + CellH - 16,
-                        $"{history.Length}pt", 7, Gray(160)));
+                        $"{history.Length}pt", 7, Brushes.Gray160));
             }
         }
 

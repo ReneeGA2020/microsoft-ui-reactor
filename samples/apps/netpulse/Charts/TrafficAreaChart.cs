@@ -26,7 +26,7 @@ sealed class TrafficAreaChart : Component<TrafficAreaChartProps>
         if (history.Count < 2)
         {
             return D3Canvas(W, H,
-                D3Text(Left, Top + PlotH / 2, "Waiting for traffic data...", 12, Gray(100)));
+                D3Text(Left, Top + PlotH / 2, "Waiting for traffic data...", 12, Brushes.Gray100));
         }
 
         // Build indexed data points for scales
@@ -49,17 +49,17 @@ sealed class TrafficAreaChart : Component<TrafficAreaChartProps>
 
         var outArea = D3AreaPath(outAreaData,
             x: d => xs.Map(d.x), y0: d => ys.Map(d.y0), y1: d => ys.Map(d.y1),
-            fill: Brush(Palette[0], 0.6));
+            fill: Brushes.Palette060(0));
 
         var inArea = D3AreaPath(inAreaData,
             x: d => xs.Map(d.x), y0: d => ys.Map(d.y0), y1: d => ys.Map(d.y1),
-            fill: Brush(Palette[1], 0.6));
+            fill: Brushes.Palette060(1));
 
         // Line on top of each area for crispness
         var outLine = D3LinePath(points, x: d => xs.Map(d.idx), y: d => ys.Map(d.outRate),
-            stroke: Brush(Palette[0]), strokeWidth: 1.5);
+            stroke: Brushes.PaletteFull(0), strokeWidth: 1.5);
         var inLine = D3LinePath(points, x: d => xs.Map(d.idx), y: d => ys.Map(d.total),
-            stroke: Brush(Palette[1]), strokeWidth: 1.5);
+            stroke: Brushes.PaletteFull(1), strokeWidth: 1.5);
 
         // Current rate text
         var latest = points[^1];
@@ -75,20 +75,20 @@ sealed class TrafficAreaChart : Component<TrafficAreaChartProps>
             inLine,
 
             // Axis lines
-            D3Line(Left, Top + PlotH, Left + PlotW, Top + PlotH) with { Stroke = Gray(100, 180), StrokeThickness = 1 },
-            D3Line(Left, Top, Left, Top + PlotH) with { Stroke = Gray(100, 180), StrokeThickness = 1 },
+            D3Line(Left, Top + PlotH, Left + PlotW, Top + PlotH) with { Stroke = Brushes.Gray100A180, StrokeThickness = 1 },
+            D3Line(Left, Top, Left, Top + PlotH) with { Stroke = Brushes.Gray100A180, StrokeThickness = 1 },
 
             // Y axis labels — rate formatted, no duplicates
             .. ys.Ticks(5).Select(t =>
-                D3TextRight(0, ys.Map(t) - 7, FormatRate(t), Left - 6, 9, Gray(100))),
+                D3TextRight(0, ys.Map(t) - 7, FormatRate(t), Left - 6, 9, Brushes.Gray100)),
 
             // Legend
-            D3Rect(Left + 8, Top - 20, 10, 10) with { Fill = Brush(Palette[0], 0.6) },
-            D3Text(Left + 22, Top - 22, outLabel, 10, Gray(60)),
-            D3Rect(Left + 150, Top - 20, 10, 10) with { Fill = Brush(Palette[1], 0.6) },
-            D3Text(Left + 164, Top - 22, inLabel, 10, Gray(60)),
+            D3Rect(Left + 8, Top - 20, 10, 10) with { Fill = Brushes.Palette060(0) },
+            D3Text(Left + 22, Top - 22, outLabel, 10, Brushes.Gray60),
+            D3Rect(Left + 150, Top - 20, 10, 10) with { Fill = Brushes.Palette060(1) },
+            D3Text(Left + 164, Top - 22, inLabel, 10, Brushes.Gray60),
 
-            D3Text(Left, 4, "Network Throughput", 13, Gray(40)),
+            D3Text(Left, 4, "Network Throughput", 13, Brushes.Gray40),
         ]);
     }
 

@@ -25,11 +25,11 @@ sealed class ProtocolDonut : Component<ProtocolDonutProps>
         double outerR = 100, innerR = 60;
 
         var elements = new List<Element>();
-        elements.Add(D3Text(10, 4, "Protocol Mix", 13, Gray(40)));
+        elements.Add(D3Text(10, 4, "Protocol Mix", 13, Brushes.Gray40));
 
         if (tcpCount + udpCount == 0)
         {
-            elements.Add(D3Text(cx - 40, cy - 7, "No data", 12, Gray(100)));
+            elements.Add(D3Text(cx - 40, cy - 7, "No data", 12, Brushes.Gray100));
             return D3Canvas(W, H, elements.ToArray());
         }
 
@@ -48,7 +48,7 @@ sealed class ProtocolDonut : Component<ProtocolDonutProps>
             string? pd = outerArcGen.Generate(arc);
             if (pd == null) continue;
             elements.Add(D3PathTranslated(pd, cx, cy,
-                fill: Brush(Palette[arc.Index]), strokeWidth: 1));
+                fill: Brushes.PaletteFull(arc.Index), strokeWidth: 1));
         }
 
         // Outer labels
@@ -57,7 +57,7 @@ sealed class ProtocolDonut : Component<ProtocolDonutProps>
             var (lx, ly) = ArcGenerator.Centroid(arc.StartAngle, arc.EndAngle,
                 innerRadius: outerR + 16, outerRadius: outerR + 16);
             elements.Add(D3Text(cx + lx - 16, cy + ly - 7,
-                $"{arc.Data.Name} ({(int)arc.Data.Value})", 10, Gray(60)));
+                $"{arc.Data.Name} ({(int)arc.Data.Value})", 10, Brushes.Gray60));
         }
 
         // Inner ring: TCP state breakdown
@@ -84,7 +84,7 @@ sealed class ProtocolDonut : Component<ProtocolDonutProps>
                     string? pd = innerArcGen.Generate(arc);
                     if (pd == null) continue;
                     elements.Add(D3PathTranslated(pd, cx, cy,
-                        fill: Brush(Palette[(arc.Index + 2) % Palette.Length], 0.7),
+                        fill: Brushes.Palette070(arc.Index + 2),
                         strokeWidth: 0.5));
                 }
             }
@@ -92,8 +92,8 @@ sealed class ProtocolDonut : Component<ProtocolDonutProps>
 
         // Center text
         int total = tcpCount + udpCount;
-        elements.Add(D3TextCenter(cx - 30, cy - 12, $"{total}", 60, 16, Gray(40)));
-        elements.Add(D3TextCenter(cx - 20, cy + 6, "total", 40, 10, Gray(100)));
+        elements.Add(D3TextCenter(cx - 30, cy - 12, $"{total}", 60, 16, Brushes.Gray40));
+        elements.Add(D3TextCenter(cx - 20, cy + 6, "total", 40, 10, Brushes.Gray100));
 
         return D3Canvas(W, H, elements.ToArray());
     }
