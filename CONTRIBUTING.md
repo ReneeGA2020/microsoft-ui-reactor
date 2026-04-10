@@ -45,30 +45,34 @@ The solution targets `x64` and `ARM64`. MSBuild maps these to Rust target triple
 
 ## Running tests
 
+Duct has **three types of tests**. Each serves a different purpose — make sure you run the right one.
+
 ### Quick reference
 
 ```bash
-# ── Unit tests (xUnit, no UI window, ~3s) ──
+# ── 1. Unit tests (xUnit, no UI window, ~3s) ──
 dotnet test tests/Duct.Tests
 
-# ── Self-tests (in-process WinUI, ~15s) ──
+# ── 2. Selfhost tests (in-process WinUI window, ~15s) ──
 dotnet test tests/Duct.AppTests --filter "ClassName=Duct.AppTests.Tests.SelfTestBatch"
 
-# ── UIA / interactive tests (Appium + WinAppDriver, ~30s) ──
+# ── 3. Appium / E2E tests (requires WinAppDriver, ~30s) ──
 dotnet test tests/Duct.AppTests --filter "ClassName=Duct.AppTests.Tests.InteractiveTests"
 
-# ── ALL tests (unit + self-test + UIA) ──
+# ── ALL tests (unit + selfhost + E2E) ──
 dotnet test Duct.sln
 ```
 
 > **Platform note:** Omit `-p:Platform=...` to use the default (ARM64 on ARM machines,
 > x64 on Intel). Add `-p:Platform=ARM64` or `-p:Platform=x64` to force a specific platform.
 
-### Unit tests (`Duct.Tests`)
+### 1. Unit tests (`tests/Duct.Tests`) — xUnit
 
-2,200+ xUnit tests covering framework internals without a WinUI window:
+2,200+ xUnit tests covering framework internals **without a WinUI window**:
 element creation, reconciliation algorithms (LIS, keyed/positional), Yoga layout,
 localization, property hashing, control pooling, hooks.
+
+**When to run:** After any code change. Fast (~3s), no prerequisites beyond .NET SDK.
 
 ```bash
 dotnet test tests/Duct.Tests
@@ -77,14 +81,17 @@ dotnet test tests/Duct.Tests
 dotnet test tests/Duct.Tests --filter "FullyQualifiedName~TreeSerializerTests"
 ```
 
-### Self-tests (`Duct.AppTests` → `Duct.AppTests.Host --self-test`)
+### 2. Selfhost tests (`tests/Duct.AppTests` → `tests/Duct.AppTests.Host --self-test`) — MSTest + TAP
 
 60+ in-process fixtures that run inside a real WinUI window at CPU speed. Each fixture
 mounts UI via `DuctHost`, runs assertions through `VisualTreeHelper`, and outputs TAP
-results. The MSTest runner parses TAP output and maps each check to an individual test.
+results. The MSTest runner in `Duct.AppTests` parses TAP output and maps each check to
+an individual test.
 
 These exercise the full reconciler pipeline (mount → update → unmount) against real
-WinUI controls — the only way to test the diff system end-to-end.
+WinUI controls — the **only** way to test the diff system end-to-end.
+
+**When to run:** After reconciler, control mount/update, or UI-related changes.
 
 ```bash
 # Via MSTest runner (reports to VS Test Explorer)
@@ -94,11 +101,13 @@ dotnet test tests/Duct.AppTests --filter "ClassName=Duct.AppTests.Tests.SelfTest
 dotnet run --project tests/Duct.AppTests.Host -- --self-test
 ```
 
-### UIA / interactive tests (`Duct.AppTests` → Appium)
+### 3. Appium / E2E tests (`tests/Duct.AppTests` → Appium + WinAppDriver) — MSTest
 
-2 end-to-end tests that use Appium/WinAppDriver to simulate real user input (button
+End-to-end tests that use Appium/WinAppDriver to simulate real user input (button
 clicks, INPC mutation) through the cross-process UI Automation pipeline. These verify
 the full input→render→output path.
+
+**When to run:** Before shipping. These are slow and require WinAppDriver.
 
 ```bash
 dotnet test tests/Duct.AppTests --filter "ClassName=Duct.AppTests.Tests.InteractiveTests"
@@ -106,7 +115,7 @@ dotnet test tests/Duct.AppTests --filter "ClassName=Duct.AppTests.Tests.Interact
 
 > **Requires:** [WinAppDriver](https://github.com/microsoft/WinAppDriver/releases) installed
 > at `C:\Program Files (x86)\Windows Application Driver\WinAppDriver.exe`. The unit tests
-> and self-tests run without it.
+> and selfhost tests run without it.
 
 ### Code coverage
 
@@ -114,18 +123,18 @@ dotnet test tests/Duct.AppTests --filter "ClassName=Duct.AppTests.Tests.Interact
 # Unit tests (via coverlet, bundled in Duct.Tests.csproj)
 dotnet test tests/Duct.Tests --collect:"XPlat Code Coverage"
 
-# Self-tests (via dotnet-coverage profiler — install once with: dotnet tool install -g dotnet-coverage)
+# Selfhost tests (via dotnet-coverage profiler — install once with: dotnet tool install -g dotnet-coverage)
 dotnet-coverage collect --output selftest.cobertura.xml --output-format cobertura \
   -- dotnet run --project tests/Duct.AppTests.Host -- --self-test
 ```
 
 ### Test architecture
 
-| Layer | Project | Runner | Count | What it tests |
-|-------|---------|--------|-------|---------------|
-| **Unit** | `Duct.Tests` | xUnit | 2,200+ | Algorithms, element equality, Yoga layout, hooks — no WinUI window |
-| **Self-test** | `Duct.AppTests.Host` | TAP → MSTest | 60+ | Full reconciler pipeline against real WinUI controls, in-process |
-| **UIA** | `Duct.AppTests` | Appium/MSTest | 2 | Cross-process input injection via WinAppDriver |
+| # | Type | Project | Runner | Count | What it tests |
+|---|------|---------|--------|-------|---------------|
+| 1 | **Unit** | `tests/Duct.Tests` | xUnit | 2,200+ | Algorithms, element equality, Yoga layout, hooks — no WinUI window |
+| 2 | **Selfhost** | `tests/Duct.AppTests.Host` | TAP → MSTest | 60+ | Full reconciler pipeline against real WinUI controls, in-process |
+| 3 | **E2E** | `tests/Duct.AppTests` | Appium/MSTest | 2+ | Cross-process input injection via WinAppDriver |
 
 > **No stale binaries:** `Duct.AppTests.csproj` has a `ProjectReference` to the Host app with `ReferenceOutputAssembly="false"`, so `dotnet test` always builds the Host before running tests.
 
@@ -200,9 +209,9 @@ Duct/                          Core framework library
         arena.rs               Reusable diff context/buffer
 Duct.Cli/                      CLI scaffolding tool (duct --create <Name>)
 tests/
-  Duct.Tests/                  xUnit unit test suite (2,100+ tests)
-  Duct.AppTests/               MSTest UI tests (Appium + in-process self-test)
-  Duct.AppTests.Host/          WinUI test host app (fixture navigator + self-test mode)
+  Duct.Tests/                  1. Unit tests — xUnit (2,200+ tests, no UI window)
+  Duct.AppTests/               2+3. Test runner — MSTest (orchestrates selfhost + E2E tests)
+  Duct.AppTests.Host/          2. Selfhost test app — WinUI host with 60+ in-process fixtures
   stress_perf/                 Performance benchmarks
 samples/
   Duct.TestApp/                Interactive control showcase / demo app

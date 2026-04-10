@@ -425,7 +425,7 @@ Scope: Standalone sample demonstrating all navigation features. Also update exis
 
 ### 8.5 Update Duct.TestApp to use NavigationView (optional)
 - [x] Consider replacing the manual tab bar in `DemoApp.Render()` with `NavigationView` + `NavigationHost`
-- **Decision: Skipped.** The self-test runner relies on exact button label matching and disabled state to identify tabs. Converting to NavigationView would break `SelfTestRunner.FindButton()` checks for "Counter", "Todo List", etc. The existing tab bar pattern is preserved; the new "Navigation" tab demonstrates the navigation system within the existing shell.
+- **Decision: Skipped.** The selfhost test fixtures in `tests/Duct.AppTests.Host` rely on exact button label matching and disabled state to identify tabs. Converting to NavigationView would break those checks for "Counter", "Todo List", etc. The existing tab bar pattern is preserved; the new "Navigation" tab demonstrates the navigation system within the existing shell.
 
 ---
 

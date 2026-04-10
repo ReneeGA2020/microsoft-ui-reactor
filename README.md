@@ -111,14 +111,31 @@ dotnet build Duct.sln -p:Platform=x64
 
 # Or open Duct.sln in Visual Studio 2022, select x64 or ARM64, and build (Ctrl+Shift+B)
 
-# Run the interactive test app
-dotnet run --project tests/Duct.TestApp -p:Platform=x64
+# Run the interactive demo app
+dotnet run --project samples/Duct.TestApp -p:Platform=x64
 ```
 
 ### Run tests
 
+There are three types of tests — pick the right one for your scenario:
+
 ```bash
-dotnet test tests/Duct.Tests -p:Platform=x64
+# ── 1. Unit tests (xUnit, no UI window, ~3s) ──
+# Fast, headless tests for framework internals: reconciliation, elements, hooks, Yoga layout.
+dotnet test tests/Duct.Tests
+
+# ── 2. Selfhost tests (in-process WinUI window, ~15s) ──
+# 60+ fixtures that mount real WinUI controls and assert via VisualTreeHelper.
+# This is the only way to test the reconciler end-to-end against real controls.
+dotnet test tests/Duct.AppTests --filter "ClassName=Duct.AppTests.Tests.SelfTestBatch"
+
+# ── 3. Appium / E2E tests (requires WinAppDriver, ~30s) ──
+# Cross-process UI Automation tests that simulate real user input.
+# Requires WinAppDriver installed at C:\Program Files (x86)\Windows Application Driver\
+dotnet test tests/Duct.AppTests --filter "ClassName=Duct.AppTests.Tests.InteractiveTests"
+
+# ── Run everything ──
+dotnet test Duct.sln
 ```
 
 ## Live preview
@@ -207,9 +224,9 @@ Duct/                  Core framework
 Duct.Cli/              CLI scaffolding tool
 vscode-duct/           VS Code extension — live preview panel
 tests/
-  Duct.Tests/          xUnit test suite (incl. 590 Yoga layout fixtures)
-  Duct.TestApp/        Interactive control showcase
-  Duct.UITests/        UI integration tests
+  Duct.Tests/          Unit tests — xUnit, 2,200+ tests incl. 590 Yoga layout fixtures
+  Duct.AppTests/       Test runner — MSTest, orchestrates selfhost + Appium tests
+  Duct.AppTests.Host/  Selfhost test app — WinUI host with 60+ in-process fixtures
   stress_perf/         Performance benchmarks
 samples/
   apps/                Sample apps (wordpuzzle, ductfiles, regedit, etc.)

@@ -1234,6 +1234,37 @@ FlexRow(
 
 ---
 
+## Testing Your Changes
+
+Duct has **three test suites**. Run the right one for what you changed.
+
+### 1. Unit tests — fast, no UI window (~3s)
+```bash
+dotnet test tests/Duct.Tests
+```
+Run after **any** code change. Covers reconciliation, elements, hooks, Yoga layout (2,200+ tests).
+
+### 2. Selfhost tests — real WinUI controls, in-process (~15s)
+```bash
+dotnet test tests/Duct.AppTests --filter "ClassName=Duct.AppTests.Tests.SelfTestBatch"
+```
+Run after **reconciler, control mount/update, or UI changes**. 60+ fixtures that mount real controls and assert via `VisualTreeHelper`. This is the only way to test the diff engine end-to-end.
+
+### 3. Appium / E2E tests — cross-process UI Automation (~30s)
+```bash
+dotnet test tests/Duct.AppTests --filter "ClassName=Duct.AppTests.Tests.InteractiveTests"
+```
+Run before **shipping**. Requires [WinAppDriver](https://github.com/microsoft/WinAppDriver/releases).
+
+### Run everything
+```bash
+dotnet test Duct.sln
+```
+
+> **Note:** `samples/Duct.TestApp` is the interactive demo app, not a test runner. All tests live in `tests/`.
+
+---
+
 ## Critical Rules & Gotchas
 
 ### 1. Hook Order Must Be Constant
