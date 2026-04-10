@@ -54,6 +54,13 @@ public sealed class DuctHost
     public Reconciler Reconciler => _reconciler;
 
     /// <summary>
+    /// Optional callback invoked after each render pass with the total render time (ms)
+    /// including tree build + reconcile + effects. Used by perf harnesses to capture
+    /// the full cost of a Duct render cycle.
+    /// </summary>
+    public Action<double>? OnRenderComplete { get; set; }
+
+    /// <summary>
     /// The WinUI Window hosting this Duct tree.
     /// Useful for obtaining the HWND (e.g., for file pickers in unpackaged apps).
     /// </summary>
@@ -207,6 +214,8 @@ public sealed class DuctHost
                 _funcContext.FlushEffects();
 
             double effectsMs = _phaseSw.Elapsed.TotalMilliseconds;
+
+            OnRenderComplete?.Invoke(treeBuildMs + reconcileMs + effectsMs);
 
 #if DEBUG
             _logger.Log(DuctLogLevel.Debug,

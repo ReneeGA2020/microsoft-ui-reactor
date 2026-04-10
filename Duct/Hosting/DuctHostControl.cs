@@ -88,6 +88,13 @@ public sealed partial class DuctHostControl : ContentControl, IDisposable
     /// </summary>
     public Reconciler Reconciler => _reconciler;
 
+    /// <summary>
+    /// Optional callback invoked after each render pass with the total render time (ms)
+    /// including tree build + reconcile + effects. Used by perf harnesses to capture
+    /// the full cost of a Duct render cycle.
+    /// </summary>
+    public Action<double>? OnRenderComplete { get; set; }
+
     public DuctHostControl(IDuctLogger? logger = null)
     {
         _logger = logger ?? new DebugDuctLogger();
@@ -264,6 +271,8 @@ public sealed partial class DuctHostControl : ContentControl, IDisposable
                 _funcContext.FlushEffects();
 
             double effectsMs = _phaseSw.Elapsed.TotalMilliseconds;
+
+            OnRenderComplete?.Invoke(treeBuildMs + reconcileMs + effectsMs);
 
 #if DEBUG
             _logger.Log(DuctLogLevel.Debug,

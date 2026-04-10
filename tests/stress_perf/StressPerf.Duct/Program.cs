@@ -53,10 +53,23 @@ class StockGridApp : Component
         var perfRef = UseRef<PerfTracker?>(null);
         var timerRef = UseRef<DispatcherTimer?>(null);
         var shutdownRef = UseRef<DispatcherTimer?>(null);
+        var benchmarkUpdatePending = UseRef(false);
 
-        // Lazily create PerfTracker
+        // Lazily create PerfTracker and wire up render-complete callback
         if (perfRef.Current == null)
+        {
             perfRef.Current = new PerfTracker();
+            var perf = perfRef.Current;
+            var pending = benchmarkUpdatePending;
+            DuctApp.ActiveHost!.OnRenderComplete = ms =>
+            {
+                if (pending.Current)
+                {
+                    pending.Current = false;
+                    perf.RecordReconcile(ms);
+                }
+            };
+        }
 
         // CompositionTarget.Rendering for FPS counting
         var renderHooked = UseRef(false);
@@ -80,6 +93,7 @@ class StockGridApp : Component
                     perf.BeginUpdate();
 
                     src.Update(percent);
+                    benchmarkUpdatePending.Current = true;
                     setData(src.Snapshot());
 
                     perf.EndUpdate();

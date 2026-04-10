@@ -15,6 +15,7 @@ public sealed class PerfTracker
     private readonly List<double> _fpsSamples = new();
     private readonly List<long> _memorySamples = new();
     private readonly List<double> _updateTimeSamples = new();
+    private readonly List<double> _reconcileTimeSamples = new();
 
     public double CurrentFps => _currentFps;
     public double LastUpdateMs => _lastUpdateMs;
@@ -53,6 +54,12 @@ public sealed class PerfTracker
         _updateTimeSamples.Add(_lastUpdateMs);
     }
 
+    /// <summary>
+    /// Record a reconcile pass duration (ms). Called from framework render loops
+    /// (e.g. DuctHost) where the reconcile happens asynchronously after the update.
+    /// </summary>
+    public void RecordReconcile(double ms) => _reconcileTimeSamples.Add(ms);
+
     public double ElapsedSeconds => _wallClock.Elapsed.TotalSeconds;
 
     public string GetReport(string appName, double percent)
@@ -70,6 +77,19 @@ public sealed class PerfTracker
         {
             sb.AppendLine($"Avg Update:  {_updateTimeSamples.Average():F1} ms");
             sb.AppendLine($"Max Update:  {_updateTimeSamples.Max():F1} ms");
+        }
+        if (_reconcileTimeSamples.Count > 0)
+        {
+            sb.AppendLine($"Avg Reconcile: {_reconcileTimeSamples.Average():F1} ms");
+            sb.AppendLine($"Max Reconcile: {_reconcileTimeSamples.Max():F1} ms");
+        }
+        if (_updateTimeSamples.Count > 0 && _reconcileTimeSamples.Count > 0)
+        {
+            // Per-tick combined cost: total work (update + reconcile) / number of ticks.
+            // This correctly handles coalescing where R renders < U ticks.
+            int ticks = _updateTimeSamples.Count;
+            double combinedPerTick = (_updateTimeSamples.Sum() + _reconcileTimeSamples.Sum()) / ticks;
+            sb.AppendLine($"Avg Combined:  {combinedPerTick:F1} ms  (renders/tick: {(double)_reconcileTimeSamples.Count / ticks:F2})");
         }
         sb.AppendLine($"Avg Memory:  {_memorySamples.Average() / (1024 * 1024):F1} MB");
         sb.AppendLine($"Peak Memory: {_memorySamples.Max() / (1024 * 1024):F1} MB");
