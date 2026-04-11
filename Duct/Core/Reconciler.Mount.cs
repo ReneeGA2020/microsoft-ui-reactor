@@ -1,3 +1,4 @@
+using Duct.Animation;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -164,6 +165,30 @@ public sealed partial class Reconciler
         // Apply Composition-layer layout animation (implicit Offset/Size animation on Visual)
         if (control is not null && element.LayoutAnimation is not null)
             ApplyLayoutAnimation(control, element.LayoutAnimation);
+
+        // Apply compositor property animation (.Animate() modifier)
+        if (control is not null && element.AnimationConfig is not null)
+            ApplyPropertyAnimation(control, element.AnimationConfig, element.LayoutAnimation);
+
+        // Apply enter transition (.Transition() modifier)
+        if (control is not null && element.ElementTransition is not null)
+            ApplyEnterTransition(control, element.ElementTransition);
+
+        // Apply interaction states (.InteractionStates() modifier)
+        if (control is not null && element.InteractionStates is not null)
+            ApplyInteractionStates(control, element.InteractionStates);
+
+        // Apply keyframe animations (.Keyframes() modifier)
+        if (control is not null && element.KeyframeAnimations is not null)
+            ApplyKeyframeAnimations(control, element.KeyframeAnimations);
+
+        // Apply scroll-linked expression animations (.ScrollLinked() modifier)
+        if (control is not null && element.ScrollAnimation is not null)
+            ApplyScrollAnimation(control, element.ScrollAnimation);
+
+        // Apply stagger delays to children (.Stagger() modifier)
+        if (control is not null && element.StaggerConfig is not null)
+            ApplyStaggerDelays(control, element.StaggerConfig);
 
         // Queue connected animation start if a prepared animation exists with this key
         if (control is not null && element.ConnectedAnimationKey is not null)

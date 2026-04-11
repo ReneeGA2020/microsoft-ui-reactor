@@ -178,6 +178,171 @@ class ConnectedAnimationDemo : Component
 }
 // </snippet:connected-animation>
 
+// <snippet:with-animation>
+class WithAnimationDemo : Component
+{
+    public override Element Render()
+    {
+        var (opacity, setOpacity) = UseState(1.0);
+
+        return VStack(12,
+            SubHeading("WithAnimation Scope"),
+            Button(opacity > 0.5 ? "Fade Out" : "Fade In", () =>
+            {
+                Duct.Animation.AnimationScope.WithAnimation(
+                    Duct.Animation.Curve.Ease(300, Duct.Animation.Easing.Decelerate), () =>
+                    {
+                        setOpacity(opacity > 0.5 ? 0.2 : 1.0);
+                    });
+            }),
+            Text("Compositor-animated via WithAnimation scope")
+                .FontSize(18).Bold()
+                .Opacity(opacity)
+        ).Padding(24);
+    }
+}
+// </snippet:with-animation>
+
+// <snippet:animate-modifier>
+class AnimateDemo : Component
+{
+    public override Element Render()
+    {
+        var (active, setActive) = UseState(false);
+
+        return VStack(12,
+            SubHeading(".Animate() Modifier"),
+            Button(active ? "Reset" : "Animate", () => setActive(!active)),
+            Border(
+                Text("Spring-animated").FontSize(18).Bold()
+            ).Padding(12).CornerRadius(8).Background("#e8e8e8")
+             .Opacity(active ? 0.5 : 1.0)
+             .Animate(Duct.Animation.Curve.Spring(0.65f))
+        ).Padding(24);
+    }
+}
+// </snippet:animate-modifier>
+
+// <snippet:interaction-states>
+class InteractionStatesDemo : Component
+{
+    public override Element Render()
+    {
+        return VStack(12,
+            SubHeading("InteractionStates"),
+            Text("Hover and press — zero reconcile, compositor-driven."),
+            HStack(12,
+                Border(
+                    Text("Hover me").FontSize(16).Bold()
+                        .HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
+                ).Padding(16).CornerRadius(8).Size(150, 60).Background("#50C878")
+                 .InteractionStates(s => s
+                    .PointerOver(opacity: 0.85f, scale: 1.05f)
+                    .Pressed(scale: 0.95f, opacity: 0.7f)),
+                Border(
+                    Text("Press me").FontSize(16).Bold()
+                        .HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
+                ).Padding(16).CornerRadius(8).Size(150, 60).Background("#9B59B6")
+                 .InteractionStates(s => s
+                    .PointerOver(scale: 1.03f)
+                    .Pressed(scale: 0.97f, opacity: 0.8f),
+                    curve: Duct.Animation.Curve.Spring(0.5f))
+            )
+        ).Padding(24);
+    }
+}
+// </snippet:interaction-states>
+
+// <snippet:enter-exit-transition>
+class TransitionDemo : Component
+{
+    public override Element Render()
+    {
+        var (visible, setVisible) = UseState(true);
+
+        return VStack(12,
+            SubHeading("Enter/Exit Transition"),
+            Button(visible ? "Hide" : "Show", () => setVisible(!visible)),
+            visible
+                ? Border(
+                    Text("Fade + Slide").FontSize(16).Bold()
+                        .HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
+                ).Padding(12).CornerRadius(8).Size(200, 60).Background("#E74C3C")
+                 .Transition(Duct.Animation.Transition.Fade + Duct.Animation.Transition.Slide(Duct.Animation.Edge.Bottom))
+                : (Element)Text("(removed from tree)")
+        ).Padding(24);
+    }
+}
+// </snippet:enter-exit-transition>
+
+// <snippet:stagger>
+class StaggerDemo : Component
+{
+    public override Element Render()
+    {
+        var (items, setItems) = UseState(new[] { "One", "Two", "Three", "Four", "Five" });
+
+        return VStack(12,
+            SubHeading("Staggered Animation"),
+            Button("Shuffle", () => setItems(items.OrderBy(_ => Random.Shared.Next()).ToArray())),
+            VStack(4, items.Select(item =>
+                Text(item).Padding(8, 12).Background("#f0f0f0")
+                    .CornerRadius(4).LayoutAnimation()
+                    .WithKey(item)
+            ).ToArray()).Stagger(TimeSpan.FromMilliseconds(40))
+        ).Padding(24);
+    }
+}
+// </snippet:stagger>
+
+// <snippet:keyframes>
+class KeyframeDemo : Component
+{
+    public override Element Render()
+    {
+        var (count, setCount) = UseState(0);
+
+        return VStack(12,
+            SubHeading("Keyframe Animation"),
+            Button("Pulse!", () => setCount(count + 1)),
+            Border(
+                Text("Pulse target").FontSize(16).Bold()
+                    .HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
+            ).Padding(12).CornerRadius(8).Size(200, 60).Background("#9B59B6")
+             .Keyframes("pulse", count, kf => kf
+                .Duration(600)
+                .At(0.0f, scale: System.Numerics.Vector3.One)
+                .At(0.4f, scale: new System.Numerics.Vector3(1.3f, 1.3f, 1f), easing: Duct.Animation.Easing.Decelerate)
+                .At(0.7f, scale: new System.Numerics.Vector3(0.95f, 0.95f, 1f))
+                .At(1.0f, scale: System.Numerics.Vector3.One, easing: Duct.Animation.Easing.Accelerate))
+        ).Padding(24);
+    }
+}
+// </snippet:keyframes>
+
+// <snippet:choreography>
+class ChoreographyDemo : Component
+{
+    public override Element Render()
+    {
+        var (phase, setPhase) = UseState(0);
+
+        return VStack(12,
+            SubHeading("Choreography (WithAnimationAsync)"),
+            Button("Run Sequence", async () =>
+            {
+                await Duct.Animation.AnimationScope.WithAnimationAsync(
+                    Duct.Animation.Curve.Ease(200), () => setPhase(1));
+                await Duct.Animation.AnimationScope.WithAnimationAsync(
+                    Duct.Animation.Curve.Spring(0.7f), () => setPhase(2));
+            }),
+            Text($"Phase: {phase}").FontSize(18).Bold()
+                .Opacity(phase == 0 ? 1.0 : phase == 1 ? 0.3 : 1.0)
+        ).Padding(24);
+    }
+}
+// </snippet:choreography>
+
 // Main app
 class AnimationApp : Component
 {
@@ -192,7 +357,14 @@ class AnimationApp : Component
                 Component<BackgroundDemo>(),
                 Component<CombinedDemo>(),
                 Component<LayoutAnimationDemo>(),
-                Component<ConnectedAnimationDemo>()
+                Component<ConnectedAnimationDemo>(),
+                Component<WithAnimationDemo>(),
+                Component<AnimateDemo>(),
+                Component<InteractionStatesDemo>(),
+                Component<TransitionDemo>(),
+                Component<StaggerDemo>(),
+                Component<KeyframeDemo>(),
+                Component<ChoreographyDemo>()
             ).Padding(24)
         );
     }

@@ -1,3 +1,4 @@
+using Duct.Animation;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
@@ -278,6 +279,34 @@ public sealed partial class Reconciler
             ApplyLayoutAnimation(target, newEl.LayoutAnimation);
         else if (oldEl.LayoutAnimation is not null)
             ClearLayoutAnimation(target);
+
+        // Apply or clear compositor property animation (.Animate() modifier)
+        if (newEl.AnimationConfig is not null)
+            ApplyPropertyAnimation(target, newEl.AnimationConfig, newEl.LayoutAnimation);
+        else if (oldEl.AnimationConfig is not null)
+            ClearPropertyAnimation(target, newEl.LayoutAnimation);
+
+        // Apply or clear interaction states (.InteractionStates() modifier)
+        if (newEl.InteractionStates is not null)
+            ApplyInteractionStates(target, newEl.InteractionStates);
+        else if (oldEl.InteractionStates is not null)
+            ClearInteractionStates(target);
+
+        // Apply keyframe animations (.Keyframes() modifier)
+        if (newEl.KeyframeAnimations is not null)
+            ApplyKeyframeAnimations(target, newEl.KeyframeAnimations);
+        else if (oldEl.KeyframeAnimations is not null)
+            ClearKeyframeAnimations(target, oldEl.KeyframeAnimations);
+
+        // Apply or clear scroll-linked expression animations (.ScrollLinked() modifier)
+        if (newEl.ScrollAnimation is not null)
+            ApplyScrollAnimation(target, newEl.ScrollAnimation);
+        else if (oldEl.ScrollAnimation is not null)
+            ClearScrollAnimation(target, oldEl.ScrollAnimation);
+
+        // Apply stagger delays to children (.Stagger() modifier)
+        if (newEl.StaggerConfig is not null)
+            ApplyStaggerDelays(target, newEl.StaggerConfig);
 
         }
         finally

@@ -1,0 +1,134 @@
+using System.Diagnostics;
+using Duct;
+using Duct.Core;
+using Duct.Core.Navigation;
+using Duct.Flex;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
+using Duct.PropertyGrid;
+using static Duct.UI;
+using static Duct.Core.Theme;
+
+abstract record NavRoute;
+sealed record NavHome : NavRoute;
+sealed record NavDetail(int Id) : NavRoute;
+sealed record NavSettings : NavRoute;
+
+class NavigationDemo : Component
+{
+    public override Element Render()
+    {
+        var nav = UseNavigation<NavRoute>(new NavHome());
+        var (transition, setTransition) = UsePersisted("navTransition", "Slide");
+
+        var activeTransition = transition switch
+        {
+            "Fade" => NavigationTransition.Fade(),
+            "DrillIn" => NavigationTransition.DrillIn(),
+            "Spring" => NavigationTransition.Spring(),
+            "None" => NavigationTransition.None,
+            _ => NavigationTransition.Slide()
+        };
+
+        return VStack(12,
+            Heading("Navigation Demo"),
+            Text($"Route: {nav.CurrentRoute}  |  Depth: {nav.Depth}  |  Back stack: {nav.BackStack.Count}"),
+
+            HStack(8,
+                Button("Back", () => nav.GoBack()).Disabled(!nav.CanGoBack),
+                Button("Forward", () => nav.GoForward()).Disabled(!nav.CanGoForward),
+                Button("Reset", () => nav.Reset(new NavHome())).Disabled(nav.CurrentRoute is NavHome && nav.Depth == 1)
+            ),
+
+            // Transition selector (persisted across tab switches)
+            HStack(8,
+                Text("Transition:").VAlign(VerticalAlignment.Center),
+                ComboBox(["Slide", "Fade", "DrillIn", "Spring", "None"],
+                    Array.IndexOf(new[] { "Slide", "Fade", "DrillIn", "Spring", "None" }, transition),
+                    i => setTransition(new[] { "Slide", "Fade", "DrillIn", "Spring", "None" }[i])
+                ).Width(140)
+            ),
+
+            NavigationHost(nav, route => route switch
+            {
+                NavHome => Component<NavHomePage>(),
+                NavDetail d => Component<NavDetailPage, int>(d.Id),
+                NavSettings => Component<NavSettingsPage>(),
+                _ => Text("Unknown route"),
+            }) with { Transition = activeTransition }
+        );
+    }
+}
+
+class NavHomePage : Component
+{
+    public override Element Render()
+    {
+        var nav = UseNavigation<NavRoute>();
+        var (visitCount, setVisitCount) = UsePersisted("homeVisits", 0);
+
+        UseNavigationLifecycle(
+            onNavigatedTo: ctx => setVisitCount(visitCount + 1));
+
+        return VStack(8,
+            Text("Home Page").FontSize(20).SemiBold(),
+            Text($"Visit count: {visitCount} (persisted across navigations)").Foreground(SecondaryText),
+            Text("Select an item to view details:"),
+            VStack(4,
+                Button("Item #1", () => nav.Navigate(new NavDetail(1))),
+                Button("Item #2", () => nav.Navigate(new NavDetail(2))),
+                Button("Item #3", () => nav.Navigate(new NavDetail(3)))
+            ),
+            Button("Go to Settings", () => nav.Navigate(new NavSettings()))
+        );
+    }
+}
+
+class NavDetailPage : Component<int>
+{
+    public override Element Render()
+    {
+        var nav = UseNavigation<NavRoute>();
+        var id = Props;
+        var (notes, setNotes) = UsePersisted($"detail-notes-{id}", "");
+
+        UseNavigationLifecycle(
+            onNavigatingFrom: ctx =>
+            {
+                // Example: could block navigation if notes are unsaved
+            });
+
+        return VStack(8,
+            Text($"Detail Page — Item #{id}").FontSize(20).SemiBold(),
+            Text($"Viewing details for item {id}."),
+            TextField(notes, setNotes)
+                .Set(t => t.PlaceholderText = "Notes (persisted via UsePersisted)"),
+            HStack(8,
+                Button("Home", () => nav.Reset(new NavHome())),
+                id < 3
+                    ? Button($"Next (Item #{id + 1})", () => nav.Navigate(new NavDetail(id + 1)))
+                    : Empty()
+            )
+        );
+    }
+}
+
+class NavSettingsPage : Component
+{
+    public override Element Render()
+    {
+        var nav = UseNavigation<NavRoute>();
+
+        UseNavigationLifecycle(
+            onNavigatedTo: _ => Debug.WriteLine("[Nav] Settings: navigated to"),
+            onNavigatedFrom: _ => Debug.WriteLine("[Nav] Settings: navigated from"));
+
+        return VStack(8,
+            Text("Settings Page").FontSize(20).SemiBold(),
+            Text("Application settings would go here."),
+            Text("Lifecycle hooks log to debug output.").Foreground(TertiaryText),
+            Button("Back to Home", () => nav.Reset(new NavHome()))
+        );
+    }
+}

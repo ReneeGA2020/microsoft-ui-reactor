@@ -167,6 +167,73 @@ internal static class SelfTestFixtureRegistry
         "ThreadSafe_ReducerSerializationStress",
         "ThreadSafe_HighFrequencyLargeTree",
         "ThreadSafe_RenderCoalescing",
+        // Animation system — Curve & Easing
+        "Curve_RecordEquality",
+        "Curve_PresetValues",
+        "Curve_FactoryMethods",
+        // Animation system — AnimationScope
+        "AnimScope_SetRestore",
+        "AnimScope_NestingBehavior",
+        "AnimScope_NullCurveSuppresses",
+        "AnimScope_WithAnimationIntegration",
+        // Animation system — .Animate() modifier
+        "Animate_ImplicitAnimationsCreated",
+        "Animate_TargetedProperties",
+        "Animate_MergesWithLayoutAnimation",
+        // Animation system — InteractionStates
+        "InterState_StateMachineTransitions",
+        "InterState_PressedInheritsPointerOver",
+        "InterState_ConfigImmutability",
+        "InterState_NoLayoutProperties",
+        "InterState_MountIntegration",
+        // Animation system — Transitions
+        "Transition_TypeHierarchy",
+        "Transition_Asymmetric",
+        "Transition_CurveResolutionPriority",
+        "Transition_MountUnmountIntegration",
+        // Animation system — WithAnimationAsync
+        "AsyncAnim_TaskCompletes",
+        "AsyncAnim_SequentialAwait",
+        "AsyncAnim_ParallelWhenAll",
+        // Animation system — Stagger
+        "Stagger_DelayComputation",
+        "Stagger_ComposesWithLayoutAnimation",
+        "Stagger_ComposesWithEnterTransitions",
+        // Animation system — Keyframe builder
+        "Keyframe_BuilderProducesCorrectDef",
+        "Keyframe_TriggerValueChange",
+        "Keyframe_LoopFlag",
+        // Animation system — Scroll-linked
+        "ScrollAnim_ParallaxExpression",
+        "ScrollAnim_FadeOutExpression",
+        "ScrollAnim_FadeInExpression",
+        "ScrollAnim_ScaleRangeExpression",
+        "ScrollAnim_CustomExpression",
+        // Animation combination tests — single features
+        "AnimCombo_SpringAlone",
+        "AnimCombo_EaseTargeted",
+        "AnimCombo_LayoutAlone",
+        "AnimCombo_FadeEnter",
+        "AnimCombo_InteractionSetup",
+        "AnimCombo_KeyframesOnMount",
+        "AnimCombo_StaggerOnContainer",
+        // Animation combination tests — pairs
+        "AnimCombo_AnimatePlusLayout",
+        "AnimCombo_AnimatePlusTransition",
+        "AnimCombo_AnimatePlusInteraction",
+        "AnimCombo_LayoutPlusTransition",
+        "AnimCombo_TransitionCombined",
+        "AnimCombo_AnimatePlusKeyframes",
+        "AnimCombo_InteractionPlusTransition",
+        // Animation combination tests — triple+
+        "AnimCombo_Triple",
+        "AnimCombo_FullContainerCombo",
+        // Animation combination tests — update/rerender
+        "AnimCombo_SurvivesUpdate",
+        "AnimCombo_WithAnimationPlusAnimate",
+        "AnimCombo_KeyframeTriggerUpdate",
+        // Animation combination tests — removal
+        "AnimCombo_AnimateRemoved",
     ];
 
     public static SelfTestFixtureBase? Create(string name, Harness harness) => name switch
@@ -329,6 +396,73 @@ internal static class SelfTestFixtureRegistry
         "ThreadSafe_ReducerSerializationStress" => new ThreadSafeHookFixtures.ReducerSerializationStress(harness),
         "ThreadSafe_HighFrequencyLargeTree" => new ThreadSafeHookFixtures.HighFrequencyLargeTree(harness),
         "ThreadSafe_RenderCoalescing" => new ThreadSafeHookFixtures.RenderCoalescing(harness),
+        // Animation system — Curve & Easing
+        "Curve_RecordEquality" => new CurveTests.RecordEquality(harness),
+        "Curve_PresetValues" => new CurveTests.PresetValues(harness),
+        "Curve_FactoryMethods" => new CurveTests.FactoryMethods(harness),
+        // Animation system — AnimationScope
+        "AnimScope_SetRestore" => new AnimationScopeTests.ScopeSetRestore(harness),
+        "AnimScope_NestingBehavior" => new AnimationScopeTests.NestingBehavior(harness),
+        "AnimScope_NullCurveSuppresses" => new AnimationScopeTests.NullCurveSuppresses(harness),
+        "AnimScope_WithAnimationIntegration" => new AnimationScopeTests.WithAnimationIntegration(harness),
+        // Animation system — .Animate() modifier
+        "Animate_ImplicitAnimationsCreated" => new AnimateModifierTests.ImplicitAnimationsCreated(harness),
+        "Animate_TargetedProperties" => new AnimateModifierTests.TargetedProperties(harness),
+        "Animate_MergesWithLayoutAnimation" => new AnimateModifierTests.MergesWithLayoutAnimation(harness),
+        // Animation system — InteractionStates
+        "InterState_StateMachineTransitions" => new InteractionStatesTests.StateMachineTransitions(harness),
+        "InterState_PressedInheritsPointerOver" => new InteractionStatesTests.PressedInheritsFromPointerOver(harness),
+        "InterState_ConfigImmutability" => new InteractionStatesTests.ConfigImmutability(harness),
+        "InterState_NoLayoutProperties" => new InteractionStatesTests.NoLayoutProperties(harness),
+        "InterState_MountIntegration" => new InteractionStatesTests.MountIntegration(harness),
+        // Animation system — Transitions
+        "Transition_TypeHierarchy" => new TransitionTests.TypeHierarchy(harness),
+        "Transition_Asymmetric" => new TransitionTests.AsymmetricTransition(harness),
+        "Transition_CurveResolutionPriority" => new TransitionTests.CurveResolutionPriority(harness),
+        "Transition_MountUnmountIntegration" => new TransitionTests.MountUnmountIntegration(harness),
+        // Animation system — WithAnimationAsync
+        "AsyncAnim_TaskCompletes" => new AnimationAsyncTests.TaskCompletes(harness),
+        "AsyncAnim_SequentialAwait" => new AnimationAsyncTests.SequentialAwait(harness),
+        "AsyncAnim_ParallelWhenAll" => new AnimationAsyncTests.ParallelWhenAll(harness),
+        // Animation system — Stagger
+        "Stagger_DelayComputation" => new StaggerTests.DelayComputation(harness),
+        "Stagger_ComposesWithLayoutAnimation" => new StaggerTests.ComposesWithLayoutAnimation(harness),
+        "Stagger_ComposesWithEnterTransitions" => new StaggerTests.ComposesWithEnterTransitions(harness),
+        // Animation system — Keyframe builder
+        "Keyframe_BuilderProducesCorrectDef" => new KeyframeBuilderTests.BuilderProducesCorrectDef(harness),
+        "Keyframe_TriggerValueChange" => new KeyframeBuilderTests.TriggerValueChange(harness),
+        "Keyframe_LoopFlag" => new KeyframeBuilderTests.LoopFlag(harness),
+        // Animation system — Scroll-linked
+        "ScrollAnim_ParallaxExpression" => new ScrollAnimationTests.ParallaxExpression(harness),
+        "ScrollAnim_FadeOutExpression" => new ScrollAnimationTests.FadeOutExpression(harness),
+        "ScrollAnim_FadeInExpression" => new ScrollAnimationTests.FadeInExpression(harness),
+        "ScrollAnim_ScaleRangeExpression" => new ScrollAnimationTests.ScaleRangeExpression(harness),
+        "ScrollAnim_CustomExpression" => new ScrollAnimationTests.CustomExpression(harness),
+        // Animation combination tests — single features
+        "AnimCombo_SpringAlone" => new AnimationCombinationTests.AnimateSpringAlone(harness),
+        "AnimCombo_EaseTargeted" => new AnimationCombinationTests.AnimateEaseTargeted(harness),
+        "AnimCombo_LayoutAlone" => new AnimationCombinationTests.LayoutAnimAlone(harness),
+        "AnimCombo_FadeEnter" => new AnimationCombinationTests.TransitionFadeEnter(harness),
+        "AnimCombo_InteractionSetup" => new AnimationCombinationTests.InteractionStatesSetup(harness),
+        "AnimCombo_KeyframesOnMount" => new AnimationCombinationTests.KeyframesOnMount(harness),
+        "AnimCombo_StaggerOnContainer" => new AnimationCombinationTests.StaggerOnContainer(harness),
+        // Animation combination tests — pairs
+        "AnimCombo_AnimatePlusLayout" => new AnimationCombinationTests.AnimatePlusLayout(harness),
+        "AnimCombo_AnimatePlusTransition" => new AnimationCombinationTests.AnimatePlusTransition(harness),
+        "AnimCombo_AnimatePlusInteraction" => new AnimationCombinationTests.AnimatePlusInteraction(harness),
+        "AnimCombo_LayoutPlusTransition" => new AnimationCombinationTests.LayoutPlusTransition(harness),
+        "AnimCombo_TransitionCombined" => new AnimationCombinationTests.TransitionCombined(harness),
+        "AnimCombo_AnimatePlusKeyframes" => new AnimationCombinationTests.AnimatePlusKeyframes(harness),
+        "AnimCombo_InteractionPlusTransition" => new AnimationCombinationTests.InteractionPlusTransition(harness),
+        // Animation combination tests — triple+
+        "AnimCombo_Triple" => new AnimationCombinationTests.TripleCombination(harness),
+        "AnimCombo_FullContainerCombo" => new AnimationCombinationTests.FullContainerCombo(harness),
+        // Animation combination tests — update/rerender
+        "AnimCombo_SurvivesUpdate" => new AnimationCombinationTests.AnimateSurvivesUpdate(harness),
+        "AnimCombo_WithAnimationPlusAnimate" => new AnimationCombinationTests.WithAnimationPlusAnimate(harness),
+        "AnimCombo_KeyframeTriggerUpdate" => new AnimationCombinationTests.KeyframeTriggerUpdate(harness),
+        // Animation combination tests — removal
+        "AnimCombo_AnimateRemoved" => new AnimationCombinationTests.AnimateRemoved(harness),
         _ => null,
     };
 }

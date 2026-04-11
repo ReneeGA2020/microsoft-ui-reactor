@@ -71,6 +71,46 @@ public abstract record Element
     public LayoutAnimationConfig? LayoutAnimation { get; init; }
 
     /// <summary>
+    /// Compositor property animation configuration (.Animate() modifier).
+    /// When set, the reconciler creates ImplicitAnimationCollection entries on the
+    /// element's Visual for Opacity/Scale/Rotation/Offset/CenterPoint.
+    /// </summary>
+    public Duct.Animation.AnimationConfig? AnimationConfig { get; init; }
+
+    /// <summary>
+    /// Element enter/exit transition configuration (.Transition() modifier).
+    /// When set, the reconciler animates mount (enter) and unmount (exit) with
+    /// compositor animations, deferring removal until exit animation completes.
+    /// </summary>
+    public Duct.Animation.ElementTransition? ElementTransition { get; init; }
+
+    /// <summary>
+    /// Interaction states configuration (.InteractionStates() modifier).
+    /// When set, the reconciler registers pointer event handlers that drive
+    /// zero-reconcile visual state transitions (hover, pressed, focused).
+    /// </summary>
+    public Duct.Animation.InteractionStatesConfig? InteractionStates { get; init; }
+
+    /// <summary>
+    /// Stagger configuration for container children (.Stagger() modifier).
+    /// When set, child animations (enter, layout, property) have incrementing
+    /// DelayTime = childIndex * staggerDelay.
+    /// </summary>
+    public Duct.Animation.StaggerConfig? StaggerConfig { get; init; }
+
+    /// <summary>
+    /// Keyframe animation definitions (.Keyframes() modifier).
+    /// Trigger-based: plays when the trigger value changes between renders.
+    /// </summary>
+    public Duct.Animation.KeyframeEntry[]? KeyframeAnimations { get; init; }
+
+    /// <summary>
+    /// Scroll-linked expression animation configuration (.ScrollLinked() modifier).
+    /// Expression animations run on the compositor, driven by ScrollViewer position.
+    /// </summary>
+    public Duct.Animation.ScrollAnimationConfig? ScrollAnimation { get; init; }
+
+    /// <summary>
     /// Connected animation key for cross-container transitions.
     /// When set, the reconciler automatically captures a visual snapshot on unmount
     /// (via ConnectedAnimationService.PrepareToAnimate) and starts the animation on

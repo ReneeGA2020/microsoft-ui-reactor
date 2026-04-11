@@ -1,3 +1,5 @@
+using System.Numerics;
+using Duct.Animation;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -530,6 +532,17 @@ public sealed partial class Reconciler : IDisposable
             catch { /* ConnectedAnimationService may not be available in all contexts */ }
         }
 
+        // Clean up animation state
+        if (control is FrameworkElement animFe && animFe.Tag is Element animEl)
+        {
+            if (animEl.InteractionStates is not null)
+                ClearInteractionStates(control);
+            if (animEl.KeyframeAnimations is not null)
+                ClearKeyframeAnimations(control, animEl.KeyframeAnimations);
+            if (animEl.ScrollAnimation is not null)
+                ClearScrollAnimation(control, animEl.ScrollAnimation);
+        }
+
         // Run cleanup logic (component teardown, etc.)
         if (_componentNodes.TryGetValue(control, out var node))
         {
@@ -725,6 +738,626 @@ public sealed partial class Reconciler : IDisposable
     }
 
     // ════════════════════════════════════════════════════════════════
+    //  Property animation (.Animate() modifier)
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Creates ImplicitAnimationCollection entries on the element's composition Visual
+    /// for the targeted properties using the specified Curve. Merges with existing
+    /// layout animation entries (Offset/Size) to avoid overwriting each other.
+    /// </summary>
+    internal static void ApplyPropertyAnimation(UIElement uie, AnimationConfig config, LayoutAnimationConfig? layoutConfig)
+    {
+        var visual = ElementCompositionPreview.GetElementVisual(uie);
+        var compositor = visual.Compositor;
+
+        // Start from existing implicit animations (layout may have set Offset/Size)
+        // or create a new collection
+        var implicitAnimations = visual.ImplicitAnimations ?? compositor.CreateImplicitAnimationCollection();
+
+        var props = config.Properties;
+        var curve = config.Curve;
+
+        if (props.HasFlag(AnimateProperty.Opacity))
+            implicitAnimations["Opacity"] = AnimationHelper.CreateScalarImplicitAnimation(compositor, "Opacity", curve);
+
+        if (props.HasFlag(AnimateProperty.Offset))
+        {
+            // Only add Offset if layout animation hasn't already claimed it
+            if (layoutConfig is null || !layoutConfig.AnimateOffset)
+                implicitAnimations["Offset"] = AnimationHelper.CreateVector3ImplicitAnimation(compositor, "Offset", curve);
+        }
+
+        if (props.HasFlag(AnimateProperty.Scale))
+            implicitAnimations["Scale"] = AnimationHelper.CreateVector3ImplicitAnimation(compositor, "Scale", curve);
+
+        if (props.HasFlag(AnimateProperty.Rotation))
+            implicitAnimations["RotationAngle"] = AnimationHelper.CreateScalarImplicitAnimation(compositor, "RotationAngle", curve);
+
+        if (props.HasFlag(AnimateProperty.CenterPoint))
+            implicitAnimations["CenterPoint"] = AnimationHelper.CreateVector3ImplicitAnimation(compositor, "CenterPoint", curve);
+
+        visual.ImplicitAnimations = implicitAnimations;
+    }
+
+    /// <summary>
+    /// Clears property animation entries from an element's Visual's ImplicitAnimationCollection.
+    /// Preserves layout animation entries if they exist.
+    /// </summary>
+    internal static void ClearPropertyAnimation(UIElement uie, LayoutAnimationConfig? layoutConfig)
+    {
+        if (layoutConfig is null)
+        {
+            // No layout animation either — clear everything
+            var visual = ElementCompositionPreview.GetElementVisual(uie);
+            visual.ImplicitAnimations = null;
+        }
+        // If layout animation exists, ApplyLayoutAnimation will recreate the collection
+        // with just layout entries on next update
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Enter/exit transitions (.Transition() modifier)
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Applies enter transition on mount: sets initial visual state then animates to final state.
+    /// </summary>
+    internal static void ApplyEnterTransition(UIElement uie, ElementTransition transition, int staggerIndex = 0, TimeSpan staggerDelay = default)
+    {
+        var enter = transition.GetEnterTransition();
+        if (enter is null) return;
+
+        var visual = ElementCompositionPreview.GetElementVisual(uie);
+        var compositor = visual.Compositor;
+        var curve = transition.Curve ?? Curve.Ease(300, Easing.Decelerate);
+
+        // Override with ambient scope if present
+        if (AnimationScope.HasScope && AnimationScope.Current is not null)
+            curve = AnimationScope.Current;
+
+        var batch = compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
+        var delay = staggerIndex > 0 ? TimeSpan.FromTicks(staggerDelay.Ticks * staggerIndex) : TimeSpan.Zero;
+
+        ApplyTransitionAnimations(uie, visual, compositor, enter, curve, isEnter: true, delay);
+
+        batch.End();
+    }
+
+    /// <summary>
+    /// Applies exit transition before unmount: animates out, then invokes onComplete to remove/pool.
+    /// </summary>
+    internal void ApplyExitTransition(UIElement uie, ElementTransition transition, Action onComplete, int staggerIndex = 0, TimeSpan staggerDelay = default)
+    {
+        var exit = transition.GetExitTransition();
+        if (exit is null) { onComplete(); return; }
+
+        var visual = ElementCompositionPreview.GetElementVisual(uie);
+        var compositor = visual.Compositor;
+        var curve = transition.Curve ?? Curve.Ease(300, Easing.Decelerate);
+
+        if (AnimationScope.HasScope && AnimationScope.Current is not null)
+            curve = AnimationScope.Current;
+
+        var batch = compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
+        var delay = staggerIndex > 0 ? TimeSpan.FromTicks(staggerDelay.Ticks * staggerIndex) : TimeSpan.Zero;
+
+        ApplyTransitionAnimations(uie, visual, compositor, exit, curve, isEnter: false, delay);
+
+        batch.End();
+        batch.Completed += (_, _) =>
+        {
+            // Reset visual state after exit
+            visual.Opacity = 1;
+            visual.Offset = Vector3.Zero;
+            visual.Scale = Vector3.One;
+            onComplete();
+        };
+    }
+
+    private static void ApplyTransitionAnimations(
+        UIElement uie, Visual visual, Compositor compositor,
+        Animation.Transition transition, Curve curve, bool isEnter, TimeSpan delay)
+    {
+        switch (transition)
+        {
+            case FadeTransition:
+                ApplyFadeTransition(uie, compositor, curve, isEnter, delay);
+                break;
+            case SlideTransition slide:
+                ApplySlideTransition(uie, visual, compositor, slide.Edge, curve, isEnter, delay);
+                break;
+            case ScaleTransition scale:
+                ApplyScaleTransition(uie, visual, compositor, scale.From, curve, isEnter, delay);
+                break;
+            case CombinedTransition combined:
+                ApplyTransitionAnimations(uie, visual, compositor, combined.First, curve, isEnter, delay);
+                ApplyTransitionAnimations(uie, visual, compositor, combined.Second, curve, isEnter, delay);
+                break;
+            case AsymmetricTransition asym:
+                var inner = isEnter ? asym.EnterTransition : asym.ExitTransition;
+                if (inner is not null)
+                    ApplyTransitionAnimations(uie, visual, compositor, inner, curve, isEnter, delay);
+                break;
+            case DirectionalTransition dir:
+                var dirInner = isEnter ? dir.EnterTransition : dir.ExitTransition;
+                if (dirInner is not null)
+                    ApplyTransitionAnimations(uie, visual, compositor, dirInner, curve, isEnter, delay);
+                break;
+        }
+    }
+
+    private static void ApplyFadeTransition(UIElement uie, Compositor compositor, Curve curve, bool isEnter, TimeSpan delay)
+    {
+        var visual = ElementCompositionPreview.GetElementVisual(uie);
+        if (isEnter)
+        {
+            visual.Opacity = 0;
+            var anim = AnimationHelper.CreateScalarTargetAnimation(compositor, 1.0f, curve);
+            if (delay > TimeSpan.Zero) AnimationHelper.SetDelay(anim, delay);
+            visual.StartAnimation("Opacity", anim);
+        }
+        else
+        {
+            var anim = AnimationHelper.CreateScalarTargetAnimation(compositor, 0f, curve);
+            if (delay > TimeSpan.Zero) AnimationHelper.SetDelay(anim, delay);
+            visual.StartAnimation("Opacity", anim);
+        }
+    }
+
+    private static void ApplySlideTransition(UIElement uie, Visual visual, Compositor compositor, Edge edge, Curve curve, bool isEnter, TimeSpan delay)
+    {
+        var slideDistance = 40f;
+        var offset = edge switch
+        {
+            Edge.Left => new Vector3(-slideDistance, 0, 0),
+            Edge.Top => new Vector3(0, -slideDistance, 0),
+            Edge.Right => new Vector3(slideDistance, 0, 0),
+            Edge.Bottom => new Vector3(0, slideDistance, 0),
+            _ => new Vector3(0, slideDistance, 0),
+        };
+
+        if (isEnter)
+        {
+            visual.Offset = offset;
+            var anim = AnimationHelper.CreateVector3TargetAnimation(compositor, Vector3.Zero, curve);
+            if (delay > TimeSpan.Zero) AnimationHelper.SetDelay(anim, delay);
+            visual.StartAnimation("Offset", anim);
+        }
+        else
+        {
+            var anim = AnimationHelper.CreateVector3TargetAnimation(compositor, offset, curve);
+            if (delay > TimeSpan.Zero) AnimationHelper.SetDelay(anim, delay);
+            visual.StartAnimation("Offset", anim);
+        }
+    }
+
+    private static void ApplyScaleTransition(UIElement uie, Visual visual, Compositor compositor, float from, Curve curve, bool isEnter, TimeSpan delay)
+    {
+        if (isEnter)
+        {
+            visual.Scale = new Vector3(from, from, 1f);
+            var anim = AnimationHelper.CreateVector3TargetAnimation(compositor, Vector3.One, curve);
+            if (delay > TimeSpan.Zero) AnimationHelper.SetDelay(anim, delay);
+            visual.StartAnimation("Scale", anim);
+        }
+        else
+        {
+            var anim = AnimationHelper.CreateVector3TargetAnimation(compositor, new Vector3(from, from, 1f), curve);
+            if (delay > TimeSpan.Zero) AnimationHelper.SetDelay(anim, delay);
+            visual.StartAnimation("Scale", anim);
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Interaction states (.InteractionStates() modifier)
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// State tracking for elements with InteractionStates — stores current state and cached animations.
+    /// Stored on FrameworkElement.Tag cannot be used (already used for Element reference),
+    /// so we use a static dictionary keyed by UIElement.
+    /// </summary>
+    private static readonly Dictionary<UIElement, InteractionStateTracker> _interactionTrackers = new();
+
+    private sealed class InteractionStateTracker
+    {
+        public InteractionState CurrentState;
+        public InteractionStatesConfig Config = null!;
+        public Brush? NormalBackground;
+        public Brush? NormalForeground;
+        public Brush? NormalBorderBrush;
+    }
+
+    private enum InteractionState { Normal, PointerOver, Pressed, Focused }
+
+    /// <summary>
+    /// Sets up or updates InteractionStates on an element. Registers pointer event handlers
+    /// on first setup; updates cached config on subsequent calls.
+    /// </summary>
+    internal static void ApplyInteractionStates(UIElement uie, InteractionStatesConfig config)
+    {
+        if (!_interactionTrackers.TryGetValue(uie, out var tracker))
+        {
+            tracker = new InteractionStateTracker();
+            _interactionTrackers[uie] = tracker;
+
+            // Capture normal brush values
+            if (uie is FrameworkElement fe)
+            {
+                tracker.NormalBackground = fe switch
+                {
+                    WinUI.Panel p => p.Background,
+                    WinUI.Control c => c.Background,
+                    WinUI.Border b => b.Background,
+                    _ => null,
+                };
+                tracker.NormalForeground = fe switch
+                {
+                    WinUI.Control c => c.Foreground,
+                    TextBlock tb => tb.Foreground,
+                    _ => null,
+                };
+                tracker.NormalBorderBrush = fe switch
+                {
+                    WinUI.Control c => c.BorderBrush,
+                    WinUI.Border b => b.BorderBrush,
+                    _ => null,
+                };
+            }
+
+            // Register handlers
+            uie.PointerEntered += OnInteractionPointerEntered;
+            uie.PointerExited += OnInteractionPointerExited;
+            uie.PointerPressed += OnInteractionPointerPressed;
+            uie.PointerReleased += OnInteractionPointerReleased;
+            uie.PointerCaptureLost += OnInteractionPointerCaptureLost;
+        }
+
+        tracker.Config = config;
+    }
+
+    /// <summary>
+    /// Removes InteractionStates from an element, unregistering handlers and clearing state.
+    /// </summary>
+    internal static void ClearInteractionStates(UIElement uie)
+    {
+        if (!_interactionTrackers.Remove(uie)) return;
+
+        uie.PointerEntered -= OnInteractionPointerEntered;
+        uie.PointerExited -= OnInteractionPointerExited;
+        uie.PointerPressed -= OnInteractionPointerPressed;
+        uie.PointerReleased -= OnInteractionPointerReleased;
+        uie.PointerCaptureLost -= OnInteractionPointerCaptureLost;
+    }
+
+    private static void OnInteractionPointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (sender is UIElement uie && _interactionTrackers.TryGetValue(uie, out var tracker))
+            TransitionToState(uie, tracker, InteractionState.PointerOver);
+    }
+
+    private static void OnInteractionPointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (sender is UIElement uie && _interactionTrackers.TryGetValue(uie, out var tracker))
+            TransitionToState(uie, tracker, InteractionState.Normal);
+    }
+
+    private static void OnInteractionPointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (sender is UIElement uie && _interactionTrackers.TryGetValue(uie, out var tracker))
+            TransitionToState(uie, tracker, InteractionState.Pressed);
+    }
+
+    private static void OnInteractionPointerReleased(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (sender is UIElement uie && _interactionTrackers.TryGetValue(uie, out var tracker))
+        {
+            // Released goes back to PointerOver (pointer is still over the element)
+            TransitionToState(uie, tracker, InteractionState.PointerOver);
+        }
+    }
+
+    private static void OnInteractionPointerCaptureLost(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (sender is UIElement uie && _interactionTrackers.TryGetValue(uie, out var tracker))
+            TransitionToState(uie, tracker, InteractionState.Normal);
+    }
+
+    private static void TransitionToState(UIElement uie, InteractionStateTracker tracker, InteractionState newState)
+    {
+        if (tracker.CurrentState == newState) return;
+        tracker.CurrentState = newState;
+
+        var config = tracker.Config;
+        var curve = config.Curve ?? Curve.Ease(200, Easing.Standard);
+
+        // Resolve effective state values (Pressed inherits from PointerOver)
+        var values = newState switch
+        {
+            InteractionState.PointerOver => config.PointerOver,
+            InteractionState.Pressed => MergePressed(config.PointerOver, config.Pressed),
+            InteractionState.Focused => config.Focused,
+            _ => null, // Normal
+        };
+
+        var visual = ElementCompositionPreview.GetElementVisual(uie);
+        var compositor = visual.Compositor;
+
+        // Compositor properties — animate via Visual
+        var targetOpacity = values?.Opacity ?? 1.0f;
+        var opacityAnim = AnimationHelper.CreateScalarTargetAnimation(compositor, targetOpacity, curve);
+        visual.StartAnimation("Opacity", opacityAnim);
+
+        if (values?.Scale.HasValue == true || values?.ScaleV.HasValue == true || newState == InteractionState.Normal)
+        {
+            var targetScale = values?.ScaleV ?? (values?.Scale.HasValue == true ? new Vector3(values.Scale.Value, values.Scale.Value, 1f) : Vector3.One);
+            var scaleAnim = AnimationHelper.CreateVector3TargetAnimation(compositor, targetScale, curve);
+            visual.StartAnimation("Scale", scaleAnim);
+        }
+
+        if (values?.Translation.HasValue == true || newState == InteractionState.Normal)
+        {
+            var targetTranslation = values?.Translation ?? Vector3.Zero;
+            var translationAnim = AnimationHelper.CreateVector3TargetAnimation(compositor, targetTranslation, curve);
+            visual.StartAnimation("Offset", translationAnim);
+        }
+
+        if (values?.Rotation.HasValue == true || newState == InteractionState.Normal)
+        {
+            var targetRotation = values?.Rotation ?? 0f;
+            var rotationAnim = AnimationHelper.CreateScalarTargetAnimation(compositor, targetRotation, curve);
+            visual.StartAnimation("RotationAngle", rotationAnim);
+        }
+
+        // Brush properties — direct set
+        if (uie is FrameworkElement fe)
+        {
+            var bg = values?.Background ?? tracker.NormalBackground;
+            if (bg is not null)
+            {
+                if (fe is WinUI.Panel p) p.Background = bg;
+                else if (fe is WinUI.Control c) c.Background = bg;
+                else if (fe is WinUI.Border b) b.Background = bg;
+            }
+
+            var fg = values?.Foreground ?? tracker.NormalForeground;
+            if (fg is not null)
+            {
+                if (fe is WinUI.Control c) c.Foreground = fg;
+                else if (fe is TextBlock tb) tb.Foreground = fg;
+            }
+
+            var bb = values?.BorderBrush ?? tracker.NormalBorderBrush;
+            if (bb is not null)
+            {
+                if (fe is WinUI.Control c) c.BorderBrush = bb;
+                else if (fe is WinUI.Border b) b.BorderBrush = bb;
+            }
+        }
+    }
+
+    private static InteractionStateValues? MergePressed(InteractionStateValues? pointerOver, InteractionStateValues? pressed)
+    {
+        if (pressed is null) return pointerOver;
+        if (pointerOver is null) return pressed;
+
+        // Pressed inherits unoverridden values from PointerOver
+        return new InteractionStateValues(
+            Opacity: pressed.Opacity ?? pointerOver.Opacity,
+            Scale: pressed.Scale ?? pointerOver.Scale,
+            ScaleV: pressed.ScaleV ?? pointerOver.ScaleV,
+            Translation: pressed.Translation ?? pointerOver.Translation,
+            Rotation: pressed.Rotation ?? pointerOver.Rotation,
+            Background: pressed.Background ?? pointerOver.Background,
+            Foreground: pressed.Foreground ?? pointerOver.Foreground,
+            BorderBrush: pressed.BorderBrush ?? pointerOver.BorderBrush);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Stagger animation (DelayTime on child animations)
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Applies stagger delays to an element's Visual's implicit animations.
+    /// Called after layout/property animations are set up on children.
+    /// </summary>
+    internal static void ApplyStaggerDelays(UIElement parent, StaggerConfig config)
+    {
+        if (parent is not WinUI.Panel panel) return;
+
+        for (int i = 0; i < panel.Children.Count; i++)
+        {
+            var child = panel.Children[i];
+            var visual = ElementCompositionPreview.GetElementVisual(child);
+            if (visual.ImplicitAnimations is null) continue;
+
+            var delay = TimeSpan.FromTicks(config.Delay.Ticks * i);
+            foreach (var key in new[] { "Offset", "Opacity", "Scale", "RotationAngle", "Size", "CenterPoint" })
+            {
+                try
+                {
+                    var anim = visual.ImplicitAnimations[key];
+                    if (anim is KeyFrameAnimation kfa) kfa.DelayTime = delay;
+                    else if (anim is SpringScalarNaturalMotionAnimation ssa) ssa.DelayTime = delay;
+                    else if (anim is SpringVector3NaturalMotionAnimation sva) sva.DelayTime = delay;
+                }
+                catch { /* Key not present in collection — skip */ }
+            }
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Keyframe animation (.Keyframes() modifier)
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Tracks previous trigger values for keyframe animations, keyed by (UIElement, name).
+    /// </summary>
+    private static readonly Dictionary<(UIElement, string), object?> _keyframeTriggerValues = new();
+
+    /// <summary>
+    /// Checks trigger values and starts keyframe animations when they change.
+    /// </summary>
+    internal static void ApplyKeyframeAnimations(UIElement uie, KeyframeEntry[] entries)
+    {
+        var visual = ElementCompositionPreview.GetElementVisual(uie);
+        var compositor = visual.Compositor;
+
+        foreach (var entry in entries)
+        {
+            var key = (uie, entry.Name);
+            var changed = false;
+
+            if (_keyframeTriggerValues.TryGetValue(key, out var prevTrigger))
+                changed = !Equals(prevTrigger, entry.Trigger);
+            else
+                changed = true; // First mount
+
+            _keyframeTriggerValues[key] = entry.Trigger;
+
+            if (!changed) continue;
+
+            var def = entry.Definition;
+            var group = compositor.CreateAnimationGroup();
+
+            // Create per-property keyframe animations
+            bool hasOpacity = false, hasScale = false, hasTranslation = false, hasRotation = false;
+            foreach (var kf in def.Keyframes)
+            {
+                if (kf.Opacity.HasValue) hasOpacity = true;
+                if (kf.Scale.HasValue) hasScale = true;
+                if (kf.Translation.HasValue) hasTranslation = true;
+                if (kf.Rotation.HasValue) hasRotation = true;
+            }
+
+            if (hasOpacity)
+            {
+                var anim = compositor.CreateScalarKeyFrameAnimation();
+                anim.Duration = def.Duration;
+                anim.Target = "Opacity";
+                if (def.Loop) anim.IterationBehavior = AnimationIterationBehavior.Forever;
+                foreach (var kf in def.Keyframes)
+                {
+                    if (!kf.Opacity.HasValue) continue;
+                    if (kf.Easing.HasValue)
+                    {
+                        var e = kf.Easing.Value;
+                        var easing = compositor.CreateCubicBezierEasingFunction(new Vector2(e.X1, e.Y1), new Vector2(e.X2, e.Y2));
+                        anim.InsertKeyFrame(kf.Progress, kf.Opacity.Value, easing);
+                    }
+                    else
+                        anim.InsertKeyFrame(kf.Progress, kf.Opacity.Value);
+                }
+                group.Add(anim);
+            }
+
+            if (hasScale)
+            {
+                var anim = compositor.CreateVector3KeyFrameAnimation();
+                anim.Duration = def.Duration;
+                anim.Target = "Scale";
+                if (def.Loop) anim.IterationBehavior = AnimationIterationBehavior.Forever;
+                foreach (var kf in def.Keyframes)
+                {
+                    if (!kf.Scale.HasValue) continue;
+                    if (kf.Easing.HasValue)
+                    {
+                        var e = kf.Easing.Value;
+                        var easing = compositor.CreateCubicBezierEasingFunction(new Vector2(e.X1, e.Y1), new Vector2(e.X2, e.Y2));
+                        anim.InsertKeyFrame(kf.Progress, kf.Scale.Value, easing);
+                    }
+                    else
+                        anim.InsertKeyFrame(kf.Progress, kf.Scale.Value);
+                }
+                group.Add(anim);
+            }
+
+            if (hasTranslation)
+            {
+                var anim = compositor.CreateVector3KeyFrameAnimation();
+                anim.Duration = def.Duration;
+                anim.Target = "Offset";
+                if (def.Loop) anim.IterationBehavior = AnimationIterationBehavior.Forever;
+                foreach (var kf in def.Keyframes)
+                {
+                    if (!kf.Translation.HasValue) continue;
+                    if (kf.Easing.HasValue)
+                    {
+                        var e = kf.Easing.Value;
+                        var easing = compositor.CreateCubicBezierEasingFunction(new Vector2(e.X1, e.Y1), new Vector2(e.X2, e.Y2));
+                        anim.InsertKeyFrame(kf.Progress, kf.Translation.Value, easing);
+                    }
+                    else
+                        anim.InsertKeyFrame(kf.Progress, kf.Translation.Value);
+                }
+                group.Add(anim);
+            }
+
+            if (hasRotation)
+            {
+                var anim = compositor.CreateScalarKeyFrameAnimation();
+                anim.Duration = def.Duration;
+                anim.Target = "RotationAngle";
+                if (def.Loop) anim.IterationBehavior = AnimationIterationBehavior.Forever;
+                foreach (var kf in def.Keyframes)
+                {
+                    if (!kf.Rotation.HasValue) continue;
+                    if (kf.Easing.HasValue)
+                    {
+                        var e = kf.Easing.Value;
+                        var easing = compositor.CreateCubicBezierEasingFunction(new Vector2(e.X1, e.Y1), new Vector2(e.X2, e.Y2));
+                        anim.InsertKeyFrame(kf.Progress, kf.Rotation.Value, easing);
+                    }
+                    else
+                        anim.InsertKeyFrame(kf.Progress, kf.Rotation.Value);
+                }
+                group.Add(anim);
+            }
+
+            // Start the animation group via Visual
+            foreach (CompositionAnimation anim in group)
+                visual.StartAnimation(anim.Target, anim);
+        }
+    }
+
+    internal static void ClearKeyframeAnimations(UIElement uie, KeyframeEntry[] entries)
+    {
+        foreach (var entry in entries)
+            _keyframeTriggerValues.Remove((uie, entry.Name));
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Scroll-linked expression animation (.ScrollLinked() modifier)
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Applies scroll-linked expression animations to an element's Visual.
+    /// </summary>
+    internal static void ApplyScrollAnimation(UIElement uie, ScrollAnimationConfig config)
+    {
+        if (config.ScrollViewer is null) return;
+
+        var visual = ElementCompositionPreview.GetElementVisual(uie);
+        var compositor = visual.Compositor;
+        var scrollPropertySet = ElementCompositionPreview.GetScrollViewerManipulationPropertySet(config.ScrollViewer);
+
+        foreach (var expr in config.Expressions)
+        {
+            var animation = compositor.CreateExpressionAnimation(expr.Expression);
+            animation.SetReferenceParameter("scroll", scrollPropertySet);
+            visual.StartAnimation(expr.Property, animation);
+        }
+    }
+
+    internal static void ClearScrollAnimation(UIElement uie, ScrollAnimationConfig config)
+    {
+        var visual = ElementCompositionPreview.GetElementVisual(uie);
+        foreach (var expr in config.Expressions)
+            visual.StopAnimation(expr.Property);
+    }
+
+    // ════════════════════════════════════════════════════════════════
     //  Connected animations (cross-container transitions)
     // ════════════════════════════════════════════════════════════════
 
@@ -806,7 +1439,8 @@ public sealed partial class Reconciler : IDisposable
         if (m.MaxHeight.HasValue && m.MaxHeight != oldM?.MaxHeight) fe.MaxHeight = m.MaxHeight.Value;
         if (m.HorizontalAlignment.HasValue && m.HorizontalAlignment != oldM?.HorizontalAlignment) fe.HorizontalAlignment = m.HorizontalAlignment.Value;
         if (m.VerticalAlignment.HasValue && m.VerticalAlignment != oldM?.VerticalAlignment) fe.VerticalAlignment = m.VerticalAlignment.Value;
-        if (m.Opacity.HasValue && m.Opacity != oldM?.Opacity) fe.Opacity = m.Opacity.Value;
+        if (m.Opacity.HasValue && m.Opacity != oldM?.Opacity)
+            AnimationHelper.SetOrAnimate(fe, "Opacity", (float)m.Opacity.Value);
         if (m.IsVisible.HasValue && m.IsVisible != oldM?.IsVisible)
             fe.Visibility = m.IsVisible.Value ? Visibility.Visible : Visibility.Collapsed;
         if (m.RichToolTip is not null)

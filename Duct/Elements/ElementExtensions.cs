@@ -1142,6 +1142,102 @@ public static class ElementExtensions
         el.OnMount(fe => fe.Translation = new System.Numerics.Vector3(x, y, z));
 
     // ════════════════════════════════════════════════════════════════
+    //  Compositor property animation (.Animate() modifier)
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Enables implicit compositor animation on visual property changes.
+    /// All visual property changes (Opacity, Scale, Rotation, Translation, CenterPoint)
+    /// will animate using the specified curve.
+    /// </summary>
+    public static T Animate<T>(this T el, Duct.Animation.Curve curve,
+        Duct.Animation.AnimateProperty properties = Duct.Animation.AnimateProperty.All) where T : Element =>
+        el with { AnimationConfig = new Duct.Animation.AnimationConfig(curve, properties) };
+
+    // ════════════════════════════════════════════════════════════════
+    //  Enter/exit transitions (.Transition() modifier)
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Enables enter/exit transitions when this element is conditionally rendered.
+    /// Enter: animates from initial state to visible. Exit: animates out before unmount.
+    /// </summary>
+    public static T Transition<T>(this T el, Duct.Animation.Transition transition,
+        Duct.Animation.Curve? curve = null) where T : Element =>
+        el with { ElementTransition = new Duct.Animation.ElementTransition(transition, curve) };
+
+    // ════════════════════════════════════════════════════════════════
+    //  Interaction states (.InteractionStates() modifier)
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Declares zero-reconcile interaction state visual changes (hover, pressed, focused).
+    /// The reconciler registers pointer event handlers that drive compositor animations
+    /// and direct brush swaps — no state variables or re-renders needed.
+    /// </summary>
+    public static T InteractionStates<T>(this T el,
+        Func<Duct.Animation.InteractionStatesBuilder, Duct.Animation.InteractionStatesBuilder> configure,
+        Duct.Animation.Curve? curve = null) where T : Element
+    {
+        var builder = configure(new Duct.Animation.InteractionStatesBuilder());
+        var config = builder.Build();
+        if (curve is not null)
+            config = config with { Curve = curve };
+        return el with { InteractionStates = config };
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Staggered children animation (.Stagger() modifier)
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Adds incrementing animation delays to children in a container.
+    /// Child N gets N * delay applied to its compositor animations.
+    /// </summary>
+    public static T Stagger<T>(this T el, TimeSpan delay,
+        Duct.Animation.Curve? curve = null) where T : Element =>
+        el with { StaggerConfig = new Duct.Animation.StaggerConfig(delay, curve) };
+
+    // ════════════════════════════════════════════════════════════════
+    //  Keyframe animation (.Keyframes() modifier)
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Attaches a trigger-based keyframe animation. The animation plays when
+    /// the trigger value changes between renders.
+    /// </summary>
+    public static T Keyframes<T>(this T el, string name, object? trigger,
+        Func<Duct.Animation.KeyframeBuilder, Duct.Animation.KeyframeBuilder> configure) where T : Element
+    {
+        var builder = configure(new Duct.Animation.KeyframeBuilder());
+        var def = builder.Build();
+        var entry = new Duct.Animation.KeyframeEntry(name, trigger, def);
+
+        var existing = el.KeyframeAnimations;
+        var entries = existing is not null
+            ? [.. existing, entry]
+            : new[] { entry };
+        return el with { KeyframeAnimations = entries };
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Scroll-linked expression animation (.ScrollLinked() modifier)
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Attaches scroll-linked expression animations driven by a ScrollViewer.
+    /// Expressions run on the compositor at display refresh rate with zero managed code.
+    /// </summary>
+    public static T ScrollLinked<T>(this T el,
+        Microsoft.UI.Xaml.Controls.ScrollViewer scrollViewer,
+        Func<Duct.Animation.ScrollAnimationBuilder, Duct.Animation.ScrollAnimationBuilder> configure) where T : Element
+    {
+        var builder = configure(new Duct.Animation.ScrollAnimationBuilder());
+        var expressions = builder.Build();
+        return el with { ScrollAnimation = new Duct.Animation.ScrollAnimationConfig(scrollViewer, expressions) };
+    }
+
+    // ════════════════════════════════════════════════════════════════
     //  Internal
     // ════════════════════════════════════════════════════════════════
 

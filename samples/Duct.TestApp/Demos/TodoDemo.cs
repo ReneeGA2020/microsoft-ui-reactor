@@ -1,0 +1,77 @@
+using System.Diagnostics;
+using Duct;
+using Duct.Core;
+using Duct.Core.Navigation;
+using Duct.Flex;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
+using Duct.PropertyGrid;
+using static Duct.UI;
+using static Duct.Core.Theme;
+
+class TodoDemo : Component
+{
+    record TodoItem(string Text, bool Done);
+
+    public override Element Render()
+    {
+        var (items, updateItems) = UseReducer(new List<TodoItem>
+        {
+            new("Build Duct library", true),
+            new("Write test app", true),
+            new("Add more features", false),
+        });
+        var (newText, setNewText) = UseState("");
+
+        var doneCount = items.Count(i => i.Done);
+        var totalCount = items.Count;
+
+        return VStack(12,
+            Heading("Todo List"),
+            Text($"{doneCount}/{totalCount} completed"),
+
+            // Add new item
+            HStack(8,
+                TextField(newText, setNewText, placeholder: "What needs to be done?").Width(300),
+                Button("Add", () =>
+                {
+                    if (!string.IsNullOrWhiteSpace(newText))
+                    {
+                        updateItems(list => [.. list, new TodoItem(newText.Trim(), false)]);
+                        setNewText("");
+                    }
+                }).Disabled(string.IsNullOrWhiteSpace(newText))
+            ),
+
+            // List of items
+            VStack(4,
+                items.Select((item, index) =>
+                    HStack(8,
+                        CheckBox(item.Done, done =>
+                            updateItems(list =>
+                            {
+                                var copy = new List<TodoItem>(list);
+                                copy[index] = item with { Done = done };
+                                return copy;
+                            }),
+                            label: item.Text
+                        ),
+                        Button("\u00d7", () =>
+                            updateItems(list =>
+                            {
+                                var copy = new List<TodoItem>(list);
+                                copy.RemoveAt(index);
+                                return copy;
+                            })
+                        )
+                    ).WithKey($"todo-{index}")
+                ).ToArray()
+            ),
+
+            // Conditional: show "All done!" when everything is checked
+            When(totalCount > 0 && doneCount == totalCount,
+                () => Text("All done! \U0001f389").Bold().FontSize(18))
+        );
+    }
+}
