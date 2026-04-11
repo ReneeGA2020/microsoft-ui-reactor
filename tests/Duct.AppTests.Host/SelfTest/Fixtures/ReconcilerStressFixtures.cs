@@ -34,7 +34,7 @@ internal static class ReconcilerStressFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, setPhase) = ctx.UseState(0);
@@ -83,7 +83,7 @@ internal static class ReconcilerStressFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, setPhase) = ctx.UseState(0);
@@ -124,7 +124,7 @@ internal static class ReconcilerStressFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, setPhase) = ctx.UseState(0);
@@ -176,7 +176,7 @@ internal static class ReconcilerStressFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, setPhase) = ctx.UseState(0);
@@ -224,7 +224,7 @@ internal static class ReconcilerStressFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, setPhase) = ctx.UseState(0);
@@ -264,7 +264,7 @@ internal static class ReconcilerStressFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 // Outer func wraps an inner func — tests nested FuncElement reconciliation
@@ -303,7 +303,7 @@ internal static class ReconcilerStressFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (show, setShow) = ctx.UseState(true);
@@ -354,7 +354,7 @@ internal static class ReconcilerStressFixtures
         public override async Task RunAsync()
         {
             CleanupTrackingComponent.CleanupCount = 0;
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (show, setShow) = ctx.UseState(true);
@@ -388,7 +388,7 @@ internal static class ReconcilerStressFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (show, setShow) = ctx.UseState(true);
@@ -431,7 +431,7 @@ internal static class ReconcilerStressFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             const int count = 50;
 
             host.Mount(ctx =>
@@ -499,7 +499,7 @@ internal static class ReconcilerStressFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, setPhase) = ctx.UseState(0);
@@ -556,7 +556,7 @@ internal static class ReconcilerStressFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, setPhase) = ctx.UseState(0);

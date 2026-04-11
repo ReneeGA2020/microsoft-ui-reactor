@@ -35,7 +35,7 @@ internal static class ThreadSafeHookFixtures
             Action<int>? setCounter = null;
             int lastWritten = 0;
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (counter, set) = ctx.UseState(0, threadSafe: true);
@@ -99,7 +99,7 @@ internal static class ThreadSafeHookFixtures
         {
             Action<int>? setA = null, setB = null, setC = null;
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (a, sa) = ctx.UseState(0, threadSafe: true);
@@ -152,7 +152,7 @@ internal static class ThreadSafeHookFixtures
         {
             Action<Func<int, int>>? update = null;
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (count, upd) = ctx.UseReducer(0, threadSafe: true);
@@ -199,7 +199,7 @@ internal static class ThreadSafeHookFixtures
         {
             Action<string[]>? setItems = null;
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (items, set) = ctx.UseState(
@@ -265,7 +265,7 @@ internal static class ThreadSafeHookFixtures
         {
             Action<int>? setValue = null;
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (value, set) = ctx.UseState(0, threadSafe: true);

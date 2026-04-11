@@ -73,7 +73,7 @@ internal static class TransitionTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             var showElement = true;
 
             host.Mount(ctx =>

@@ -94,7 +94,7 @@ internal static class InteractionStatesTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 return VStack(

@@ -78,7 +78,7 @@ internal static class AnimationScopeTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             var opacity = 1.0;
 
             host.Mount(ctx =>

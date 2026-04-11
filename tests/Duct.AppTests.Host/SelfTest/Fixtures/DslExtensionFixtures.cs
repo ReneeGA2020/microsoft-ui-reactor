@@ -30,7 +30,7 @@ internal static class DslExtensionFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Text("Styled")
                     .Bold()
@@ -76,7 +76,7 @@ internal static class DslExtensionFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 return VStack(
@@ -105,7 +105,7 @@ internal static class DslExtensionFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Heading("DslHead"),
                 SubHeading("DslSub"),
@@ -137,7 +137,7 @@ internal static class DslExtensionFixtures
         public override async Task RunAsync()
         {
             var brush = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Blue);
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 new RectangleElement
                 {
@@ -182,7 +182,7 @@ internal static class DslExtensionFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 // UniformGrid — equal columns
                 UniformGrid(Microsoft.UI.Xaml.Controls.Orientation.Horizontal,
@@ -211,7 +211,7 @@ internal static class DslExtensionFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 MenuBar(
                     Menu("File",
@@ -242,7 +242,7 @@ internal static class DslExtensionFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Grid(["*", "*"], ["*", "*"],
                     Text("TL").Grid(row: 0, column: 0),
@@ -277,7 +277,7 @@ internal static class DslExtensionFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 new Duct.Core.ErrorBoundaryElement(
                     Component<ThrowingComponent>(),
@@ -297,7 +297,7 @@ internal static class DslExtensionFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 new GroupElement([Text("G1"), Text("G2"), Text("G3")])
             ));

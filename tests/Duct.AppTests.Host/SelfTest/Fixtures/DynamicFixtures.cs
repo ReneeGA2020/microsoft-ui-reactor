@@ -12,7 +12,7 @@ internal static class DynamicFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (count, setCount) = ctx.UseState(3);
@@ -61,7 +61,7 @@ internal static class DynamicFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (showAdvanced, setShowAdvanced) = ctx.UseState(false);

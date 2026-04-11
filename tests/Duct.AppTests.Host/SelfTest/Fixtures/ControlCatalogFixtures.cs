@@ -24,7 +24,7 @@ internal static class ControlCatalogFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
 
             // Build a catalog of every control with a marker we can find in the tree.
             // Each entry: (name, element factory that includes a findable text marker).

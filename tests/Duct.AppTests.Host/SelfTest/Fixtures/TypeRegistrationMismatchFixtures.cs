@@ -25,7 +25,7 @@ internal static class TypeRegistrationMismatchFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             var reconciler = host.Reconciler;
             bool mountFallbackCalled = false;
 
@@ -87,7 +87,7 @@ internal static class TypeRegistrationMismatchFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             var reconciler = host.Reconciler;
             bool unmountHandlerCalled = false;
 

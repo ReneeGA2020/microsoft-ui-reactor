@@ -15,7 +15,7 @@ internal static class LayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexRow(
                     Text("A").Flex(grow: 1).Background("Red"),
@@ -46,7 +46,7 @@ internal static class LayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var children = Enumerable.Range(0, 8)
@@ -78,7 +78,7 @@ internal static class LayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 Grid(["200", "*"], ["Auto", "*"],
                     Text("TopLeft").Grid(row: 0, column: 0),
@@ -121,7 +121,7 @@ internal static class LayoutFixtures
         public override async Task RunAsync()
         {
             // -- Scenario 1: Simple proportional sizing (1:2:1) ----------
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 VStack(8,
                     // Grid with 1* / 2* / 1* star columns

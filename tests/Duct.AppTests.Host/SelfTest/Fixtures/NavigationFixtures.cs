@@ -15,7 +15,7 @@ internal static class NavigationFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (tab, setTab) = ctx.UseState("Home");
@@ -81,7 +81,7 @@ internal static class NavigationFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var nav = ctx.UseNavigation<string>("home");
@@ -109,7 +109,7 @@ internal static class NavigationFixtures
         {
             NavigationHandle<string>? navRef = null;
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var nav = ctx.UseNavigation<string>("home");
@@ -148,7 +148,7 @@ internal static class NavigationFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var nav = ctx.UseNavigation<string>("home");
@@ -197,7 +197,7 @@ internal static class NavigationFixtures
         {
             LifecycleEvents.Clear();
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var nav = ctx.UseNavigation<string>("page-a");
@@ -269,7 +269,7 @@ internal static class NavigationFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var outerNav = ctx.UseNavigation<string>("outer-a");

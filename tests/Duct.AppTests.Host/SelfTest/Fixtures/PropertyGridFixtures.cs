@@ -142,7 +142,7 @@ internal static class PropertyGridFixtures
             var model = new PersonModel();
             var registry = new TypeRegistry();
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 ctx.UseObservable(model);
@@ -168,7 +168,7 @@ internal static class PropertyGridFixtures
             var model = new CategorizedModel();
             var registry = new TypeRegistry();
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(_ => PropertyGridDsl.PropertyGrid(model, registry));
             await Harness.Render();
 
@@ -192,7 +192,7 @@ internal static class PropertyGridFixtures
             var model = new MaterialModel();
             var registry = new TypeRegistry();
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(_ => PropertyGridDsl.PropertyGrid(model, registry));
             await Harness.Render();
 
@@ -210,7 +210,7 @@ internal static class PropertyGridFixtures
             var model = new ShapeModel();
             var registry = new TypeRegistry();
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 ctx.UseObservable(model);
@@ -250,7 +250,7 @@ internal static class PropertyGridFixtures
         {
             var registry = new TypeRegistry();
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (point, setPoint) = ctx.UseState(new Point2D(5, 10));
@@ -303,7 +303,7 @@ internal static class PropertyGridFixtures
 
             var model = new ShapeModel();
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(_ => PropertyGridDsl.PropertyGrid(model, registry));
             await Harness.Render();
 
@@ -324,7 +324,7 @@ internal static class PropertyGridFixtures
             object target = person;
             Action? rerender = null;
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (_, forceRender) = ctx.UseReducer(false);
@@ -371,7 +371,7 @@ internal static class PropertyGridFixtures
             var model = new CategorizedModel();
             var registry = new TypeRegistry();
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(_ => PropertyGridDsl.PropertyGrid(model, registry));
             await Harness.Render();
 
@@ -424,7 +424,7 @@ internal static class PropertyGridFixtures
             var config = new AppConfig("MyApp", new Theme("Dark", new Point2D(0, 0)));
             var registry = new TypeRegistry();
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (c, setC) = ctx.UseState(config);
@@ -450,7 +450,7 @@ internal static class PropertyGridFixtures
             var person = new PersonModel { Name = "Alice", Age = 30 };
             var registry = new TypeRegistry();
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 ctx.UseObservable(person);

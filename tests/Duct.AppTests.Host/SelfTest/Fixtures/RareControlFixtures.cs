@@ -22,7 +22,7 @@ internal static class RareControlFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -55,7 +55,7 @@ internal static class RareControlFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -92,7 +92,7 @@ internal static class RareControlFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -122,7 +122,7 @@ internal static class RareControlFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -155,7 +155,7 @@ internal static class RareControlFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 return new RelativePanelElement([
@@ -198,7 +198,7 @@ internal static class RareControlFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -231,7 +231,7 @@ internal static class RareControlFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -262,7 +262,7 @@ internal static class RareControlFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -294,7 +294,7 @@ internal static class RareControlFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);

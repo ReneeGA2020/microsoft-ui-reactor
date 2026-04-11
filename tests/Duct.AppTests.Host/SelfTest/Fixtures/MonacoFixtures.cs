@@ -12,7 +12,7 @@ internal static class MonacoFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 VStack(
                     Text("Monaco Editor Test"),

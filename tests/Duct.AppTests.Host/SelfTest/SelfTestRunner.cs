@@ -28,10 +28,11 @@ internal static class SelfTestRunner
             {
                 try
                 {
+                    var fixtures = SelfTestFixtureRegistry.AllFixtures;
+                    harness.SetupTitleBar(fixtures.Length);
                     window.Activate();
                     await Harness.Render(500); // wait for initial layout
 
-                    var fixtures = SelfTestFixtureRegistry.AllFixtures;
                     Console.WriteLine($"TAP version 14");
                     Console.WriteLine($"1..{fixtures.Length}");
 
@@ -39,6 +40,7 @@ internal static class SelfTestRunner
                     foreach (var fixtureName in fixtures)
                     {
                         testIndex++;
+                        harness.UpdateProgress(testIndex, fixtureName);
                         try
                         {
                             var fixture = SelfTestFixtureRegistry.Create(fixtureName, harness);

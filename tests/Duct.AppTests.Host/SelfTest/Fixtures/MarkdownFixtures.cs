@@ -13,7 +13,7 @@ internal static class MarkdownFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 ScrollView(
                     UI.Markdown("# Main Heading\n\nThis is a paragraph with **bold text** and *italic text*.\n\n## Sub Heading\n\nAnother paragraph here.")
@@ -41,7 +41,7 @@ internal static class MarkdownFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 ScrollView(
                     UI.Markdown("Here is a [link](https://example.com) and `inline code`.\n\n```csharp\nvar x = 42;\nConsole.WriteLine(x);\n```\n\nEnd of document.")

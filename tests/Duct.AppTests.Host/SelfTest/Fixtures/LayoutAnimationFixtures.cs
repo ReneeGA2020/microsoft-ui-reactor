@@ -13,7 +13,7 @@ internal static class LayoutAnimationFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 return VStack(
@@ -51,7 +51,7 @@ internal static class LayoutAnimationFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 return VStack(
@@ -89,7 +89,7 @@ internal static class LayoutAnimationFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 return VStack(
@@ -133,7 +133,7 @@ internal static class LayoutAnimationFixtures
         {
             // Mount a FlexPanel with items that have ConnectedAnimation keys,
             // then switch to a VStack — the unmount→mount cycle should not crash.
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             var showFlex = true;
 
             host.Mount(ctx =>

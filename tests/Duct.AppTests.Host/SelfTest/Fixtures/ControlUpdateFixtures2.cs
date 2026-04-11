@@ -21,7 +21,7 @@ internal static class ControlUpdateFixtures2
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -52,7 +52,7 @@ internal static class ControlUpdateFixtures2
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -81,14 +81,14 @@ internal static class ControlUpdateFixtures2
 
     /// <summary>
     /// Mounts controls not in the original catalog to exercise their MountXxx paths:
-    /// SplitView, NavigationView, TitleBar, ContentDialog, TeachingTip, Line, Path,
-    /// RelativePanel, CalendarView.
+    /// SplitView, NavigationView, Line, Path, RelativePanel, CalendarView.
+    /// (TitleBar is exercised by the persistent test-runner TitleBar across all fixtures.)
     /// </summary>
     internal class AdditionalControlsMountUpdate(Harness h) : SelfTestFixtureBase(h)
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -102,7 +102,6 @@ internal static class ControlUpdateFixtures2
                         [NavItem("NavH", icon: "Home")],
                         content: Text(phase == 0 ? "NavC1" : "NavC2")
                     ),
-                    TitleBar(phase == 0 ? "Title1" : "Title2"),
                     new LineElement
                     {
                         X1 = 0, Y1 = 0, X2 = 50, Y2 = 50,
@@ -118,7 +117,6 @@ internal static class ControlUpdateFixtures2
             await Harness.Render();
             H.Check("ExtraMount_SplitView", H.FindText("ExContent1") is not null);
             H.Check("ExtraMount_NavView", H.FindText("NavC1") is not null);
-            H.Check("ExtraMount_TitleBar", H.FindText("Title1") is not null);
             H.Check("ExtraMount_Line",
                 H.FindControl<Microsoft.UI.Xaml.Shapes.Line>(_ => true) is not null);
 
@@ -128,7 +126,6 @@ internal static class ControlUpdateFixtures2
             // SplitView remounts on update (doesn't have an UpdateSplitView)
             H.Check("ExtraUpdate_SplitView", H.FindText("ExContent2") is not null);
             H.Check("ExtraUpdate_NavView", H.FindText("NavC2") is not null);
-            H.Check("ExtraUpdate_TitleBar", H.FindText("Title2") is not null);
         }
     }
 
@@ -144,7 +141,7 @@ internal static class ControlUpdateFixtures2
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             // Enable bitmask diff mode
             var wasBitmask = Reconciler.EnableBitmaskDiff;
             Reconciler.EnableBitmaskDiff = true;
@@ -192,7 +189,7 @@ internal static class ControlUpdateFixtures2
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -230,7 +227,7 @@ internal static class ControlUpdateFixtures2
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -266,7 +263,7 @@ internal static class ControlUpdateFixtures2
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -299,7 +296,7 @@ internal static class ControlUpdateFixtures2
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (visible, setVisible) = ctx.UseState(true);
@@ -342,7 +339,7 @@ internal static class ControlUpdateFixtures2
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -372,7 +369,7 @@ internal static class ControlUpdateFixtures2
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);

@@ -29,7 +29,7 @@ internal static class ModifierEventFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             int sizeChangedCount = 0;
             int tappedCount = 0;
 
@@ -79,7 +79,7 @@ internal static class ModifierEventFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -129,7 +129,7 @@ internal static class ModifierEventFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -170,7 +170,7 @@ internal static class ModifierEventFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -211,7 +211,7 @@ internal static class ModifierEventFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -255,7 +255,7 @@ internal static class ModifierEventFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -307,7 +307,7 @@ internal static class ModifierEventFixtures
         public override async Task RunAsync()
         {
             int mountActionCount = 0;
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 return Text("MountActionTarget") with

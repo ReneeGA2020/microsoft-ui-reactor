@@ -53,7 +53,7 @@ internal static class ObservableFixtures
         {
             var person = new PersonModel { Name = "Alice", Age = 30 };
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 ctx.UseObservable(person);
@@ -96,7 +96,7 @@ internal static class ObservableFixtures
         {
             var person = new PersonModel { Name = "Alice", Age = 30 };
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 ctx.UseObservable(person);
@@ -125,7 +125,7 @@ internal static class ObservableFixtures
             var person = new PersonModel { Name = "Alice", Age = 30 };
             int renderCount = 0;
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var name = ctx.UseObservableProperty(person, p => p.Name, nameof(PersonModel.Name));
@@ -167,7 +167,7 @@ internal static class ObservableFixtures
         {
             var items = new ObservableCollection<string> { "Apple", "Banana" };
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var list = ctx.UseCollection(items);
@@ -220,7 +220,7 @@ internal static class ObservableFixtures
             var person1 = new PersonModel { Name = "Alice" };
             var person2 = new PersonModel { Name = "Bob" };
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (useSecond, setUseSecond) = ctx.UseState(false);

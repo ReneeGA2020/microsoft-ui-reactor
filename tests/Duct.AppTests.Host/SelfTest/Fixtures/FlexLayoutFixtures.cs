@@ -28,7 +28,7 @@ internal static class FlexLayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexColumn(
                     FlexRow(
@@ -87,7 +87,7 @@ internal static class FlexLayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexRow(
                     FlexColumn(
@@ -129,7 +129,7 @@ internal static class FlexLayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexColumn(
                     Text("L1-Header").Height(30),
@@ -179,7 +179,7 @@ internal static class FlexLayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 Grid(["*", "2*"], ["*", "*"],
                     FlexRow(
@@ -245,7 +245,7 @@ internal static class FlexLayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 VStack(8,
                     Border(
@@ -284,7 +284,7 @@ internal static class FlexLayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 VStack(4,
                     Text("Before"),
@@ -335,7 +335,7 @@ internal static class FlexLayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 ScrollView(
                     FlexColumn(
@@ -372,7 +372,7 @@ internal static class FlexLayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexColumn(
                     Text("Header").Height(50).Flex(shrink: 0).Background("LightCoral"),
@@ -416,7 +416,7 @@ internal static class FlexLayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexColumn(
                     Text("Top").Flex(basis: 0, grow: 1).Background("LightCoral"),
@@ -456,7 +456,7 @@ internal static class FlexLayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexRow(
                     Text("Fixed1").Width(100).Background("LightCoral"),
@@ -492,7 +492,7 @@ internal static class FlexLayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 new FlexElement([
                     Text("A").Flex(basis: 0, grow: 1).Background("LightCoral"),
@@ -538,7 +538,7 @@ internal static class FlexLayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexRow(
                     Text("Padded-A").Flex(basis: 0, grow: 1).Background("LightCoral"),
@@ -575,7 +575,7 @@ internal static class FlexLayoutFixtures
                 "within its allocated width. The number of lines depends on the " +
                 "width constraint, so the height should be consistent.";
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 VStack(8,
                     FlexRow(
@@ -619,7 +619,7 @@ internal static class FlexLayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexColumn(
                     Text("Header").Height(50).Background("LightCoral"),
@@ -660,7 +660,7 @@ internal static class FlexLayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexRow(
                     Text("M1").Flex(basis: 0, grow: 1).Margin(10).Background("LightCoral"),
@@ -695,7 +695,7 @@ internal static class FlexLayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 new FlexElement([
                     Text("J1").Width(100).Background("LightCoral"),
@@ -739,7 +739,7 @@ internal static class FlexLayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 Grid(["200", "*"], ["*"],
                     Text("Sidebar").Grid(row: 0, column: 0).Background("LightCoral"),
@@ -774,7 +774,7 @@ internal static class FlexLayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexColumn(
                     Text("L1-Top").Height(40),
@@ -835,7 +835,7 @@ internal static class FlexLayoutFixtures
                 "should display in fewer lines at wider widths. The layout cycle " +
                 "bug would cause a crash when text is re-measured during arrange.";
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 Grid(["*", "2*"], ["Auto", "*"],
                     FlexRow(
@@ -875,7 +875,7 @@ internal static class FlexLayoutFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 Grid(["*"], ["60", "*", "60"],
                     Text("Header").Grid(row: 0, column: 0).Background("LightCoral"),

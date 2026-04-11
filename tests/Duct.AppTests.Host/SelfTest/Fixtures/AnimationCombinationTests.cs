@@ -46,7 +46,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Border(Text("Spring"))
                     .Animate(Curve.Spring(0.7f))
@@ -73,7 +73,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Border(Text("Ease"))
                     .Animate(Curve.Ease(200, Easing.Decelerate), AnimateProperty.Opacity | AnimateProperty.Scale)
@@ -98,7 +98,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Border(Text("Layout"))
                     .LayoutAnimation()
@@ -122,7 +122,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Border(Text("Fade In"))
                     .Transition(Animation.Transition.Fade)
@@ -146,7 +146,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Border(Text("Interact"))
                     .InteractionStates(s => s
@@ -166,7 +166,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Border(Text("KF"))
                     .Keyframes("enter", 1, kf => kf
@@ -186,7 +186,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 VStack(
                     Border(Text("A")).LayoutAnimation().WithKey("a"),
@@ -212,7 +212,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Border(Text("Both"))
                     .LayoutAnimation()
@@ -240,7 +240,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Border(Text("AnimTrans"))
                     .Animate(Curve.Ease(200))
@@ -264,7 +264,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Border(Text("AnimInteract"))
                     .Animate(Curve.Spring(0.6f), AnimateProperty.Opacity | AnimateProperty.Scale)
@@ -291,7 +291,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Border(Text("LayoutTrans"))
                     .LayoutAnimation()
@@ -315,7 +315,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Border(Text("FadeScale"))
                     .Transition(Animation.Transition.Fade + Animation.Transition.Scale(0.8f))
@@ -338,7 +338,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Border(Text("AnimKF"))
                     .Animate(Curve.Spring(0.6f), AnimateProperty.Opacity)
@@ -366,7 +366,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Border(Text("InterTrans"))
                     .InteractionStates(s => s
@@ -391,7 +391,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Border(Text("Triple"))
                     .LayoutAnimation()
@@ -420,7 +420,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 VStack(
                     Border(Text("Item1"))
@@ -468,7 +468,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             var opacity = 1.0;
 
             host.Mount(ctx => VStack(
@@ -508,7 +508,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             var opacity = 1.0;
 
             host.Mount(ctx => VStack(
@@ -547,7 +547,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             var trigger = 0;
 
             host.Mount(ctx => VStack(
@@ -600,7 +600,7 @@ internal static class AnimationCombinationTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             var useAnim = true;
 
             host.Mount(ctx => VStack(

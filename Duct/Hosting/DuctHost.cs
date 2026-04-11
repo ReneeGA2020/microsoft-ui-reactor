@@ -68,6 +68,13 @@ public sealed class DuctHost
     /// </summary>
     public Window Window => _window;
 
+    /// <summary>
+    /// Optional: when set, Duct renders into this Border instead of Window.Content.
+    /// Useful for embedding Duct content in a pre-existing layout (e.g., a test harness
+    /// with a persistent TitleBar).
+    /// </summary>
+    public WinUI.Border? ContentTarget { get; set; }
+
     public DuctHost(Window window, IDuctLogger? logger = null)
     {
         _logger = logger ?? new DebugDuctLogger();
@@ -196,7 +203,10 @@ public sealed class DuctHost
 
             if (newControl != _currentControl)
             {
-                _window.Content = newControl;
+                if (ContentTarget is not null)
+                    ContentTarget.Child = newControl;
+                else
+                    _window.Content = newControl;
                 AttachThemeListener(newControl);
             }
 
@@ -309,7 +319,10 @@ public sealed class DuctHost
                 IsTextSelectionEnabled = true,
             }
         };
-        _window.Content = errorPanel;
+        if (ContentTarget is not null)
+            ContentTarget.Child = errorPanel;
+        else
+            _window.Content = errorPanel;
         _currentControl = errorPanel;
         _currentTree = null;
     }

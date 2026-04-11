@@ -24,7 +24,7 @@ internal static class CollectionFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
                 VStack(
                     Text("Animals List"),

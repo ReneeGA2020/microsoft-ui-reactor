@@ -116,7 +116,7 @@ internal static class LocalizationFixtures
             var resources = BuildResources();
             var cache = new MessageCache();
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (locale, setLocale) = ctx.UseState("en-US");

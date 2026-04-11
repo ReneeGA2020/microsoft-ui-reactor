@@ -29,7 +29,7 @@ internal static class ControlUpdateFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -61,7 +61,7 @@ internal static class ControlUpdateFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             int clickCount = 0;
             host.Mount(ctx =>
             {
@@ -95,7 +95,7 @@ internal static class ControlUpdateFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -156,7 +156,7 @@ internal static class ControlUpdateFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -194,7 +194,7 @@ internal static class ControlUpdateFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -233,7 +233,7 @@ internal static class ControlUpdateFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -270,7 +270,7 @@ internal static class ControlUpdateFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -308,7 +308,7 @@ internal static class ControlUpdateFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -370,7 +370,7 @@ internal static class ControlUpdateFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -406,7 +406,7 @@ internal static class ControlUpdateFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -442,7 +442,7 @@ internal static class ControlUpdateFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -471,7 +471,7 @@ internal static class ControlUpdateFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -511,7 +511,7 @@ internal static class ControlUpdateFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
@@ -544,7 +544,7 @@ internal static class ControlUpdateFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);

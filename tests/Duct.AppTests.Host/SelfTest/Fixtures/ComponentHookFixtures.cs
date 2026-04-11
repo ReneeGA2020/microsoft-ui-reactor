@@ -35,7 +35,7 @@ internal static class ComponentHookFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(new ReducerComponent());
 
             await Harness.Render();
@@ -82,7 +82,7 @@ internal static class ComponentHookFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(new ReduxReducerComponent());
 
             await Harness.Render();
@@ -141,7 +141,7 @@ internal static class ComponentHookFixtures
             MemoRefComponent.MemoComputeCount = 0;
             MemoRefComponent.CallbackCallCount = 0;
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(new MemoRefComponent());
 
             await Harness.Render();
@@ -192,7 +192,7 @@ internal static class ComponentHookFixtures
             EffectDepsComponent.EffectRunCount = 0;
             EffectDepsComponent.CleanupRunCount = 0;
 
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(new EffectDepsComponent());
 
             await Harness.Render();
@@ -223,7 +223,7 @@ internal static class ComponentHookFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (count, setCount) = ctx.UseState(1);
@@ -250,7 +250,7 @@ internal static class ComponentHookFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (w, h2) = ctx.UseWindowSize(H.Window);
@@ -274,7 +274,7 @@ internal static class ComponentHookFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var isWide = ctx.UseBreakpoint(H.Window, 100); // 100px should always be true
@@ -323,7 +323,7 @@ internal static class ComponentHookFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Component<CounterA>(),
                 Component<CounterB>()

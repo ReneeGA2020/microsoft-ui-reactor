@@ -39,7 +39,7 @@ internal static class KeyframeBuilderTests
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             var counter = 0;
 
             host.Mount(ctx =>

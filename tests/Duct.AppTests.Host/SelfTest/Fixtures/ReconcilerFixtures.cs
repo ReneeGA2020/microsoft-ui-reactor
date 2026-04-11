@@ -13,7 +13,7 @@ internal static class ReconcilerFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx => Text("Hello from Duct"));
 
             await Harness.Render();
@@ -30,7 +30,7 @@ internal static class ReconcilerFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (text, setText) = ctx.UseState("Before");
@@ -60,7 +60,7 @@ internal static class ReconcilerFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (count, setCount) = ctx.UseState(3);
@@ -111,7 +111,7 @@ internal static class ReconcilerFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(new CounterComponent());
 
             await Harness.Render();
@@ -139,7 +139,7 @@ internal static class ReconcilerFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (reversed, setReversed) = ctx.UseState(false);
@@ -181,7 +181,7 @@ internal static class ReconcilerFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (paneCount, setPaneCount) = ctx.UseState(1);
@@ -259,7 +259,7 @@ internal static class ReconcilerFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (count, setCount) = ctx.UseState(2);

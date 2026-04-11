@@ -32,7 +32,7 @@ internal static class D3Fixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             // D3 charts use XamlHostElement which requires XamlInterop registration
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
@@ -64,7 +64,7 @@ internal static class D3Fixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
@@ -95,7 +95,7 @@ internal static class D3Fixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(

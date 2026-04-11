@@ -13,9 +13,57 @@ internal sealed class Harness
     private readonly Window _window;
     private int _failures;
 
+    // Persistent TitleBar + progress for the test runner
+    private TitleBar? _titleBar;
+    private ProgressBar? _progressBar;
+    private Border? _contentArea;
+
     public Harness(Window window) => _window = window;
     public Window Window => _window;
     public int Failures => _failures;
+
+    // -- TitleBar setup ---------------------------------------------------
+
+    public void SetupTitleBar(int totalTests)
+    {
+        _progressBar = new ProgressBar { Maximum = totalTests, Value = 0, Width = 200 };
+        _titleBar = new TitleBar
+        {
+            Title = "Selfhost Tests",
+            Content = _progressBar,
+        };
+
+        var rootGrid = new Grid();
+        rootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        rootGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+        Grid.SetRow(_titleBar, 0);
+        rootGrid.Children.Add(_titleBar);
+
+        _contentArea = new Border();
+        Grid.SetRow(_contentArea, 1);
+        rootGrid.Children.Add(_contentArea);
+
+        _window.Content = rootGrid;
+        _window.ExtendsContentIntoTitleBar = true;
+        _window.SetTitleBar(_titleBar);
+    }
+
+    public void UpdateProgress(int current, string fixtureName)
+    {
+        if (_titleBar is not null)
+            _titleBar.Subtitle = $"{current}/{(int)(_progressBar?.Maximum ?? 0)} \u2014 {fixtureName}";
+        if (_progressBar is not null)
+            _progressBar.Value = current;
+    }
+
+    public Duct.DuctHost CreateHost()
+    {
+        var host = new Duct.DuctHost(_window);
+        if (_contentArea is not null)
+            host.ContentTarget = _contentArea;
+        return host;
+    }
 
     // -- TAP assertion helpers -------------------------------------------
 
@@ -60,19 +108,22 @@ internal sealed class Harness
 
     // -- VisualTree query helpers ----------------------------------------
 
+    /// <summary>Search root: the content area (below TitleBar) if set up, else Window.Content.</summary>
+    private DependencyObject? SearchRoot => (DependencyObject?)_contentArea?.Child ?? _window.Content;
+
     public T? FindControl<T>(Func<T, bool> predicate) where T : DependencyObject
     {
-        var content = _window.Content;
-        if (content is null) return default;
-        return FindInTree(content, predicate);
+        var root = SearchRoot;
+        if (root is null) return default;
+        return FindInTree(root, predicate);
     }
 
     public List<T> FindAllControls<T>(Func<T, bool> predicate) where T : DependencyObject
     {
         var results = new List<T>();
-        var content = _window.Content;
-        if (content is not null)
-            FindAllInTree(content, predicate, results);
+        var root = SearchRoot;
+        if (root is not null)
+            FindAllInTree(root, predicate, results);
         return results;
     }
 

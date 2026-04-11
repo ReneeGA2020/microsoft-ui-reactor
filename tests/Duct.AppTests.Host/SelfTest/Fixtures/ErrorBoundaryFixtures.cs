@@ -26,7 +26,7 @@ internal static class ErrorBoundaryFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 return ErrorBoundary(
@@ -55,7 +55,7 @@ internal static class ErrorBoundaryFixtures
     {
         public override async Task RunAsync()
         {
-            var host = new DuctHost(H.Window);
+            var host = H.CreateHost();
             host.Mount(ctx =>
             {
                 var (shouldThrow, setShouldThrow) = ctx.UseState(true);
