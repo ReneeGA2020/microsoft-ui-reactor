@@ -167,4 +167,158 @@ public class StatisticsTests
     {
         Assert.Equal(new[] { 1.0, 3.0, 6.0 }, D3Statistics.CumSum([1, 2, 3]));
     }
+
+    // ─── Generic Min<T> / Max<T> with accessor ─────────────────────
+
+    [Fact]
+    public void Min_Generic_WithAccessor()
+    {
+        var items = new[] { ("a", 3.0), ("b", 1.0), ("c", 2.0) };
+        Assert.Equal(1.0, D3Statistics.Min(items, x => x.Item2));
+    }
+
+    [Fact]
+    public void Min_Generic_AllNaN_ReturnsNaN()
+    {
+        var items = new[] { ("a", double.NaN), ("b", double.NaN) };
+        Assert.True(double.IsNaN(D3Statistics.Min(items, x => x.Item2)));
+    }
+
+    [Fact]
+    public void Max_Generic_WithAccessor()
+    {
+        var items = new[] { ("a", 3.0), ("b", 1.0), ("c", 2.0) };
+        Assert.Equal(3.0, D3Statistics.Max(items, x => x.Item2));
+    }
+
+    [Fact]
+    public void Max_AllNaN_ReturnsNaN()
+    {
+        Assert.True(double.IsNaN(D3Statistics.Max([double.NaN, double.NaN])));
+    }
+
+    [Fact]
+    public void Max_Generic_Empty_ReturnsNaN()
+    {
+        var items = Array.Empty<(string, double)>();
+        Assert.True(double.IsNaN(D3Statistics.Max(items, x => x.Item2)));
+    }
+
+    // ─── Sum<T> / Mean<T> with accessor ─────────────────────────────
+
+    [Fact]
+    public void Sum_Generic_WithAccessor()
+    {
+        var items = new[] { ("a", 1.0), ("b", 2.0), ("c", 3.0) };
+        Assert.Equal(6.0, D3Statistics.Sum(items, x => x.Item2));
+    }
+
+    [Fact]
+    public void Sum_Generic_IgnoresNaN()
+    {
+        var items = new[] { ("a", 1.0), ("b", double.NaN), ("c", 3.0) };
+        Assert.Equal(4.0, D3Statistics.Sum(items, x => x.Item2));
+    }
+
+    [Fact]
+    public void Mean_Generic_WithAccessor()
+    {
+        var items = new[] { ("a", 1.0), ("b", 2.0), ("c", 3.0) };
+        Assert.Equal(2.0, D3Statistics.Mean(items, x => x.Item2));
+    }
+
+    [Fact]
+    public void Mean_Generic_IgnoresNaN()
+    {
+        var items = new[] { ("a", 1.0), ("b", double.NaN), ("c", 3.0) };
+        Assert.Equal(2.0, D3Statistics.Mean(items, x => x.Item2));
+    }
+
+    [Fact]
+    public void Mean_AllNaN_ReturnsNaN()
+    {
+        Assert.True(double.IsNaN(D3Statistics.Mean([double.NaN, double.NaN])));
+    }
+
+    // ─── Median with accessor ───────────────────────────────────────
+
+    [Fact]
+    public void Median_Generic_WithAccessor()
+    {
+        var items = new[] { ("a", 3.0), ("b", 1.0), ("c", 2.0) };
+        Assert.Equal(2.0, D3Statistics.Median(items, x => x.Item2));
+    }
+
+    // ─── Quantile (unsorted) ────────────────────────────────────────
+
+    [Fact]
+    public void Quantile_Unsorted_Median()
+    {
+        Assert.Equal(2.0, D3Statistics.Quantile([3, 1, 2], 0.5));
+    }
+
+    [Fact]
+    public void Quantile_IgnoresNaN()
+    {
+        Assert.Equal(2.0, D3Statistics.Quantile([3, double.NaN, 1, 2], 0.5));
+    }
+
+    [Fact]
+    public void QuantileSorted_Empty_ReturnsNaN()
+    {
+        Assert.True(double.IsNaN(D3Statistics.QuantileSorted(Array.Empty<double>(), 0.5)));
+    }
+
+    [Fact]
+    public void QuantileSorted_NaN_P_ReturnsNaN()
+    {
+        Assert.True(double.IsNaN(D3Statistics.QuantileSorted([1, 2, 3], double.NaN)));
+    }
+
+    [Fact]
+    public void QuantileSorted_SingleElement()
+    {
+        Assert.Equal(5.0, D3Statistics.QuantileSorted([5.0], 0.5));
+    }
+
+    // ─── Variance / Deviation extended ──────────────────────────────
+
+    [Fact]
+    public void Variance_Empty_ReturnsNaN()
+    {
+        Assert.True(double.IsNaN(D3Statistics.Variance(Array.Empty<double>())));
+    }
+
+    [Fact]
+    public void Variance_IgnoresNaN()
+    {
+        // [1, 2, 3] variance = 1.0; adding NaN should not change the result
+        Assert.Equal(1.0, D3Statistics.Variance([1, double.NaN, 2, 3]), Tol);
+    }
+
+    [Fact]
+    public void Deviation_SingleValue_ReturnsNaN()
+    {
+        Assert.True(double.IsNaN(D3Statistics.Deviation([1])));
+    }
+
+    [Fact]
+    public void Deviation_Empty_ReturnsNaN()
+    {
+        Assert.True(double.IsNaN(D3Statistics.Deviation(Array.Empty<double>())));
+    }
+
+    // ─── CumSum extended ────────────────────────────────────────────
+
+    [Fact]
+    public void CumSum_Empty_ReturnsEmpty()
+    {
+        Assert.Equal(Array.Empty<double>(), D3Statistics.CumSum(Array.Empty<double>()));
+    }
+
+    [Fact]
+    public void CumSum_NaN_TreatedAsZero()
+    {
+        Assert.Equal(new[] { 1.0, 1.0, 4.0 }, D3Statistics.CumSum([1, double.NaN, 3]));
+    }
 }

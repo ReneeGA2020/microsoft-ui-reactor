@@ -123,10 +123,31 @@ dotnet test tests/Duct.AppTests --filter "ClassName=Duct.AppTests.Tests.Interact
 # Unit tests (via coverlet, bundled in Duct.Tests.csproj)
 dotnet test tests/Duct.Tests --collect:"XPlat Code Coverage"
 
-# Selfhost tests (via dotnet-coverage profiler — install once with: dotnet tool install -g dotnet-coverage)
-dotnet-coverage collect --output selftest.cobertura.xml --output-format cobertura \
-  -- dotnet run --project tests/Duct.AppTests.Host -- --self-test
+# Selfhost tests — covers Duct.dll and DuctD3.dll
+# (install once: dotnet tool install -g dotnet-coverage)
+#
+# Step 1: Rebuild with explicit Debug settings (required for instrumentation)
+dotnet build tests/Duct.AppTests.Host -c Debug -p:Optimize=false -p:DebugType=portable
+#
+# Step 2: Statically instrument Duct.dll and DuctD3.dll (dynamic instrumentation
+#          skips referenced assemblies with "optimized_or_instrumented")
+dotnet-coverage instrument \
+  "tests/Duct.AppTests.Host/bin/$(RuntimeIdentifier)/Debug/net9.0-windows10.0.22621.0/Duct.dll" \
+  -s coverage.settings.xml
+dotnet-coverage instrument \
+  "tests/Duct.AppTests.Host/bin/$(RuntimeIdentifier)/Debug/net9.0-windows10.0.22621.0/DuctD3.dll" \
+  -s coverage.settings.xml
+#
+# Step 3: Collect coverage
+dotnet-coverage collect -s coverage.settings.xml \
+  --output selftest.cobertura.xml --output-format cobertura \
+  -- dotnet run --project tests/Duct.AppTests.Host --no-build -- --self-test
 ```
+
+> **Platform note:** Replace `$(RuntimeIdentifier)` with `ARM64` or `x64` depending on your machine,
+> or omit the platform segment if you used the default platform from `Directory.Build.props`.
+
+The `coverage.settings.xml` file in the repo root controls which modules are included:
 
 ### Test architecture
 
