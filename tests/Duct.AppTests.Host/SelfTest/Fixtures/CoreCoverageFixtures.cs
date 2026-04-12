@@ -650,7 +650,7 @@ internal static class CoreCoverageFixtures
     {
         public override Element Render()
         {
-            var (result, setResult) = UseState("none");
+            var (result, setResult) = UseState("none", threadSafe: true);
             var typedCmd = new DuctCommand<string>
             {
                 Label = "TypedOp",
@@ -680,7 +680,10 @@ internal static class CoreCoverageFixtures
             H.Check("UseCmdTyped_Initial", H.FindText("Result: none") is not null);
 
             H.ClickButton("RunTyped");
-            await Harness.Render(150); // async command has 50ms internal delay
+            // The async command has a 50ms Task.Delay; wait for it to complete
+            // and for the background-thread setState to marshal back to the UI thread.
+            await Task.Delay(500);
+            await Harness.Render();
             H.Check("UseCmdTyped_Completed", H.FindText("Result: hello") is not null);
         }
     }
@@ -1612,7 +1615,7 @@ internal static class CoreCoverageFixtures
                 var (phase, set) = ctx.UseState(0);
                 return VStack(
                     Button("UpdateExp", () => set(1)),
-                    Expander("Header", phase == 0 ? Text("Body V1") : VStack(Text("Body V2"), Text("Extra")))
+                    Expander("Header", phase == 0 ? Text("Body V1") : VStack(Text("Body V2"), Text("Extra")), isExpanded: true)
                 );
             });
 

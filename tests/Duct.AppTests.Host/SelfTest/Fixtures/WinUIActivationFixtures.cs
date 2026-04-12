@@ -74,15 +74,18 @@ internal static class WinUIActivationFixtures
 
     internal class BorderFluentBrush(Harness h) : SelfTestFixtureBase(h)
     {
-        public override Task RunAsync()
+        public override async Task RunAsync()
         {
-            var el = Border(Text("x"))
-                .Background("#ff0000")
-                .WithBorder("blue", 2);
-            H.Check("BorderBrush_BgNotNull", el.Background is not null);
-            H.Check("BorderBrush_BorderBrushNotNull", el.BorderBrush is not null);
-            H.Check("BorderBrush_Thickness", el.BorderThickness == 2);
-            return Task.CompletedTask;
+            // .Background() and .WithBorder() store values in Modifiers.
+            // Verify the element-level modifiers are set correctly.
+            var el = VStack(Text("x")).Background("#ff0000").WithBorder("blue", 2);
+            H.Check("BorderBrush_BgNotNull", el.Modifiers?.Background is not null);
+            H.Check("BorderBrush_BorderBrushNotNull", el.Modifiers?.BorderBrush is not null);
+            H.Check("BorderBrush_Thickness", el.Modifiers?.BorderThickness?.Left == 2);
+
+            var host = H.CreateHost();
+            host.Mount(ctx => el);
+            await Harness.Render();
         }
     }
 

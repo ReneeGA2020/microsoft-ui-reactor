@@ -66,6 +66,19 @@ internal sealed class Harness
         return host;
     }
 
+    /// <summary>
+    /// Places arbitrary content into the test content area (below the TitleBar).
+    /// Use this instead of setting Window.Content directly to avoid overwriting
+    /// the TitleBar and progress bar.
+    /// </summary>
+    public void SetContent(UIElement? content)
+    {
+        if (_contentArea is not null)
+            _contentArea.Child = content;
+        else
+            _window.Content = content;
+    }
+
     // -- TAP assertion helpers -------------------------------------------
 
     public void Check(string name, bool result)
@@ -126,9 +139,10 @@ internal sealed class Harness
         // Force synchronous layout so ActualWidth/ActualHeight are ready
         (_currentWindow?.Content as UIElement)?.UpdateLayout();
 
-        // Additional wall-clock delay only when explicitly requested
-        if (ms > 0)
-            await Task.Delay(ms);
+        // Small breathing room for the compositor to finish processing
+        // visual tree changes. Without this, rapid fixture transitions can
+        // outpace the WinUI compositor and cause native segfaults.
+        await Task.Delay(50 + ms);
     }
 
     private static Window? _currentWindow;
