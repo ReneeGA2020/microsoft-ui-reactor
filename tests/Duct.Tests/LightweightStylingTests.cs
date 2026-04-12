@@ -17,17 +17,7 @@ public class LightweightStylingTests
     //  ResourceBuilder
     // ════════════════════════════════════════════════════════════════
 
-    [Fact(Skip = "Requires WinUI activation for SolidColorBrush — covered by UI tests")]
-    public void ResourceBuilder_Set_String_Creates_Literal_Brush()
-    {
-        var builder = new ResourceBuilder();
-        builder.Set("ButtonBackground", "#FF0000");
-        var overrides = builder.Build();
-
-        Assert.Single(overrides.Literals);
-        Assert.True(overrides.Literals.ContainsKey("ButtonBackground"));
-        Assert.Empty(overrides.ThemeRefs);
-    }
+    // ResourceBuilder_Set_String_Creates_Literal_Brush moved to selfhost fixtures (WinUIActivationFixtures).
 
     [Fact]
     public void ResourceBuilder_Set_ThemeRef_Creates_ThemeRef_Entry()
@@ -63,20 +53,7 @@ public class LightweightStylingTests
         Assert.Equal(new CornerRadius(8), overrides.Literals["ControlCornerRadius"]);
     }
 
-    [Fact(Skip = "Requires WinUI activation for SolidColorBrush — covered by UI tests")]
-    public void ResourceBuilder_Fluent_Chaining_Works()
-    {
-        var builder = new ResourceBuilder();
-        var result = builder
-            .Set("ButtonBackground", "#0078D4")
-            .Set("ButtonBackgroundPointerOver", "#106EBE")
-            .Set("ButtonForeground", Theme.PrimaryText);
-
-        Assert.Same(builder, result);
-        var overrides = builder.Build();
-        Assert.Equal(2, overrides.Literals.Count);
-        Assert.Single(overrides.ThemeRefs);
-    }
+    // ResourceBuilder_Fluent_Chaining_Works moved to selfhost fixtures (WinUIActivationFixtures).
 
     [Fact]
     public void ResourceBuilder_Build_Returns_Immutable_Snapshot()
@@ -115,29 +92,9 @@ public class LightweightStylingTests
     //  Element.Resources() extension method
     // ════════════════════════════════════════════════════════════════
 
-    [Fact(Skip = "Requires WinUI activation for SolidColorBrush — covered by UI tests")]
-    public void Resources_Extension_Sets_ResourceOverrides_On_Element()
-    {
-        var el = Button("Go").Resources(r => r
-            .Set("ButtonBackground", "#0078D4")
-            .Set("ButtonBackgroundPointerOver", "#106EBE"));
-
-        Assert.NotNull(el.ResourceOverrides);
-        Assert.Equal(2, el.ResourceOverrides!.Literals.Count);
-    }
-
-    [Fact(Skip = "Requires WinUI activation for SolidColorBrush — covered by UI tests")]
-    public void Resources_Extension_Preserves_Other_Element_Properties_Brush()
-    {
-        var el = Button("Go", () => { })
-            .Margin(10)
-            .Resources(r => r.Set("ButtonBackground", "#FF0000"));
-
-        Assert.Equal("Go", el.Label);
-        Assert.NotNull(el.OnClick);
-        Assert.Equal(new Thickness(10), el.Modifiers!.Margin);
-        Assert.NotNull(el.ResourceOverrides);
-    }
+    // Resources_Extension_Sets_ResourceOverrides_On_Element and
+    // Resources_Extension_Preserves_Other_Element_Properties_Brush moved to
+    // selfhost fixtures (WinUIActivationFixtures).
 
     [Fact]
     public void Resources_Extension_Preserves_Other_Element_Properties()
@@ -163,17 +120,8 @@ public class LightweightStylingTests
         Assert.Empty(el.ResourceOverrides.Literals);
     }
 
-    [Fact(Skip = "Requires WinUI activation for SolidColorBrush — covered by UI tests")]
-    public void Resources_Extension_Works_With_Mixed_Literal_And_ThemeRef()
-    {
-        var el = Button("Go").Resources(r => r
-            .Set("ButtonBackground", "#0078D4")
-            .Set("ButtonForeground", Theme.PrimaryText)
-            .Set("ControlCornerRadius", new CornerRadius(4)));
-
-        Assert.Equal(2, el.ResourceOverrides!.Literals.Count);
-        Assert.Single(el.ResourceOverrides.ThemeRefs);
-    }
+    // Resources_Extension_Works_With_Mixed_Literal_And_ThemeRef moved to
+    // selfhost fixtures (WinUIActivationFixtures).
 
     [Fact]
     public void Resources_Extension_Works_With_Double_And_CornerRadius()

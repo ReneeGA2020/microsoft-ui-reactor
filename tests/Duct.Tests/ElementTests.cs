@@ -314,16 +314,7 @@ public class ElementTests
         Assert.Equal(new Microsoft.UI.Xaml.CornerRadius(8), el.Modifiers!.CornerRadius);
     }
 
-    [Fact(Skip = "Requires WinUI activation for SolidColorBrush — covered by UI tests")]
-    public void Border_Fluent_Extensions_Brush()
-    {
-        var el = Border(Text("x"))
-            .Background("#ff0000")
-            .WithBorder("blue", 2);
-        Assert.NotNull(el.Background);
-        Assert.NotNull(el.BorderBrush);
-        Assert.Equal(2, el.BorderThickness);
-    }
+    // Border_Fluent_Extensions_Brush moved to selfhost fixtures (WinUIActivationFixtures).
 
     [Fact]
     public void ScrollView_Creates_With_Defaults()

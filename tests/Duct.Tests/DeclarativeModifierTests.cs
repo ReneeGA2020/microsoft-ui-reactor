@@ -28,24 +28,8 @@ public class DeclarativeModifierTests
         Assert.Equal(14.0, el.Modifiers!.FontSize);
     }
 
-    [Fact(Skip = "Requires WinUI activation for FontFamily constructor — covered by UI tests")]
-    public void FontFamily_String_On_Button_Stores_In_Modifiers()
-    {
-        var el = Button("Go").FontFamily("Segoe Fluent Icons");
-        Assert.IsType<ButtonElement>(el);
-        Assert.NotNull(el.Modifiers);
-        Assert.NotNull(el.Modifiers!.FontFamily);
-        Assert.Equal("Segoe Fluent Icons", el.Modifiers.FontFamily!.Source);
-    }
-
-    [Fact(Skip = "Requires WinUI activation for FontFamily constructor — covered by UI tests")]
-    public void FontFamily_Instance_On_Border_Stores_In_Modifiers()
-    {
-        var family = new Microsoft.UI.Xaml.Media.FontFamily("Consolas");
-        var el = Border(Text("x")).FontFamily(family);
-        Assert.IsType<BorderElement>(el);
-        Assert.Same(family, el.Modifiers!.FontFamily);
-    }
+    // FontFamily_String_On_Button and FontFamily_Instance_On_Border moved to
+    // selfhost fixtures (WinUIActivationFixtures) — they require WinUI activation.
 
     [Fact]
     public void FontWeight_On_Button_Stores_In_Modifiers()
@@ -87,12 +71,7 @@ public class DeclarativeModifierTests
         Assert.Equal(16.0, el.Modifiers!.FontSize);
     }
 
-    [Fact(Skip = "Requires WinUI activation for FontFamily constructor — covered by UI tests")]
-    public void FontFamily_Merge_Overwrites()
-    {
-        var el = Button("Go").FontFamily("Arial").FontFamily("Consolas");
-        Assert.Equal("Consolas", el.Modifiers!.FontFamily!.Source);
-    }
+    // FontFamily_Merge_Overwrites moved to selfhost fixtures (WinUIActivationFixtures).
 
     // ════════════════════════════════════════════════════════════════
     //  Fix 2: Declarative event handlers
@@ -462,17 +441,7 @@ public class DeclarativeModifierTests
     //  Modifier merge regression
     // ════════════════════════════════════════════════════════════════
 
-    [Fact(Skip = "Requires WinUI activation for FontFamily constructor — covered by UI tests")]
-    public void Typography_Modifiers_Merge_Correctly()
-    {
-        var family = new Microsoft.UI.Xaml.Media.FontFamily("Arial");
-        var a = new ElementModifiers { FontFamily = family, FontSize = 12 };
-        var b = new ElementModifiers { FontSize = 16 }; // override size, keep family
-        var merged = a.Merge(b);
-
-        Assert.Same(family, merged.FontFamily);
-        Assert.Equal(16.0, merged.FontSize);
-    }
+    // Typography_Modifiers_Merge_Correctly moved to selfhost fixtures (WinUIActivationFixtures).
 
     [Fact]
     public void Event_Handler_Modifiers_Merge_Correctly()

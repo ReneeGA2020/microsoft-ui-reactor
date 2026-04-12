@@ -306,6 +306,17 @@ internal static class SelfTestFixtureRegistry
         "CoreCov_ErrorBoundaryUpdate",
         "CoreCov_ExpanderChildUpdateDeep",
         "CoreCov_CanvasPositionUpdate",
+        // WinUI activation tests — migrated from unit tests that need FontFamily/SolidColorBrush
+        "WinUI_FontFamilyStringOnButton",
+        "WinUI_FontFamilyInstanceOnBorder",
+        "WinUI_FontFamilyMergeOverwrites",
+        "WinUI_TypographyModifiersMerge",
+        "WinUI_BorderFluentBrush",
+        "WinUI_ResourceBuilderStringBrush",
+        "WinUI_ResourceBuilderFluentChaining",
+        "WinUI_ResourceExtensionSetsOverrides",
+        "WinUI_ResourceExtensionPreservesProps",
+        "WinUI_ResourceExtensionMixedLiteralAndThemeRef",
     ];
 
     public static SelfTestFixtureBase? Create(string name, Harness harness) => name switch
@@ -607,6 +618,17 @@ internal static class SelfTestFixtureRegistry
         "CoreCov_ErrorBoundaryUpdate" => new CoreCoverageFixtures.ErrorBoundaryUpdate(harness),
         "CoreCov_ExpanderChildUpdateDeep" => new CoreCoverageFixtures.ExpanderChildUpdateDeep(harness),
         "CoreCov_CanvasPositionUpdate" => new CoreCoverageFixtures.CanvasPositionUpdate(harness),
+        // WinUI activation tests
+        "WinUI_FontFamilyStringOnButton" => new WinUIActivationFixtures.FontFamilyStringOnButton(harness),
+        "WinUI_FontFamilyInstanceOnBorder" => new WinUIActivationFixtures.FontFamilyInstanceOnBorder(harness),
+        "WinUI_FontFamilyMergeOverwrites" => new WinUIActivationFixtures.FontFamilyMergeOverwrites(harness),
+        "WinUI_TypographyModifiersMerge" => new WinUIActivationFixtures.TypographyModifiersMerge(harness),
+        "WinUI_BorderFluentBrush" => new WinUIActivationFixtures.BorderFluentBrush(harness),
+        "WinUI_ResourceBuilderStringBrush" => new WinUIActivationFixtures.ResourceBuilderStringBrush(harness),
+        "WinUI_ResourceBuilderFluentChaining" => new WinUIActivationFixtures.ResourceBuilderFluentChaining(harness),
+        "WinUI_ResourceExtensionSetsOverrides" => new WinUIActivationFixtures.ResourceExtensionSetsOverrides(harness),
+        "WinUI_ResourceExtensionPreservesProps" => new WinUIActivationFixtures.ResourceExtensionPreservesProps(harness),
+        "WinUI_ResourceExtensionMixedLiteralAndThemeRef" => new WinUIActivationFixtures.ResourceExtensionMixedLiteralAndThemeRef(harness),
         _ => null,
     };
 }
