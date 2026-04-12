@@ -738,6 +738,65 @@ Border(content).Background(Theme.Ref("BrandPrimary"))
 
 ---
 
+## 25. Per-Element RequestedTheme with Programmatic ThemeResource (Unblock)
+
+**Problem:** WinUI's `FrameworkElement.RequestedTheme` lets a subtree opt into a different theme variant (e.g., a dark sidebar in an otherwise light app). This works perfectly for native XAML controls because their templates use `{ThemeResource}` markup that WinUI re-evaluates when the effective theme changes. However, there is **no code-based equivalent** that works with the same per-element theme scoping.
+
+Duct's theming system applies theme-resource-bound brushes by building `Style` objects at runtime via `XamlReader.Load()` with `{ThemeResource}` setters (see Proposal #22). This approach has a critical interaction failure with `RequestedTheme`:
+
+1. **Bottom-up mounting:** Duct's reconciler creates child controls before placing them in the parent's visual tree. A parent with `RequestedTheme = Dark` has its children mounted as standalone controls — at that point, `{ThemeResource}` in children's dynamically-loaded Styles resolves against the **application theme** (Light), not the parent's intended Dark theme.
+
+2. **{ThemeResource} in XamlReader.Load is not live:** Unlike `{ThemeResource}` in XAML-declared templates (which participates in WinUI's theme-change tracking system), `{ThemeResource}` in Styles created via `XamlReader.Load()` appears to resolve once at parse time. When a child element later enters a parent's visual tree with a different `RequestedTheme`, the `{ThemeResource}` values in the dynamically-loaded Style do **not** re-resolve. Native control templates (Button, TextBlock, etc.) DO update correctly because their `{ThemeResource}` references are registered through the XAML parser's theme-tracking infrastructure.
+
+3. **No programmatic alternative:** There is no code-based API to create a theme-reactive property binding that participates in the same per-element theme resolution as XAML's `{ThemeResource}`. Manual resolution via `Application.Current.Resources.ThemeDictionaries` can look up the correct brush for a given theme name, but the result is a static brush — it doesn't re-resolve when the effective theme changes. The only way to get live theme tracking is through XAML markup, which is inaccessible programmatically.
+
+**Current workaround in Duct:** The `.RequestedTheme()` modifier correctly sets `FrameworkElement.RequestedTheme` on the control, which makes **native WinUI controls** (Button, TextBlock, ToggleSwitch, etc.) adopt the correct theme variant through their built-in XAML templates. However, Duct's own `ThemeRef` bindings (`.Background(Theme.Accent)`, `.Foreground(Theme.PrimaryText)`) on child elements do **not** follow the override. Users must avoid `ThemeRef` inside `RequestedTheme` subtrees and instead rely on native WinUI implicit styling, which limits the usefulness of per-element theme overrides in a declarative framework.
+
+**What we tried and why it failed:**
+- **Style caching with {ThemeResource}:** Cached the parsed Style and re-applied on update. Even with `fe.Style = null; fe.Style = cachedStyle;` to force re-evaluation, `{ThemeResource}` in the Style did not re-resolve against the element's effective theme.
+- **Early RequestedTheme application:** Set `RequestedTheme` on parent controls before mounting children. This helped when children were added directly to the parent (StackPanel.Children.Add), but not for single-child containers (Border.Child) where the entire subtree is created before assignment.
+- **Thread-static theme scope with manual resolution:** Carried the effective theme through recursive mount calls and resolved brushes manually via `ThemeRef.Resolve()`. Partially worked (text foreground resolved correctly) but Background on the parent container did not update reliably on theme toggle, suggesting deeper issues with the interaction between programmatic brush sets and WinUI's theme evaluation pipeline.
+
+**Proposal:** WinUI should ensure that code-based theme resource bindings participate in the same per-element theme scoping as XAML-declared `{ThemeResource}`:
+
+```csharp
+// Option A: SetThemeResourceBinding respects RequestedTheme (extends Proposal #22)
+// When the element or an ancestor has RequestedTheme = Dark, the binding
+// resolves from the Dark theme dictionary, just like {ThemeResource} in XAML.
+fe.SetThemeResourceBinding(Control.BackgroundProperty, "CardBackgroundFillColorDefaultBrush");
+// Later: parent.RequestedTheme = Dark → fe re-evaluates against Dark resources
+
+// Option B: Theme-scoped resource resolution API
+// Resolve a theme resource against a specific element's effective theme,
+// including its ancestors' RequestedTheme overrides.
+var brush = ThemeResources.Resolve("TextFillColorPrimaryBrush", fe);
+// Uses fe.ActualTheme (which inherits RequestedTheme from ancestors)
+
+// Option C: Ensure XamlReader.Load Styles participate in theme tracking
+// Styles created via XamlReader.Load should have their {ThemeResource}
+// setters registered with the same theme-tracking infrastructure as
+// XAML-parsed styles, so they re-resolve on RequestedTheme changes.
+```
+
+Option A (extending Proposal #22) is the most complete solution — it eliminates both the `XamlReader.Load` performance issue and the `RequestedTheme` scoping issue in a single API. Option C is the lowest-effort fix on the WinUI side but doesn't address the `XamlReader.Load` performance cost.
+
+**Impact:** Unblocks per-element theme overrides in declarative frameworks. Without this, any C# framework that applies theme resources programmatically (not just Duct) cannot support mixed-theme UIs. This is a common UX pattern: dark sidebars, dark media controls, dark code editors embedded in light apps. Currently only achievable via XAML templates, which declarative/code-first frameworks cannot use.
+
+**WinUI3 files:**
+- `src/dxaml/xcp/core/theming/ThemeResource.cpp` — Theme resource tracking and re-evaluation; the registration mechanism that XAML-parsed `{ThemeResource}` uses but `XamlReader.Load`-created Styles may not
+- `src/dxaml/xcp/core/core/elements/framework.cpp` — `RequestedTheme` propagation, `ActualTheme` computation, and the theme-change notification chain that triggers `{ThemeResource}` re-evaluation
+- `src/dxaml/xcp/core/Parser/XamlReader.cpp` — Investigate whether `XamlReader.Load` registers `{ThemeResource}` references with the theme-tracking system identically to the main XAML parser
+- `src/dxaml/xcp/core/core/elements/depends.cpp` — `SetValue` / `GetValue` paths for theme-aware property evaluation; ensure programmatic `SetThemeResourceBinding` (Proposal #22) participates in per-element theme scoping
+
+**Duct files:**
+- `Duct/Core/Reconciler.cs` — `ApplyThemeBindings` would use `SetThemeResourceBinding` (Option A) or `ThemeResources.Resolve(key, fe)` (Option B), eliminating both `XamlReader.Load` and the `RequestedTheme` scoping issue
+- `Duct/Core/Reconciler.Mount.cs` — Would no longer need early `RequestedTheme` application in container MountXxx methods; the API would handle scoping automatically
+- `Duct/Elements/ElementExtensions.cs` — `.RequestedTheme()` modifier would work seamlessly with `.Background(Theme.X)` — no workaround documentation needed
+
+**Cross-references:** This proposal extends Proposal #22 (programmatic ThemeResource setter) with the additional requirement of per-element theme scoping via `RequestedTheme`. Solving #22 without this scoping requirement still provides major performance benefits but leaves the `RequestedTheme` + `ThemeRef` interaction broken.
+
+---
+
 ## Summary Table
 
 | # | Proposal | Ambition | Effort | Impact |
@@ -766,3 +825,4 @@ Border(content).Background(Theme.Ref("BrandPrimary"))
 | 22 | Programmatic ThemeResource setter (no XamlReader for themes) | Unblock | M | Very High |
 | 23 | Lightweight styling API from code | Tactical | M | Medium |
 | 24 | Programmatic custom theme resource definitions | Tactical | S | High |
+| 25 | Per-element RequestedTheme with programmatic ThemeResource | Unblock | M | High |

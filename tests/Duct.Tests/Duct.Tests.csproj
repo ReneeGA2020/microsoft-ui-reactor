@@ -14,6 +14,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="$(WindowsAppSDKVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing" Version="1.1.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="1.1.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.8.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
     <PackageReference Include="xunit" Version="2.7.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.7">
@@ -30,6 +33,7 @@
     <ProjectReference Include="..\..\Duct\Duct.csproj" />
     <ProjectReference Include="..\..\Duct.Localization.Generator\Duct.Localization.Generator.csproj" />
     <ProjectReference Include="..\..\Duct.Cli\Duct.Cli.csproj" />
+    <ProjectReference Include="..\..\Duct.Analyzers\Duct.Analyzers.csproj" />
   </ItemGroup>
 
 </Project>

@@ -120,6 +120,14 @@ public abstract record Element
     public string? ConnectedAnimationKey { get; init; }
 
     /// <summary>
+    /// Per-control resource overrides (lightweight styling). When set, the reconciler
+    /// injects these into <see cref="FrameworkElement.Resources"/> so that the control's
+    /// VisualStateManager picks them up for hover/pressed/disabled states.
+    /// Set via fluent extension: <c>Button("Go").Resources(r => r.Set("ButtonBackground", "#0078D4"))</c>
+    /// </summary>
+    public Duct.Elements.ResourceOverrides? ResourceOverrides { get; init; }
+
+    /// <summary>
     /// Context values provided to this element's subtree via .Provide().
     /// The reconciler pushes these onto the context scope when entering
     /// this element's subtree and pops them when leaving.
@@ -524,6 +532,15 @@ public record ElementModifiers
     public double? PaddingInlineEnd { get; init; }
     public Thickness? BorderInlineStart { get; init; }
 
+    // ── Theme override ───────────────────────────────────────────────
+    /// <summary>
+    /// Sets <see cref="FrameworkElement.RequestedTheme"/> on the control,
+    /// forcing a subtree to render in a specific theme variant (e.g., dark
+    /// sidebar in a light app). Applied before ThemeRef bindings resolve so
+    /// that theme resources pick up the correct variant.
+    /// </summary>
+    public ElementTheme? RequestedTheme { get; init; }
+
     // ── Accessibility — Tier 1 (inline, commonly needed for WCAG AA) ─
     public Microsoft.UI.Xaml.Automation.Peers.AutomationHeadingLevel? HeadingLevel { get; init; }
     public bool? IsTabStop { get; init; }
@@ -581,6 +598,7 @@ public record ElementModifiers
             PaddingInlineStart = other.PaddingInlineStart ?? PaddingInlineStart,
             PaddingInlineEnd = other.PaddingInlineEnd ?? PaddingInlineEnd,
             BorderInlineStart = other.BorderInlineStart ?? BorderInlineStart,
+            RequestedTheme = other.RequestedTheme ?? RequestedTheme,
             HeadingLevel = other.HeadingLevel ?? HeadingLevel,
             IsTabStop = other.IsTabStop ?? IsTabStop,
             TabIndex = other.TabIndex ?? TabIndex,

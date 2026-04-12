@@ -57,6 +57,9 @@ public sealed partial class Reconciler
 #endif
             if (newEl.ThemeBindings is not null && control is FrameworkElement thFeSE)
                 ApplyThemeBindings(thFeSE, newEl.ThemeBindings);
+            // Re-resolve ThemeRef-based resource overrides on theme change
+            if (newEl.ResourceOverrides is { ThemeRefs.Count: > 0 } && control is FrameworkElement resFeSE)
+                ApplyResourceOverrides(resFeSE, newEl.ResourceOverrides, newEl.ResourceOverrides);
             return null; // null = keep existing control as-is
         }
 #if DEBUG
@@ -269,6 +272,10 @@ public sealed partial class Reconciler
         // Apply theme-resource bindings (ThemeRef → resolved Brush from WinUI resources)
         if (newEl.ThemeBindings is not null && target is FrameworkElement thFe)
             ApplyThemeBindings(thFe, newEl.ThemeBindings);
+
+        // Apply per-control resource overrides (lightweight styling)
+        if ((newEl.ResourceOverrides is not null || oldEl.ResourceOverrides is not null) && target is FrameworkElement resFe)
+            ApplyResourceOverrides(resFe, oldEl.ResourceOverrides, newEl.ResourceOverrides);
 
         // Apply transitions after update (re-applies when transition config changes)
         if (newEl.ImplicitTransitions is not null || newEl.ThemeTransitions is not null)

@@ -32,6 +32,36 @@ public sealed partial class Reconciler : IDisposable
     private readonly ContextScope _contextScope = new();
     private int _errorBoundaryDepth;
 
+    // ── Style cache: avoids redundant XamlReader.Load() for identical theme binding sets ──
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Style> _styleCache = new();
+
+    /// <summary>
+    /// Builds a deterministic cache key for a style based on its target type and
+    /// the set of ThemeRef bindings. Keys are sorted by property name so that
+    /// dictionaries with the same entries in different enumeration order produce
+    /// the same key.
+    /// </summary>
+    private static string BuildCacheKey(string targetType, IReadOnlyDictionary<string, ThemeRef> bindings)
+    {
+        // Format: "TargetType|Prop1=Key1|Prop2=Key2" with properties sorted by Ordinal
+        var sortedKeys = bindings.Keys.ToArray();
+        Array.Sort(sortedKeys, StringComparer.Ordinal);
+        var sb = new System.Text.StringBuilder(targetType);
+        foreach (var key in sortedKeys)
+        {
+            sb.Append('|').Append(key).Append('=').Append(bindings[key].ResourceKey);
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Clears the compiled style cache. Called on theme change as conservative
+    /// memory cleanup — not a correctness requirement since {ThemeResource}
+    /// setters are live-resolved by WinUI.
+    /// </summary>
+    internal static void ClearStyleCache() => _styleCache.Clear();
+
+
     /// <summary>
     /// Thread-static stagger context for enter transitions. When a parent with StaggerConfig
     /// mounts children, it pushes this context so each child's ApplyEnterTransition can
@@ -1582,6 +1612,11 @@ public sealed partial class Reconciler : IDisposable
         // Each WinUI property set is a managed→native interop call, so avoiding
         // unnecessary sets is critical for large element counts.
 
+        // RequestedTheme must be set BEFORE ApplyThemeBindings so that ThemeRef
+        // bindings resolve against the correct theme variant.
+        if (m.RequestedTheme.HasValue && m.RequestedTheme != oldM?.RequestedTheme)
+            fe.RequestedTheme = m.RequestedTheme.Value;
+
         // Apply physical margin, then overlay logical (BiDi-aware) inline margin
         var resolvedMargin = m.Margin ?? oldM?.Margin;
         if (m.MarginInlineStart.HasValue || m.MarginInlineEnd.HasValue)
@@ -1930,18 +1965,28 @@ public sealed partial class Reconciler : IDisposable
 
     /// <summary>
     /// Applies ThemeRef bindings by setting properties through WinUI's {ThemeResource}
-    /// mechanism. Instead of manually resolving from ThemeDictionaries (which doesn't
-    /// handle theme variants correctly), we build a local Style with ThemeResource
-    /// setters and apply it to the element. WinUI then handles theme-reactive resolution
-    /// natively, including per-element RequestedTheme overrides.
+    /// mechanism. Builds a local Style with ThemeResource setters and applies it to the
+    /// element. WinUI then handles theme-reactive resolution natively for system theme
+    /// changes (Light ↔ Dark). Note: {ThemeResource} in dynamically-loaded Styles resolves
+    /// against the app theme, not per-element RequestedTheme overrides — for subtree theme
+    /// overrides, rely on native WinUI control theming instead of ThemeRef bindings.
     /// </summary>
     private static void ApplyThemeBindings(FrameworkElement fe, IReadOnlyDictionary<string, ThemeRef> bindings)
     {
-        // Build XAML setters for each theme binding
-        var setters = new System.Text.StringBuilder();
         var targetType = GetStyleTargetType(fe);
         if (targetType is null) return;
 
+        var cacheKey = BuildCacheKey(targetType, bindings);
+
+        // Cache hit: reuse the previously compiled Style
+        if (_styleCache.TryGetValue(cacheKey, out var cachedStyle))
+        {
+            ApplyStyleToElement(fe, cachedStyle);
+            return;
+        }
+
+        // Cache miss: build XAML, parse, and cache
+        var setters = new System.Text.StringBuilder();
         foreach (var (property, themeRef) in bindings)
         {
             var dp = GetDependencyPropertyName(fe, property);
@@ -1959,16 +2004,29 @@ public sealed partial class Reconciler : IDisposable
                 setters.ToString() +
                 "</Style>";
             var style = (Style)Microsoft.UI.Xaml.Markup.XamlReader.Load(xaml);
-            if (fe.Style is Style existingStyle && existingStyle.TargetType == style.TargetType)
-            {
-                style.BasedOn = existingStyle;
-            }
-            fe.Style = style;
+            _styleCache.TryAdd(cacheKey, style);
+            ApplyStyleToElement(fe, style);
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[Duct.Theme] Failed to apply ThemeBindings: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Applies a cached style to an element. Clears any existing style first to
+    /// force WinUI to re-evaluate <c>{ThemeResource}</c> setters against the
+    /// element's current effective theme (which may have changed due to a parent's
+    /// <see cref="FrameworkElement.RequestedTheme"/> override).
+    /// </summary>
+    private static void ApplyStyleToElement(FrameworkElement fe, Style cachedStyle)
+    {
+        // Clearing first forces WinUI to process the subsequent set as a
+        // genuine change, re-resolving {ThemeResource} values. Without this,
+        // re-applying the same cached Style reference is a no-op.
+        if (fe.Style is not null)
+            fe.Style = null;
+        fe.Style = cachedStyle;
     }
 
     private static string? GetStyleTargetType(FrameworkElement fe) => fe switch
@@ -1994,6 +2052,67 @@ public sealed partial class Reconciler : IDisposable
         if (property == "BorderBrush" && (fe is WinUI.Control || fe is WinUI.Border))
             return "BorderBrush";
         return null;
+    }
+
+    // ── Lightweight Styling: per-control resource overrides ────────────────
+
+    /// <summary>
+    /// Tracks which resource keys in <see cref="FrameworkElement.Resources"/> were
+    /// set by Duct (vs. keys set by XAML or other sources). On update, only
+    /// Duct-managed keys are removed when overrides change.
+    /// </summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<FrameworkElement, HashSet<string>>
+        _managedResourceKeys = new();
+
+    /// <summary>
+    /// Applies per-control resource overrides (lightweight styling) to a
+    /// <see cref="FrameworkElement"/>. Literal values are set directly;
+    /// <see cref="ThemeRef"/>-based values are resolved from
+    /// <see cref="Application.Current.Resources"/>.
+    /// </summary>
+    private static void ApplyResourceOverrides(
+        FrameworkElement fe,
+        Duct.Elements.ResourceOverrides? oldOverrides,
+        Duct.Elements.ResourceOverrides? newOverrides)
+    {
+        // Track which keys Duct has set on this element
+        var managed = _managedResourceKeys.GetOrCreateValue(fe);
+
+        // Remove old keys that are no longer present in the new overrides
+        if (oldOverrides is not null)
+        {
+            var newKeys = newOverrides?.AllKeys.ToHashSet() ?? new HashSet<string>();
+            foreach (var key in managed.ToArray())
+            {
+                if (!newKeys.Contains(key))
+                {
+                    fe.Resources.Remove(key);
+                    managed.Remove(key);
+                }
+            }
+        }
+
+        if (newOverrides is null) return;
+
+        fe.Resources ??= new ResourceDictionary();
+
+        // Apply literal resources
+        foreach (var (key, value) in newOverrides.Literals)
+        {
+            fe.Resources[key] = value;
+            managed.Add(key);
+        }
+
+        // Apply ThemeRef resources (resolved from Application.Current.Resources)
+        foreach (var (key, themeRef) in newOverrides.ThemeRefs)
+        {
+            var resolved = ThemeRef.Resolve(themeRef.ResourceKey, fe);
+            if (resolved is not null)
+            {
+                fe.Resources[key] = resolved;
+                managed.Add(key);
+            }
+        }
     }
 
     /// <summary>

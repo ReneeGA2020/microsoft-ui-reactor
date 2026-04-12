@@ -71,6 +71,12 @@ public abstract class Component
     protected IReadOnlyList<T> UseCollection<T>(System.Collections.ObjectModel.ObservableCollection<T> collection)
         => Context.UseCollection(collection);
 
+    protected ColorScheme UseColorScheme()
+        => Context.UseColorScheme();
+
+    protected bool UseIsDarkTheme()
+        => Context.UseIsDarkTheme();
+
     protected Localization.IntlAccessor UseIntl()
         => Context.UseIntl();
 

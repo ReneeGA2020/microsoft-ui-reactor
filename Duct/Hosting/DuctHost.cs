@@ -326,6 +326,7 @@ public sealed class DuctHost
         fe.ActualThemeChanged += (_, _) =>
         {
             _logger.Log(DuctLogLevel.Debug, $"Theme changed to {fe.ActualTheme} — re-rendering");
+            Duct.Core.Reconciler.ClearStyleCache();
             RequestRender();
         };
     }

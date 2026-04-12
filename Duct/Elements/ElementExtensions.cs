@@ -107,6 +107,21 @@ public static class ElementExtensions
             VerticalAlignment = VerticalAlignment.Center,
         });
 
+    // ── Theme override ───────────────────────────────────────────────
+
+    /// <summary>
+    /// Sets <see cref="FrameworkElement.RequestedTheme"/> on this element's
+    /// control, forcing the subtree to render in a specific theme variant.
+    /// <para>
+    /// <b>Dark sidebar:</b> <c>VStack(children).RequestedTheme(ElementTheme.Dark)</c>
+    /// </para>
+    /// <para>
+    /// <b>Restore system default:</b> <c>panel.RequestedTheme(ElementTheme.Default)</c>
+    /// </para>
+    /// </summary>
+    public static T RequestedTheme<T>(this T el, ElementTheme theme) where T : Element =>
+        Modify(el, new ElementModifiers { RequestedTheme = theme });
+
     // ── Visibility ──────────────────────────────────────────────────
 
     public static T Visible<T>(this T el, bool isVisible) where T : Element =>
@@ -322,6 +337,35 @@ public static class ElementExtensions
             ? el.Modifiers.Merge(new ElementModifiers { BorderThickness = new Thickness(thickness) })
             : new ElementModifiers { BorderThickness = new Thickness(thickness) } },
             "BorderBrush", theme);
+
+    // ── Lightweight Styling (per-control resource overrides) ────────
+
+    /// <summary>
+    /// Configures per-control resource overrides via WinUI's lightweight styling
+    /// mechanism. Overrides are injected into <see cref="FrameworkElement.Resources"/>
+    /// so the control's <see cref="Microsoft.UI.Xaml.VisualStateManager"/> picks them
+    /// up automatically — hover, pressed, and disabled states all respect the overrides
+    /// without requiring a custom template.
+    /// <para>
+    /// <b>Brand-colored button:</b>
+    /// <code>
+    /// Button("Submit").Resources(r => r
+    ///     .Set("ButtonBackground", "#0078D4")
+    ///     .Set("ButtonBackgroundPointerOver", "#106EBE")
+    ///     .Set("ButtonBackgroundPressed", "#005A9E"))
+    /// </code>
+    /// </para>
+    /// <para>
+    /// <b>Scoped cascading:</b> resources set on a parent panel cascade to child
+    /// controls, matching WinUI's resource lookup behavior.
+    /// </para>
+    /// </summary>
+    public static T Resources<T>(this T el, Action<Duct.Elements.ResourceBuilder> configure) where T : Element
+    {
+        var builder = new Duct.Elements.ResourceBuilder();
+        configure(builder);
+        return el with { ResourceOverrides = builder.Build() };
+    }
 
     // ── Flex sugar ──────────────────────────────────────────────────
 

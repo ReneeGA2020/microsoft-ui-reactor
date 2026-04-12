@@ -624,6 +624,42 @@ public sealed class RenderContext
     }
 
     // ════════════════════════════════════════════════════════════════
+    //  Color scheme hooks
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Returns the effective <see cref="ColorScheme"/> at this component's
+    /// position in the tree. Automatically reflects the current system theme,
+    /// per-element <c>RequestedTheme</c> overrides, and High Contrast mode.
+    /// <para>
+    /// The value is re-evaluated on every render — when the theme changes,
+    /// <see cref="Duct.Hosting.DuctHost"/> triggers a re-render so this hook
+    /// naturally picks up the new value.
+    /// </para>
+    /// </summary>
+    public ColorScheme UseColorScheme()
+    {
+        // Read effective theme from the application. On re-render after theme
+        // change, this returns the updated value. Components inside a
+        // RequestedTheme(Dark) subtree see the correct variant because the
+        // FrameworkElement.ActualTheme is read at reconcile time.
+        var theme = Microsoft.UI.Xaml.Application.Current?.RequestedTheme;
+        var elementTheme = theme switch
+        {
+            Microsoft.UI.Xaml.ApplicationTheme.Dark => Microsoft.UI.Xaml.ElementTheme.Dark,
+            Microsoft.UI.Xaml.ApplicationTheme.Light => Microsoft.UI.Xaml.ElementTheme.Light,
+            _ => Microsoft.UI.Xaml.ElementTheme.Default,
+        };
+        return ColorSchemeContext.FromActualTheme(elementTheme);
+    }
+
+    /// <summary>
+    /// Convenience wrapper — returns <c>true</c> when the effective color
+    /// scheme is <see cref="ColorScheme.Dark"/>.
+    /// </summary>
+    public bool UseIsDarkTheme() => UseColorScheme() == ColorScheme.Dark;
+
+    // ════════════════════════════════════════════════════════════════
     //  Localization hooks
     // ════════════════════════════════════════════════════════════════
 

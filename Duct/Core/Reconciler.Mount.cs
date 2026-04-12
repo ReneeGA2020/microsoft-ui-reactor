@@ -163,6 +163,10 @@ public sealed partial class Reconciler
         if (element.ThemeBindings is not null && control is FrameworkElement thFe)
             ApplyThemeBindings(thFe, element.ThemeBindings);
 
+        // Apply per-control resource overrides (lightweight styling)
+        if (element.ResourceOverrides is not null && control is FrameworkElement resFe)
+            ApplyResourceOverrides(resFe, null, element.ResourceOverrides);
+
         // Apply transitions after mounting (runs after .Set() callbacks)
         if (control is not null && (element.ImplicitTransitions is not null || element.ThemeTransitions is not null))
             ApplyTransitions(control, element.ImplicitTransitions, element.ThemeTransitions);
@@ -754,6 +758,8 @@ public sealed partial class Reconciler
         panel.Spacing = stack.Spacing;
         if (stack.HorizontalAlignment.HasValue) panel.HorizontalAlignment = stack.HorizontalAlignment.Value;
         if (stack.VerticalAlignment.HasValue) panel.VerticalAlignment = stack.VerticalAlignment.Value;
+        // Apply RequestedTheme before mounting children so that child ThemeRef
+        // bindings resolve against the correct theme variant from the start.
         foreach (var child in stack.Children)
         {
             if (child is null or EmptyElement) continue;
@@ -815,6 +821,8 @@ public sealed partial class Reconciler
         if (border.Background is not null) bdr.Background = border.Background;
         if (border.BorderBrush is not null) bdr.BorderBrush = border.BorderBrush;
         if (border.BorderThickness.HasValue) bdr.BorderThickness = new Microsoft.UI.Xaml.Thickness(border.BorderThickness.Value);
+        // Apply RequestedTheme before mounting children so that child ThemeRef
+        // bindings resolve against the correct theme variant from the start.
         bdr.Child = Mount(border.Child, requestRerender);
         SetElementTag(bdr, border);
         ApplySetters(border.Setters, bdr);
@@ -826,9 +834,9 @@ public sealed partial class Reconciler
         var expander = new WinUI.Expander
         {
             Header = exp.Header, IsExpanded = exp.IsExpanded,
-            Content = Mount(exp.Content, requestRerender),
             ExpandDirection = exp.ExpandDirection,
         };
+        expander.Content = Mount(exp.Content, requestRerender);
         SetElementTag(expander, exp);
         expander.Expanding += (s, _) => (GetElementTag((UIElement)s!) as ExpanderElement)?.OnExpandedChanged?.Invoke(true);
         expander.Collapsed += (s, _) => (GetElementTag((UIElement)s!) as ExpanderElement)?.OnExpandedChanged?.Invoke(false);
