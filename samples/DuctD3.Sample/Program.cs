@@ -7,8 +7,7 @@ using Microsoft.UI.Xaml.Controls;
 using static Duct.UI;
 using static Duct.D3.Charts.ChartDsl;
 
-DuctApp.Run<ChartGallery>("DuctD3 Chart Gallery", width: 1200, height: 800,
-    configure: host => XamlInterop.Register(host.Reconciler));
+DuctApp.Run<ChartGallery>("DuctD3 Chart Gallery", width: 1200, height: 800);
 
 // ── Data types ──────────────────────────────────────────────────────────────
 
@@ -26,43 +25,23 @@ class ChartGallery : Component
         var (tab, setTab) = UseState(0);
         var (tick, setTick) = UseState(0);
 
-        // Handles — stored in refs so they survive re-renders
-        var lineHandle = UseRef<ChartHandle<DataPoint>?>(null);
-        var barHandle = UseRef<ChartHandle<DataPoint>?>(null);
-        var areaHandle = UseRef<ChartHandle<DataPoint>?>(null);
-        var pieHandle = UseRef<PieChartHandle<DataPoint>?>(null);
-        var treeHandle = UseRef<TreeChartHandle?>(null);
+        // ForceGraph still uses XamlHostElement, so it keeps a handle for drag/animation
         var forceHandle = UseRef<ForceGraphHandle?>(null);
 
-        // Timer: every 800ms bump the tick counter → generates new data
+        // Timer: every 800ms bump the tick counter → state-driven re-render
         UseEffect(() =>
         {
             var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(800) };
-            timer.Tick += (_, _) =>
-            {
-                int t = tick + 1;
-                setTick(t);
-                PushAnimatedData(t, tab,
-                    lineHandle.Current, barHandle.Current, areaHandle.Current,
-                    pieHandle.Current, treeHandle.Current);
-            };
+            timer.Tick += (_, _) => setTick(tick + 1);
             timer.Start();
             return () => timer.Stop();
         }, tab);
 
-        // Initial data (tick 0)
-        var sineData = MakeSineData(0);
-        var barData = MakeBarData(0);
-        var pieData = MakePieData(0);
-
-        var orgTree = new OrgNode("CEO", [
-            new("CTO", [
-                new("Eng", [new("FE"), new("BE"), new("Infra")]),
-                new("Research", [new("ML"), new("Sec")]),
-            ]),
-            new("CFO", [new("Finance"), new("Acctg")]),
-            new("COO", [new("Ops"), new("HR"), new("Legal")]),
-        ]);
+        // Data computed from tick (pure functions)
+        var sineData = MakeSineData(tick);
+        var barData = MakeBarData(tick);
+        var pieData = MakePieData(tick);
+        var orgTree = MakeTree(tick);
 
         var graphNodes = UseMemo(() => new ForceNode[]
         {
@@ -93,28 +72,23 @@ class ChartGallery : Component
                     {
                         0 => VStack(SubHeading("Line Chart — Live Sine Wave"),
                             LineChart(sineData, d => d.X, d => d.Y)
-                                .Width(750).Height(350).Stroke("#4285f4")
-                                .OnReady(h => lineHandle.Current = h)),
+                                .Width(750).Height(350).Stroke("#4285f4")),
 
                         1 => VStack(SubHeading("Bar Chart — Streaming Revenue"),
                             BarChart(barData, d => d.X, d => d.Y)
-                                .Width(750).Height(350).Fill("#34a853")
-                                .OnReady(h => barHandle.Current = h)),
+                                .Width(750).Height(350).Fill("#34a853")),
 
                         2 => VStack(SubHeading("Area Chart — Live Signal"),
                             AreaChart(sineData, d => d.X, d => d.Y)
-                                .Width(750).Height(350).Stroke("#ea4335").Fill("#ea4335").FillOpacity(0.2)
-                                .OnReady(h => areaHandle.Current = h)),
+                                .Width(750).Height(350).Stroke("#ea4335").Fill("#ea4335").FillOpacity(0.2)),
 
                         3 => VStack(SubHeading("Pie Chart — Shifting Market Share"),
                             PieChart(pieData, d => d.Y, d => ((string[])["Chrome","Safari","Firefox","Edge","Other"])[(int)d.X])
-                                .Width(400).Height(400).InnerRadius(60).PadAngle(0.03)
-                                .OnReady(h => pieHandle.Current = h)),
+                                .Width(400).Height(400).InnerRadius(60).PadAngle(0.03)),
 
                         4 => VStack(SubHeading("Tree Layout — Growing Org Chart"),
                             TreeChart(orgTree, n => n.Reports, n => n.Name)
-                                .Width(800).Height(450).NodeColor("#9467bd")
-                                .OnReady(h => treeHandle.Current = h)),
+                                .Width(800).Height(450).NodeColor("#9467bd")),
 
                         5 => VStack(SubHeading("Force Graph — Drag any node!"),
                             ForceGraph(graphNodes, graphLinks)
@@ -171,23 +145,6 @@ class ChartGallery : Component
             new("CFO", [new("Finance"), new("Acctg")]),
             new("COO", [new("Ops"), new("HR"), new("Legal")]),
         ]);
-    }
-
-    // ── Push new data into the handles (no Duct re-render needed) ───────
-
-    static void PushAnimatedData(int tick, int tab,
-        ChartHandle<DataPoint>? line, ChartHandle<DataPoint>? bar, ChartHandle<DataPoint>? area,
-        PieChartHandle<DataPoint>? pie, TreeChartHandle? tree)
-    {
-        switch (tab)
-        {
-            case 0: line?.Redraw(MakeSineData(tick)); break;
-            case 1: bar?.Redraw(MakeBarData(tick)); break;
-            case 2: area?.Redraw(MakeSineData(tick)); break;
-            case 3: pie?.Redraw(MakePieData(tick)); break;
-            case 4: tree?.Redraw(MakeTree(tick)); break;
-            // Force graph animates via its own timer set up in SetupDrag
-        }
     }
 
     // ── Force graph drag — sample-side interaction logic ────────────────

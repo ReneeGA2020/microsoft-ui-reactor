@@ -2,11 +2,8 @@
 // Usage: using static Duct.D3.Charts.ChartDsl;
 
 using Duct.Core;
-using Microsoft.UI;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using WinShapes = Microsoft.UI.Xaml.Shapes;
+using static Duct.D3.Charts.D3;
 
 namespace Duct.D3.Charts;
 
@@ -60,35 +57,18 @@ public sealed class ChartElement<T>
     public ChartElement<T> ShowGrid(bool show) { _showGrid = show; return this; }
 
     /// <summary>
-    /// Called after the chart is rendered. The handle exposes a Redraw method
-    /// that re-renders the chart with new data without recreating the Canvas.
+    /// Called after the chart Canvas is mounted. The handle exposes the Canvas for
+    /// escape-hatch scenarios. Prefer state-driven re-renders for data updates.
     /// </summary>
     public ChartElement<T> OnReady(Action<ChartHandle<T>> callback) { _onReady = callback; return this; }
 
-    public Element ToElement() => new XamlHostElement(BuildCanvas, UpdateCanvas) { TypeKey = $"DuctD3Chart_{ChartType}" };
+    public Element ToElement() => BuildElement(Data);
     public static implicit operator Element(ChartElement<T> chart) => chart.ToElement();
 
-    private FrameworkElement BuildCanvas()
+    private Element BuildElement(IReadOnlyList<T> data)
     {
-        var canvas = new Canvas { Width = _width, Height = _height, Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent) };
-        FullRender(canvas, Data);
-        _onReady?.Invoke(new ChartHandle<T>(canvas, data => FullRender(canvas, data)));
-        return canvas;
-    }
-
-    private void UpdateCanvas(FrameworkElement fe)
-    {
-        if (fe is Canvas canvas)
-        {
-            FullRender(canvas, Data);
-            _onReady?.Invoke(new ChartHandle<T>(canvas, data => FullRender(canvas, data)));
-        }
-    }
-
-    private void FullRender(Canvas canvas, IReadOnlyList<T> data)
-    {
-        canvas.Children.Clear();
-        if (data.Count == 0) return;
+        if (data.Count == 0)
+            return D3Canvas(_width, _height);
 
         double plotLeft = _marginLeft, plotTop = _marginTop;
         double plotWidth = _width - _marginLeft - _marginRight;
@@ -99,84 +79,87 @@ public sealed class ChartElement<T>
         var xScale = new LinearScale([xMin, xMax], [plotLeft, plotLeft + plotWidth]).Nice();
         var yScale = new LinearScale([yMin, yMax], [plotTop + plotHeight, plotTop]).Nice();
 
-        if (_showGrid) RenderGrid(canvas, yScale, plotLeft, plotWidth);
+        var canvas = D3Canvas(_width, _height,
+            [.. _showGrid ? D3Grid(yScale, plotLeft, plotWidth) : [],
+             .. RenderData(data, xScale, yScale, plotLeft, plotTop, plotWidth, plotHeight),
+             .. _showAxes ? D3Axes(xScale, yScale, plotLeft, plotTop, plotWidth, plotHeight) : []]);
 
-        switch (ChartType)
-        {
-            case ChartType.Line: RenderLine(canvas, data, xScale, yScale); break;
-            case ChartType.Bar: RenderBars(canvas, data, xScale, yScale, plotTop, plotWidth, plotHeight); break;
-            case ChartType.Area: RenderArea(canvas, data, xScale, yScale, plotTop, plotHeight); break;
-        }
+        if (_onReady is { } cb)
+            canvas = canvas.Set(c => cb(new ChartHandle<T>(c)));
 
-        if (_showAxes) RenderAxes(canvas, xScale, yScale, plotLeft, plotTop, plotWidth, plotHeight);
+        return canvas;
     }
 
-    private void RenderLine(Canvas c, IReadOnlyList<T> data, LinearScale xs, LinearScale ys)
+    private Element[] RenderData(IReadOnlyList<T> data, LinearScale xScale, LinearScale yScale,
+        double plotLeft, double plotTop, double plotWidth, double plotHeight)
     {
-        var gen = LineGenerator.Create<T>(d => xs.Map(XAccessor(d)), d => ys.Map(YAccessor(d)));
-        string? pd = gen.Generate(data);
-        if (pd != null) c.Children.Add(new WinShapes.Path { Data = ParsePathData(pd), Stroke = ColorToBrush(_stroke), StrokeThickness = _strokeWidth });
+        return ChartType switch
+        {
+            ChartType.Line => RenderLine(data, xScale, yScale),
+            ChartType.Bar => RenderBars(data, xScale, yScale, plotTop, plotWidth, plotHeight),
+            ChartType.Area => RenderArea(data, xScale, yScale, plotTop, plotHeight),
+            _ => [],
+        };
     }
 
-    private void RenderArea(Canvas c, IReadOnlyList<T> data, LinearScale xs, LinearScale ys, double plotTop, double plotHeight)
+    private Element[] RenderLine(IReadOnlyList<T> data, LinearScale xScale, LinearScale yScale)
+    {
+        return [D3LinePath(data,
+            d => xScale.Map(XAccessor(d)),
+            d => yScale.Map(YAccessor(d)),
+            stroke: Brush(_stroke), strokeWidth: _strokeWidth)];
+    }
+
+    private Element[] RenderArea(IReadOnlyList<T> data, LinearScale xScale, LinearScale yScale,
+        double plotTop, double plotHeight)
     {
         double baseline = plotTop + plotHeight;
-        var gen = AreaGenerator.Create<T>(d => xs.Map(XAccessor(d)), _ => baseline, d => ys.Map(YAccessor(d)));
-        string? pd = gen.Generate(data);
-        if (pd != null) { var f = ColorToBrush(_fill); f.Opacity = _fillOpacity; c.Children.Add(new WinShapes.Path { Data = ParsePathData(pd), Fill = f }); }
-        RenderLine(c, data, xs, ys);
+        return [
+            D3AreaPath(data,
+                d => xScale.Map(XAccessor(d)),
+                _ => baseline,
+                d => yScale.Map(YAccessor(d)),
+                fill: Brush(_fill, _fillOpacity)),
+            D3LinePath(data,
+                d => xScale.Map(XAccessor(d)),
+                d => yScale.Map(YAccessor(d)),
+                stroke: Brush(_stroke), strokeWidth: _strokeWidth),
+        ];
     }
 
-    private void RenderBars(Canvas c, IReadOnlyList<T> data, LinearScale xs, LinearScale ys, double plotTop, double plotWidth, double plotHeight)
+    private Element[] RenderBars(IReadOnlyList<T> data, LinearScale xScale, LinearScale yScale,
+        double plotTop, double plotWidth, double plotHeight)
     {
         double barW = Math.Max(1, plotWidth / data.Count * 0.8);
         double baseline = plotTop + plotHeight;
-        for (int i = 0; i < data.Count; i++)
+        var fillBrush = Brush(_fill);
+        return data.Select((d, i) =>
         {
-            double cx = xs.Map(XAccessor(data[i])), cy = ys.Map(YAccessor(data[i]));
-            var r = new WinShapes.Rectangle { Width = barW, Height = Math.Max(0, baseline - cy), Fill = ColorToBrush(_fill), RadiusX = 2, RadiusY = 2 };
-            Canvas.SetLeft(r, cx - barW / 2); Canvas.SetTop(r, cy);
-            c.Children.Add(r);
-        }
+            double cx = xScale.Map(XAccessor(d)), cy = yScale.Map(YAccessor(d));
+            return (Element)(D3Rect(cx - barW / 2, cy, barW, Math.Max(0, baseline - cy))
+                with { Fill = fillBrush, RadiusX = 2, RadiusY = 2, Key = $"bar-{i}" });
+        }).ToArray();
     }
-
-    private static void RenderGrid(Canvas c, LinearScale ys, double plotLeft, double plotWidth)
-    {
-        var b = new SolidColorBrush(Windows.UI.Color.FromArgb(40, 128, 128, 128));
-        foreach (var t in ys.Ticks(5)) { double y = ys.Map(t); c.Children.Add(new WinShapes.Line { X1 = plotLeft, Y1 = y, X2 = plotLeft + plotWidth, Y2 = y, Stroke = b, StrokeThickness = 1 }); }
-    }
-
-    private static void RenderAxes(Canvas c, LinearScale xs, LinearScale ys, double plotLeft, double plotTop, double plotWidth, double plotHeight)
-    {
-        var ab = new SolidColorBrush(Windows.UI.Color.FromArgb(180, 100, 100, 100));
-        double bot = plotTop + plotHeight;
-        c.Children.Add(new WinShapes.Line { X1 = plotLeft, Y1 = bot, X2 = plotLeft + plotWidth, Y2 = bot, Stroke = ab, StrokeThickness = 1 });
-        c.Children.Add(new WinShapes.Line { X1 = plotLeft, Y1 = plotTop, X2 = plotLeft, Y2 = bot, Stroke = ab, StrokeThickness = 1 });
-        foreach (var t in xs.Ticks(6)) { double x = xs.Map(t); var l = new TextBlock { Text = Fmt(t), FontSize = 10, Foreground = ab }; Canvas.SetLeft(l, x - 12); Canvas.SetTop(l, bot + 4); c.Children.Add(l); }
-        foreach (var t in ys.Ticks(5)) { double y = ys.Map(t); var l = new TextBlock { Text = Fmt(t), FontSize = 10, Foreground = ab, TextAlignment = TextAlignment.Right, Width = plotLeft - 6 }; Canvas.SetLeft(l, 0); Canvas.SetTop(l, y - 7); c.Children.Add(l); }
-    }
-
-    private static string Fmt(double v) => Math.Abs(v) >= 1e6 ? (v / 1e6).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + "M" : Math.Abs(v) >= 1e3 ? (v / 1e3).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + "k" : v == Math.Floor(v) ? v.ToString("F0", System.Globalization.CultureInfo.InvariantCulture) : v.ToString("G4", System.Globalization.CultureInfo.InvariantCulture);
 
     internal static SolidColorBrush ColorToBrush(string color) { var c = D3Color.Parse(color); return new SolidColorBrush(Windows.UI.Color.FromArgb((byte)(c.Opacity * 255), c.R, c.G, c.B)); }
     internal static Geometry ParsePathData(string pathData) => PathDataParser.Parse(pathData);
 }
 
 /// <summary>
-/// Handle returned by OnReady — lets callers push new data into the chart without
-/// recreating the Canvas or triggering a Duct re-render.
+/// Handle returned by OnReady — exposes the underlying Canvas for escape-hatch scenarios.
 /// </summary>
 public sealed class ChartHandle<T>
 {
-    private readonly Canvas _canvas;
-    private readonly Action<IReadOnlyList<T>> _redraw;
+    private readonly Microsoft.UI.Xaml.Controls.Canvas _canvas;
 
-    internal ChartHandle(Canvas canvas, Action<IReadOnlyList<T>> redraw) { _canvas = canvas; _redraw = redraw; }
+    internal ChartHandle(Microsoft.UI.Xaml.Controls.Canvas canvas) { _canvas = canvas; }
 
-    public Canvas Canvas => _canvas;
+    public Microsoft.UI.Xaml.Controls.Canvas Canvas => _canvas;
 
-    /// <summary>Re-renders the chart with new data. Call from DispatcherQueue.</summary>
-    public void Redraw(IReadOnlyList<T> data) => _redraw(data);
+    /// <summary>Re-renders the chart with new data. Prefer state-driven re-renders instead.</summary>
+    [Obsolete("Use state-driven re-renders (e.g. setData(newData)) instead of ChartHandle.Redraw. " +
+              "Charts are now native Duct elements that diff efficiently.")]
+    public void Redraw(IReadOnlyList<T> data) { }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -201,65 +184,57 @@ public sealed class PieChartElement<T>
     public PieChartElement<T> SetColors(params D3Color[] colors) { _colorPalette = Array.AsReadOnly(colors); return this; }
     public PieChartElement<T> OnReady(Action<PieChartHandle<T>> callback) { _onReady = callback; return this; }
 
-    public Element ToElement() => new XamlHostElement(BuildCanvas, UpdateCanvas) { TypeKey = "DuctD3Pie" };
+    public Element ToElement() => BuildElement(Data);
     public static implicit operator Element(PieChartElement<T> chart) => chart.ToElement();
 
-    private FrameworkElement BuildCanvas()
+    private Element BuildElement(IReadOnlyList<T> data)
     {
-        var canvas = new Canvas { Width = _width, Height = _height };
-        FullRender(canvas, Data);
-        _onReady?.Invoke(new PieChartHandle<T>(canvas, data => FullRender(canvas, data)));
-        return canvas;
-    }
-
-    private void UpdateCanvas(FrameworkElement fe)
-    {
-        if (fe is Canvas canvas)
-        {
-            FullRender(canvas, Data);
-            _onReady?.Invoke(new PieChartHandle<T>(canvas, data => FullRender(canvas, data)));
-        }
-    }
-
-    private void FullRender(Canvas canvas, IReadOnlyList<T> data)
-    {
-        canvas.Children.Clear();
-        if (data.Count == 0) return;
+        if (data.Count == 0)
+            return D3Canvas(_width, _height);
 
         var palette = _colorPalette ?? D3Color.Category10;
         double cx = _width / 2, cy = _height / 2;
         double outerRadius = Math.Min(cx, cy) - 10;
 
+        var whiteBrush = new SolidColorBrush(Microsoft.UI.Colors.White);
+
+        var canvas = D3Canvas(_width, _height,
+            [.. D3Pie(data, ValueAccessor, cx, cy, outerRadius, _innerRadius, _padAngle,
+                    stroke: whiteBrush),
+             .. LabelAccessor != null ? RenderLabels(data, cx, cy, outerRadius) : []]);
+
+        if (_onReady is { } cb)
+            canvas = canvas.Set(c => cb(new PieChartHandle<T>(c)));
+
+        return canvas;
+    }
+
+    private Element[] RenderLabels(IReadOnlyList<T> data, double cx, double cy, double outerRadius)
+    {
         var pieGen = PieGenerator.Create<T>(ValueAccessor).SetPadAngle(_padAngle);
         var arcs = pieGen.Generate(data);
         var arcGen = new ArcGenerator().SetInnerRadius(_innerRadius).SetOuterRadius(outerRadius);
+        var whiteBrush = new SolidColorBrush(Microsoft.UI.Colors.White);
 
-        foreach (var arc in arcs)
+        return arcs.Select(arc =>
         {
-            string? pd = arcGen.Generate(arc);
-            if (pd == null) continue;
-            var color = palette[arc.Index % palette.Count];
-            var brush = new SolidColorBrush(Windows.UI.Color.FromArgb((byte)(color.Opacity * 255), color.R, color.G, color.B));
-            var path = new WinShapes.Path { Fill = brush, Stroke = new SolidColorBrush(Microsoft.UI.Colors.White), StrokeThickness = 1, RenderTransform = new TranslateTransform { X = cx, Y = cy } };
-            path.Data = ChartElement<T>.ParsePathData(pd);
-            canvas.Children.Add(path);
-
-            if (LabelAccessor != null)
-            {
-                var (lx, ly) = arcGen.Centroid(arc.StartAngle, arc.EndAngle);
-                var label = new TextBlock { Text = LabelAccessor(arc.Data), FontSize = 11, Foreground = new SolidColorBrush(Microsoft.UI.Colors.White) };
-                Canvas.SetLeft(label, cx + lx - 10); Canvas.SetTop(label, cy + ly - 7);
-                canvas.Children.Add(label);
-            }
-        }
+            var (lx, ly) = arcGen.Centroid(arc.StartAngle, arc.EndAngle);
+            return (Element)D3Text(cx + lx - 10, cy + ly - 7, LabelAccessor!(arc.Data), 11, whiteBrush);
+        }).ToArray();
     }
 }
 
+/// <summary>
+/// Handle returned by OnReady — exposes the underlying Canvas for escape-hatch scenarios.
+/// </summary>
 public sealed class PieChartHandle<T>
 {
-    private readonly Canvas _canvas;
-    private readonly Action<IReadOnlyList<T>> _redraw;
-    internal PieChartHandle(Canvas canvas, Action<IReadOnlyList<T>> redraw) { _canvas = canvas; _redraw = redraw; }
-    public Canvas Canvas => _canvas;
-    public void Redraw(IReadOnlyList<T> data) => _redraw(data);
+    private readonly Microsoft.UI.Xaml.Controls.Canvas _canvas;
+    internal PieChartHandle(Microsoft.UI.Xaml.Controls.Canvas canvas) { _canvas = canvas; }
+    public Microsoft.UI.Xaml.Controls.Canvas Canvas => _canvas;
+
+    /// <summary>Re-renders the chart with new data. Prefer state-driven re-renders instead.</summary>
+    [Obsolete("Use state-driven re-renders (e.g. setData(newData)) instead of PieChartHandle.Redraw. " +
+              "Charts are now native Duct elements that diff efficiently.")]
+    public void Redraw(IReadOnlyList<T> data) { }
 }

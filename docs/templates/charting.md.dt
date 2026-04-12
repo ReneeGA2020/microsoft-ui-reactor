@@ -111,17 +111,17 @@ smooth interaction.
 
 ## Dynamic Data Updates
 
-For frequent updates (live dashboards, real-time feeds), use `OnReady` to
-get a `ChartHandle` that redraws the canvas without a Duct re-render:
+Charts are native Duct elements, so changing state is all you need. Use
+`UseState`, `UseReducer`, or any hook to update the data — the reconciler
+diffs the old and new element trees and patches only what changed:
 
 ```csharp snippet="charting/dynamic-data"
 ```
 
 ![Dynamic data](screenshot://charting/dynamic-data)
 
-You can also call `handle.Redraw(newData)` from a timer or event callback
-to push new data directly to the canvas. This bypasses the reconciler for
-maximum throughput.
+For high-frequency updates (60fps streaming), use `OnReady` to get a
+handle that exposes the underlying `Canvas` for direct manipulation.
 
 ## Low-Level Drawing
 
@@ -156,9 +156,9 @@ to read values from a chart, especially line and area charts.
 **Keep datasets under 1000 points.** Each data point creates WinUI shapes on
 a Canvas. For larger datasets, aggregate or sample before charting.
 
-**Use `OnReady` for live data.** The chart handle bypasses reconciliation,
-so you can push data at 60fps from a `DispatcherTimer` without triggering
-full component re-renders.
+**Just change state for live data.** Charts diff efficiently — updating
+state triggers the reconciler to patch only what changed. For 60fps
+escape hatches, use `OnReady` to access the underlying Canvas directly.
 
 **Use donut charts (`InnerRadius > 0`) for proportional data.** The center
 space works well for displaying a total or label.

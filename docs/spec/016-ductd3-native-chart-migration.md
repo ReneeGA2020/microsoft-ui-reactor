@@ -9,7 +9,10 @@ primitives.
 
 ## Status
 
-**Proposed** — design spec complete, not yet implemented.
+**Implemented** — Line, Bar, Area, Pie, and Tree charts migrated to native
+D3 element trees. ForceGraph kept as XamlHostElement (Option A). Handles
+updated with `[Obsolete]` on `Redraw()`. DuctD3.Sample converted to
+state-driven updates.
 
 ---
 

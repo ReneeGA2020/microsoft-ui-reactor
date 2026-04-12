@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using WinShapes = Microsoft.UI.Xaml.Shapes;
+using static Duct.D3.Charts.D3;
 
 namespace Duct.D3.Charts;
 
@@ -39,7 +40,7 @@ public static partial class ChartDsl
 }
 
 /// <summary>
-/// Tree diagram element for Duct's virtual tree.
+/// Tree diagram element for Duct's virtual tree — renders as native D3 elements.
 /// </summary>
 public sealed class TreeChartElement<T>
 {
@@ -61,111 +62,84 @@ public sealed class TreeChartElement<T>
     public TreeChartElement<T> NodeRadius(double r) { _nodeRadius = r; return this; }
     public TreeChartElement<T> OnReady(Action<TreeChartHandle> callback) { _onReady = callback; return this; }
 
-    public Element ToElement() => new XamlHostElement(BuildCanvas, UpdateCanvas) { TypeKey = "DuctD3Tree" };
+    public Element ToElement() => BuildElement(Root);
     public static implicit operator Element(TreeChartElement<T> chart) => chart.ToElement();
 
-    private FrameworkElement BuildCanvas()
+    private Element BuildElement(T rootData)
     {
-        var canvas = new Canvas { Width = _width, Height = _height };
-        FullRender(canvas, Root);
-        _onReady?.Invoke(new TreeChartHandle(canvas, root => FullRender(canvas, (T)root)));
-        return canvas;
-    }
-
-    private void UpdateCanvas(FrameworkElement fe)
-    {
-        if (fe is Canvas canvas)
-        {
-            FullRender(canvas, Root);
-            _onReady?.Invoke(new TreeChartHandle(canvas, root => FullRender(canvas, (T)root)));
-        }
-    }
-
-    private void FullRender(Canvas canvas, T rootData)
-    {
-        canvas.Children.Clear();
         var layout = TreeLayout.Create<T>().Size(_width, _height);
         var root = layout.Hierarchy(rootData, ChildrenAccessor);
         layout.Layout(root);
 
-        var linkBrush = ChartElement<object>.ColorToBrush(_linkColor);
-        var nodeBrush = ChartElement<object>.ColorToBrush(_nodeColor);
-        var textBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(200, 60, 60, 60));
+        var linkBrush = Brush(_linkColor);
+        var nodeBrush = Brush(_nodeColor);
+        var whiteBrush = new SolidColorBrush(Microsoft.UI.Colors.White);
+        var textBrush = Gray(60, 200);
 
-        // Draw links first (behind nodes)
-        Visit(root, node =>
-        {
-            foreach (var child in node.Children)
-            {
-                // Draw curved link using a path
-                var pb = new PathBuilder(3);
-                pb.MoveTo(node.X, node.Y);
-                double midY = (node.Y + child.Y) / 2;
-                pb.BezierCurveTo(node.X, midY, child.X, midY, child.X, child.Y);
+        var allNodes = root.Descendants().ToList();
 
-                var path = new WinShapes.Path
+        // Links (drawn behind nodes)
+        var links = allNodes
+            .SelectMany((node, ni) => node.Children.Select((child, ci) =>
+                (Element)D3Link(node.X, node.Y, child.X, child.Y,
+                    stroke: linkBrush, strokeWidth: 1.5)
+                    .WithKey($"link-{ni}-{ci}")))
+            .ToArray();
+
+        // Nodes
+        var nodes = allNodes.Select((node, i) =>
+            (Element)(D3Circle(node.X, node.Y, _nodeRadius)
+                with
                 {
-                    Data = PathDataParser.Parse(pb.ToString()),
-                    Stroke = linkBrush,
-                    StrokeThickness = 1.5,
-                };
-                canvas.Children.Add(path);
-            }
-        });
+                    Fill = node.Children.Count > 0 ? nodeBrush : whiteBrush,
+                    Stroke = nodeBrush,
+                    StrokeThickness = 2,
+                    Key = $"node-{i}",
+                }))
+            .ToArray();
 
-        // Draw nodes
-        Visit(root, node =>
-        {
-            var ellipse = new WinShapes.Ellipse
+        // Labels
+        var labels = LabelAccessor != null
+            ? allNodes.Select((node, i) =>
             {
-                Width = _nodeRadius * 2,
-                Height = _nodeRadius * 2,
-                Fill = node.Children.Count > 0 ? nodeBrush : new SolidColorBrush(Microsoft.UI.Colors.White),
-                Stroke = nodeBrush,
-                StrokeThickness = 2,
-            };
-            Canvas.SetLeft(ellipse, node.X - _nodeRadius);
-            Canvas.SetTop(ellipse, node.Y - _nodeRadius);
-            canvas.Children.Add(ellipse);
-
-            // Label
-            if (LabelAccessor != null)
-            {
-                var label = new TextBlock
-                {
-                    Text = LabelAccessor(node.Data),
-                    FontSize = 10,
-                    Foreground = textBrush,
-                };
                 double labelX = node.Children.Count > 0 ? node.X - 15 : node.X + _nodeRadius + 4;
                 double labelY = node.Children.Count > 0 ? node.Y - _nodeRadius - 14 : node.Y - 6;
-                Canvas.SetLeft(label, labelX);
-                Canvas.SetTop(label, labelY);
-                canvas.Children.Add(label);
-            }
-        });
-    }
+                return (Element)D3Text(labelX, labelY, LabelAccessor(node.Data), 10, textBrush)
+                    .WithKey($"label-{i}");
+            }).ToArray()
+            : [];
 
-    private static void Visit(TreeNode<T> node, Action<TreeNode<T>> action)
-    {
-        action(node);
-        foreach (var child in node.Children) Visit(child, action);
+        var canvas = D3Canvas(_width, _height, [.. links, .. nodes, .. labels]);
+
+        if (_onReady is { } cb)
+            canvas = canvas.Set(c => cb(new TreeChartHandle(c)));
+
+        return canvas;
     }
 }
 
+/// <summary>
+/// Handle returned by OnReady — exposes the underlying Canvas for escape-hatch scenarios.
+/// </summary>
 public sealed class TreeChartHandle
 {
     private readonly Canvas _canvas;
-    private readonly Action<object> _redraw;
-    internal TreeChartHandle(Canvas canvas, Action<object> redraw) { _canvas = canvas; _redraw = redraw; }
+    internal TreeChartHandle(Canvas canvas) { _canvas = canvas; }
     public Canvas Canvas => _canvas;
-    public void Redraw<T>(T root) => _redraw(root!);
+
+    /// <summary>Re-renders the tree with new data. Prefer state-driven re-renders instead.</summary>
+    [Obsolete("Use state-driven re-renders (e.g. setRoot(newRoot)) instead of TreeChartHandle.Redraw. " +
+              "Tree charts are now native Duct elements that diff efficiently.")]
+    public void Redraw<T>(T root) { }
 }
 
 /// <summary>
 /// Force-directed graph element for Duct's virtual tree.
 /// Pure renderer — draws nodes, links, labels from a ForceSimulation's current state.
 /// Interaction (drag, animation) is the caller's responsibility.
+///
+/// Note: ForceGraph intentionally uses XamlHostElement for 60fps direct manipulation
+/// via SyncPositions(). See ductd3-native-chart-migration.md §5, Option A.
 /// </summary>
 public sealed class ForceGraphElement
 {
