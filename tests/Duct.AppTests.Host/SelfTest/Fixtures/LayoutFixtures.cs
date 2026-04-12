@@ -24,7 +24,7 @@ internal static class LayoutFixtures
                 ).Width(600).Height(100)
             );
 
-            await Harness.Render(500); // extra time for Yoga layout
+            await Harness.Render(); // extra time for Yoga layout
 
             H.Check("FlexLayout_RowDistribution_AllItemsPresent",
                 H.FindText("A") is not null &&
@@ -59,7 +59,7 @@ internal static class LayoutFixtures
                 }.Width(400).Height(200);
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             H.Check("FlexLayout_ColumnWrap_AllItemsPresent",
                 H.FindText("Box 0") is not null && H.FindText("Box 7") is not null);
@@ -140,7 +140,7 @@ internal static class LayoutFixtures
                 ).Width(ContainerWidth).Height(ContainerHeight * 2)
             );
 
-            await Harness.Render(800);
+            await Harness.Render();
 
             // Find the Grid and FlexPanel
             var grid = H.FindControl<WinUI.Grid>(g => g.ColumnDefinitions.Count == 3);
@@ -200,7 +200,7 @@ internal static class LayoutFixtures
                 ).Width(ContainerWidth)
             );
 
-            await Harness.Render(800);
+            await Harness.Render();
 
             // Find the updated panels (find by column count / type)
             var grid2 = H.FindControl<WinUI.Grid>(g => g.ColumnDefinitions.Count == 3);

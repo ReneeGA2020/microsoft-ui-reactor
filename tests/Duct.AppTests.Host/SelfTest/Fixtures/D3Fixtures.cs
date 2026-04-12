@@ -47,7 +47,7 @@ internal static class D3Fixtures
                 )
             );
 
-            await Harness.Render(800);
+            await Harness.Render();
 
             H.Check("D3_LineChart_TitleVisible",
                 H.FindText("Line Chart") is not null);
@@ -77,7 +77,7 @@ internal static class D3Fixtures
                 )
             );
 
-            await Harness.Render(800);
+            await Harness.Render();
 
             H.Check("D3_BarChart_TitleVisible",
                 H.FindText("Bar Chart") is not null);
@@ -107,7 +107,7 @@ internal static class D3Fixtures
                 )
             );
 
-            await Harness.Render(800);
+            await Harness.Render();
 
             H.Check("D3_PieChart_TitleVisible",
                 H.FindText("Pie Chart") is not null);
@@ -139,7 +139,7 @@ internal static class D3Fixtures
                 )
             );
 
-            await Harness.Render(800);
+            await Harness.Render();
 
             H.Check("D3_AreaChart_TitleVisible",
                 H.FindText("Area Chart") is not null);
@@ -176,7 +176,7 @@ internal static class D3Fixtures
                 )
             );
 
-            await Harness.Render(800);
+            await Harness.Render();
 
             H.Check("D3_TreeChart_TitleVisible",
                 H.FindText("Tree Chart") is not null);
@@ -223,7 +223,7 @@ internal static class D3Fixtures
                 )
             );
 
-            await Harness.Render(800);
+            await Harness.Render();
 
             H.Check("D3_ForceGraph_TitleVisible",
                 H.FindText("Force Graph") is not null);
@@ -268,7 +268,7 @@ internal static class D3Fixtures
                 )
             );
 
-            await Harness.Render(800);
+            await Harness.Render();
 
             H.Check("D3_ChartCustomization_TitleVisible",
                 H.FindText("Customized Chart") is not null);
@@ -303,7 +303,7 @@ internal static class D3Fixtures
                 )
             );
 
-            await Harness.Render(800);
+            await Harness.Render();
 
             H.Check("D3_PieChartLabels_TitleVisible",
                 H.FindText("Pie Chart Labels") is not null);

@@ -346,6 +346,36 @@ public sealed class DuctHost : IDisposable
         RequestRender();
     }
 
+    /// <summary>
+    /// Awaits until the render loop is idle (no pending or in-flight renders).
+    /// Yields to the dispatcher at Low priority in a loop so that Normal-priority
+    /// RenderLoop callbacks and Low-priority re-renders all complete before returning.
+    /// Used by test harnesses to replace blind Task.Delay waits.
+    /// </summary>
+    public Task WaitForIdleAsync(int maxYields = 10)
+    {
+        if (_disposed) return Task.CompletedTask;
+        if (_renderPending == 0 && !_isRendering && !_needsRerender)
+            return Task.CompletedTask;
+
+        var tcs = new TaskCompletionSource();
+        int yields = 0;
+        void CheckIdle()
+        {
+            if (_disposed || ++yields > maxYields ||
+                (_renderPending == 0 && !_isRendering && !_needsRerender))
+            {
+                tcs.TrySetResult();
+            }
+            else
+            {
+                _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, CheckIdle);
+            }
+        }
+        _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, CheckIdle);
+        return tcs.Task;
+    }
+
     public void Dispose()
     {
         if (_disposed) return;

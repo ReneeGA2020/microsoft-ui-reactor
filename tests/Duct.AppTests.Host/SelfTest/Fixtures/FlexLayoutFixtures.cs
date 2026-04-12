@@ -47,7 +47,7 @@ internal static class FlexLayoutFixtures
                 ).Width(600).Height(400)
             );
 
-            await Harness.Render(600);
+            await Harness.Render();
 
             H.Check("FlexNested_RowInCol_AllPresent",
                 H.FindText("Logo") is not null &&
@@ -103,7 +103,7 @@ internal static class FlexLayoutFixtures
                 ).Width(600).Height(300)
             );
 
-            await Harness.Render(600);
+            await Harness.Render();
 
             H.Check("FlexNested_ColInRow_AllPresent",
                 H.FindText("Menu A") is not null &&
@@ -148,7 +148,7 @@ internal static class FlexLayoutFixtures
                 ).Width(600).Height(400)
             );
 
-            await Harness.Render(600);
+            await Harness.Render();
 
             H.Check("FlexNested_Deep_AllPresent",
                 H.FindText("L1-Header") is not null &&
@@ -203,7 +203,7 @@ internal static class FlexLayoutFixtures
                 ).Width(600).Height(400)
             );
 
-            await Harness.Render(600);
+            await Harness.Render();
 
             H.Check("FlexInGrid_AllPresent",
                 H.FindText("A1") is not null &&
@@ -259,7 +259,7 @@ internal static class FlexLayoutFixtures
                 ).Width(600).Height(400)
             );
 
-            await Harness.Render(600);
+            await Harness.Render();
 
             H.Check("FlexInBorder_AllPresent",
                 H.FindText("Left") is not null && H.FindText("Right") is not null);
@@ -304,7 +304,7 @@ internal static class FlexLayoutFixtures
                 ).Width(600).Height(400)
             );
 
-            await Harness.Render(600);
+            await Harness.Render();
 
             H.Check("FlexInVStack_AllPresent",
                 H.FindText("Before") is not null &&
@@ -348,7 +348,7 @@ internal static class FlexLayoutFixtures
                 ).Width(400).Height(200)
             );
 
-            await Harness.Render(600);
+            await Harness.Render();
 
             H.Check("FlexInScroll_AllItemsExist",
                 H.FindText("Item 1") is not null &&
@@ -391,7 +391,7 @@ internal static class FlexLayoutFixtures
                 ).Width(400).Height(400)
             );
 
-            await Harness.Render(600);
+            await Harness.Render();
 
             H.Check("ScrollInFlex_HeaderFooterPresent",
                 H.FindText("Header") is not null &&
@@ -425,7 +425,7 @@ internal static class FlexLayoutFixtures
                 ).Width(400).Height(400)
             );
 
-            await Harness.Render(600);
+            await Harness.Render();
 
             H.Check("FlexColGrow_AllPresent",
                 H.FindText("Top") is not null &&
@@ -465,7 +465,7 @@ internal static class FlexLayoutFixtures
                 ).Width(600).Height(60)
             );
 
-            await Harness.Render(600);
+            await Harness.Render();
 
             var fixed1 = H.FindText("Fixed1");
             var grow = H.FindText("Grow");
@@ -505,7 +505,7 @@ internal static class FlexLayoutFixtures
                 }.Width(600).Height(60)
             );
 
-            await Harness.Render(600);
+            await Harness.Render();
 
             var a = H.FindText("A");
             var b = H.FindText("B");
@@ -546,7 +546,7 @@ internal static class FlexLayoutFixtures
                 ).FlexPadding(20).Width(600).Height(100)
             );
 
-            await Harness.Render(600);
+            await Harness.Render();
 
             var a = H.FindText("Padded-A");
             var b = H.FindText("Padded-B");
@@ -589,7 +589,7 @@ internal static class FlexLayoutFixtures
                 ).Width(600).Height(600)
             );
 
-            await Harness.Render(800);
+            await Harness.Render();
 
             H.Check("FlexCrossText_AllPresent",
                 H.FindText("Sidebar") is not null &&
@@ -633,7 +633,7 @@ internal static class FlexLayoutFixtures
                 ).Width(600).Height(400)
             );
 
-            await Harness.Render(600);
+            await Harness.Render();
 
             H.Check("GridInFlex_AllPresent",
                 H.FindText("Header") is not null &&
@@ -669,7 +669,7 @@ internal static class FlexLayoutFixtures
                 ).Width(600).Height(80)
             );
 
-            await Harness.Render(600);
+            await Harness.Render();
 
             var m1 = H.FindText("M1");
             var m2 = H.FindText("M2");
@@ -708,7 +708,7 @@ internal static class FlexLayoutFixtures
                 }.Width(600).Height(60)
             );
 
-            await Harness.Render(600);
+            await Harness.Render();
 
             var j1 = H.FindText("J1");
             var j2 = H.FindText("J2");
@@ -751,7 +751,7 @@ internal static class FlexLayoutFixtures
                 ).Width(600).Height(300)
             );
 
-            await Harness.Render(600);
+            await Harness.Render();
 
             H.Check("FlexCycle_GridStar_NoException", true);
 
@@ -799,7 +799,7 @@ internal static class FlexLayoutFixtures
                 ).Width(600).Height(400)
             );
 
-            await Harness.Render(800);
+            await Harness.Render();
 
             H.Check("FlexCycle_Nested4_NoException", true);
 
@@ -850,7 +850,7 @@ internal static class FlexLayoutFixtures
                 ).Width(600).Height(400)
             );
 
-            await Harness.Render(800);
+            await Harness.Render();
 
             H.Check("FlexCycle_AutoText_NoException", true);
 
@@ -895,7 +895,7 @@ internal static class FlexLayoutFixtures
                 ).Width(400).Height(300)
             );
 
-            await Harness.Render(600);
+            await Harness.Render();
 
             H.Check("FlexCycle_SizeMismatch_NoException", true);
 

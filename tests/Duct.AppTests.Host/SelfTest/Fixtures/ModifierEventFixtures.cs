@@ -60,7 +60,7 @@ internal static class ModifierEventFixtures
 
             // Trigger size change by updating width
             H.ClickButton("UpdEvents");
-            await Harness.Render(500);
+            await Harness.Render();
 
             // SizeChanged should fire when width changes from 100 → 200
             H.Check("Events_SizeChangedFired", sizeChangedCount > 0);

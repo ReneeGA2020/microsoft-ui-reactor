@@ -23,7 +23,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             var hasHeading = H.FindText("Main Heading") is not null
                 || H.FindControl<RichTextBlock>(rtb => rtb.Blocks.Count > 0) is not null;
@@ -51,7 +51,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             var hasCode = H.FindTextContaining("var x = 42") is not null
                 || H.FindControl<RichTextBlock>(rtb => true) is not null;
@@ -81,7 +81,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             // Should produce 6 RichTextBlocks (one per heading)
             var rtbs = H.FindAllControls<RichTextBlock>(_ => true);
@@ -133,7 +133,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             var rtbs = H.FindAllControls<RichTextBlock>(_ => true);
             H.Check("Md_InlineFmt_HasRichText", rtbs.Count >= 1);
@@ -183,7 +183,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             // Find hyperlinks in the visual tree
             var hyperlinks = H.FindAllControls<RichTextBlock>(_ => true)
@@ -219,7 +219,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             // Block quotes render as Border elements
             var borders = H.FindAllControls<Border>(b =>
@@ -248,7 +248,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             // Bullets should appear as TextBlocks with bullet character
             var bullets = H.FindAllControls<TextBlock>(tb =>
@@ -295,7 +295,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             // Number markers should start at 3
             var marker3 = H.FindTextContaining("3.");
@@ -324,7 +324,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             // Checked checkbox marker ☑
             var checked_ = H.FindAllControls<TextBlock>(tb =>
@@ -356,7 +356,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             // Table renders as Grid
             var grid = H.FindControl<WinGrid>(g =>
@@ -416,7 +416,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             // HR renders as a 1px-high Border
             var hrBorder = H.FindControl<Border>(b =>
@@ -442,7 +442,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             // HTML block renders as gray TextBlock
             var htmlText = H.FindTextContaining("Custom HTML") ??
@@ -468,7 +468,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             // Code block is a Border with a RichTextBlock inside
             var borders = H.FindAllControls<Border>(b => b.Child is not null);
@@ -509,7 +509,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             // Should have multiple bullet markers
             var bullets = H.FindAllControls<TextBlock>(tb =>
@@ -536,7 +536,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             // Image renders as an Image control or a BitmapImage source
             var images = H.FindAllControls<Image>(_ => true);
@@ -564,7 +564,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             // Hard break produces a LineBreak inline
             var rtbs = H.FindAllControls<RichTextBlock>(_ => true);
@@ -600,7 +600,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             var rtbs = H.FindAllControls<RichTextBlock>(_ => true);
             H.Check("Md_Entity_HasBlock", rtbs.Count >= 1);
@@ -670,7 +670,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(800);
+            await Harness.Render();
 
             // Document-level VStack
             var stacks = H.FindAllControls<StackPanel>(sp =>
@@ -748,7 +748,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             H.Check("Md_Custom_HeadingCalled", headingCallCount >= 1);
             H.Check("Md_Custom_ParagraphCalled", paragraphCallCount >= 1);
@@ -799,7 +799,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             H.Check("Md_CustomList_ULCalled", ulCallCount >= 1);
             H.Check("Md_CustomList_OLCalled", olCallCount >= 1);
@@ -835,7 +835,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             H.Check("Md_CustomBQ_QuoteCalled", quoteCallCount >= 1);
             H.Check("Md_CustomBQ_HtmlCalled", htmlCallCount >= 1);
@@ -873,7 +873,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             H.Check("Md_CustomTI_TableCalled", tableCallCount >= 1);
             H.Check("Md_CustomTI_ImageCalled", imageCallCount >= 1);
@@ -907,14 +907,14 @@ internal static class MarkdownFixtures
                 return ScrollView(UI.Markdown(md));
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             var initialHeading = H.FindControl<RichTextBlock>(_ => true);
             H.Check("Md_Rerender_InitialMounted", initialHeading is not null);
 
             // Trigger re-render with different markdown
             setState?.Invoke();
-            await Harness.Render(500);
+            await Harness.Render();
 
             H.Check("Md_Rerender_MultipleRenders", renderCount >= 2);
 
@@ -939,7 +939,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             // Empty markdown should render as empty StackPanel (VStack)
             var sentinel = H.FindText("Sentinel");
@@ -965,7 +965,7 @@ internal static class MarkdownFixtures
                 )
             );
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             // Inline HTML passes through as text runs
             var rtbs = H.FindAllControls<RichTextBlock>(_ => true);

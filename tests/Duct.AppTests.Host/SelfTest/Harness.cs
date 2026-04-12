@@ -1,3 +1,4 @@
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -18,7 +19,7 @@ internal sealed class Harness
     private ProgressBar? _progressBar;
     private Border? _contentArea;
 
-    public Harness(Window window) => _window = window;
+    public Harness(Window window) { _window = window; _currentWindow = window; }
     public Window Window => _window;
     public int Failures => _failures;
 
@@ -101,10 +102,36 @@ internal sealed class Harness
     // -- Render / timing -------------------------------------------------
 
     /// <summary>
-    /// Yields to the dispatcher so DuctHost's enqueued render pass can execute,
-    /// then waits for layout to complete.
+    /// Waits for DuctHost to finish all pending render passes, then forces a
+    /// synchronous WinUI layout update so ActualWidth/ActualHeight are current.
+    /// Pass a non-zero <paramref name="ms"/> only for genuinely async operations
+    /// (e.g. WebView2 initialization) that need wall-clock time beyond the render.
     /// </summary>
-    public static Task Render(int ms = 300) => Task.Delay(ms);
+    public static async Task Render(int ms = 0)
+    {
+        // Wait for Duct's render loop to go idle (all pending + re-renders done)
+        if (DuctApp.ActiveHost is { } host)
+        {
+            await host.WaitForIdleAsync();
+        }
+        else
+        {
+            // No active host — yield once at Low priority as a fallback
+            var dq = DispatcherQueue.GetForCurrentThread();
+            var tcs = new TaskCompletionSource();
+            dq.TryEnqueue(DispatcherQueuePriority.Low, () => tcs.SetResult());
+            await tcs.Task;
+        }
+
+        // Force synchronous layout so ActualWidth/ActualHeight are ready
+        (_currentWindow?.Content as UIElement)?.UpdateLayout();
+
+        // Additional wall-clock delay only when explicitly requested
+        if (ms > 0)
+            await Task.Delay(ms);
+    }
+
+    private static Window? _currentWindow;
 
     // -- VisualTree query helpers ----------------------------------------
 

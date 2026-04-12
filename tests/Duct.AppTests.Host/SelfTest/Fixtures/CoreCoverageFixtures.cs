@@ -180,7 +180,7 @@ internal static class CoreCoverageFixtures
                 );
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             var gv = H.FindControl<GridView>(_ => true);
             H.Check("GridView_Mounted", gv is not null);
@@ -188,19 +188,19 @@ internal static class CoreCoverageFixtures
 
             // Add item
             H.ClickButton("AddItem");
-            await Harness.Render(500);
+            await Harness.Render();
             gv = H.FindControl<GridView>(_ => true);
             H.Check("GridView_AfterAdd", gv?.Items.Count == 4);
 
             // Remove item
             H.ClickButton("RemoveItem");
-            await Harness.Render(500);
+            await Harness.Render();
             gv = H.FindControl<GridView>(_ => true);
             H.Check("GridView_AfterRemove", gv?.Items.Count == 3);
 
             // Change item content (same count triggers RefreshRealizedContainers)
             H.ClickButton("ChangeItem");
-            await Harness.Render(500);
+            await Harness.Render();
             H.Check("GridView_AfterChange", H.FindControl<GridView>(_ => true) is not null);
         }
     }
@@ -231,7 +231,7 @@ internal static class CoreCoverageFixtures
                 );
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             var fv = H.FindControl<FlipView>(_ => true);
             H.Check("FlipView_Mounted", fv is not null);
@@ -239,19 +239,19 @@ internal static class CoreCoverageFixtures
 
             // Add page
             H.ClickButton("AddPage");
-            await Harness.Render(500);
+            await Harness.Render();
             fv = H.FindControl<FlipView>(_ => true);
             H.Check("FlipView_AfterAdd", fv?.Items.Count == 4);
 
             // Remove page
             H.ClickButton("RemovePage");
-            await Harness.Render(500);
+            await Harness.Render();
             fv = H.FindControl<FlipView>(_ => true);
             H.Check("FlipView_AfterRemove", fv?.Items.Count == 3);
 
             // Edit page content (same count, triggers Update path)
             H.ClickButton("EditPage");
-            await Harness.Render(500);
+            await Harness.Render();
             H.Check("FlipView_AfterEdit", H.FindControl<FlipView>(_ => true) is not null);
         }
     }
@@ -278,7 +278,7 @@ internal static class CoreCoverageFixtures
                 ).Height(400);
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             var sv = H.FindControl<ScrollViewer>(_ => true);
             H.Check("LazyVStack_ScrollViewer", sv is not null);
@@ -287,7 +287,7 @@ internal static class CoreCoverageFixtures
 
             // Update items source
             H.ClickButton("MoreItems");
-            await Harness.Render(500);
+            await Harness.Render();
             H.Check("LazyVStack_Updated", H.FindControl<ItemsRepeater>(_ => true) is not null);
         }
     }
@@ -342,14 +342,14 @@ internal static class CoreCoverageFixtures
                 );
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             var cb = H.FindControl<CommandBar>(_ => true);
             H.Check("CmdBar_Mounted", cb is not null);
             H.Check("CmdBar_InitialPrimary", cb?.PrimaryCommands.Count == 2);
 
             H.ClickButton("UpdateBar");
-            await Harness.Render(500);
+            await Harness.Render();
             cb = H.FindControl<CommandBar>(_ => true);
             H.Check("CmdBar_UpdatedPrimary", cb?.PrimaryCommands.Count == 3);
         }
@@ -433,7 +433,7 @@ internal static class CoreCoverageFixtures
                 );
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             var mb = H.FindControl<MenuBar>(_ => true);
             H.Check("MenuBar_Mounted", mb is not null);
@@ -441,13 +441,13 @@ internal static class CoreCoverageFixtures
 
             // Update: change items, add menus
             H.ClickButton("ChangeMenu");
-            await Harness.Render(500);
+            await Harness.Render();
             mb = H.FindControl<MenuBar>(_ => true);
             H.Check("MenuBar_UpdatedMenus", mb?.Items.Count == 3);
 
             // Shrink: remove menus
             H.ClickButton("ChangeMenu");
-            await Harness.Render(500);
+            await Harness.Render();
             mb = H.FindControl<MenuBar>(_ => true);
             H.Check("MenuBar_ShrunkMenus", mb?.Items.Count == 1);
         }
@@ -640,8 +640,8 @@ internal static class CoreCoverageFixtures
             // It should transition to executing (or already finished for short delays)
             H.Check("UseCmd_Triggered", H.FindText("Idle") is not null || H.FindText("Executing") is not null);
 
-            // Wait for completion
-            await Harness.Render(500);
+            // Wait for async command (50ms internal delay) to complete
+            await Harness.Render(150);
             H.Check("UseCmd_Completed", H.FindText("Idle") is not null);
         }
     }
@@ -680,7 +680,7 @@ internal static class CoreCoverageFixtures
             H.Check("UseCmdTyped_Initial", H.FindText("Result: none") is not null);
 
             H.ClickButton("RunTyped");
-            await Harness.Render(1000);
+            await Harness.Render(150); // async command has 50ms internal delay
             H.Check("UseCmdTyped_Completed", H.FindText("Result: hello") is not null);
         }
     }
@@ -739,14 +739,14 @@ internal static class CoreCoverageFixtures
                 );
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             var sz = H.FindControl<Microsoft.UI.Xaml.Controls.SemanticZoom>(_ => true);
             H.Check("SemZoom_Mounted", sz is not null);
 
             // Update both views
             H.ClickButton("UpdateZoom");
-            await Harness.Render(500);
+            await Harness.Render();
             H.Check("SemZoom_Updated", H.FindControl<Microsoft.UI.Xaml.Controls.SemanticZoom>(_ => true) is not null);
         }
     }
@@ -973,7 +973,7 @@ internal static class CoreCoverageFixtures
                     Text(item).Width(80)).Height(60);
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             var sv = H.FindControl<ScrollViewer>(_ => true);
             H.Check("LazyHStack_ScrollViewer", sv is not null);
@@ -1046,14 +1046,14 @@ internal static class CoreCoverageFixtures
                 );
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             var nav = H.FindControl<NavigationView>(_ => true);
             H.Check("NavUpdate_Mounted", nav is not null);
             H.Check("NavUpdate_InitialContent", H.FindText("Home Page") is not null);
 
             H.ClickButton("SwitchPage");
-            await Harness.Render(500);
+            await Harness.Render();
             H.Check("NavUpdate_ContentChanged", H.FindText("Settings Page") is not null);
         }
     }
@@ -1080,12 +1080,12 @@ internal static class CoreCoverageFixtures
                 );
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
             var rp = H.FindControl<Microsoft.UI.Xaml.Controls.RelativePanel>(_ => true);
             H.Check("RelPanel_Mounted", rp is not null);
 
             H.ClickButton("UpdateRP");
-            await Harness.Render(500);
+            await Harness.Render();
             H.Check("RelPanel_Updated", H.FindText("Right") is not null);
         }
     }
@@ -1122,7 +1122,7 @@ internal static class CoreCoverageFixtures
 
             // Trigger the keyframe animation
             H.ClickButton("Animate");
-            await Harness.Render(500);
+            await Harness.Render();
             H.Check("KFComp_Triggered", H.FindText("Animated") is not null);
         }
     }
@@ -1146,7 +1146,7 @@ internal static class CoreCoverageFixtures
                 );
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
             var sc = H.FindControl<Microsoft.UI.Xaml.Controls.SwipeControl>(_ => true);
             H.Check("Swipe_Mounted", sc is not null);
         }
@@ -1167,7 +1167,7 @@ internal static class CoreCoverageFixtures
                 return ListBox(["Apple", "Banana", "Cherry"], selectedIndex: 1);
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
             var lb = H.FindControl<Microsoft.UI.Xaml.Controls.ListBox>(_ => true);
             H.Check("ListBox_Mounted", lb is not null);
             H.Check("ListBox_Items", lb?.Items.Count == 3);
@@ -1193,7 +1193,7 @@ internal static class CoreCoverageFixtures
                 );
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
             var sb = H.FindControl<Microsoft.UI.Xaml.Controls.SelectorBar>(_ => true);
             H.Check("SelectorBar_Mounted", sb is not null);
             var pp = H.FindControl<Microsoft.UI.Xaml.Controls.PipsPager>(_ => true);
@@ -1262,7 +1262,7 @@ internal static class CoreCoverageFixtures
                 );
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
             H.Check("Popup_Mounted", true); // popup is wrapped in StackPanel
             var rc = H.FindControl<Microsoft.UI.Xaml.Controls.RefreshContainer>(_ => true);
             H.Check("RefreshContainer_Mounted", rc is not null);
@@ -1281,7 +1281,7 @@ internal static class CoreCoverageFixtures
             var host = H.CreateHost();
             host.Mount(ctx => AnnotatedScrollBar());
 
-            await Harness.Render(500);
+            await Harness.Render();
             var asb = H.FindControl<Microsoft.UI.Xaml.Controls.AnnotatedScrollBar>(_ => true);
             H.Check("AnnotatedSB_Mounted", asb is not null);
         }
@@ -1446,12 +1446,12 @@ internal static class CoreCoverageFixtures
                 );
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
             var tv = H.FindControl<Microsoft.UI.Xaml.Controls.TreeView>(_ => true);
             H.Check("TreeView_Mounted", tv is not null);
 
             H.ClickButton("UpdateTree");
-            await Harness.Render(500);
+            await Harness.Render();
             H.Check("TreeView_Updated", H.FindControl<Microsoft.UI.Xaml.Controls.TreeView>(_ => true) is not null);
         }
     }
@@ -1555,7 +1555,7 @@ internal static class CoreCoverageFixtures
 
             // Mutate externally — should trigger re-render
             model.Name = "Changed";
-            await Harness.Render(500);
+            await Harness.Render();
             H.Check("Observable_Mutated", H.FindText("Observed: Changed") is not null);
         }
     }
@@ -1616,12 +1616,12 @@ internal static class CoreCoverageFixtures
                 );
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
             var exp = H.FindControl<Microsoft.UI.Xaml.Controls.Expander>(_ => true);
             H.Check("ExpanderDeep_Mounted", exp is not null);
 
             H.ClickButton("UpdateExp");
-            await Harness.Render(500);
+            await Harness.Render();
             H.Check("ExpanderDeep_Updated", H.FindText("Body V2") is not null || H.FindText("Extra") is not null);
         }
     }

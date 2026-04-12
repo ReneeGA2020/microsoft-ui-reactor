@@ -66,7 +66,7 @@ internal static class ThreadSafeHookFixtures
             await Task.WhenAll(tasks);
 
             // Let the render loop settle — low-priority enqueue means a few frames
-            await Harness.Render(500);
+            await Harness.Render();
 
             var final = lastWritten;
             var text = H.FindControl<TextBlock>(tb => tb.Text?.StartsWith("Counter:") == true);
@@ -129,7 +129,7 @@ internal static class ThreadSafeHookFixtures
             };
             await Task.WhenAll(tasks);
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             H.Check("MultiHook_A_Final", H.FindText($"A={target}") is not null);
             H.Check("MultiHook_B_Final", H.FindText($"B={target * 10}") is not null);
@@ -176,7 +176,7 @@ internal static class ThreadSafeHookFixtures
             ).ToArray();
 
             await Task.WhenAll(tasks);
-            await Harness.Render(500);
+            await Harness.Render();
 
             H.Check("Reducer_Serialized",
                 H.FindText($"Sum: {threads * perThread}") is not null);
@@ -230,7 +230,7 @@ internal static class ThreadSafeHookFixtures
             ).ToArray();
 
             await Task.WhenAll(tasks);
-            await Harness.Render(500);
+            await Harness.Render();
 
             // After settling, all 50 items should be present with the same version
             var allItems = H.FindAllControls<TextBlock>(tb =>
@@ -288,7 +288,7 @@ internal static class ThreadSafeHookFixtures
                     setValue!(i);
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             H.Check("Coalesce_FinalValue", H.FindText("Value: 1000") is not null);
 

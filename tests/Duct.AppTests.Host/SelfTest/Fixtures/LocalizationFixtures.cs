@@ -156,7 +156,7 @@ internal static class LocalizationFixtures
                 );
             });
 
-            await Harness.Render(500);
+            await Harness.Render();
 
             // -- English (default) -------------------------------------------
             CheckLocale("en-US", "My Application", "Welcome to the app",
@@ -167,7 +167,7 @@ internal static class LocalizationFixtures
 
             // -- Korean ------------------------------------------------------
             H.ClickButton("ko-KR");
-            await Harness.Render(500);
+            await Harness.Render();
 
             CheckLocale("ko-KR",
                 "\ub0b4 \uc560\ud50c\ub9ac\ucf00\uc774\uc158",
@@ -181,7 +181,7 @@ internal static class LocalizationFixtures
 
             // -- Arabic (RTL) ------------------------------------------------
             H.ClickButton("ar-SA");
-            await Harness.Render(500);
+            await Harness.Render();
 
             CheckLocale("ar-SA",
                 "\u062a\u0637\u0628\u064a\u0642\u064a",
@@ -200,7 +200,7 @@ internal static class LocalizationFixtures
 
             // -- Japanese ----------------------------------------------------
             H.ClickButton("ja-JP");
-            await Harness.Render(500);
+            await Harness.Render();
 
             CheckLocale("ja-JP",
                 "\u30de\u30a4\u30a2\u30d7\u30ea\u30b1\u30fc\u30b7\u30e7\u30f3",
@@ -212,7 +212,7 @@ internal static class LocalizationFixtures
 
             // -- German ------------------------------------------------------
             H.ClickButton("de-DE");
-            await Harness.Render(500);
+            await Harness.Render();
 
             CheckLocale("de-DE",
                 "Meine Anwendung",
@@ -226,7 +226,7 @@ internal static class LocalizationFixtures
 
             // -- Back to English - verify round-trip -------------------------
             H.ClickButton("en-US");
-            await Harness.Render(500);
+            await Harness.Render();
 
             H.Check("Loc_en-US_RoundTrip_Title",
                 H.FindText("My Application") is not null);

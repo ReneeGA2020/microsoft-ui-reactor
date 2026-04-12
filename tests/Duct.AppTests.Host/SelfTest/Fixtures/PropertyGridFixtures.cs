@@ -355,9 +355,9 @@ internal static class PropertyGridFixtures
 
             for (int i = 0; i < 5; i++)
             {
-                target = material; rerender?.Invoke(); await Harness.Render(50);
-                target = person; rerender?.Invoke(); await Harness.Render(50);
-                target = shape; rerender?.Invoke(); await Harness.Render(50);
+                target = material; rerender?.Invoke(); await Harness.Render();
+                target = person; rerender?.Invoke(); await Harness.Render();
+                target = shape; rerender?.Invoke(); await Harness.Render();
             }
             await Harness.Render();
             H.Check("Switching_RapidNoCrash", true);
