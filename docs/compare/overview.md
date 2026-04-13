@@ -15,6 +15,7 @@ relative to the industry.
 | Competitor | [Jetpack Compose](compose.md) | Android (+ iOS, Desktop, Web via CMP) | 2021 |
 | Competitor | [React](react.md) | Web (+ mobile via React Native) | 2013 |
 | Competitor | [Flutter](flutter.md) | Android, iOS, Web, Windows, macOS, Linux | 2018 |
+| Competitor | [Avalonia](avalonia.md) | Windows, macOS, Linux, iOS, Android, Web, Embedded | 2023 |
 | Microsoft | WinForms | Windows | 2002 |
 | Microsoft | WPF | Windows | 2006 |
 | Microsoft | WinUI 3 | Windows | 2021 |
@@ -24,7 +25,7 @@ relative to the industry.
 
 ## Methodology
 
-Each framework is evaluated across 14 categories on a letter-grade scale
+Each framework is evaluated across 19 categories on a letter-grade scale
 (A through F). Grades represent capability relative to what a production
 application needs, not relative to each other — an "A" means the framework
 handles this area comprehensively with minimal gaps; a "D" means critical
@@ -48,51 +49,51 @@ to understand the gap, not to declare winners.
 
 ### Competitor Frameworks
 
-| Category | SwiftUI | Compose | React | Flutter |
-|---|---|---|---|---|
-| **Declarative Syntax** | A | A | A- | B |
-| **Component Architecture** | A- | A- | A- | B+ |
-| **State & Reactivity** | A | A | B+ | B- |
-| **Rendering & Performance** | B+ | B+ | B+ | A- |
-| **Layout** | A- | A- | B+ | B+ |
-| **Styling & Theming** | A | A | B | B |
-| **Navigation** | B+ | A | B+ | B- |
-| **Animation** | A | A- | B | B+ |
-| **Accessibility** | A | A- | B | B- |
-| **Input & Gestures** | A- | B+ | B | A- |
-| **Developer Experience** | B+ | A- | A | A |
-| **Platform Reach** | B | B+ | A | A- |
-| **Testing** | C+ | A | A- | B+ |
-| **Error Handling** | D | D | B+ | C+ |
-| **Data Loading & Async** | A- | A- | A | B+ |
-| **Lists & Virtualization** | B+ | A- | C+ | A- |
-| **Internationalization** | A | B+ | B | A- |
-| **Interop & Adoption** | A- | A | A | B |
-| **Forms & Data Entry** | B | B- | B+ | B+ |
+| Category | SwiftUI | Compose | React | Flutter | Avalonia |
+|---|---|---|---|---|---|
+| **Declarative Syntax** | A | A | A- | B | B- |
+| **Component Architecture** | A- | A- | A- | B+ | B |
+| **State & Reactivity** | A | A | B+ | B- | B+ |
+| **Rendering & Performance** | B+ | B+ | B+ | A- | B+ |
+| **Layout** | A- | A- | B+ | B+ | A- |
+| **Styling & Theming** | A | A | B | B | A- |
+| **Navigation** | B+ | A | B+ | B- | B- |
+| **Animation** | A | A- | B | B+ | B+ |
+| **Accessibility** | A | A- | B | B- | B+ |
+| **Input & Gestures** | A- | B+ | B | A- | B+ |
+| **Developer Experience** | B+ | A- | A | A | B- |
+| **Platform Reach** | B | B+ | A | A- | A- |
+| **Testing** | C+ | A | A- | B+ | B |
+| **Error Handling** | D | D | B+ | C+ | C+ |
+| **Data Loading & Async** | A- | A- | A | B+ | B |
+| **Lists & Virtualization** | B+ | A- | C+ | A- | B+ |
+| **Internationalization** | A | B+ | B | A- | B- |
+| **Interop & Adoption** | A- | A | A | B | B+ |
+| **Forms & Data Entry** | B | B- | B+ | B+ | B |
 
-**Competitor median by category:**
+**Competitor median by category** (5 frameworks, median = 3rd sorted value):
 
 | Category | Median | Best-in-class |
 |---|---|---|
 | Declarative Syntax | A- | SwiftUI / Compose |
 | Component Architecture | A- | SwiftUI / Compose / React |
-| State & Reactivity | A-/B+ | SwiftUI / Compose |
+| State & Reactivity | B+ | SwiftUI / Compose |
 | Rendering & Performance | B+ | Flutter (Impeller) |
-| Layout | A-/B+ | SwiftUI / Compose |
-| Styling & Theming | B+/A- | SwiftUI / Compose |
+| Layout | A- | SwiftUI / Compose / Avalonia |
+| Styling & Theming | A- | SwiftUI / Compose |
 | Navigation | B+ | Compose (Nav 3) |
-| Animation | A-/B+ | SwiftUI |
-| Accessibility | A-/B | SwiftUI |
-| Input & Gestures | B+/A- | SwiftUI / Flutter |
+| Animation | B+ | SwiftUI |
+| Accessibility | B+ | SwiftUI |
+| Input & Gestures | B+ | SwiftUI / Flutter |
 | Developer Experience | A- | React / Flutter |
-| Platform Reach | A-/B+ | React |
-| Testing | A-/B+ | Compose |
-| Error Handling | C+/D | React (only one with boundaries) |
+| Platform Reach | A- | React |
+| Testing | B+ | Compose |
+| Error Handling | C+ | React (only one with boundaries) |
 | Data Loading & Async | A- | React (Suspense + TanStack Query) |
-| Lists & Virtualization | A-/B+ | Compose / Flutter (built-in virtualization) |
-| Internationalization | A-/B+ | SwiftUI (implicit localization) |
-| Interop & Adoption | A/A- | Compose / React (most flexible) |
-| Forms & Data Entry | B+/B | Flutter (built-in validation) / React (Hook Form + Zod) |
+| Lists & Virtualization | B+ | Compose / Flutter (built-in virtualization) |
+| Internationalization | B+ | SwiftUI (implicit localization) |
+| Interop & Adoption | A- | Compose / React (most flexible) |
+| Forms & Data Entry | B | Flutter (built-in validation) / React (Hook Form + Zod) |
 
 ---
 
@@ -273,8 +274,10 @@ adaptive Scenes).
 support, style composition.
 
 **Competitor standard:** SwiftUI and Compose have comprehensive built-in design
-systems (Apple Design, Material 3) with automatic dark mode. React has no
-built-in system (ecosystem-dependent). Flutter is Material-centric.
+systems (Apple Design, Material 3) with automatic dark mode. Avalonia's CSS-
+like selector system with ControlTheme separation is innovative in the XAML
+world. React has no built-in system (ecosystem-dependent). Flutter is
+Material-centric.
 
 **Microsoft assessment:**
 - **WinForms (D):** Owner-draw or third-party control suites. No declarative
@@ -380,7 +383,9 @@ semantic tree, custom component accessibility.
 
 **Competitor standard:** SwiftUI has the best automatic accessibility (standard
 views work with VoiceOver without any code). Compose's semantics tree is
-strong. React relies on web standards (ARIA). Flutter has gaps on web.
+strong. Avalonia is notably the first .NET framework with native Linux
+accessibility (AT-SPI2). React relies on web standards (ARIA). Flutter has
+gaps on web.
 
 **Microsoft assessment:**
 - **WinForms (D+):** MSAA (older API). Limited automation support
@@ -472,19 +477,29 @@ Inspector. Duct's lack of tooling is its most significant DX gap.
 **What this measures:** Number of platforms, cross-platform capability,
 ecosystem size.
 
-**Competitor standard:** Flutter targets 6 platforms. React targets web +
-mobile + desktop via React Native. Compose Multiplatform now covers Android,
-iOS, Desktop, Web. SwiftUI covers all Apple platforms.
+**Competitor standard:** Flutter targets 6 platforms. Avalonia targets 7
+(including embedded Linux). React targets web + mobile + desktop via React
+Native. Compose Multiplatform now covers Android, iOS, Desktop, Web.
+SwiftUI covers all Apple platforms.
 
 **Microsoft assessment:**
 - **All Microsoft frameworks (D):** Windows only. Full stop. WPF and WinForms
   have no cross-platform story. WinUI 3 is Windows-only by design. Duct
-  inherits WinUI 3's limitation. Avalonia and Uno Platform provide cross-
-  platform alternatives inspired by WPF/UWP, but they are separate frameworks
+  inherits WinUI 3's limitation
+
+**Avalonia note:** Avalonia is the .NET ecosystem's answer to this gap,
+covering 7 platforms (Windows, macOS, Linux, iOS, Android, WebAssembly,
+embedded Linux) from a single C# codebase. It is the only .NET UI framework
+with production-grade Linux desktop support. However, Avalonia is a separate
+framework from the Microsoft stack — it self-renders via Skia rather than
+using platform controls, and its mobile/web platforms are less mature than
+its desktop story.
 
 **Gap:** This is the largest gap between Microsoft frameworks and competitors.
 Every competitor targets multiple platforms. All Microsoft options target one.
-This is an inherent architectural constraint, not a fixable bug.
+This is an inherent architectural constraint, not a fixable bug. Avalonia
+provides a cross-platform path for .NET developers but requires leaving the
+WinUI 3/WPF ecosystem (unless using XPF for WPF binary compat).
 
 ---
 
@@ -737,35 +752,37 @@ customization and binding-level validation integration.
 |---|---|---|---|---|
 | Declarative Syntax | A- | Duct (B) | B | **1 grade behind** |
 | Component Architecture | A- | Duct (B+) | B+ | **Half grade behind** |
-| State & Reactivity | A-/B+ | Duct (B+) | B+ | **Matched (to React/Flutter)** |
+| State & Reactivity | B+ | Duct (B+) | B+ | **Matched** |
 | Rendering & Performance | B+ | WinUI 3 (B+) | B+ | **Matched** |
-| Layout | A-/B+ | WPF/WinUI 3 (A-) | A- | **Matched or ahead** |
-| Styling & Theming | B+/A- | WinUI 3 (A) | A | **Matched or ahead** |
+| Layout | A- | WPF/WinUI 3 (A-) | A- | **Matched** |
+| Styling & Theming | A- | WinUI 3 (A) | A | **Matched or ahead** |
 | Navigation | B+ | Duct (B+) | B+ | **Matched** |
-| Animation | A-/B+ | WinUI 3 (A) | A | **Matched or ahead** |
-| Accessibility | A-/B | WinUI 3 (A) | A | **Matched or ahead** |
-| Input & Gestures | B+/A- | WPF/WinUI 3 (B+) | B+ | **Half grade behind** |
+| Animation | B+ | WinUI 3 (A) | A | **Ahead** |
+| Accessibility | B+ | WinUI 3 (A) | A | **Ahead** |
+| Input & Gestures | B+ | WPF/WinUI 3 (B+) | B+ | **Matched** |
 | Developer Experience | A- | WinForms (B) | B | **1 grade behind** |
-| Platform Reach | A-/B+ | All (D) | D | **3+ grades behind** |
-| Testing | A-/B+ | WPF (B) | B | **1 grade behind** |
-| Error Handling | C+/D | Duct (B) | B | **Ahead** |
+| Platform Reach | A- | All (D) | D | **3+ grades behind** |
+| Testing | B+ | WPF (B) | B | **Half grade behind** |
+| Error Handling | C+ | Duct (B) | B | **Ahead** |
 | Data Loading & Async | A- | Duct (B+) | B+ | **Half grade behind** |
-| Lists & Virtualization | A-/B+ | WPF/WinUI 3 (A-) | A- | **Matched or ahead** |
-| Internationalization | A-/B+ | Duct (B+) | B+ | **Matched (to Compose/React)** |
-| Interop & Adoption | A/A- | Duct (A-) | A- | **Matched** |
-| Forms & Data Entry | B+/B | WPF (A) | A | **Ahead** |
+| Lists & Virtualization | B+ | WPF/WinUI 3 (A-) | A- | **Ahead** |
+| Internationalization | B+ | Duct (B+) | B+ | **Matched** |
+| Interop & Adoption | A- | Duct (A-) | A- | **Matched** |
+| Forms & Data Entry | B | WPF (A) | A | **Ahead** |
 
 ### Where Microsoft leads or matches:
 1. **Forms & Data Entry** (WPF) — The richest validation system of any
    framework. INotifyDataErrorInfo, ValidationRule, ErrorTemplate, BindingGroup.
    No competitor matches this depth
-2. **Lists & Virtualization** (WPF/WinUI 3) — VirtualizingStackPanel, 
-   ItemsRepeater, ICollectionView. Ahead of React, on par with Compose/Flutter
-3. **Layout** (WPF/WinUI 3) — Panel system is on par with the best
-4. **Styling & Theming** (WPF/WinUI 3) — WPF's ControlTemplate is unmatched;
-   WinUI 3's Fluent Design is competitive
-5. **Animation** (WinUI 3) — Composition API is world-class
-6. **Accessibility** (WPF/WinUI 3) — UIA is the most comprehensive a11y API
+2. **Lists & Virtualization** (WPF/WinUI 3) — VirtualizingStackPanel,
+   ItemsRepeater, ICollectionView. Ahead of all competitors at the median
+3. **Animation** (WinUI 3) — Composition API is world-class. Ahead of the
+   competitor median (B+)
+4. **Accessibility** (WPF/WinUI 3) — UIA is the most comprehensive a11y API.
+   Ahead of the competitor median (B+)
+5. **Styling & Theming** (WPF/WinUI 3) — WPF's ControlTemplate is unmatched;
+   WinUI 3's Fluent Design is competitive. Matched or ahead of median (A-)
+6. **Layout** (WPF/WinUI 3) — Panel system matches the best competitors
 7. **Error Handling** (Duct) — ErrorBoundary is ahead of all but React
 8. **Interop & Adoption** (Duct) — UseObservable bridges unmodified MVVM
    ViewModels; DuctHostControl drops into existing WinUI windows
@@ -775,16 +792,18 @@ customization and binding-level validation integration.
 11. **Commanding** (Duct) — No competitor has this. Unique differentiator
 
 ### Where Microsoft lags significantly:
-1. **Platform Reach** — Windows-only vs 2-6 platforms. Unbridgeable without
-   Avalonia/Uno
+1. **Platform Reach** — Windows-only vs 2-7 platforms. Unbridgeable without
+   Avalonia/Uno. Avalonia now covers 7 platforms from .NET
 2. **Developer Experience** — No equivalent to React DevTools, Flutter hot
    reload, or Compose Layout Inspector
 3. **Declarative Syntax** — XAML is a generation behind; Duct narrows the gap
-   but C# lacks the language features of Swift/Kotlin
-4. **Testing** — No component-level testing framework
-5. **State & Reactivity** — No automatic fine-grained state tracking (vs
-   SwiftUI's @Observable, Compose's Snapshot)
-6. **Data Loading & Async** — No lifecycle-scoped async primitives (vs
+   but C# lacks the language features of Swift/Kotlin. Note: Avalonia
+   modernizes XAML (compiled bindings, CSS-like styling) but the syntax
+   remains fundamentally XAML
+4. **Testing** — No component-level testing framework. Avalonia's headless
+   testing is the best XAML-framework testing story but still behind
+   Compose/React's semantics-based approach
+5. **Data Loading & Async** — No lifecycle-scoped async primitives (vs
    `.task`, `LaunchedEffect`, Suspense). MVVM async patterns work but are
    imperative
 
@@ -880,13 +899,18 @@ production-readiness.
 
 ## Key Takeaways
 
-### 1. The platform reach gap is structural
+### 1. The platform reach gap is structural — but Avalonia is a real option
 
 Every competitor targets multiple platforms. All Microsoft frameworks target
-one. This is not a temporary deficit — it's an architectural reality. For
-teams that need cross-platform, the answer is Avalonia, Uno Platform, or
-choosing a competitor. The Microsoft frameworks are competing for teams
-that have already committed to Windows-only.
+one. This is not a temporary deficit — it's an architectural reality.
+**Avalonia is now the strongest cross-platform .NET UI framework**, covering
+7 platforms with 30K+ GitHub stars and production use at JetBrains, Autodesk,
+and NASA. It is the only .NET framework with Linux desktop support and the
+first with native Linux accessibility (AT-SPI2). For teams that need cross-
+platform .NET, Avalonia is a credible choice — though its mobile/web
+platforms are less mature than desktop, and its self-rendering model means
+apps don't look platform-native. Teams committed to Windows-only still
+benefit from WPF/WinUI 3/Duct's deeper platform integration.
 
 ### 2. WinUI 3 is stronger than its reputation
 
@@ -924,8 +948,12 @@ frameworks (SolidJS, Angular Signals, Vue's reactivity) all converge on
 the same idea: **the framework should automatically track which state each
 view reads and only re-render when that specific state changes.** React
 is moving in this direction with the React Compiler. Neither WPF, WinUI 3,
-nor Duct have this — all require manual INotifyPropertyChanged or explicit
-dependency arrays. This is the most impactful architectural gap to close.
+Avalonia, nor Duct have this — all require manual INotifyPropertyChanged or
+explicit dependency arrays. Avalonia's `IObservable<T>` stream bindings and
+ReactiveUI integration are the most ergonomic reactive patterns in the .NET
+ecosystem, but they still require explicit subscription rather than automatic
+tracking. This is the most impactful architectural gap to close across the
+entire .NET UI landscape.
 
 ### 6. WPF's form/validation system is an underappreciated asset
 
@@ -950,7 +978,23 @@ adoption story across all frameworks analyzed. This matters because the
 realistic path for Duct adoption is not greenfield apps — it's existing
 WinUI 3 apps that want to go declarative without a rewrite.
 
-### 8. No framework is complete
+### 8. Avalonia validates the self-rendering cross-platform approach for .NET
+
+Avalonia's trajectory mirrors Flutter's: self-render everything via Skia for
+pixel-perfect cross-platform consistency, accept the trade-off of non-native
+look-and-feel. With 30K+ GitHub stars, production use at JetBrains and
+Autodesk, and partnership with Google's Flutter team on Impeller, Avalonia
+has proven this model works for .NET. Its CSS-like styling system is genuinely
+innovative in the XAML world. Its weaknesses — no built-in hot reload, paid
+tooling tiers, smaller ecosystem than WPF/React/Flutter, RTL issues, class-
+based component model — are real but not disqualifying. For the Microsoft
+ecosystem, Avalonia's most important role is as proof that cross-platform
+.NET desktop/mobile is viable, and as a migration path for WPF apps that
+need macOS/Linux (via XPF). It does not compete with Duct's declarative
+model — Avalonia is still MVVM/class-based — but it competes directly with
+WPF for new desktop development where cross-platform is a requirement.
+
+### 9. No framework is complete
 
 Every framework has embarrassing gaps:
 - **SwiftUI:** No error boundaries, no official testing, type-checker issues,
@@ -960,6 +1004,9 @@ Every framework has embarrassing gaps:
 - **React:** No built-in layout/styling/animation/routing/gestures/lists/i18n
 - **Flutter:** Verbose syntax, Navigator 2.0, web accessibility gaps, state
   fragmentation
+- **Avalonia:** No built-in hot reload, no ICollectionView, RTL issues,
+  no error boundaries, paid tooling creates friction, class-based component
+  model is a generation behind function-as-component
 - **WPF:** No hot reload for code, MVVM boilerplate, in maintenance mode,
   no lifecycle-scoped async
 - **WinUI 3:** Packaging complexity, small community, Windows-only, no
@@ -980,6 +1027,7 @@ most for your specific application.
 - [Jetpack Compose Analysis](compose.md) — Google's/JetBrains' declarative toolkit
 - [React Analysis](react.md) — Meta's component library
 - [Flutter Analysis](flutter.md) — Google's cross-platform toolkit
+- [Avalonia Analysis](avalonia.md) — Cross-platform .NET XAML framework
 
 ### Microsoft frameworks
 - [Duct Critical Review](../duct-critical-review.md) — Detailed Duct analysis
@@ -990,6 +1038,13 @@ most for your specific application.
 - [Microsoft Learn: WinUI 3](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/)
 - [Microsoft Learn: Composition API](https://learn.microsoft.com/en-us/windows/uwp/composition/)
 - [Microsoft Learn: UI Automation](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/controls/ui-automation-of-a-wpf-custom-control)
+
+### Avalonia
+- [Avalonia 12 Release](https://avaloniaui.net/blog/avalonia-12)
+- [Avalonia vs MAUI](https://avaloniaui.net/maui-compare)
+- [Avalonia Impeller Partnership](https://avaloniaui.net/blog/avalonia-partners-with-google-s-flutter-t-eam-to-bring-impeller-rendering-to-net)
+- [Avalonia Supported Platforms](https://docs.avaloniaui.net/docs/supported-platforms)
+- [Avalonia GitHub](https://github.com/AvaloniaUI/Avalonia)
 
 ### Industry context
 - [SolidJS vs React 2026](https://www.boundev.com/blog/solidjs-vs-react-2026-performance-guide)
