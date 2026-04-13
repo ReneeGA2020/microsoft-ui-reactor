@@ -41,23 +41,30 @@ internal static class SelfTestRunner
                     {
                         testIndex++;
                         harness.UpdateProgress(testIndex, fixtureName);
+                        int failuresBefore = harness.Failures;
+                        bool crashed = false;
                         try
                         {
                             var fixture = SelfTestFixtureRegistry.Create(fixtureName, harness);
                             if (fixture is null)
                             {
                                 Console.WriteLine($"not ok {testIndex} {fixtureName} - fixture not found");
-                                continue;
+                                crashed = true;
                             }
-
-                            Console.WriteLine($"# Running: {fixtureName}");
-                            await fixture.RunAsync();
+                            else
+                            {
+                                Console.WriteLine($"# Running: {fixtureName}");
+                                await fixture.RunAsync();
+                            }
                         }
                         catch (Exception ex)
                         {
+                            crashed = true;
                             Console.WriteLine($"not ok {testIndex} {fixtureName}_CRASH - {ex.GetType().Name}: {ex.Message}");
                             Console.Error.WriteLine(ex.ToString());
                         }
+                        harness.MarkFixtureResult(testIndex - 1,
+                            !crashed && harness.Failures == failuresBefore);
                     }
 
                     Console.WriteLine($"# Total failures: {harness.Failures}");

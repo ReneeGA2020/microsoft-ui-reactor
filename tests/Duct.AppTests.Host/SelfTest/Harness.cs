@@ -14,9 +14,9 @@ internal sealed class Harness
     private readonly Window _window;
     private int _failures;
 
-    // Persistent TitleBar + progress for the test runner
-    private TitleBar? _titleBar;
-    private ProgressBar? _progressBar;
+    // Persistent title bar with visual test-result segments
+    private TextBlock? _subtitleText;
+    private readonly List<Border> _testSegments = new();
     private Border? _contentArea;
 
     public Harness(Window window) { _window = window; _currentWindow = window; }
@@ -27,19 +27,54 @@ internal sealed class Harness
 
     public void SetupTitleBar(int totalTests)
     {
-        _progressBar = new ProgressBar { Maximum = totalTests, Value = 0, Width = 200 };
-        _titleBar = new TitleBar
+        _testSegments.Clear();
+
+        // Grid of equal-width columns — one per test, colored on completion
+        var segmentBar = new Grid { IsHitTestVisible = false };
+        for (int i = 0; i < totalTests; i++)
         {
-            Title = "Selfhost Tests",
-            Content = _progressBar,
+            segmentBar.ColumnDefinitions.Add(
+                new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var seg = new Border
+            {
+                Background = new SolidColorBrush(
+                    Windows.UI.Color.FromArgb(30, 200, 200, 200)),
+            };
+            Grid.SetColumn(seg, i);
+            segmentBar.Children.Add(seg);
+            _testSegments.Add(seg);
+        }
+
+        // Subtitle label in a semi-transparent pill for readability over the bar
+        _subtitleText = new TextBlock
+        {
+            FontSize = 12,
+            Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255)),
+            VerticalAlignment = VerticalAlignment.Center,
+            IsHitTestVisible = false,
         };
+        var textPill = new Border
+        {
+            Background = new SolidColorBrush(Windows.UI.Color.FromArgb(180, 0, 0, 0)),
+            CornerRadius = new CornerRadius(4),
+            Padding = new Thickness(8, 2, 8, 2),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(12, 0, 0, 0),
+            IsHitTestVisible = false,
+            Child = _subtitleText,
+        };
+
+        var titleBarArea = new Grid { Height = 48 };
+        titleBarArea.Children.Add(segmentBar);
+        titleBarArea.Children.Add(textPill);
 
         var rootGrid = new Grid();
         rootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         rootGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
-        Grid.SetRow(_titleBar, 0);
-        rootGrid.Children.Add(_titleBar);
+        Grid.SetRow(titleBarArea, 0);
+        rootGrid.Children.Add(titleBarArea);
 
         _contentArea = new Border();
         Grid.SetRow(_contentArea, 1);
@@ -47,15 +82,25 @@ internal sealed class Harness
 
         _window.Content = rootGrid;
         _window.ExtendsContentIntoTitleBar = true;
-        _window.SetTitleBar(_titleBar);
+        _window.SetTitleBar(titleBarArea);
     }
 
     public void UpdateProgress(int current, string fixtureName)
     {
-        if (_titleBar is not null)
-            _titleBar.Subtitle = $"{current}/{(int)(_progressBar?.Maximum ?? 0)} \u2014 {fixtureName}";
-        if (_progressBar is not null)
-            _progressBar.Value = current;
+        if (_subtitleText is not null)
+            _subtitleText.Text = $"{current}/{_testSegments.Count} \u2014 {fixtureName}";
+    }
+
+    /// <summary>
+    /// Colors the segment at <paramref name="index"/> green (pass) or red (fail).
+    /// </summary>
+    public void MarkFixtureResult(int index, bool passed)
+    {
+        if (index < 0 || index >= _testSegments.Count) return;
+        _testSegments[index].Background = new SolidColorBrush(
+            passed
+                ? Windows.UI.Color.FromArgb(255, 76, 175, 80)   // green
+                : Windows.UI.Color.FromArgb(255, 244, 67, 54)); // red
     }
 
     public Duct.DuctHost CreateHost()
