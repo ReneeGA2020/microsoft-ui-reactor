@@ -6,6 +6,22 @@ namespace Duct.Tests;
 
 public class AutoSuggestTests
 {
+    /// <summary>
+    /// Waits until the SearchManager reaches the specified state via its StateChanged event.
+    /// </summary>
+    private static Task WaitForState<T>(SearchManager<T> manager, SearchState target)
+    {
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        manager.StateChanged += () =>
+        {
+            if (manager.State == target)
+                tcs.TrySetResult();
+        };
+        // Check after subscribing to avoid TOCTOU race
+        if (manager.State == target)
+            tcs.TrySetResult();
+        return tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+    }
     // ════════════════════════════════════════════════════════════════
     //  Element creation
     // ════════════════════════════════════════════════════════════════
@@ -60,7 +76,7 @@ public class AutoSuggestTests
         manager.Search("test");
         Assert.False(searchCalled); // not called yet (debounce)
 
-        await Task.Delay(100);
+        await WaitForState(manager, SearchState.Results);
         Assert.True(searchCalled);
 
         manager.Dispose();
@@ -84,7 +100,7 @@ public class AutoSuggestTests
         manager.Search("ab");
         manager.Search("abc");
 
-        await Task.Delay(200);
+        await WaitForState(manager, SearchState.Results);
 
         // Only the last search should complete
         Assert.True(searchCount <= 1);
@@ -101,12 +117,12 @@ public class AutoSuggestTests
             debounceMs: 10);
 
         manager.Search("test");
-        await Task.Delay(50);
+        await WaitForState(manager, SearchState.Loading);
 
         Assert.Equal(SearchState.Loading, manager.State);
 
         tcs.SetResult(new[] { "result" });
-        await Task.Delay(50);
+        await WaitForState(manager, SearchState.Results);
 
         Assert.Equal(SearchState.Results, manager.State);
         Assert.Single(manager.Results);
@@ -126,7 +142,7 @@ public class AutoSuggestTests
             debounceMs: 10);
 
         manager.Search("xyz");
-        await Task.Delay(100);
+        await WaitForState(manager, SearchState.Empty);
 
         Assert.Equal(SearchState.Empty, manager.State);
         Assert.Empty(manager.Results);
@@ -146,7 +162,7 @@ public class AutoSuggestTests
             debounceMs: 10);
 
         manager.Search("test");
-        await Task.Delay(100);
+        await WaitForState(manager, SearchState.Error);
 
         Assert.Equal(SearchState.Error, manager.State);
         Assert.Equal("API down", manager.ErrorText);

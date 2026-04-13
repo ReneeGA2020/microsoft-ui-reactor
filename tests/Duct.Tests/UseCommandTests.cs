@@ -66,32 +66,37 @@ public class UseCommandTests
     [Fact]
     public async Task IsExecuting_Becomes_True_During_Execution()
     {
-        var tcs = new TaskCompletionSource();
-        var ctx = CreateContext();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stateChanged = new SemaphoreSlim(0);
+        var ctx = new RenderContext();
+        ctx.BeginRender(() => stateChanged.Release());
         var cmd = new DuctCommand
         {
             Label = "Save",
             ExecuteAsync = async () =>
             {
+                started.SetResult();
                 await tcs.Task;
             }
         };
 
         var result = ctx.UseCommand(cmd);
         result.Execute!();
+        // setIsExecuting(true) fires synchronously → 1st release
 
-        // Give the task a moment to start
-        await Task.Delay(50);
+        await started.Task;
+        await stateChanged.WaitAsync(TimeSpan.FromSeconds(5)); // drain 1st release
 
-        // Re-render to observe state
-        Rerender(ctx);
+        // Re-render to observe state (preserve callback for the next release)
+        ctx.BeginRender(() => stateChanged.Release());
         var result2 = ctx.UseCommand(cmd);
         Assert.True(result2.IsExecuting);
         Assert.False(result2.IsEnabled);
 
-        // Complete the task
+        // Complete the task; finally block calls setIsExecuting(false) → 2nd release
         tcs.SetResult();
-        await Task.Delay(50);
+        await stateChanged.WaitAsync(TimeSpan.FromSeconds(5));
 
         // Re-render to observe completion
         Rerender(ctx);
@@ -103,7 +108,12 @@ public class UseCommandTests
     [Fact]
     public async Task Error_In_ExecuteAsync_Still_Resets_IsExecuting()
     {
-        var ctx = CreateContext();
+        // Use a semaphore to observe re-render requests from setIsExecuting.
+        // Task.Yield() doesn't reliably interleave with thread pool work items
+        // under xUnit's synchronization context.
+        var stateChanged = new SemaphoreSlim(0);
+        var ctx = new RenderContext();
+        ctx.BeginRender(() => stateChanged.Release());
         var cmd = new DuctCommand
         {
             Label = "Save",
@@ -113,7 +123,10 @@ public class UseCommandTests
         var result = ctx.UseCommand(cmd);
         result.Execute!();
 
-        await Task.Delay(100);
+        // Execute! synchronously sets IsExecuting=true (1st release), then Task.Run
+        // catches the error and sets IsExecuting=false in finally (2nd release).
+        await stateChanged.WaitAsync(TimeSpan.FromSeconds(5));
+        await stateChanged.WaitAsync(TimeSpan.FromSeconds(5));
 
         Rerender(ctx);
         var result2 = ctx.UseCommand(cmd);
@@ -139,30 +152,39 @@ public class UseCommandTests
     public async Task Parameterized_Async_Passes_Argument_Through()
     {
         string? received = null;
-        var tcs = new TaskCompletionSource();
-        var ctx = CreateContext();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stateChanged = new SemaphoreSlim(0);
+        var ctx = new RenderContext();
+        ctx.BeginRender(() => stateChanged.Release());
         var cmd = new DuctCommand<string>
         {
             Label = "Delete",
             ExecuteAsync = async arg =>
             {
                 received = arg;
+                started.SetResult();
                 await tcs.Task;
             }
         };
 
         var result = ctx.UseCommand(cmd);
         result.Execute!("item-42");
+        // setIsExecuting(true) fires synchronously → 1st release
 
-        await Task.Delay(50);
+        await started.Task;
         Assert.Equal("item-42", received);
 
-        Rerender(ctx);
+        await stateChanged.WaitAsync(TimeSpan.FromSeconds(5)); // drain 1st release
+
+        // Re-render to observe IsExecuting=true (preserve callback for the next release)
+        ctx.BeginRender(() => stateChanged.Release());
         var result2 = ctx.UseCommand(cmd);
         Assert.True(result2.IsExecuting);
 
+        // Complete the task; finally block calls setIsExecuting(false) → 2nd release
         tcs.SetResult();
-        await Task.Delay(50);
+        await stateChanged.WaitAsync(TimeSpan.FromSeconds(5));
 
         Rerender(ctx);
         var result3 = ctx.UseCommand(cmd);
