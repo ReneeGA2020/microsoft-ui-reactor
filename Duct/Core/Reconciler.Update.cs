@@ -1092,7 +1092,6 @@ public sealed partial class Reconciler
             // Resolve new child: check cache first, then mount fresh
             UIElement? newChildControl;
             Element? newChildElement;
-            bool restoredFromCache = false;
 
             if (node.Cache is not null && node.Cache.TryGet(currentRoute, out var cached))
             {
@@ -1100,7 +1099,6 @@ public sealed partial class Reconciler
                 newChildControl = cached.MountedControl;
                 newChildElement = cached.LastElement;
                 node.Cache.Remove(currentRoute);
-                restoredFromCache = true;
             }
             else
             {

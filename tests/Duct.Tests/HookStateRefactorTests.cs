@@ -18,7 +18,7 @@ public class HookStateRefactorTests
         var hooksField = typeof(RenderContext).GetField("_hooks",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
         var hooks = (System.Collections.IList)hooksField.GetValue(ctx)!;
-        return hooks[index].GetType().Name;
+        return hooks[index]!.GetType().Name;
     }
 
     private static object GetHookState(RenderContext ctx, int index)
@@ -26,7 +26,7 @@ public class HookStateRefactorTests
         var hooksField = typeof(RenderContext).GetField("_hooks",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
         var hooks = (System.Collections.IList)hooksField.GetValue(ctx)!;
-        return hooks[index];
+        return hooks[index]!;
     }
 
     // ════════════════════════════════════════════════════════════════

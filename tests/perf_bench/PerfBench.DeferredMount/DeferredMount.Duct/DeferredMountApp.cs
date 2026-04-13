@@ -66,8 +66,6 @@ public class DeferredMountApp : Component
                 };
                 shutdown.Start();
             }
-
-            return null;
         });
 
         // Tab buttons

@@ -1,6 +1,9 @@
 using Duct.Core;
 using Xunit;
 
+#pragma warning disable xUnit1031 // These tests deliberately use blocking (.Wait/.Result/WaitAll)
+                                  // to simulate UI-thread + background-thread interaction patterns.
+
 namespace Duct.Tests;
 
 /// <summary>

@@ -217,11 +217,9 @@ public class AutoSuggestTests
     [Fact]
     public void SearchManager_Dispose_Cancels_InFlight()
     {
-        var searchStarted = false;
         var manager = new SearchManager<string>(
             async (query, ct) =>
             {
-                searchStarted = true;
                 await Task.Delay(5000, ct);
                 return new[] { "result" };
             },

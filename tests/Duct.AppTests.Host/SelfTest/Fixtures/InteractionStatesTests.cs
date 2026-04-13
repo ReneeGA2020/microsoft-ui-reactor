@@ -39,7 +39,7 @@ internal static class InteractionStatesTests
                 Pressed: new InteractionStateValues(Scale: 0.97f));
 
             H.Check("InterState_ConfigCreated", config is not null);
-            H.Check("InterState_PointerOverSet", config.PointerOver?.Opacity == 0.85f);
+            H.Check("InterState_PointerOverSet", config!.PointerOver?.Opacity == 0.85f);
             H.Check("InterState_PressedScaleSet", config.Pressed?.Scale == 0.97f);
             // Pressed inherits Opacity from PointerOver (null means "inherit")
             H.Check("InterState_PressedOpacityInherited", config.Pressed?.Opacity is null);

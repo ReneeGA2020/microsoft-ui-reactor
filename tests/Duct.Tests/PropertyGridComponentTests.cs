@@ -127,7 +127,7 @@ public class PropertyGridComponentTests
 
         Assert.Equal(2, groups["Appearance"].Count);
         Assert.Equal(2, groups["Layout"].Count);
-        Assert.Equal(1, groups["General"].Count);
+        Assert.Single(groups["General"]);
     }
 
     [Fact]

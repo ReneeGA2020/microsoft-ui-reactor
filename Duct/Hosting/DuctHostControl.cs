@@ -38,7 +38,9 @@ namespace Duct;
 /// </summary>
 public sealed partial class DuctHostControl : ContentControl, IDisposable
 {
+#pragma warning disable CS0414 // Design constant for render-loop limiting; wiring pending
     private static readonly int MaxRenderIterations = 50;
+#pragma warning restore CS0414
 
     private readonly Reconciler _reconciler;
     private readonly DispatcherQueue _dispatcherQueue;

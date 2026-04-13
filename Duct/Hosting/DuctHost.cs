@@ -14,7 +14,9 @@ namespace Duct;
 /// </summary>
 public sealed class DuctHost : IDisposable
 {
+#pragma warning disable CS0414 // Design constant for render-loop limiting; wiring pending
     private static readonly int MaxRenderIterations = 50;
+#pragma warning restore CS0414
 
     private readonly Window _window;
     private readonly Reconciler _reconciler;

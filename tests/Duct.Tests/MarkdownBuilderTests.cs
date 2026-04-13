@@ -153,13 +153,13 @@ public class MarkdownBuilderTests
     // ════════════════════════════════════════════════════════════════════
 
     [Theory]
-    [InlineData("# H1", 1, 28)]
-    [InlineData("## H2", 2, 24)]
-    [InlineData("### H3", 3, 20)]
-    [InlineData("#### H4", 4, 18)]
-    [InlineData("##### H5", 5, 16)]
-    [InlineData("###### H6", 6, 14)]
-    public void Heading_FontSizeByLevel(string markdown, int level, double expectedFontSize)
+    [InlineData("# H1", 28)]
+    [InlineData("## H2", 24)]
+    [InlineData("### H3", 20)]
+    [InlineData("#### H4", 18)]
+    [InlineData("##### H5", 16)]
+    [InlineData("###### H6", 14)]
+    public void Heading_FontSizeByLevel(string markdown, double expectedFontSize)
     {
         var result = Md(markdown);
         var stack = AsVStack(result);

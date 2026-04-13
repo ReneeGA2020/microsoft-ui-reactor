@@ -81,8 +81,6 @@ public class PrioritiesApp : Component
                 };
                 shutdown.Start();
             }
-
-            return null;
         });
 
         // Build filtered list elements

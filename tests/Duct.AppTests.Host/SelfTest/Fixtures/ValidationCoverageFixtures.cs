@@ -207,7 +207,7 @@ internal static class ValidationCoverageFixtures
             var messages = attached!.RunValidators("");
             H.Check("ValExt_RunValidators", messages.Count >= 1);
 
-            var passMessages = attached.RunValidators("hello");
+            var passMessages = attached!.RunValidators("hello");
             H.Check("ValExt_RunValidatorsPass", passMessages.Count == 0);
 
             // Async validators

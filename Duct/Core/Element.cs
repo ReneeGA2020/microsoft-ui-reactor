@@ -1760,7 +1760,9 @@ public abstract record LazyStackElementBase : Element
     public abstract double Spacing { get; init; }
     public abstract double EstimatedItemSize { get; init; }
     public abstract object GetItemsSource();
+#pragma warning disable CS8305 // ElementFactory is experimental; we coordinate with WinUI team
     public abstract ElementFactory CreateFactory(Reconciler reconciler, Action requestRerender, ElementPool? pool);
+#pragma warning restore CS8305
     internal Action<WinUI.ScrollViewer>[] ScrollViewerSetters { get; init; } = [];
     internal Action<WinUI.ItemsRepeater>[] RepeaterSetters { get; init; } = [];
 }
@@ -1778,8 +1780,10 @@ public record LazyVStackElement<T>(
     public override object GetItemsSource() =>
         Enumerable.Range(0, Items.Count).ToList();
 
+#pragma warning disable CS8305
     public override ElementFactory CreateFactory(Reconciler reconciler, Action requestRerender, ElementPool? pool) =>
         new DuctElementFactory<T>(Items, ViewBuilder, reconciler, requestRerender, pool);
+#pragma warning restore CS8305
 }
 
 public record LazyHStackElement<T>(
@@ -1795,8 +1799,10 @@ public record LazyHStackElement<T>(
     public override object GetItemsSource() =>
         Enumerable.Range(0, Items.Count).ToList();
 
+#pragma warning disable CS8305
     public override ElementFactory CreateFactory(Reconciler reconciler, Action requestRerender, ElementPool? pool) =>
         new DuctElementFactory<T>(Items, ViewBuilder, reconciler, requestRerender, pool);
+#pragma warning restore CS8305
 }
 
 // ════════════════════════════════════════════════════════════════════════

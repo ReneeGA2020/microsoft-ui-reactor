@@ -114,8 +114,10 @@ public sealed class TreeLayout<T>
         {
             var defaultAncestor = v.Children[0];
 
-            foreach (var child in v.Children)
+            for (int i = 0; i < v.Children.Count; i++)
             {
+                var child = v.Children[i];
+                child.Number = i;
                 FirstWalk(child);
                 defaultAncestor = Apportion(child, defaultAncestor);
             }
@@ -226,7 +228,7 @@ public sealed class TreeLayout<T>
 
     private static TreeNode<T> GetAncestor(TreeNode<T> vil, TreeNode<T> v, TreeNode<T> defaultAncestor)
     {
-        return vil.Ancestor?.Parent == v.Parent ? vil.Ancestor : defaultAncestor;
+        return vil.Ancestor is { } ancestor && ancestor.Parent == v.Parent ? ancestor : defaultAncestor;
     }
 
     private static TreeNode<T>? LeftSibling(TreeNode<T> v)

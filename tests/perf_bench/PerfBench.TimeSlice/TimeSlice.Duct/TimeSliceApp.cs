@@ -68,8 +68,6 @@ public class TimeSliceApp : Component
                 };
                 shutdown.Start();
             }
-
-            return null;
         });
 
         // Build child elements

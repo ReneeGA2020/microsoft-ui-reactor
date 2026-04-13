@@ -134,8 +134,8 @@ public class PersistedStateTests : IDisposable
         var hooksField = typeof(RenderContext).GetField("_hooks",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
         var hooks = (System.Collections.IList)hooksField.GetValue(ctx)!;
-        Assert.Contains("PersistedHookState", hooks[0].GetType().Name);
-        Assert.Contains("Int32", hooks[0].GetType().ToString());
+        Assert.Contains("PersistedHookState", hooks[0]!.GetType().Name);
+        Assert.Contains("Int32", hooks[0]!.GetType().ToString());
     }
 
     [Fact]

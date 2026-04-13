@@ -26,7 +26,6 @@ public partial class MainWindow : Window
     private readonly TextBlock[] _cells = new TextBlock[StockDataSource.TotalItems];
 
     private DispatcherTimer? _updateTimer;
-    private DispatcherTimer? _shutdownTimer;
     private Slider? _percentSlider;
     private TextBlock? _fpsText;
     private TextBlock? _memText;

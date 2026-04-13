@@ -7,7 +7,9 @@ namespace Duct.Core;
 /// Bridges WinUI's ItemsRepeater/ElementFactory to Duct's Reconciler.
 /// GetElementCore calls the view builder then mounts; RecycleElementCore unmounts.
 /// </summary>
+#pragma warning disable CS8305 // ElementFactory is experimental; we coordinate with WinUI team
 public sealed partial class DuctElementFactory<T> : ElementFactory
+#pragma warning restore CS8305
 {
     private readonly IReadOnlyList<T> _items;
     private readonly Func<T, int, Element> _viewBuilder;
@@ -75,7 +77,7 @@ public sealed partial class DuctElementFactory<T> : ElementFactory
         }
         else if (root is FrameworkElement fe && IsPoolableInteractive(fe))
         {
-            _pool.Return(fe);
+            _pool!.Return(fe);
         }
     }
 

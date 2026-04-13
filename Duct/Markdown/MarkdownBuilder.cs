@@ -103,7 +103,6 @@ internal sealed class MarkdownBuilder
     private readonly List<Element> _tableAllCells = new();
     private int _tableRowIndex;
     private int _tableCellIndex;
-    private bool _inTableHeader;
 
     // List item numbering.
     private int _listItemIndex;
@@ -190,12 +189,6 @@ internal sealed class MarkdownBuilder
                 // Hr has no children — produce it immediately.
                 break;
         }
-
-        // Track table header state.
-        if (type == MdBlockType.Thead)
-            _inTableHeader = true;
-        else if (type == MdBlockType.Tbody)
-            _inTableHeader = false;
 
         // Reset list item index on entering a list.
         if (type == MdBlockType.Ul || type == MdBlockType.Ol)

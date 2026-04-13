@@ -19,7 +19,6 @@ public class TypeRegistryUnmountTests
     public void UnmountChild_Invokes_Registered_Unmount_Handler()
     {
         var reconciler = new Reconciler();
-        bool unmountCalled = false;
         bool mountCalled = false;
 
         reconciler.RegisterType<CustomCardElement, UIElement>(
@@ -30,10 +29,7 @@ public class TypeRegistryUnmountTests
                 throw new InvalidOperationException("Mount dispatched");
             },
             update: (r, oldEl, newEl, ctrl, rerender) => ctrl,
-            unmount: (r, ctrl) =>
-            {
-                unmountCalled = true;
-            });
+            unmount: (r, ctrl) => { });
 
         // Verify mount is dispatched
         var element = new CustomCardElement("Hello");

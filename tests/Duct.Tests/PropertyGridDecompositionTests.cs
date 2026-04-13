@@ -67,7 +67,7 @@ public class PropertyGridDecompositionTests
         var detailsDesc = parentDescriptors.First(d => d.Name == "Details");
 
         // The Details property is mutable (has a setter)
-        var detailsValue = (NestedModel)detailsDesc.GetValue();
+        var detailsValue = (NestedModel)detailsDesc.GetValue()!;
         var nestedMeta = registry.Resolve(typeof(NestedModel));
         var nestedDescriptors = nestedMeta.Decompose!(detailsValue);
 
@@ -96,7 +96,7 @@ public class PropertyGridDecompositionTests
         Assert.NotNull(pointMeta.Compose);
 
         // Simulate editing X on the immutable ImmutablePoint
-        var currentPoint = (ImmutablePoint)positionDesc.GetValue();
+        var currentPoint = (ImmutablePoint)positionDesc.GetValue()!;
         var newPoint = (ImmutablePoint)pointMeta.Compose!(currentPoint,
             new Dictionary<string, object> { { "X", 99 } });
 

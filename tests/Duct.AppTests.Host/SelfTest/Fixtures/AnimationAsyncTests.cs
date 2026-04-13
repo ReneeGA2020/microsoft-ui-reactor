@@ -42,7 +42,7 @@ internal static class AnimationAsyncTests
             H.Check("AsyncAnim_TaskNotNull", task is not null);
 
             // Wait for completion (with timeout)
-            var completed = await Task.WhenAny(task, Task.Delay(2000));
+            var completed = await Task.WhenAny(task!, Task.Delay(2000));
             H.Check("AsyncAnim_TaskCompleted", completed == task);
         }
     }

@@ -432,8 +432,7 @@ public class MemoizationPropagationTests
     {
         var scope = new ContextScope();
 
-        bool rootRerenderCalled = false;
-        Action rootRerender = () => rootRerenderCalled = true;
+        Action rootRerender = () => { };
 
         var parentNode = new NodeState();
         var dirtyNode = new NodeState();

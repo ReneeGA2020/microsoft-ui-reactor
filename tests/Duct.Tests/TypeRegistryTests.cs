@@ -206,7 +206,6 @@ public class TypeRegistryTests
         // Verify update dispatch by registering a custom type where both mount
         // and update use UIElement (base type) to avoid cast issues.
         var reconciler = new Reconciler();
-        bool updateHandlerEntered = false;
 
         reconciler.RegisterType<TestCustomElement, UIElement>(
             mount: (r, el, rerender) =>
@@ -216,7 +215,6 @@ public class TypeRegistryTests
             },
             update: (r, oldEl, newEl, ctrl, rerender) =>
             {
-                updateHandlerEntered = true;
                 throw new InvalidOperationException("Update dispatched");
             });
 

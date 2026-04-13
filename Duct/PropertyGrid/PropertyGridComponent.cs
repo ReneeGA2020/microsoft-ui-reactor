@@ -217,7 +217,7 @@ public class PropertyGridComponent : Component<PropertyGridElement>
                 editChain.PropagateImmutableEdit(descriptor.Name, newValue);
         };
 
-        return meta.Editor!(currentValue, onChange);
+        return meta.Editor!(currentValue!, onChange);
     }
 
     private static Element RenderReadOnlyValue(object? value, Type type)
