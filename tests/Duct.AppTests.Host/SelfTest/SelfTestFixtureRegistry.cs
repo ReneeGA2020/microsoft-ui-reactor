@@ -376,6 +376,21 @@ internal static class SelfTestFixtureRegistry
         "ValCov_FormFieldRendering",
         "ValCov_ValidationRule",
         "ValCov_FormFieldHelpers",
+        // Controls coverage — MaskEngine, InputFormatter, AutoSuggest
+        "ControlsCov_MaskEngineBasic",
+        "ControlsCov_MaskEngineNavigation",
+        "ControlsCov_MaskEngineTokenTypes",
+        "ControlsCov_InputFormattersBasic",
+        "ControlsCov_InputFormattersCasing",
+        "ControlsCov_InputFormattersFiltering",
+        "ControlsCov_FormatterPipeline",
+        "ControlsCov_AutoSuggestElement",
+        "ControlsCov_SearchManager",
+        // Hooks coverage — FocusManager, UseFocus
+        "HooksCov_FocusManagerRegistration",
+        "HooksCov_FocusManagerNavigation",
+        "HooksCov_FocusManagerWithControls",
+        "HooksCov_UseFocusHookIntegration",
     ];
 
     public static SelfTestFixtureBase? Create(string name, Harness harness) => name switch
@@ -747,6 +762,21 @@ internal static class SelfTestFixtureRegistry
         "ValCov_FormFieldRendering" => new ValidationCoverageFixtures.FormFieldRendering(harness),
         "ValCov_ValidationRule" => new ValidationCoverageFixtures.ValidationRuleExercise(harness),
         "ValCov_FormFieldHelpers" => new ValidationCoverageFixtures.FormFieldHelpersExercise(harness),
+        // Controls coverage
+        "ControlsCov_MaskEngineBasic" => new ControlsCoverageFixtures.MaskEngineBasic(harness),
+        "ControlsCov_MaskEngineNavigation" => new ControlsCoverageFixtures.MaskEngineNavigation(harness),
+        "ControlsCov_MaskEngineTokenTypes" => new ControlsCoverageFixtures.MaskEngineTokenTypes(harness),
+        "ControlsCov_InputFormattersBasic" => new ControlsCoverageFixtures.InputFormattersBasic(harness),
+        "ControlsCov_InputFormattersCasing" => new ControlsCoverageFixtures.InputFormattersCasing(harness),
+        "ControlsCov_InputFormattersFiltering" => new ControlsCoverageFixtures.InputFormattersFiltering(harness),
+        "ControlsCov_FormatterPipeline" => new ControlsCoverageFixtures.FormatterPipelineExercise(harness),
+        "ControlsCov_AutoSuggestElement" => new ControlsCoverageFixtures.AutoSuggestElementCreation(harness),
+        "ControlsCov_SearchManager" => new ControlsCoverageFixtures.SearchManagerExercise(harness),
+        // Hooks coverage
+        "HooksCov_FocusManagerRegistration" => new HooksCoverageFixtures.FocusManagerRegistration(harness),
+        "HooksCov_FocusManagerNavigation" => new HooksCoverageFixtures.FocusManagerNavigation(harness),
+        "HooksCov_FocusManagerWithControls" => new HooksCoverageFixtures.FocusManagerWithControls(harness),
+        "HooksCov_UseFocusHookIntegration" => new HooksCoverageFixtures.UseFocusHookIntegration(harness),
         _ => null,
     };
 }
