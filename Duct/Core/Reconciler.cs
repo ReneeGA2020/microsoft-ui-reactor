@@ -1655,6 +1655,8 @@ public sealed partial class Reconciler : IDisposable
         // bindings resolve against the correct theme variant.
         if (m.RequestedTheme.HasValue && m.RequestedTheme != oldM?.RequestedTheme)
             fe.RequestedTheme = m.RequestedTheme.Value;
+        else if (!m.RequestedTheme.HasValue && oldM?.RequestedTheme.HasValue == true)
+            fe.ClearValue(FrameworkElement.RequestedThemeProperty);
 
         // Apply physical margin, then overlay logical (BiDi-aware) inline margin
         var resolvedMargin = m.Margin ?? oldM?.Margin;
@@ -1667,6 +1669,7 @@ public sealed partial class Reconciler : IDisposable
             resolvedMargin = new Thickness(left, baseMargin.Top, right, baseMargin.Bottom);
         }
         if (resolvedMargin.HasValue && resolvedMargin != oldM?.Margin) fe.Margin = resolvedMargin.Value;
+        else if (!resolvedMargin.HasValue && oldM?.Margin.HasValue == true) fe.Margin = new Thickness(0);
 
         // Apply physical padding, then overlay logical (BiDi-aware) inline padding
         var resolvedPadding = m.Padding ?? oldM?.Padding;
@@ -1684,6 +1687,12 @@ public sealed partial class Reconciler : IDisposable
             else if (fe is WinUI.Border padBdr) padBdr.Padding = resolvedPadding.Value;
             else if (fe is WinUI.StackPanel padSp) padSp.Padding = resolvedPadding.Value;
         }
+        else if (!resolvedPadding.HasValue && oldM?.Padding.HasValue == true)
+        {
+            if (fe is WinUI.Control padCtrl) padCtrl.Padding = new Thickness(0);
+            else if (fe is WinUI.Border padBdr) padBdr.Padding = new Thickness(0);
+            else if (fe is WinUI.StackPanel padSp) padSp.Padding = new Thickness(0);
+        }
         if (m.Width.HasValue && m.Width != oldM?.Width) fe.Width = m.Width.Value;
         else if (!m.Width.HasValue && oldM?.Width.HasValue == true) fe.Width = double.NaN;
         if (m.Height.HasValue && m.Height != oldM?.Height) fe.Height = m.Height.Value;
@@ -1697,9 +1706,13 @@ public sealed partial class Reconciler : IDisposable
         if (m.MaxHeight.HasValue && m.MaxHeight != oldM?.MaxHeight) fe.MaxHeight = m.MaxHeight.Value;
         else if (!m.MaxHeight.HasValue && oldM?.MaxHeight.HasValue == true) fe.MaxHeight = double.PositiveInfinity;
         if (m.HorizontalAlignment.HasValue && m.HorizontalAlignment != oldM?.HorizontalAlignment) fe.HorizontalAlignment = m.HorizontalAlignment.Value;
+        else if (!m.HorizontalAlignment.HasValue && oldM?.HorizontalAlignment.HasValue == true) fe.HorizontalAlignment = HorizontalAlignment.Stretch;
         if (m.VerticalAlignment.HasValue && m.VerticalAlignment != oldM?.VerticalAlignment) fe.VerticalAlignment = m.VerticalAlignment.Value;
+        else if (!m.VerticalAlignment.HasValue && oldM?.VerticalAlignment.HasValue == true) fe.VerticalAlignment = VerticalAlignment.Stretch;
         if (m.Opacity.HasValue && m.Opacity != oldM?.Opacity)
             AnimationHelper.SetOrAnimate(fe, "Opacity", (float)m.Opacity.Value);
+        else if (!m.Opacity.HasValue && oldM?.Opacity.HasValue == true)
+            fe.Opacity = 1.0;
         if (m.Scale.HasValue && m.Scale != oldM?.Scale)
             AnimationHelper.SetOrAnimateVector3(fe, "Scale", m.Scale.Value);
         if (m.Rotation.HasValue && m.Rotation != oldM?.Rotation)
@@ -1710,6 +1723,8 @@ public sealed partial class Reconciler : IDisposable
             AnimationHelper.SetOrAnimateVector3(fe, "CenterPoint", m.CenterPoint.Value);
         if (m.IsVisible.HasValue && m.IsVisible != oldM?.IsVisible)
             fe.Visibility = m.IsVisible.Value ? Visibility.Visible : Visibility.Collapsed;
+        else if (!m.IsVisible.HasValue && oldM?.IsVisible.HasValue == true)
+            fe.Visibility = Visibility.Visible;
         if (m.RichToolTip is not null)
         {
             var oldTipEl = oldM?.RichToolTip;
@@ -1727,6 +1742,8 @@ public sealed partial class Reconciler : IDisposable
         }
         else if (m.ToolTip is not null && m.ToolTip != oldM?.ToolTip)
             WinUI.ToolTipService.SetToolTip(fe, m.ToolTip);
+        else if (m.RichToolTip is null && m.ToolTip is null && (oldM?.RichToolTip is not null || oldM?.ToolTip is not null))
+            fe.ClearValue(WinUI.ToolTipService.ToolTipProperty);
 
         if (m.AttachedFlyout is not null)
             ApplyFlyoutAttachment(fe, oldM?.AttachedFlyout, m.AttachedFlyout, requestRerender);
@@ -1739,10 +1756,14 @@ public sealed partial class Reconciler : IDisposable
             else
                 fe.ContextFlyout = CreateFlyoutFromElement(m.ContextFlyout, requestRerender);
         }
+        else if (oldM?.ContextFlyout is not null)
+            fe.ContextFlyout = null;
 
         // IsEnabled (on Control)
         if (m.IsEnabled.HasValue && m.IsEnabled != oldM?.IsEnabled && fe is WinUI.Control enCtrl)
             enCtrl.IsEnabled = m.IsEnabled.Value;
+        else if (!m.IsEnabled.HasValue && oldM?.IsEnabled.HasValue == true && fe is WinUI.Control enCtrl2)
+            enCtrl2.IsEnabled = true;
 
         // CornerRadius (on Control and Border)
         if (m.CornerRadius.HasValue && m.CornerRadius != oldM?.CornerRadius)
@@ -1750,12 +1771,22 @@ public sealed partial class Reconciler : IDisposable
             if (fe is WinUI.Control crCtrl) crCtrl.CornerRadius = m.CornerRadius.Value;
             else if (fe is WinUI.Border crBdr) crBdr.CornerRadius = m.CornerRadius.Value;
         }
+        else if (!m.CornerRadius.HasValue && oldM?.CornerRadius.HasValue == true)
+        {
+            if (fe is WinUI.Control crCtrl) crCtrl.CornerRadius = new CornerRadius(0);
+            else if (fe is WinUI.Border crBdr) crBdr.CornerRadius = new CornerRadius(0);
+        }
 
         // BorderBrush / BorderThickness (on Control and Border)
         if (m.BorderBrush is not null && !ReferenceEquals(m.BorderBrush, oldM?.BorderBrush))
         {
             if (fe is WinUI.Control bbCtrl) bbCtrl.BorderBrush = m.BorderBrush;
             else if (fe is WinUI.Border bbBdr) bbBdr.BorderBrush = m.BorderBrush;
+        }
+        else if (m.BorderBrush is null && oldM?.BorderBrush is not null)
+        {
+            if (fe is WinUI.Control bbCtrl) bbCtrl.ClearValue(WinUI.Control.BorderBrushProperty);
+            else if (fe is WinUI.Border bbBdr) bbBdr.ClearValue(WinUI.Border.BorderBrushProperty);
         }
         // Apply physical border thickness, then overlay logical (BiDi-aware) inline border
         var resolvedBorder = m.BorderThickness;
@@ -1774,6 +1805,11 @@ public sealed partial class Reconciler : IDisposable
             if (fe is WinUI.Control btCtrl) btCtrl.BorderThickness = resolvedBorder.Value;
             else if (fe is WinUI.Border btBdr) btBdr.BorderThickness = resolvedBorder.Value;
         }
+        else if (!resolvedBorder.HasValue && oldM?.BorderThickness.HasValue == true)
+        {
+            if (fe is WinUI.Control btCtrl) btCtrl.BorderThickness = new Thickness(0);
+            else if (fe is WinUI.Border btBdr) btBdr.BorderThickness = new Thickness(0);
+        }
 
         // Background (Panel, Control, or Border)
         if (m.Background is not null && !ReferenceEquals(m.Background, oldM?.Background))
@@ -1782,6 +1818,12 @@ public sealed partial class Reconciler : IDisposable
             else if (fe is WinUI.Control ctrl2) ctrl2.Background = m.Background;
             else if (fe is WinUI.Border bdr) bdr.Background = m.Background;
         }
+        else if (m.Background is null && oldM?.Background is not null)
+        {
+            if (fe is WinUI.Panel panel) panel.ClearValue(WinUI.Panel.BackgroundProperty);
+            else if (fe is WinUI.Control ctrl2) ctrl2.ClearValue(WinUI.Control.BackgroundProperty);
+            else if (fe is WinUI.Border bdr) bdr.ClearValue(WinUI.Border.BackgroundProperty);
+        }
 
         // Foreground (Control or TextBlock)
         if (m.Foreground is not null && !ReferenceEquals(m.Foreground, oldM?.Foreground))
@@ -1789,14 +1831,23 @@ public sealed partial class Reconciler : IDisposable
             if (fe is WinUI.Control fgCtrl) fgCtrl.Foreground = m.Foreground;
             else if (fe is TextBlock fgTb) fgTb.Foreground = m.Foreground;
         }
+        else if (m.Foreground is null && oldM?.Foreground is not null)
+        {
+            if (fe is WinUI.Control fgCtrl) fgCtrl.ClearValue(WinUI.Control.ForegroundProperty);
+            else if (fe is TextBlock fgTb) fgTb.ClearValue(TextBlock.ForegroundProperty);
+        }
 
         // AutomationProperties.Name
         if (m.AutomationName is not null && m.AutomationName != oldM?.AutomationName)
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(fe, m.AutomationName);
+        else if (m.AutomationName is null && oldM?.AutomationName is not null)
+            fe.ClearValue(Microsoft.UI.Xaml.Automation.AutomationProperties.NameProperty);
 
         // AutomationProperties.AutomationId
         if (m.AutomationId is not null && m.AutomationId != oldM?.AutomationId)
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(fe, m.AutomationId);
+        else if (m.AutomationId is null && oldM?.AutomationId is not null)
+            fe.ClearValue(Microsoft.UI.Xaml.Automation.AutomationProperties.AutomationIdProperty);
 
         // ElementSoundMode (on Control, not FrameworkElement)
         if (m.ElementSoundMode.HasValue && m.ElementSoundMode != oldM?.ElementSoundMode && fe is WinUI.Control ctrl)
@@ -1814,6 +1865,8 @@ public sealed partial class Reconciler : IDisposable
 
         if (m.AccessKey is not null && m.AccessKey != oldM?.AccessKey)
             fe.AccessKey = m.AccessKey;
+        else if (m.AccessKey is null && oldM?.AccessKey is not null)
+            fe.AccessKey = "";
 
         // ── Accessibility — Tier 2/3 (lazy sub-record) ─────────────
         var a11y = m.Accessibility;
@@ -1827,15 +1880,30 @@ public sealed partial class Reconciler : IDisposable
             if (fe is WinUI.Control ffCtrl) ffCtrl.FontFamily = m.FontFamily;
             else if (fe is TextBlock ffTb) ffTb.FontFamily = m.FontFamily;
         }
+        else if (m.FontFamily is null && oldM?.FontFamily is not null)
+        {
+            if (fe is WinUI.Control ffCtrl) ffCtrl.ClearValue(WinUI.Control.FontFamilyProperty);
+            else if (fe is TextBlock ffTb) ffTb.ClearValue(TextBlock.FontFamilyProperty);
+        }
         if (m.FontSize.HasValue && m.FontSize != oldM?.FontSize)
         {
             if (fe is WinUI.Control fsCtrl) fsCtrl.FontSize = m.FontSize.Value;
             else if (fe is TextBlock fsTb) fsTb.FontSize = m.FontSize.Value;
         }
+        else if (!m.FontSize.HasValue && oldM?.FontSize.HasValue == true)
+        {
+            if (fe is WinUI.Control fsCtrl) fsCtrl.ClearValue(WinUI.Control.FontSizeProperty);
+            else if (fe is TextBlock fsTb) fsTb.ClearValue(TextBlock.FontSizeProperty);
+        }
         if (m.FontWeight.HasValue && m.FontWeight != oldM?.FontWeight)
         {
             if (fe is WinUI.Control fwCtrl) fwCtrl.FontWeight = m.FontWeight.Value;
             else if (fe is TextBlock fwTb) fwTb.FontWeight = m.FontWeight.Value;
+        }
+        else if (!m.FontWeight.HasValue && oldM?.FontWeight.HasValue == true)
+        {
+            if (fe is WinUI.Control fwCtrl) fwCtrl.ClearValue(WinUI.Control.FontWeightProperty);
+            else if (fe is TextBlock fwTb) fwTb.ClearValue(TextBlock.FontWeightProperty);
         }
 
         // ── Declarative event handlers ────────────────────────────

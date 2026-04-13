@@ -1,0 +1,305 @@
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using Duct;
+using Duct.Core;
+using Duct.Data;
+using Duct.Data.Providers;
+using Duct.DataGrid;
+using Duct.Flex;
+using Duct.PropertyGrid;
+using Duct.Validation;
+using Duct.Validation.Validators;
+using Microsoft.UI.Xaml;
+using static Duct.UI;
+using static Duct.Core.Theme;
+using static Duct.Validation.FormFieldDsl;
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Model — mutable INPC class with validation defined once
+// ═══════════════════════════════════════════════════════════════════════
+
+class ProjectTask : INotifyPropertyChanged
+{
+    // Shared validators — defined once, used by DataGrid, PropertyGrid, and FormField
+    public static readonly IValidator[] NameValidators =
+        [Validate.Required(), Validate.MinLength(2, "Name must be at least 2 characters")];
+    public static readonly IValidator[] PriorityValidators =
+        [Validate.Range(1, 5, "Priority must be between 1 and 5")];
+    public static readonly IValidator[] BudgetValidators =
+        [Validate.Range(0, 100000, "Budget must be between 0 and 100,000")];
+
+    public int Id { get; init; }
+
+    private string _name = "";
+    public string Name
+    {
+        get => _name;
+        set { if (_name != value) { _name = value; OnPropChanged(); } }
+    }
+
+    private string _category = "";
+    public string Category
+    {
+        get => _category;
+        set { if (_category != value) { _category = value; OnPropChanged(); } }
+    }
+
+    private int _priority = 3;
+    public int Priority
+    {
+        get => _priority;
+        set { if (_priority != value) { _priority = value; OnPropChanged(); } }
+    }
+
+    private double _budget;
+    public double Budget
+    {
+        get => _budget;
+        set { if (_budget != value) { _budget = value; OnPropChanged(); } }
+    }
+
+    private bool _complete;
+    public bool Complete
+    {
+        get => _complete;
+        set { if (_complete != value) { _complete = value; OnPropChanged(); } }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    private void OnPropChanged([CallerMemberName] string? name = null) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+    public override string ToString() => $"{Name} ({Category})";
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Integrated Data Demo — DataGrid + PropertyGrid + FormField
+// ═══════════════════════════════════════════════════════════════════════
+
+class IntegratedDataDemo : Duct.Core.Component
+{
+    static readonly string[] Categories = ["Engineering", "Marketing", "Sales", "HR", "Finance"];
+
+    public override Element Render()
+    {
+        // ── Data — ObservableListDataSource so DataGrid refreshes on INPC ──
+        var collection = UseMemo(() => new ObservableCollection<ProjectTask>(
+            Enumerable.Range(0, 30).Select(i => new ProjectTask
+            {
+                Id = i,
+                Name = $"Task {i}",
+                Category = Categories[i % Categories.Length],
+                Priority = (i % 5) + 1,
+                Budget = 5000 + (i * 1234 % 95000),
+                Complete = i % 4 == 0,
+            })));
+
+        var source = UseMemo(() =>
+            new ObservableListDataSource<ProjectTask>(collection, t => (RowKey)t.Id));
+
+        // ── Selection ─────────────────────────────────────────────
+        var (selectedKeys, setSelectedKeys) = UseState<IReadOnlySet<RowKey>>(new HashSet<RowKey>());
+        var selectedItem = selectedKeys.Count > 0
+            ? collection.FirstOrDefault(t => selectedKeys.Contains((RowKey)t.Id))
+            : null;
+
+        // ── INPC observation — force re-render when selected item changes ──
+        var (_, forceRender) = UseReducer(0);
+        UseEffect(() =>
+        {
+            if (selectedItem is null) return () => { };
+            void Handler(object? s, PropertyChangedEventArgs e) => forceRender(v => v + 1);
+            selectedItem.PropertyChanged += Handler;
+            return () => selectedItem.PropertyChanged -= Handler;
+        }, selectedItem);
+
+        // ── TypeRegistry for PropertyGrid ─────────────────────────
+        var registry = UseMemo(() =>
+        {
+            var reg = new TypeRegistry();
+            reg.Register<ProjectTask>(new TypeMetadata
+            {
+                Decompose = target =>
+                {
+                    var t = (ProjectTask)target;
+                    return new List<FieldDescriptor>
+                    {
+                        new()
+                        {
+                            Name = "Name", DisplayName = "Task Name",
+                            FieldType = typeof(string),
+                            GetValue = _ => t.Name,
+                            SetValue = (_, val) => { t.Name = (string)(val ?? ""); return t; },
+                            Validators = ProjectTask.NameValidators,
+                            Description = "The name of this task",
+                            Order = 0,
+                        },
+                        new()
+                        {
+                            Name = "Category", DisplayName = "Category",
+                            FieldType = typeof(string),
+                            GetValue = _ => t.Category,
+                            SetValue = (_, val) => { t.Category = (string)(val ?? ""); return t; },
+                            Order = 1,
+                        },
+                        new()
+                        {
+                            Name = "Priority", DisplayName = "Priority",
+                            FieldType = typeof(int),
+                            GetValue = _ => t.Priority,
+                            SetValue = (_, val) => { t.Priority = (int)(val ?? 3); return t; },
+                            Validators = ProjectTask.PriorityValidators,
+                            Description = "Priority 1 (lowest) to 5 (highest)",
+                            Order = 2,
+                        },
+                        new()
+                        {
+                            Name = "Budget", DisplayName = "Budget",
+                            FieldType = typeof(double),
+                            GetValue = _ => t.Budget,
+                            SetValue = (_, val) => { t.Budget = Convert.ToDouble(val ?? 0.0); return t; },
+                            Validators = ProjectTask.BudgetValidators,
+                            Description = "Project budget (0 - 100,000)",
+                            Order = 3,
+                        },
+                        new()
+                        {
+                            Name = "Complete", DisplayName = "Complete",
+                            FieldType = typeof(bool),
+                            GetValue = _ => t.Complete,
+                            SetValue = (_, val) => { t.Complete = (bool)(val ?? false); return t; },
+                            Order = 4,
+                        },
+                    };
+                },
+            });
+            return reg;
+        });
+
+        // ── DataGrid columns — same validators as PropertyGrid ───
+        var columns = UseMemo(() => new FieldDescriptor[]
+        {
+            ColumnDsl.Column<ProjectTask>("Id", t => t.Id, width: 50),
+            (ColumnDsl.Column<ProjectTask>("Name", t => t.Name, editable: true,
+                    displayName: "Task Name", width: 180)
+                .Validate(ProjectTask.NameValidators)).Build(),
+            ColumnDsl.Column<ProjectTask>("Category", t => t.Category,
+                editable: true, width: 120),
+            (ColumnDsl.Column<ProjectTask>("Priority", t => t.Priority,
+                    editable: true, width: 70)
+                .Validate(ProjectTask.PriorityValidators)).Build(),
+            (ColumnDsl.Column<ProjectTask>("Budget", t => t.Budget,
+                    editable: true, displayName: "Budget", format: "C0", width: 100)
+                .Validate(ProjectTask.BudgetValidators)).Build(),
+            ColumnDsl.Column<ProjectTask>("Complete", t => t.Complete,
+                editable: true, width: 80),
+        });
+
+        // ── Build right-panel content ─────────────────────────────
+        Element rightPanel;
+        if (selectedItem is not null)
+        {
+            var nameField = new FieldDescriptor
+            {
+                Name = "Name",
+                DisplayName = "Task Name",
+                FieldType = typeof(string),
+                GetValue = _ => selectedItem.Name,
+                Validators = ProjectTask.NameValidators,
+                Description = "Edit the task name here — changes sync to DataGrid and PropertyGrid",
+            };
+
+            // ── Run validators once, share results across views ──
+            var nameErrors = ProjectTask.NameValidators
+                .Select(v => v.Validate(selectedItem.Name, "Name"))
+                .Where(m => m is not null).ToList();
+            var priorityErrors = ProjectTask.PriorityValidators
+                .Select(v => v.Validate(selectedItem.Priority, "Priority"))
+                .Where(m => m is not null).ToList();
+            var budgetErrors = ProjectTask.BudgetValidators
+                .Select(v => v.Validate(selectedItem.Budget, "Budget"))
+                .Where(m => m is not null).ToList();
+            var allErrors = nameErrors.Concat(priorityErrors).Concat(budgetErrors).ToList();
+
+            // FormField with inline red border
+            var nameEditor = TextField(selectedItem.Name, v =>
+            {
+                selectedItem.Name = (string)v;
+            }, placeholder: "Task name...");
+            if (nameErrors.Count > 0)
+                nameEditor = nameEditor.WithBorder("#c62828", 1);
+
+            rightPanel = VStack(8,
+                // FormField section — red border on invalid
+                Border(
+                    VStack(4,
+                        Text("FormField (first property)").SemiBold(),
+                        Text("Task Name *").FontSize(12),
+                        nameEditor,
+                        nameErrors.Count > 0
+                            ? Text(nameErrors[0]!.Text).Foreground("#c62828").FontSize(11)
+                            : Text(nameField.Description ?? "").Opacity(0.5).FontSize(11)
+                    )
+                ).Padding(12).Background(SubtleFill).CornerRadius(4),
+
+                // PropertyGrid section — plain, no inline validation
+                Text("PropertyGrid (selected item)").SemiBold(),
+                PropertyGridDsl.PropertyGrid(selectedItem, registry),
+
+                // Form-level validation summary
+                allErrors.Count > 0
+                    ? Border(
+                        VStack(4, new Element?[] {
+                            Text($"Validation ({allErrors.Count} error{(allErrors.Count != 1 ? "s" : "")})")
+                                .SemiBold().Foreground("#c62828")
+                        }.Concat(allErrors.Select(e => (Element?)
+                            Text($"\u2022 {e!.Field}: {e.Text}").Foreground("#c62828").FontSize(12)
+                        )).ToArray())
+                    ).Padding(10).WithBorder("#c62828", 1).CornerRadius(4)
+                    : (Element)Border(
+                        Text("\u2713 All fields valid").Foreground("#2e7d32").SemiBold()
+                    ).Padding(10).WithBorder("#2e7d32", 1).CornerRadius(4)
+            );
+        }
+        else
+        {
+            rightPanel = Border(
+                Text("Select a row in the DataGrid to see its details here.")
+                    .Opacity(0.5).Padding(20)
+            ).Background(SubtleFill).CornerRadius(4).VAlign(VerticalAlignment.Center);
+        }
+
+        // ── Layout ────────────────────────────────────────────────
+        return FlexColumn(
+            Heading("Integrated Data Demo").Flex(shrink: 0),
+            Text("All 4 data system pieces: FieldDescriptor defines fields + validation once. " +
+                 "DataGrid, PropertyGrid, and FormField all share the same definitions. " +
+                 "Edit in any view — changes sync to the other two.")
+                .Opacity(0.6).Flex(shrink: 0),
+
+            (FlexRow(
+                // Left: DataGrid (60%)
+                (FlexColumn(
+                    Text("DataGrid").SemiBold().Flex(shrink: 0),
+                    Text("Click a row to select. Double-click or press F2 to edit a cell.").Opacity(0.5).FontSize(11).Flex(shrink: 0),
+                    DataGridDsl.DataGrid(
+                        source: source,
+                        columns: columns,
+                        selectionMode: SelectionMode.Single,
+                        onSelectionChanged: keys => setSelectedKeys(keys),
+                        editable: true,
+                        editMode: EditMode.Cell,
+                        onRowChanged: (key, item) => Task.CompletedTask,
+                        rowHeight: 32
+                    ).Flex(grow: 1)
+                ) with { RowGap = 4 }).Flex(grow: 3, basis: 0),
+
+                // Right: FormField + PropertyGrid (40%)
+                rightPanel.Flex(grow: 2, basis: 0)
+
+            ) with { ColumnGap = 16, AlignItems = FlexAlign.Stretch }).Flex(grow: 1)
+
+        ) with { RowGap = 8 };
+    }
+}

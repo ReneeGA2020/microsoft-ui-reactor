@@ -72,6 +72,25 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
         }
         var state = stateRef.Current!;
 
+        // Subscribe to observable data sources (e.g. ObservableListDataSource)
+        // so the grid refreshes when items are added, removed, or modified via INPC.
+        // Cancel any active edit first — the underlying data changed externally.
+        UseEffect(() =>
+        {
+            if (source is IObservableDataSource<T> observable)
+            {
+                void OnDataChanged()
+                {
+                    if (state.IsEditing || state.IsRowEditing)
+                        state.CancelEdit();
+                    _ = state.LoadDataAsync();
+                }
+                observable.DataChanged += OnDataChanged;
+                return () => observable.DataChanged -= OnDataChanged;
+            }
+            return () => { };
+        }, source);
+
         // Load data on mount and when sort changes
         var sortKey = string.Join(",", state.Sorts.Select(s => $"{s.Field}:{s.Direction}"));
 
@@ -154,7 +173,62 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
         for (int r = 0; r < gridRow; r++) rootRowDefs[r] = "Auto";
         rootRowDefs[gridRow] = "*";
 
-        Element grid = Grid(["*"], rootRowDefs, gridChildren.ToArray());
+        var gridEl = Grid(["*"], rootRowDefs, gridChildren.ToArray());
+
+        // Commit active edit when focus leaves the DataGrid entirely.
+        // Attached once at mount via Setters; the handler reads current state from the ref.
+        if (el.Editable)
+        {
+            var lostFocusWired = UseRef(false);
+            gridEl = gridEl with
+            {
+                Setters = [.. gridEl.Setters, g =>
+                {
+                    if (lostFocusWired.Current) return;
+                    lostFocusWired.Current = true;
+                    g.LostFocus += (sender, e) =>
+                    {
+                        if (!state.IsEditing && !state.IsRowEditing) return;
+                        // Defer the entire check to the next tick. During DOM transitions
+                        // (e.g., cell switching from TextBlock to TextField), the old element
+                        // fires LostFocus before the new element receives GotFocus. Checking
+                        // synchronously would falsely conclude that focus left the grid.
+                        Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread()?.TryEnqueue(() =>
+                        {
+                            if (!state.IsEditing && !state.IsRowEditing) return;
+                            var focused = Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(g.XamlRoot);
+                            if (focused is DependencyObject dep)
+                            {
+                                var parent = dep;
+                                while (parent is not null)
+                                {
+                                    if (ReferenceEquals(parent, g)) return;
+                                    parent = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(parent);
+                                }
+                            }
+                            if (state.IsRowEditing)
+                            {
+                                var origItem = state.EditingRowKey is not null
+                                    ? GetOriginalItem(state, state.EditingRowKey.Value) : default;
+                                var result = state.CommitRowEdit();
+                                if (result is not null && el.OnRowChanged is not null)
+                                    HandleAsyncCommit(state, el, result.Value.Key, result.Value.NewItem, origItem!);
+                            }
+                            else if (state.IsEditing)
+                            {
+                                var editKey = state.EditingRowKey;
+                                var origItem = editKey is not null ? GetOriginalItem(state, editKey.Value) : default;
+                                var result = state.CommitEdit();
+                                if (result is not null && el.OnRowChanged is not null)
+                                    HandleAsyncCommit(state, el, result.Value.Key, result.Value.NewItem, origItem!);
+                            }
+                        });
+                    };
+                }]
+            };
+        }
+
+        Element grid = gridEl;
 
         // Keyboard navigation handler.
         // Use a ref to hold the current props so the OnMount handler (registered once)

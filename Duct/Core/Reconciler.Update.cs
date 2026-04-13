@@ -281,10 +281,12 @@ public sealed partial class Reconciler
         };
         }
 
-        // Apply inline modifiers after update
+        // Apply inline modifiers after update. When old modifiers existed but new
+        // modifiers are null, pass an empty instance so ApplyModifiers can clear
+        // stale values (same principle as the flex attached-property fix).
         var target = result ?? control;
-        if (modifiers is not null && target is FrameworkElement fe)
-            ApplyModifiers(fe, oldModifiers, modifiers, requestRerender);
+        if ((modifiers is not null || oldModifiers is not null) && target is FrameworkElement fe)
+            ApplyModifiers(fe, oldModifiers, modifiers ?? new ElementModifiers(), requestRerender);
 
         // Apply theme-resource bindings (ThemeRef → resolved Brush from WinUI resources)
         if (newEl.ThemeBindings is not null && target is FrameworkElement thFe)

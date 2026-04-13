@@ -21,7 +21,7 @@ DuctApp.Run<DemoApp>("Duct Demo", width: 1200, height: 800
 
 // ─── Root application component ────────────────────────────────────────────────
 
-enum Tab { Counter, TodoList, ConditionalUI, Form, DynamicList, PerfStress, Virtualization, Flyout, DataTemplate, FlexPanel, Transitions, PropertyGrid, DataSystem, DataGrid, Context, Memo, Persisted, Slots, Navigation, Commanding }
+enum Tab { Counter, TodoList, ConditionalUI, Form, DynamicList, PerfStress, Virtualization, Flyout, DataTemplate, FlexPanel, Transitions, PropertyGrid, DataSystem, DataGrid, IntegratedData, Context, Memo, Persisted, Slots, Navigation, Commanding }
 
 class DemoApp : Component
 {
@@ -44,6 +44,7 @@ class DemoApp : Component
             Tab.PropertyGrid => "PropertyGrid",
             Tab.DataSystem => "Data System",
             Tab.DataGrid => "DataGrid",
+            Tab.IntegratedData => "Integrated Data",
             Tab.Context => "Context",
             Tab.Memo => "Memo",
             Tab.Persisted => "Persisted",
@@ -86,6 +87,7 @@ class DemoApp : Component
                     Tab.PropertyGrid => Component<PropertyGridDemo>(),
                     Tab.DataSystem => Component<DataSystemDemo>(),
                     Tab.DataGrid => Component<DataGridDemo>(),
+                    Tab.IntegratedData => Component<IntegratedDataDemo>(),
                     Tab.Context => Component<ContextDemo>(),
                     Tab.Memo => Component<MemoDemo>(),
                     Tab.Persisted => Component<PersistedDemo>(),
