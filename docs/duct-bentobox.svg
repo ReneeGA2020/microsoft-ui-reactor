@@ -12,28 +12,23 @@
   <!-- ROW 1  (y=88, h=130)                                            -->
   <!-- ================================================================ -->
 
-  <!-- 4. Property Grid  (380x130) -->
-  <rect x="30" y="88" width="380" height="130" rx="14" fill="#15803D"/>
-  <g transform="translate(350, 131)" opacity="0.2">
-    <rect x="0" y="2" width="8" height="8" rx="2" fill="white"/>
-    <line x1="14" y1="6" x2="44" y2="6" stroke="white" stroke-width="3" stroke-linecap="round"/>
-    <rect x="0" y="18" width="8" height="8" rx="2" fill="white"/>
-    <line x1="14" y1="22" x2="38" y2="22" stroke="white" stroke-width="3" stroke-linecap="round"/>
-    <rect x="0" y="34" width="8" height="8" rx="2" fill="white"/>
-    <line x1="14" y1="38" x2="42" y2="38" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <!-- 4. Data System  (620x130) -->
+  <rect x="30" y="88" width="620" height="130" rx="14" fill="#15803D"/>
+  <g transform="translate(582, 131)" opacity="0.2">
+    <!-- table outline -->
+    <rect x="0" y="0" width="50" height="40" rx="3" fill="none" stroke="white" stroke-width="2.5"/>
+    <!-- header row -->
+    <rect x="0" y="0" width="50" height="12" rx="3" fill="white"/>
+    <rect x="0" y="9" width="50" height="3" fill="white"/>
+    <!-- row line -->
+    <line x1="0" y1="26" x2="50" y2="26" stroke="white" stroke-width="1.5"/>
+    <!-- column lines -->
+    <line x1="17" y1="12" x2="17" y2="40" stroke="white" stroke-width="1.5"/>
+    <line x1="34" y1="12" x2="34" y2="40" stroke="white" stroke-width="1.5"/>
   </g>
-  <text x="54" y="134" font-family="Segoe UI, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF">Property Grid</text>
-  <text x="54" y="160" font-family="Segoe UI, sans-serif" font-size="12" fill="#E0E0E6">Auto-generated editors from CLR types</text>
-  <text x="54" y="178" font-family="Segoe UI, sans-serif" font-size="12" fill="#E0E0E6">Records &#xB7; nested objects &#xB7; deep observation</text>
-
-  <!-- 5. Validation  (230x130) -->
-  <rect x="420" y="88" width="230" height="130" rx="14" fill="#B91C1C"/>
-  <g transform="translate(590, 131)" opacity="0.2">
-    <path d="M6,24 L16,34 L38,10" fill="none" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-  </g>
-  <text x="442" y="134" font-family="Segoe UI, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF">Validation</text>
-  <text x="442" y="160" font-family="Segoe UI, sans-serif" font-size="12" fill="#E0E0E6">FormField &#xB7; ShowWhen</text>
-  <text x="442" y="178" font-family="Segoe UI, sans-serif" font-size="12" fill="#E0E0E6">Cross-field rules</text>
+  <text x="54" y="134" font-family="Segoe UI, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF">Data System</text>
+  <text x="54" y="160" font-family="Segoe UI, sans-serif" font-size="12" fill="#E0E0E6">PropertyGrid &#xB7; DataGrid &#xB7; FormField &#xB7; Validation</text>
+  <text x="54" y="178" font-family="Segoe UI, sans-serif" font-size="12" fill="#E0E0E6">Shared field metadata &#xB7; type-driven editors &#xB7; IDataSource</text>
 
   <!-- 6. Type-Safe Navigation  (590x130) -->
   <rect x="660" y="88" width="590" height="130" rx="14" fill="#0E7490"/>
