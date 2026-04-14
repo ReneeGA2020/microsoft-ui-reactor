@@ -13,6 +13,7 @@ public class DataGridState<T>
 {
     private readonly IDataSource<T> _source;
     private readonly SelectionMode _selectionMode;
+    private readonly int _blockSize;
 
     // ── Sort state ────────────────────────────────────────────────
 
@@ -192,16 +193,21 @@ public class DataGridState<T>
 
     /// <summary>
     /// Request that blocks covering the given row range be loaded.
-    /// Call from OnVisibleRangeChanged to prefetch ahead of the viewport.
+    /// Prefetches one block before and one block after the visible range
+    /// so that small scrolls don't hit loading placeholders.
     /// </summary>
     public void EnsureRangeLoaded(int firstRow, int lastRow)
     {
         if (_cache is null) return;
         var blockSize = _cache.BlockSize;
         var total = _cache.TotalCount ?? 0;
-        // Prefetch one extra block beyond the visible range
+        if (total == 0) return;
+
+        // Expand range by one block in each direction for smooth scrolling
+        var startRow = Math.Max(0, firstRow - blockSize);
         var endRow = Math.Min(lastRow + blockSize, total - 1);
-        for (int b = firstRow / blockSize; b <= endRow / blockSize; b++)
+
+        for (int b = startRow / blockSize; b <= endRow / blockSize; b++)
         {
             if (!_cache.IsLoaded(b * blockSize))
                 _cache.RequestBlock(b);
@@ -254,11 +260,16 @@ public class DataGridState<T>
     /// <summary>Fires when state changes requiring a re-render.</summary>
     public event Action? StateChanged;
 
-    public DataGridState(IDataSource<T> source, IReadOnlyList<FieldDescriptor> columns, SelectionMode selectionMode)
+    /// <param name="blockSize">
+    /// Page cache block size. When 0 (default), the cache uses its built-in default (50).
+    /// Pass a viewport-derived value to ensure the first block fills the screen.
+    /// </param>
+    public DataGridState(IDataSource<T> source, IReadOnlyList<FieldDescriptor> columns, SelectionMode selectionMode, int blockSize = 0)
     {
         _source = source;
         _columns = new List<FieldDescriptor>(columns);
         _selectionMode = selectionMode;
+        _blockSize = blockSize;
     }
 
     // ── Sort operations ──────────────────────────────────────────
@@ -1165,7 +1176,9 @@ public class DataGridState<T>
                 // Only the pages needed for the visible viewport are loaded.
                 if (_cache is null)
                 {
-                    _cache = new DataPageCache<T>(_source);
+                    _cache = _blockSize > 0
+                        ? new DataPageCache<T>(_source, blockSize: _blockSize)
+                        : new DataPageCache<T>(_source);
                     _cache.BlockLoaded += OnBlockLoaded;
                 }
 

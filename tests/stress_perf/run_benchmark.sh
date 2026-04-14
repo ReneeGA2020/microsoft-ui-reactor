@@ -1,17 +1,44 @@
 #!/bin/bash
 # StressPerf Benchmark Suite
-# Runs all 5 variants at 10%-100% update rates, 7s each, outputs CSV.
+# Runs all 6 variants at 10%-100% update rates, 7s each, outputs CSV.
 
 set -e
 
-DURATION=7
-OUTFILE="C:/Users/andersonch/Code/patch/tests/stress_perf/benchmark_results.csv"
+# Discover the repo root — this script lives at tests/stress_perf/run_benchmark.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-DIRECT_EXE="C:/Users/andersonch/Code/patch/tests/stress_perf/StressPerf.Direct/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.Direct.exe"
-BOUND_EXE="C:/Users/andersonch/Code/patch/tests/stress_perf/StressPerf.Bound/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.Bound.exe"
-DUCT_EXE="C:/Users/andersonch/Code/patch/tests/stress_perf/StressPerf.Duct/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.Duct.exe"
-WPF_EXE="C:/Users/andersonch/Code/patch/tests/stress_perf/StressPerf.Wpf/bin/ARM64/Release/net8.0-windows/StressPerf.Wpf.exe"
-DIRECTX_EXE="C:/Users/andersonch/Code/patch/tests/stress_perf/StressPerf.DirectX/bin/ARM64/Release/net8.0-windows10.0.22621.0/StressPerf.DirectX.exe"
+DURATION=7
+OUTFILE="$SCRIPT_DIR/benchmark_results.csv"
+
+# Detect platform (x64 or ARM64) — prefer ARM64 if both exist
+detect_platform() {
+    local base_dir="$1"
+    if [ -d "$base_dir/ARM64" ]; then
+        echo "ARM64"
+    elif [ -d "$base_dir/x64" ]; then
+        echo "x64"
+    else
+        echo "ARM64"  # default
+    fi
+}
+
+# Build configuration
+CONFIG="Release"
+TFM_WINUI="net9.0-windows10.0.22621.0"
+TFM_WPF="net9.0-windows"
+
+STRESS_DIR="$REPO_ROOT/tests/stress_perf"
+
+# Detect platform from the first available build output
+PLATFORM=$(detect_platform "$STRESS_DIR/StressPerf.Direct/bin")
+
+DIRECT_EXE="$STRESS_DIR/StressPerf.Direct/bin/$PLATFORM/$CONFIG/$TFM_WINUI/StressPerf.Direct.exe"
+BOUND_EXE="$STRESS_DIR/StressPerf.Bound/bin/$PLATFORM/$CONFIG/$TFM_WINUI/StressPerf.Bound.exe"
+DUCT_EXE="$STRESS_DIR/StressPerf.Duct/bin/$PLATFORM/$CONFIG/$TFM_WINUI/StressPerf.Duct.exe"
+DUCTGRID_EXE="$STRESS_DIR/StressPerf.DuctGrid/bin/$PLATFORM/$CONFIG/$TFM_WINUI/StressPerf.DuctGrid.exe"
+WPF_EXE="$STRESS_DIR/StressPerf.Wpf/bin/$PLATFORM/$CONFIG/$TFM_WPF/StressPerf.Wpf.exe"
+DIRECTX_EXE="$STRESS_DIR/StressPerf.DirectX/bin/$PLATFORM/$CONFIG/$TFM_WINUI/StressPerf.DirectX.exe"
 
 # CSV header
 echo "App,Percent,Duration_s,Avg_FPS,Min_FPS,Max_FPS,Avg_Update_ms,Max_Update_ms,Avg_Memory_MB,Peak_Memory_MB" > "$OUTFILE"
@@ -45,6 +72,12 @@ run_app() {
     local exe_dir
     exe_dir=$(dirname "$exe")
 
+    if [ ! -f "$exe" ]; then
+        echo "  SKIP $name (not built: $exe)"
+        echo "$name,$pct,0,0,0,0,0,0,0,0" >> "$OUTFILE"
+        return
+    fi
+
     # Delete old report files
     find "$exe_dir" -maxdepth 1 -iname "*.report.txt" -delete 2>/dev/null || true
 
@@ -60,17 +93,20 @@ run_app() {
 }
 
 echo "=== StressPerf Benchmark Suite ==="
+echo "Repo root: $REPO_ROOT"
+echo "Platform:  $PLATFORM"
 echo "Duration per run: ${DURATION}s"
 echo "Output: $OUTFILE"
 echo ""
 
 for pct in 10 20 30 40 50 60 70 80 90 100; do
     echo "--- ${pct}% update rate ---"
-    run_app "$WPF_EXE"    "WPF.Direct"   "$pct"
-    run_app "$DIRECT_EXE"  "WinUI.Direct" "$pct"
-    run_app "$BOUND_EXE"   "WinUI.Bound"  "$pct"
-    run_app "$DUCT_EXE"    "WinUI.Duct"   "$pct"
-    run_app "$DIRECTX_EXE" "WinUI.DirectX" "$pct"
+    run_app "$WPF_EXE"      "WPF.Direct"      "$pct"
+    run_app "$DIRECT_EXE"    "WinUI.Direct"    "$pct"
+    run_app "$BOUND_EXE"     "WinUI.Bound"     "$pct"
+    run_app "$DUCT_EXE"      "WinUI.Duct"      "$pct"
+    run_app "$DUCTGRID_EXE"  "WinUI.DuctGrid"  "$pct"
+    run_app "$DIRECTX_EXE"   "WinUI.DirectX"   "$pct"
     echo ""
 done
 

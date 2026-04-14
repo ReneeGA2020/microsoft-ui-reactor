@@ -45,7 +45,12 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
 
         if (stateRef.Current is null)
         {
-            var s = new DataGridState<T>(source, columns, el.SelectionMode);
+            // Size blocks to comfortably fill any viewport. Use 2160px (4K height)
+            // as the upper bound so block 0 covers the full screen even on large
+            // displays, avoiding placeholder flicker on initial load.
+            var rowH = el.RowHeight ?? el.EstimatedRowHeight;
+            var blockSize = Math.Max(50, (int)Math.Ceiling(2160.0 / rowH));
+            var s = new DataGridState<T>(source, columns, el.SelectionMode, blockSize);
 
             // Defer re-render to the next dispatcher tick to batch multiple
             // StateChanged events into a single render pass.
