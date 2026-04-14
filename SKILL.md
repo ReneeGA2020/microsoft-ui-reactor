@@ -1690,3 +1690,128 @@ var ductCmd = CommandInterop.FromCommand(
 - **Don't** use `UseCommand` for sync-only commands — it wastes hook slots
 - **Don't** call `UseCommand` conditionally — hooks must be called in the same order every render
 - **Don't** mix `Execute` and `ExecuteAsync` on the same command — pick one
+
+---
+
+## Single-File Apps with `dotnet run`
+
+For lightweight demos and quick prototypes, you can skip the full `.csproj` setup entirely. C# 14
+/ .NET 10 supports file-level directives that let you run a single `.cs` file directly with
+`dotnet run`.
+
+Add this header block at the very top of your `.cs` file:
+
+```csharp
+#:project C:\Users\andersonch\Code\patch3\Duct
+#:package Microsoft.WindowsAppSDK@2.0.0-experimental6
+#:property OutputType=WinExe
+#:property TargetFramework=net9.0-windows10.0.22621.0
+#:property UseWinUI=true
+#:property WindowsPackageType=None
+#:property WindowsAppSDKSelfContained=true
+#:property RuntimeIdentifier=win-arm64
+```
+
+> **Note:** The `#:project` path must be the fully qualified path to the `Duct` folder in your
+> cloned copy of this repo. Adjust accordingly if your clone is in a different location.
+>
+> **Note:** The `RuntimeIdentifier` must match the native processor architecture of the local
+> machine. Use `win-arm64` for ARM64 devices (e.g. Surface Pro, Snapdragon PCs) or `win-x64` for
+> x86-64 machines. You can check with `dotnet --info` and look at the `RID:` line.
+
+Then just run the file:
+
+```bash
+dotnet run MyApp.cs
+```
+
+No `.csproj`, no solution file, no project scaffolding — just one `.cs` file and `dotnet run`.
+
+> **IMPORTANT:** Always capture and read the output of `dotnet run`. Build errors are printed to
+> stderr/stdout and the process exits with code 1. If the app fails to launch, read the compiler
+> error output, fix the `.cs` file, and retry. Do not assume the app launched successfully without
+> checking the output.
+
+### Example — minimal single-file Duct app
+
+```csharp
+#:project C:\Users\andersonch\Code\patch3\Duct
+#:package Microsoft.WindowsAppSDK@2.0.0-experimental6
+#:property OutputType=WinExe
+#:property TargetFramework=net9.0-windows10.0.22621.0
+#:property UseWinUI=true
+#:property WindowsPackageType=None
+#:property WindowsAppSDKSelfContained=true
+#:property RuntimeIdentifier=win-arm64
+
+using Duct;
+using static Duct.UI;
+
+DuctApp.Run("Hello Duct", ctx =>
+{
+    var (count, setCount) = ctx.UseState(0);
+    return VStack(
+        Text($"Count: {count}"),
+        Button("Increment", () => setCount(count + 1))
+    );
+});
+```
+
+---
+
+## On-the-Fly Data Visualization with Code Gen
+
+You can generate throwaway Duct apps on the fly to visualize data. The workflow:
+
+1. **Generate** a `.cs` file into `C:\temp\<somename>\Program.cs` with the single-file header above
+2. **Run** it with `dotnet run`
+3. The app launches as a native WinUI window
+
+### Passing data via command-line arguments
+
+To visualize arbitrary data (charts, grids, tables), generate a `.cs` file that reads
+`args` (or `Environment.GetCommandLineArgs()`) and feeds that data into Duct components. This
+lets you pipe data from any source into a live desktop UI.
+
+For example, to show a chart or data grid:
+- Generate a `.cs` file that parses CSV, JSON, or delimited values from `args`
+- Use `DataGrid`, chart controls, or any Duct layout to render the data
+- Run it with `dotnet run -- "arg1" "arg2" ...`
+
+```csharp
+#:project C:\Users\andersonch\Code\patch3\Duct
+#:package Microsoft.WindowsAppSDK@2.0.0-experimental6
+#:property OutputType=WinExe
+#:property TargetFramework=net9.0-windows10.0.22621.0
+#:property UseWinUI=true
+#:property WindowsPackageType=None
+#:property WindowsAppSDKSelfContained=true
+#:property RuntimeIdentifier=win-arm64
+
+using Duct;
+using Duct.Core;
+using static Duct.UI;
+
+// Parse args — e.g. "Name:Alice:90,Bob:75,Charlie:88"
+var data = args.Length > 0
+    ? args[0].Split(',').Select(r => r.Split(':')).Select(p => (p[0], int.Parse(p[1])))
+    : [("Sample", 42)];
+
+DuctApp.Run("Data Viewer", ctx =>
+{
+    return VStack(
+        Text("Results").FontSize(20).Bold(),
+        ..data.Select(d => HStack(
+            Text(d.Item1).Width(120),
+            Text($"{d.Item2}").Bold()
+        ))
+    );
+});
+```
+
+```bash
+dotnet run -- "Alice:90,Bob:75,Charlie:88"
+```
+
+This pattern turns Claude into a **data visualization tool** — ask for a chart, grid, or
+dashboard and it can code-gen the `.cs`, write it to `C:\temp\`, and launch it immediately.
