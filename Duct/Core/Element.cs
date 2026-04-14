@@ -1101,6 +1101,7 @@ public record ComboBoxElement(
     public string? PlaceholderText { get; init; }
     public string? Header { get; init; }
     public bool IsEditable { get; init; }
+    public Element[]? ItemElements { get; init; }
     internal Action<WinUI.ComboBox>[] Setters { get; init; } = [];
 }
 

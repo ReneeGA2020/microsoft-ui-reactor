@@ -27,32 +27,41 @@ class DemoApp : Component
 {
     static readonly string[] Languages = ["English"];
 
-    static readonly string[] TabLabels = Enum.GetValues<Tab>()
+    static string IconPath(string name) =>
+        System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "Icons", $"{name}.svg");
+
+    static readonly (string Label, string Icon)[] TabItems = Enum.GetValues<Tab>()
         .Select(tab => tab switch
         {
-            Tab.Counter => "Counter",
-            Tab.TodoList => "Todo List",
-            Tab.ConditionalUI => "Conditional UI",
-            Tab.Form => "Form",
-            Tab.DynamicList => "Dynamic List",
-            Tab.PerfStress => "Perf Stress",
-            Tab.Virtualization => "Virtualization",
-            Tab.Flyout => "Flyout",
-            Tab.DataTemplate => "DataTemplate",
-            Tab.FlexPanel => "FlexPanel",
-            Tab.Transitions => "Transitions",
-            Tab.PropertyGrid => "PropertyGrid",
-            Tab.DataSystem => "Data System",
-            Tab.DataGrid => "DataGrid",
-            Tab.IntegratedData => "Integrated Data",
-            Tab.Context => "Context",
-            Tab.Memo => "Memo",
-            Tab.Persisted => "Persisted",
-            Tab.Slots => "Slots",
-            Tab.Navigation => "Navigation",
-            Tab.Commanding => "Commanding",
-            _ => tab.ToString()
+            Tab.Counter => ("Counter", "counter"),
+            Tab.TodoList => ("Todo List", "todolist"),
+            Tab.ConditionalUI => ("Conditional UI", "conditionalui"),
+            Tab.Form => ("Form", "form"),
+            Tab.DynamicList => ("Dynamic List", "dynamiclist"),
+            Tab.PerfStress => ("Perf Stress", "perfstress"),
+            Tab.Virtualization => ("Virtualization", "virtualization"),
+            Tab.Flyout => ("Flyout", "flyout"),
+            Tab.DataTemplate => ("DataTemplate", "datatemplate"),
+            Tab.FlexPanel => ("FlexPanel", "flexpanel"),
+            Tab.Transitions => ("Transitions", "transitions"),
+            Tab.PropertyGrid => ("PropertyGrid", "propertygrid"),
+            Tab.DataSystem => ("Data System", "datasystem"),
+            Tab.DataGrid => ("DataGrid", "datagrid"),
+            Tab.IntegratedData => ("Integrated Data", "integrateddata"),
+            Tab.Context => ("Context", "context"),
+            Tab.Memo => ("Memo", "memo"),
+            Tab.Persisted => ("Persisted", "persisted"),
+            Tab.Slots => ("Slots", "slots"),
+            Tab.Navigation => ("Navigation", "navigation"),
+            Tab.Commanding => ("Commanding", "commanding"),
+            _ => (tab.ToString(), "counter")
         }).ToArray();
+
+    static readonly Element[] TabElements = TabItems
+        .Select(t => HStack(8,
+            Image(IconPath(t.Icon)).Width(20).Height(20),
+            Text(t.Label).VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center)
+        ) as Element).ToArray();
 
     public override Element Render()
     {
@@ -63,7 +72,7 @@ class DemoApp : Component
             (TitleBar("TestApp") with
             {
                 Content = HStack(8,
-                    ComboBox(TabLabels, (int)currentTab, i => setTab((Tab)i)).Width(200),
+                    ComboBox(TabElements, (int)currentTab, i => setTab((Tab)i)).Width(240),
                     ComboBox(Languages, langIndex, setLangIndex)
                 ),
             }).Flex(shrink: 0),

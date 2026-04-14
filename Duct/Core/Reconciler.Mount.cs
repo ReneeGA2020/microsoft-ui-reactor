@@ -77,7 +77,7 @@ public sealed partial class Reconciler
             CheckBoxElement cb => MountCheckBox(cb),
             RadioButtonElement rb => MountRadioButton(rb),
             RadioButtonsElement rbs => MountRadioButtons(rbs),
-            ComboBoxElement combo => MountComboBox(combo),
+            ComboBoxElement combo => MountComboBox(combo, requestRerender),
             SliderElement sl => MountSlider(sl),
             ToggleSwitchElement ts => MountToggleSwitch(ts),
             RatingControlElement rc => MountRatingControl(rc),
@@ -510,7 +510,7 @@ public sealed partial class Reconciler
         return rbGroup;
     }
 
-    private WinUI.ComboBox MountComboBox(ComboBoxElement combo)
+    private WinUI.ComboBox MountComboBox(ComboBoxElement combo, Action requestRerender)
     {
         var cb = new WinUI.ComboBox
         {
@@ -519,7 +519,10 @@ public sealed partial class Reconciler
             IsEditable = combo.IsEditable,
         };
         if (combo.Header is not null) cb.Header = combo.Header;
-        foreach (var item in combo.Items) cb.Items.Add(item);
+        if (combo.ItemElements is { } elements)
+            foreach (var el in elements) cb.Items.Add(Mount(el, requestRerender));
+        else
+            foreach (var item in combo.Items) cb.Items.Add(item);
         SetElementTag(cb, combo);
         cb.SelectionChanged += (s, _) =>
         {

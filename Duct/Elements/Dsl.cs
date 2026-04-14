@@ -118,6 +118,9 @@ public static class UI
     public static ComboBoxElement ComboBox(string[] items, int selectedIndex = -1, Action<int>? onSelectionChanged = null) =>
         new(items, selectedIndex, onSelectionChanged);
 
+    public static ComboBoxElement ComboBox(Element[] itemElements, int selectedIndex, Action<int>? onSelectionChanged) =>
+        new([], selectedIndex, onSelectionChanged) { ItemElements = itemElements };
+
     public static SliderElement Slider(double value, double min = 0, double max = 100, Action<double>? onChanged = null) =>
         new(value, min, max, onChanged);
 
