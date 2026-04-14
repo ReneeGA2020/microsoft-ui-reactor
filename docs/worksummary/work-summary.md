@@ -9,7 +9,7 @@
 
 ### Weekly Volume
 
-![Weekly Commit Volume](weekly-commits.svg)
+![Weekly Commit Volume](weekly-commits.png)
 
 | Week (Mon start) | Commits | Contributors |
 |---|---:|---|
@@ -21,7 +21,7 @@
 
 ### Daily Activity
 
-![Daily Commit Activity](daily-activity.svg)
+![Daily Commit Activity](daily-activity.png)
 
 Peak days: **Apr 12** (48 commits, Saturday) and **Apr 3** (42 commits, Thursday). Weekend work accounted for roughly 25% of all commits.
 
@@ -29,7 +29,7 @@ Peak days: **Apr 12** (48 commits, Saturday) and **Apr 3** (42 commits, Thursday
 
 ## Feature Effort Breakdown
 
-![Feature Effort in Active Days](feature-effort.svg)
+![Feature Effort in Active Days](feature-effort.png)
 
 The table below estimates the number of **active calendar days** spent on each major feature area, based on commit messages and dates. Days overlap across features since most days included work on multiple initiatives.
 
@@ -81,7 +81,7 @@ Each feature is rated against the following scale based on implementation comple
 | **Prototype** | Early implementation or proof of concept. Significant gaps; not ready for real use. |
 | **Archived** | Deliberately built, evaluated, and retired. Findings documented. |
 
-![Feature Maturity Matrix](maturity-matrix.svg)
+![Feature Maturity Matrix](maturity-matrix.png)
 
 ### Feature Ratings
 
