@@ -39,10 +39,12 @@ internal static class HostingCoverageFixtures
             var comp = new SimpleHostedComponent();
             hostControl.Mount(comp);
 
-            // Place it in the test content area
+            // Place it in the test content area. Use extra delay because this
+            // standalone DuctHostControl doesn't register with DuctApp.ActiveHost,
+            // so Harness.Render() can't wait on its render loop directly.
             var container = new Border { Child = hostControl };
             H.SetContent(container);
-            await Harness.Render();
+            await Harness.Render(200);
 
             // Verify it rendered
             var text = FindInContainer<TextBlock>(hostControl, tb => tb.Text?.StartsWith("Hosted:") == true);
@@ -57,7 +59,7 @@ internal static class HostingCoverageFixtures
                 ((Microsoft.UI.Xaml.Automation.Provider.IInvokeProvider)
                     peer.GetPattern(Microsoft.UI.Xaml.Automation.Peers.PatternInterface.Invoke)).Invoke();
             }
-            await Harness.Render();
+            await Harness.Render(200);
             text = FindInContainer<TextBlock>(hostControl, tb => tb.Text?.StartsWith("Hosted:") == true);
             H.Check("HostCtrl_Updated", text?.Text == "Hosted:1");
 
@@ -136,10 +138,13 @@ internal static class HostingCoverageFixtures
                 Props = "test-value",
             };
 
-            // Adding to visual tree triggers Loaded → OnLoaded → Mount
+            // Adding to visual tree triggers Loaded → OnLoaded → Mount.
+            // The Loaded event fires asynchronously after the visual tree processes
+            // the addition. Use extra delay to ensure the mount + render completes
+            // (this host control doesn't go through DuctApp.ActiveHost).
             var container = new Border { Child = hostControl };
             H.SetContent(container);
-            await Harness.Render();
+            await Harness.Render(200);
 
             var text = FindInContainer<TextBlock>(hostControl, tb => tb.Text?.StartsWith("WithProps:") == true);
             H.Check("HostCtrlFactory_Mounted", text is not null);

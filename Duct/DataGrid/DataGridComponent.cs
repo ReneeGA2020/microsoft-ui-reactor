@@ -52,22 +52,79 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
             var blockSize = Math.Max(50, (int)Math.Ceiling(2160.0 / rowH));
             var s = new DataGridState<T>(source, columns, el.SelectionMode, blockSize);
 
-            // Defer re-render to the next dispatcher tick to batch multiple
-            // StateChanged events into a single render pass.
-            var pending = false;
             var dq = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+
+            // Settle timer: fires once after scrolling pauses for 2 frames (~32ms).
+            // When it fires, check if scrolling truly stopped before rendering.
+            Microsoft.UI.Dispatching.DispatcherQueueTimer? settleTimer = null;
+            var hasDeferredRender = false;
+            if (dq is not null)
+            {
+                settleTimer = dq.CreateTimer();
+                settleTimer.Interval = TimeSpan.FromMilliseconds(32);
+                settleTimer.IsRepeating = false;
+                settleTimer.Tick += (_, _) =>
+                {
+                    // Re-check: is scrolling still active?
+                    var scrollTick = s.LastScrollTick;
+                    var elapsed = scrollTick > 0
+                        ? (System.Diagnostics.Stopwatch.GetTimestamp() - scrollTick) * 1000.0 / System.Diagnostics.Stopwatch.Frequency
+                        : double.MaxValue;
+
+                    if (elapsed < 48)
+                    {
+                        // Still scrolling — reschedule, don't render yet.
+                        settleTimer.Stop();
+                        settleTimer.Start();
+                    }
+                    else
+                    {
+                        hasDeferredRender = false;
+                        s.RenderDispatchTick = System.Diagnostics.Stopwatch.GetTimestamp();
+                        forceRender(n => n + 1);
+
+                        // Re-request blocks for the final visible range. During rapid
+                        // scrolling, EnsureRangeLoaded may have been called for an
+                        // intermediate position, not where the user actually stopped.
+                        s.EnsureRangeLoaded(s.LastVisibleFirst, s.LastVisibleLast);
+                    }
+                };
+            }
+
             s.StateChanged += () =>
             {
-                if (dq is not null && !pending)
+                if (dq is not null)
                 {
-                    pending = true;
-                    dq.TryEnqueue(() =>
+                    // Check if scroll is active: was there a ViewChanged within the last 100ms?
+                    var scrollTick = s.LastScrollTick;
+                    var elapsed = scrollTick > 0
+                        ? (System.Diagnostics.Stopwatch.GetTimestamp() - scrollTick) * 1000.0 / System.Diagnostics.Stopwatch.Frequency
+                        : double.MaxValue;
+
+                    if (elapsed < 100)
                     {
-                        pending = false;
-                        forceRender(n => n + 1);
-                    });
+                        // Scrolling is active — defer render.
+                        if (!hasDeferredRender)
+                        {
+                            hasDeferredRender = true;
+                            settleTimer!.Stop();
+                            settleTimer.Start();
+                        }
+                        // If timer already running, let it handle it — don't restart
+                        // on every StateChanged to avoid pushing the deadline out forever.
+                    }
+                    else
+                    {
+                        // Not scrolling — render on next dispatcher tick.
+                        hasDeferredRender = false;
+                        dq.TryEnqueue(() =>
+                        {
+                            s.RenderDispatchTick = System.Diagnostics.Stopwatch.GetTimestamp();
+                            forceRender(n => n + 1);
+                        });
+                    }
                 }
-                else if (dq is null)
+                else
                 {
                     forceRender(n => n + 1);
                 }
@@ -288,12 +345,18 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
             colWidths[c] = state.GetColumnWidth(columns[c].Name);
 
         // Build Grid column definitions: one pixel column per data column,
+        // plus an optional expand column for row details,
         // plus an optional 40px selection checkbox column at the start,
         // plus an optional actions column for Row edit mode.
+        var hasRowDetailTemplate = el.RowDetailTemplate is not null;
         var hasRowEditActions = editable && el.EditMode == EditMode.Row;
-        var gridColCount = colCount + (selectable ? 1 : 0) + (hasRowEditActions ? 1 : 0);
+        var gridColCount = colCount
+            + (hasRowDetailTemplate ? 1 : 0)
+            + (selectable ? 1 : 0)
+            + (hasRowEditActions ? 1 : 0);
         var gridColDefs = new string[gridColCount];
         var idx = 0;
+        if (hasRowDetailTemplate) gridColDefs[idx++] = "24";
         if (selectable) gridColDefs[idx++] = "40";
         for (int c = 0; c < colCount; c++)
             gridColDefs[idx++] = colWidths[c].ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -313,8 +376,26 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
             {
                 return state.GetRowKeyAt(index) ?? index.ToString();
             },
+            @ref: vlRef =>
+            {
+                // Wire up the scroll guard on the factory so RefreshRealizedItems
+                // can bail out if scrolling restarted after forceRender was dispatched.
+                if (vlRef.Repeater?.ItemTemplate is Core.DuctElementFactory<int> factory)
+                {
+                    factory.ShouldSkipRefresh ??= () =>
+                    {
+                        return state.LastScrollTick > state.RenderDispatchTick
+                               && state.RenderDispatchTick > 0;
+                    };
+                }
+            },
             onVisibleRangeChanged: (first, last) =>
             {
+                // Stamp scroll activity so StateChanged can defer re-renders.
+                state.LastScrollTick = System.Diagnostics.Stopwatch.GetTimestamp();
+                state.LastVisibleFirst = first;
+                state.LastVisibleLast = last;
+
                 // Prefetch blocks that are about to enter the viewport.
                 // This triggers async loads; when they complete, ItemCount
                 // grows and new items are realized with real data.
@@ -344,17 +425,42 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
         var isSelected = !isPlaceholder && selectable && state.IsSelected(rowKey);
         var isRowFocused = !isPlaceholder && index == state.FocusedRowIndex;
 
+        var hasRowDetailTemplate = el.RowDetailTemplate is not null;
         var hasRowEditActions = editable && el.EditMode == EditMode.Row;
-        var cellOffset = selectable ? 1 : 0;
+        var expandOffset = hasRowDetailTemplate ? 1 : 0;
+        var cellOffset = expandOffset + (selectable ? 1 : 0);
         var cells = new Element?[colCount + cellOffset + (hasRowEditActions ? 1 : 0)];
+
+        // Expand/collapse toggle — embedded in the Grid as column 0.
+        // Avoids wrapping every row in a FlexRow (which adds Yoga layout overhead).
+        if (hasRowDetailTemplate)
+        {
+            var isExpanded = !isPlaceholder && state.IsExpanded(rowKey);
+            var expandIcon = isExpanded ? "\u25BC" : "\u25B6";
+            var capturedKeyForExpand = rowKey;
+            var capturedIsPlaceholder2 = isPlaceholder;
+            cells[0] = Text(expandIcon)
+                .FontSize(10).Opacity(0.6)
+                .HAlign(HorizontalAlignment.Center)
+                .VAlign(VerticalAlignment.Center)
+                .OnTapped((_, _) =>
+                {
+                    if (capturedIsPlaceholder2) return;
+                    Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread()?.TryEnqueue(() =>
+                    {
+                        state.ToggleRowExpansion(capturedKeyForExpand);
+                    });
+                })
+                .Grid(row: 0, column: 0);
+        }
 
         if (selectable)
         {
-            cells[0] = Text(isSelected ? "\u2713" : "")
+            cells[expandOffset] = Text(isSelected ? "\u2713" : "")
                 .FontSize(12)
                 .HAlign(HorizontalAlignment.Center)
                 .VAlign(VerticalAlignment.Center)
-                .Grid(row: 0, column: 0);
+                .Grid(row: 0, column: expandOffset);
         }
 
         var isRowInRowEdit = !isPlaceholder && state.IsRowEditing && state.EditingRowKey?.Equals(rowKey) == true;
@@ -577,38 +683,18 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
             );
         }
 
-        // Row detail expansion — always present so element tree structure is stable.
-        // For placeholders, isExpanded is always false → collapsed path taken.
+        // Row detail expansion — expand icon is already in the Grid (column 0).
+        // Only wrap in FlexColumn when the row IS expanded (to show the detail pane).
         if (el.RowDetailTemplate is not null)
         {
             var isExpanded = !isPlaceholder && state.IsExpanded(rowKey);
-            var capturedKeyForExpand = rowKey;
-            var capturedIsPlaceholder2 = isPlaceholder;
-
-            // Prepend expand/collapse toggle to the row
-            var expandIcon = isExpanded ? "\u25BC" : "\u25B6";
-            var expandButton = Text(expandIcon)
-                .FontSize(10).Opacity(0.6).Padding(4, 0)
-                .OnTapped((_, _) =>
-                {
-                    if (capturedIsPlaceholder2) return;
-                    Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread()?.TryEnqueue(() =>
-                    {
-                        state.ToggleRowExpansion(capturedKeyForExpand);
-                    });
-                });
-
             if (isExpanded)
             {
                 var detail = el.RowDetailTemplate(item!, rowKey).Padding(16, 8);
                 row = FlexColumn(
-                    FlexRow(expandButton, row) with { AlignItems = FlexAlign.Center },
+                    row,
                     detail.Background("#f5f5f5")
                 );
-            }
-            else
-            {
-                row = FlexRow(expandButton, row) with { AlignItems = FlexAlign.Center };
             }
         }
 
@@ -688,8 +774,10 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
         IReadOnlyList<FieldDescriptor> columns,
         DataGridElement<T> el)
     {
+        var hasRowDetailTemplate = el.RowDetailTemplate is not null;
         var selectable = el.SelectionMode != SelectionMode.None;
-        var cellOffset = selectable ? 1 : 0;
+        var expandOffset = hasRowDetailTemplate ? 1 : 0;
+        var cellOffset = expandOffset + (selectable ? 1 : 0);
         var colCount = columns.Count;
 
         var editable = el.Editable;
@@ -698,6 +786,7 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
         // Build column definition strings for the header Grid.
         var gridColDefs = new string[colCount + cellOffset + (hasRowEditActions ? 1 : 0)];
         var idx = 0;
+        if (hasRowDetailTemplate) gridColDefs[idx++] = "24";
         if (selectable) gridColDefs[idx++] = "40";
         for (int c = 0; c < colCount; c++)
             gridColDefs[idx++] = state.GetColumnWidth(columns[c].Name)
@@ -707,9 +796,14 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
 
         var headerCells = new List<Element?>();
 
-        if (selectable)
+        if (hasRowDetailTemplate)
         {
             headerCells.Add(Border(Empty()).Grid(row: 0, column: 0));
+        }
+
+        if (selectable)
+        {
+            headerCells.Add(Border(Empty()).Grid(row: 0, column: expandOffset));
         }
 
         for (int i = 0; i < colCount; i++)

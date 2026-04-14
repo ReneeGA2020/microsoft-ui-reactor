@@ -283,6 +283,7 @@ public class DataPageCache<T>
         try
         {
             var page = await _source.GetPageAsync(request, cancellationToken);
+
             var block = new CacheBlock<T>(blockIndex, page.Items, BlockStatus.Loaded);
 
             lock (_lock)

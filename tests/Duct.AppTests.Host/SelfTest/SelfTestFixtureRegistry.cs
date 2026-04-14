@@ -401,6 +401,10 @@ internal static class SelfTestFixtureRegistry
         // DataGrid incremental paging
         "DataGrid_IncrementalLoadVerification",
         "DataGrid_SmallDatasetFullyLoaded",
+        // DataGrid scroll behavior and performance
+        "DataGrid_ScrollPopulatesData",
+        "DataGrid_ScrollBackPopulatesData",
+        "DataGrid_ScrollPerfRelative",
     ];
 
     public static SelfTestFixtureBase? Create(string name, Harness harness) => name switch
@@ -797,6 +801,10 @@ internal static class SelfTestFixtureRegistry
         // DataGrid incremental paging
         "DataGrid_IncrementalLoadVerification" => new DataGridPagingFixtures.IncrementalLoadVerification(harness),
         "DataGrid_SmallDatasetFullyLoaded" => new DataGridPagingFixtures.SmallDatasetFullyLoaded(harness),
+        // DataGrid scroll behavior and performance
+        "DataGrid_ScrollPopulatesData" => new DataGridScrollFixtures.ScrollPopulatesData(harness),
+        "DataGrid_ScrollBackPopulatesData" => new DataGridScrollFixtures.ScrollBackPopulatesData(harness),
+        "DataGrid_ScrollPerfRelative" => new DataGridScrollFixtures.ScrollPerfRelative(harness),
         _ => null,
     };
 }

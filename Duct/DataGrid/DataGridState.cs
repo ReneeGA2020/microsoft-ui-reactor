@@ -260,6 +260,28 @@ public class DataGridState<T>
     /// <summary>Fires when state changes requiring a re-render.</summary>
     public event Action? StateChanged;
 
+    /// <summary>
+    /// Timestamp (Stopwatch ticks) of the last scroll event. Set by the
+    /// onVisibleRangeChanged callback so the StateChanged handler can
+    /// defer re-renders during active scrolling.
+    /// </summary>
+    public long LastScrollTick;
+
+    /// <summary>
+    /// Timestamp set when a deferred forceRender is dispatched. If
+    /// LastScrollTick moves past this value before RefreshRealizedItems
+    /// runs, the reconciliation is skipped (scroll restarted).
+    /// </summary>
+    public long RenderDispatchTick;
+
+    /// <summary>
+    /// Last visible range reported by onVisibleRangeChanged. Used to
+    /// re-request blocks after scroll settles, in case the final position
+    /// wasn't covered by requests made during rapid scrolling.
+    /// </summary>
+    public int LastVisibleFirst;
+    public int LastVisibleLast;
+
     /// <param name="blockSize">
     /// Page cache block size. When 0 (default), the cache uses its built-in default (50).
     /// Pass a viewport-derived value to ensure the first block fills the screen.

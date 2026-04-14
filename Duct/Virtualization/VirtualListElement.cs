@@ -73,6 +73,9 @@ public sealed class VirtualListRef
         _itemHeight = itemHeight;
     }
 
+    /// <summary>The underlying ItemsRepeater, for advanced scenarios.</summary>
+    public ItemsRepeater? Repeater => _repeater;
+
     /// <summary>
     /// Programmatically scroll to bring the item at the given index into view.
     /// </summary>

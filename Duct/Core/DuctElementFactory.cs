@@ -54,8 +54,19 @@ public sealed partial class DuctElementFactory<T> : ElementFactory
     /// controls via property changes (no add/remove on the ItemsRepeater's
     /// Children collection).
     /// </summary>
+    /// <summary>
+    /// When set, RefreshRealizedItems is skipped if the predicate returns true.
+    /// Used by DataGrid to suppress reconciliation during active scrolling.
+    /// </summary>
+    internal Func<bool>? ShouldSkipRefresh;
+
     internal void RefreshRealizedItems(Microsoft.UI.Xaml.Controls.ItemsRepeater repeater)
     {
+        // If scrolling restarted after the render was dispatched, skip reconciliation.
+        // The next settle timer will pick it up when scrolling truly stops.
+        if (ShouldSkipRefresh?.Invoke() == true)
+            return;
+
         // Only iterate tracked indices (realized items), not all items.
         // Use a snapshot to avoid modifying the dictionary during iteration.
         var indices = _mountedElements.Keys.ToArray();
