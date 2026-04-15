@@ -63,7 +63,7 @@ class DataTemplateDemo : Component
                 )).Disabled(animals.Count == 0)
             ),
 
-            Text($"{filtered.Count} animals shown").Opacity(0.6),
+            Text($"{filtered.Count} animals shown").Foreground(SecondaryText),
 
             // 1. Typed ListView<T>
             SubHeading("1. Typed ListView<T>"),
@@ -78,12 +78,12 @@ class DataTemplateDemo : Component
                             Text(animal.Name).SemiBold(),
                             animal.Species switch
                             {
-                                "Cat" => Text($"Feline - {animal.Species}").FontSize(12).Opacity(0.7),
-                                "Dog" => Text($"Canine - {animal.Species}").FontSize(12).Opacity(0.7),
-                                _ => Text(animal.Species).FontSize(12).Opacity(0.5),
+                                "Cat" => Caption($"Feline - {animal.Species}").Foreground(SecondaryText),
+                                "Dog" => Caption($"Canine - {animal.Species}").Foreground(SecondaryText),
+                                _ => Caption(animal.Species).Foreground(TertiaryText),
                             }
                         ),
-                        Text($"#{animal.Id}").Opacity(0.3)
+                        Caption($"#{animal.Id}").Foreground(TertiaryText)
                     ).Margin(4)
                 ) with
                 {
@@ -119,7 +119,7 @@ class DataTemplateDemo : Component
                             VStack(4,
                                 Text(animal.Emoji).FontSize(32).HAlign(HorizontalAlignment.Center),
                                 Text(animal.Name).SemiBold().HAlign(HorizontalAlignment.Center),
-                                Text(animal.Species).FontSize(11).Opacity(0.6).HAlign(HorizontalAlignment.Center)
+                                Caption(animal.Species).Foreground(SecondaryText).HAlign(HorizontalAlignment.Center)
                             )
                         ).CornerRadius(8).Background(bg).Padding(12).Width(120).Height(120);
                     }
@@ -142,7 +142,7 @@ class DataTemplateDemo : Component
                         VStack(12,
                             Text(animal.Emoji).FontSize(64).HAlign(HorizontalAlignment.Center),
                             Text(animal.Name).FontSize(24).SemiBold().HAlign(HorizontalAlignment.Center),
-                            Text($"{animal.Species} (#{animal.Id})").Opacity(0.6).HAlign(HorizontalAlignment.Center)
+                            Text($"{animal.Species} (#{animal.Id})").Foreground(SecondaryText).HAlign(HorizontalAlignment.Center)
                         ).HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
                     ).Background(SubtleFill).Padding(32)
                 ) with
@@ -152,7 +152,7 @@ class DataTemplateDemo : Component
                 }
             ).CornerRadius(8).Height(250).Width(400),
 
-            Text($"Showing {flipIndex + 1} of {filtered.Count}").Opacity(0.6),
+            Text($"Showing {flipIndex + 1} of {filtered.Count}").Foreground(SecondaryText),
 
             // 4. TreeView with ContentElement
             SubHeading("4. TreeView with ContentElement"),
@@ -162,7 +162,7 @@ class DataTemplateDemo : Component
                     new TreeViewNodeData("Pets") { IsExpanded = true,
                         ContentElement = HStack(8,
                             Text("\U0001F3E0").FontSize(16),
-                            Text("All Pets").Bold()
+                            Text("All Pets").SemiBold()
                         ),
                         Children = new[] { "Cat", "Dog", "Rabbit", "Hamster", "Parrot" }
                             .Where(species => filtered.Any(a => a.Species == species))
@@ -180,7 +180,7 @@ class DataTemplateDemo : Component
                                         _ => "\U0001F43E"
                                     }),
                                     Text(species).SemiBold(),
-                                    Text($"({filtered.Count(a => a.Species == species)})").Opacity(0.5)
+                                    Text($"({filtered.Count(a => a.Species == species)})").Foreground(TertiaryText)
                                 ),
                                 Children = filtered
                                     .Where(a => a.Species == species)
@@ -189,7 +189,7 @@ class DataTemplateDemo : Component
                                         ContentElement = HStack(8,
                                             Text(a.Emoji),
                                             Text(a.Name),
-                                            Text($"#{a.Id}").FontSize(11).Opacity(0.3)
+                                            Caption($"#{a.Id}").Foreground(TertiaryText)
                                         )
                                     }).ToArray()
                             }).ToArray()

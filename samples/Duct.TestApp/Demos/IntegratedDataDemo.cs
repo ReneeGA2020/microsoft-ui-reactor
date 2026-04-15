@@ -228,18 +228,18 @@ class IntegratedDataDemo : Duct.Core.Component
                 selectedItem.Name = (string)v;
             }, placeholder: "Task name...");
             if (nameErrors.Count > 0)
-                nameEditor = nameEditor.WithBorder("#c62828", 1);
+                nameEditor = nameEditor.WithBorder(Theme.Ref("SystemFillColorCriticalBrush"), 1);
 
             rightPanel = VStack(8,
                 // FormField section — red border on invalid
                 Border(
                     VStack(4,
                         Text("FormField (first property)").SemiBold(),
-                        Text("Task Name *").FontSize(12),
+                        Caption("Task Name *"),
                         nameEditor,
                         nameErrors.Count > 0
-                            ? Text(nameErrors[0]!.Text).Foreground("#c62828").FontSize(11)
-                            : Text(nameField.Description ?? "").Opacity(0.5).FontSize(11)
+                            ? Caption(nameErrors[0]!.Text).Foreground(Theme.Ref("SystemFillColorCriticalBrush"))
+                            : Caption(nameField.Description ?? "").Foreground(TertiaryText)
                     )
                 ).Padding(12).Background(SubtleFill).CornerRadius(4),
 
@@ -252,21 +252,21 @@ class IntegratedDataDemo : Duct.Core.Component
                     ? Border(
                         VStack(4, new Element?[] {
                             Text($"Validation ({allErrors.Count} error{(allErrors.Count != 1 ? "s" : "")})")
-                                .SemiBold().Foreground("#c62828")
+                                .SemiBold().Foreground(Theme.Ref("SystemFillColorCriticalBrush"))
                         }.Concat(allErrors.Select(e => (Element?)
-                            Text($"\u2022 {e!.Field}: {e.Text}").Foreground("#c62828").FontSize(12)
+                            Caption($"\u2022 {e!.Field}: {e.Text}").Foreground(Theme.Ref("SystemFillColorCriticalBrush"))
                         )).ToArray())
-                    ).Padding(10).WithBorder("#c62828", 1).CornerRadius(4)
+                    ).Padding(12).WithBorder(Theme.Ref("SystemFillColorCriticalBrush"), 1).CornerRadius(4)
                     : (Element)Border(
-                        Text("\u2713 All fields valid").Foreground("#2e7d32").SemiBold()
-                    ).Padding(10).WithBorder("#2e7d32", 1).CornerRadius(4)
+                        Text("\u2713 All fields valid").Foreground(Theme.Ref("SystemFillColorSuccessBrush")).SemiBold()
+                    ).Padding(12).WithBorder(Theme.Ref("SystemFillColorSuccessBrush"), 1).CornerRadius(4)
             );
         }
         else
         {
             rightPanel = Border(
                 Text("Select a row in the DataGrid to see its details here.")
-                    .Opacity(0.5).Padding(20)
+                    .Foreground(TertiaryText).Padding(20)
             ).Background(SubtleFill).CornerRadius(4).VAlign(VerticalAlignment.Center);
         }
 
@@ -276,13 +276,13 @@ class IntegratedDataDemo : Duct.Core.Component
             Text("All 4 data system pieces: FieldDescriptor defines fields + validation once. " +
                  "DataGrid, PropertyGrid, and FormField all share the same definitions. " +
                  "Edit in any view — changes sync to the other two.")
-                .Opacity(0.6).Flex(shrink: 0),
+                .Foreground(SecondaryText).Flex(shrink: 0),
 
             (FlexRow(
                 // Left: DataGrid (60%)
                 (FlexColumn(
                     Text("DataGrid").SemiBold().Flex(shrink: 0),
-                    Text("Click a row to select. Double-click or press F2 to edit a cell.").Opacity(0.5).FontSize(11).Flex(shrink: 0),
+                    Caption("Click a row to select. Double-click or press F2 to edit a cell.").Foreground(TertiaryText).Flex(shrink: 0),
                     DataGridDsl.DataGrid(
                         source: source,
                         columns: columns,

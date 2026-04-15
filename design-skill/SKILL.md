@@ -1,0 +1,687 @@
+# Windows 11 Design for Duct
+
+Author, review, and fix Duct UI code following Windows 11 design system rules.
+
+Duct is a functional UI framework for WinUI 3 that builds UI entirely in C# — no XAML, no data binding, no ViewModels. UI is described with immutable Element records, composed via factory methods (`UI.Text()`, `UI.VStack()`, etc.), and updated through a React-style reconciler with hooks (`UseState`, `UseEffect`, etc.).
+
+This skill translates the Windows 11 design language into Duct's C# projection so that apps built with Duct look, feel, and behave like first-class Windows 11 applications.
+
+## Workflow
+
+1. Author new Duct UI using the rules below.
+2. Review a PR using the checklist at the end of this file.
+3. Fix feedback by mapping issues to the specific rule and applying the correct pattern.
+4. Verify changes using the testing guidance.
+
+## Quick Scan Checklist
+
+Check these areas early in every review:
+- Theme tokens used for all colors — no hardcoded hex strings for themed surfaces.
+- High Contrast works — no opacity, no accent colors, only system color brushes.
+- Typography uses `Heading()`, `SubHeading()`, `Caption()`, or WinUI style tokens — not raw `FontSize`/`FontWeight`.
+- Layout values use the 4px grid.
+- Text scaling and localization are safe — no fixed heights on text containers.
+- Shadows have elevation (`Translation(0, 0, 32)`).
+- Acrylic surfaces use correct background + border pairings.
+- `AutomationName()` set on icon-only controls.
+- Keys set on list items for stable reconciliation.
+
+## Core Rules (Always Apply)
+
+### 1. Theming Is the Primary Lens
+
+Use `Theme.*` tokens for all colors and brushes. Never hardcode hex colors for themed surfaces.
+
+```csharp
+// Correct: theme tokens
+Text("Hello").Foreground(Theme.PrimaryText)
+Border(child).Background(Theme.CardBackground)
+Button("Action").Background(Theme.Accent)
+
+// Wrong: hardcoded colors on themed surfaces
+Text("Hello").Foreground("#000000")
+Border(child).Background("#FFFFFF")
+```
+
+Hardcoded colors are acceptable only for:
+- One-off decorative elements that intentionally ignore theming (e.g., brand logos)
+- Explicit hit-test targets (`Background("#00000000")` for transparent hit areas)
+
+#### Common Theme Tokens
+
+| Token | WinUI Resource | Purpose |
+|-------|---------------|---------|
+| `Theme.PrimaryText` | `TextFillColorPrimaryBrush` | Primary text |
+| `Theme.SecondaryText` | `TextFillColorSecondaryBrush` | Secondary text |
+| `Theme.TertiaryText` | `TextFillColorTertiaryBrush` | Placeholder text |
+| `Theme.DisabledText` | `TextFillColorDisabledBrush` | Disabled text |
+| `Theme.Accent` | `AccentFillColorDefaultBrush` | Accent fills |
+| `Theme.AccentSecondary` | `AccentFillColorSecondaryBrush` | Accent hover |
+| `Theme.AccentTertiary` | `AccentFillColorTertiaryBrush` | Accent pressed |
+| `Theme.ControlFill` | `ControlFillColorDefaultBrush` | Control backgrounds |
+| `Theme.CardBackground` | `CardBackgroundFillColorDefaultBrush` | Card backgrounds |
+| `Theme.LayerFill` | `LayerFillColorDefaultBrush` | Layer backgrounds |
+| `Theme.SolidBackground` | `SolidBackgroundFillColorBaseBrush` | Solid backgrounds |
+| `Theme.SubtleFill` | `SubtleFillColorTransparentBrush` | Subtle/transparent fills |
+
+For any WinUI resource not exposed as a named token, use `Theme.Ref("ResourceKeyBrush")`.
+
+#### Custom Theme Resource References
+
+```csharp
+// Reference any WinUI resource by key
+Border(child).Background(Theme.Ref("AcrylicBackgroundFillColorDefaultBrush"))
+Border(child).WithBorder(Theme.Ref("SurfaceStrokeColorFlyoutBrush"), 1)
+```
+
+#### Per-Subtree Theme Override
+
+Force a subtree to a specific theme variant:
+
+```csharp
+// Sidebar always renders in dark theme
+VStack(sidebarContent).RequestedTheme(ElementTheme.Dark)
+```
+
+See [theme-aware-resources.md](docs/theme-aware-resources.md) for full token list and pairing rules.
+
+### 2. Lightweight Styling (Per-Control Resource Overrides)
+
+Override control template resources using `.Resources()` to customize visual states without replacing the entire template:
+
+```csharp
+// Correct: override button resources for a subtle button
+Button("Action", onClick).Resources(r => r
+    .Set("ButtonBackground", Theme.SubtleFill)
+    .Set("ButtonBackgroundPointerOver", Theme.Ref("SubtleFillColorSecondaryBrush"))
+    .Set("ButtonBackgroundPressed", Theme.Ref("SubtleFillColorTertiaryBrush"))
+    .Set("ButtonBorderBrush", Theme.SubtleFill)
+    .Set("ButtonBorderBrushPointerOver", Theme.SubtleFill)
+    .Set("ButtonBorderBrushPressed", Theme.SubtleFill))
+
+// Wrong: setting Background directly — loses hover/pressed/disabled states
+Button("Action", onClick).Background(Theme.SubtleFill)
+```
+
+Resource keys target the `SolidColorBrush` resource (ending in `Brush`), not the `Color`.
+
+```csharp
+// Correct
+.Set("ButtonBackground", Theme.Ref("ControlFillColorDefaultBrush"))
+
+// Wrong — Color, not Brush
+.Set("ButtonBackground", Theme.Ref("ControlFillColorDefault"))
+```
+
+### 3. High Contrast Rules (Strict)
+
+High Contrast users rely on a fixed set of 8 system color brushes. Your UI must work with these constraints.
+
+**Allowed HC system brushes:**
+
+| Brush | Purpose |
+|-------|---------|
+| `SystemColorWindowTextColorBrush` | Text on window background |
+| `SystemColorWindowColorBrush` | Window/content background |
+| `SystemColorHighlightTextColorBrush` | Selected text foreground |
+| `SystemColorHighlightColorBrush` | Selection/hover background |
+| `SystemColorButtonTextColorBrush` | Button text |
+| `SystemColorButtonFaceColorBrush` | Button background |
+| `SystemColorGrayTextColorBrush` | Disabled/inactive text |
+| `SystemColorHotlightColorBrush` | Hyperlinks |
+
+**HC color pairings:**
+
+| Background | Foreground | Use Case |
+|------------|------------|----------|
+| `SystemColorWindowColor` | `SystemColorWindowTextColor` | General content |
+| `SystemColorHighlightColor` | `SystemColorHighlightTextColor` | Selected/hover states |
+| `SystemColorButtonFaceColor` | `SystemColorButtonTextColor` | Buttons |
+| `SystemColorWindowColor` | `SystemColorGrayTextColor` | Disabled content |
+| `SystemColorWindowColor` | `SystemColorHotlightColor` | Hyperlinks |
+
+**Rules:**
+- No hardcoded colors in HC mode.
+- No opacity on elements or brushes in HC — encode translucency in the alpha channel for Light/Dark only.
+- No accent colors or regular WinUI brushes in HC.
+- No gradient animations in HC — use a single system brush.
+- Use 2px border thickness for flyouts, dialogs, and cards in HC.
+- Set `HighContrastAdjustment` at app level to prevent system overrides:
+  ```csharp
+  Application.Current.HighContrastAdjustment = ApplicationHighContrastAdjustment.None;
+  ```
+
+Using `Theme.*` tokens correctly means HC usually "just works" because WinUI resolves them to appropriate system colors. Test to verify.
+
+### 4. Typography Must Use Semantic Styles
+
+Use the predefined text factories or WinUI style tokens. Never set `FontSize` and `FontWeight` directly for standard UI text.
+
+**Duct text factories:**
+
+| Factory | Size | Weight | Use Case |
+|---------|------|--------|----------|
+| `Caption("text")` | 12px | Regular | Small labels, timestamps |
+| `Text("text")` | 14px | Regular | Default body text |
+| `SubHeading("text")` | 20px | 600 | Section headers, card titles |
+| `Heading("text")` | 28px | 700 | Page titles |
+
+**WinUI type ramp (via `.Set()`):**
+
+| Style | Size | Weight |
+|-------|------|--------|
+| `CaptionTextBlockStyle` | 12px | Regular |
+| `BodyTextBlockStyle` | 14px | Regular |
+| `BodyStrongTextBlockStyle` | 14px | Semibold |
+| `BodyLargeTextBlockStyle` | 18px | Regular |
+| `SubtitleTextBlockStyle` | 20px | Semibold |
+| `TitleTextBlockStyle` | 28px | Semibold |
+| `TitleLargeTextBlockStyle` | 40px | Semibold |
+| `DisplayTextBlockStyle` | 68px | Semibold |
+
+For sizes not covered by the factories, apply a WinUI style:
+
+```csharp
+// Correct: apply WinUI style for BodyLarge
+Text("Prominent text").Set(tb => tb.Style =
+    (Style)Application.Current.Resources["BodyLargeTextBlockStyle"])
+
+// Also correct: use the Duct factories for common sizes
+Heading("Page Title")
+SubHeading("Section")
+Caption("Fine print")
+
+// Wrong: raw font properties for standard UI text
+Text("Title").FontSize(28).FontWeight(new FontWeight(700))
+```
+
+**Rules:**
+- Use `SemiBold` (600), never `Bold` (700) for emphasis — except `Heading()` which intentionally uses 700 for page titles.
+- Minimum font size: 12px. Anything smaller makes complex scripts unreadable.
+- Use `{ThemeResource SymbolThemeFontFamily}` for icon fonts via `.Set()`:
+  ```csharp
+  Text("\uE710").Set(tb =>
+      tb.FontFamily = (FontFamily)Application.Current.Resources["SymbolThemeFontFamily"])
+  ```
+
+See [typography-and-colors.md](docs/typography-and-colors.md) for the full type ramp and color token list.
+
+### 5. Layout and Scaling
+
+#### 4px Grid
+
+Use multiples of 4 for all margins, padding, and sizing values.
+
+```csharp
+// Correct: multiples of 4
+VStack(8, children).Padding(16)
+Border(child).Margin(12).Padding(8)
+HStack(4, items)
+
+// Wrong: odd values cause blurry rendering at fractional scales
+VStack(5, children).Padding(15)
+Border(child).Margin(3)
+```
+
+#### Corner Radius
+
+Use system values — `ControlCornerRadius` (4px) for controls and `OverlayCornerRadius` (8px) for overlays:
+
+```csharp
+// Correct: system corner radius values
+Border(child).CornerRadius(4)   // ControlCornerRadius equivalent
+Border(child).CornerRadius(8)   // OverlayCornerRadius equivalent
+
+// Selective rounding (top corners only)
+Border(child).CornerRadius(8, 8, 0, 0)
+
+// Wrong: non-standard radii (even if from Figma)
+Border(child).CornerRadius(3)
+Border(child).CornerRadius(6)
+```
+
+#### Sizing
+
+```csharp
+// Correct: MinHeight for flexible sizing
+Button("Action").MinHeight(40)
+VStack(children).MinWidth(200)
+
+// Wrong: fixed Height clips at larger text scales
+Button("Action").Height(32)
+TextField(text, setText).Height(30)
+```
+
+- Prefer `MinHeight`/`MinWidth` over fixed `Height`/`Width`.
+- Avoid fixed widths on buttons — let content drive width.
+- Buttons achieve correct height through padding, not explicit `Height`.
+
+#### Container Choice
+
+Pick the right container:
+
+| Need | Use | Not |
+|------|-----|-----|
+| Single child with background/border | `Border(child)` | `Grid` or `VStack` with one child |
+| Linear vertical layout | `VStack(children)` | Nested `Grid` |
+| Linear horizontal layout | `HStack(children)` | Nested `Grid` |
+| Flexible proportional layout | `Flex(children)` | Complex nested stacks |
+| Positional row/column layout | `Grid(columns, rows, children)` | Canvas or absolute positioning |
+| Text that needs trimming | `Grid` with `"*"` column | `HStack` (prevents trimming) |
+
+**Text trimming caveat:** `HStack` (StackPanel) gives children unbounded width, so `TextTrimming` never activates. Use a `Grid` with a `"*"` column:
+
+```csharp
+// Correct: Grid constrains width so trimming works
+Grid(
+    columns: ["Auto", "*"],
+    rows: ["Auto"],
+    Image(source).Size(32, 32).Grid(column: 0),
+    Text(title).TextTrimming(TextTrimming.CharacterEllipsis).Grid(column: 1))
+
+// Wrong: TextTrimming never fires inside HStack
+HStack(8,
+    Image(source).Size(32, 32),
+    Text(title).TextTrimming(TextTrimming.CharacterEllipsis))
+```
+
+#### Spacing
+
+Use `VStack(spacing, ...)` / `HStack(spacing, ...)` or Grid `RowSpacing`/`ColumnSpacing` — not spacer elements.
+
+```csharp
+// Correct
+VStack(8, Text("A"), Text("B"), Text("C"))
+
+// Wrong: spacer element for spacing
+VStack(
+    Text("A"),
+    Border(null).Height(8),  // Don't do this
+    Text("B"))
+```
+
+#### Shadows
+
+`ThemeShadow` requires elevation to be visible. Add `Translation(0, 0, 32)` and ensure the parent has padding (12px) to prevent shadow clipping:
+
+```csharp
+Border(
+    ScrollView(VStack(16, content))
+).Background(Theme.Ref("AcrylicBackgroundFillColorDefaultBrush"))
+ .WithBorder(Theme.Ref("SurfaceStrokeColorFlyoutBrush"), 1)
+ .CornerRadius(8)
+ .Translation(0, 0, 32)
+ .Set(b =>
+ {
+     b.BackgroundSizing = BackgroundSizing.InnerBorderEdge;
+     b.Shadow = new ThemeShadow();
+ })
+```
+
+See [layout-and-scaling.md](docs/layout-and-scaling.md) for full layout rules.
+
+### 6. Data Flow and State
+
+Duct uses hooks, not MVVM data binding. Follow these patterns:
+
+#### State-Driven UI (Preferred)
+
+```csharp
+var (items, setItems) = UseState(new List<Item>());
+var (filter, setFilter) = UseState("");
+
+var filtered = UseMemo(() =>
+    items.Where(i => i.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList(),
+    items, filter);
+
+return VStack(
+    TextField(filter, setFilter, placeholder: "Filter..."),
+    VStack(filtered.Select(item =>
+        Text(item.Name).WithKey(item.Id)
+    ).ToArray()));
+```
+
+#### UseObservable for External Models
+
+When integrating with existing `INotifyPropertyChanged` objects:
+
+```csharp
+var model = UseObservable(externalModel);
+
+return VStack(
+    Text(model.Title),
+    Slider(model.Volume, 0, 100, v => model.Volume = v));
+```
+
+#### Hook Rules (Critical)
+
+1. **Same order every render** — no hooks inside `if` blocks, no hooks in variable-length loops.
+2. **Only call from `Render()`** — or from within a function component body.
+3. **Use `UseCallback` for stable references** — handlers passed to children should be memoized.
+
+```csharp
+// Correct: hooks at top level, unconditional
+var (count, setCount) = UseState(0);
+var (name, setName) = UseState("");
+var increment = UseCallback(() => setCount(count + 1), count);
+
+// Wrong: conditional hook
+if (showCounter)
+{
+    var (count, setCount) = UseState(0);  // BREAKS hook ordering
+}
+```
+
+### 7. Accessibility
+
+#### Tier 1: Essential (Every Control)
+
+```csharp
+// Icon-only buttons MUST have AutomationName
+Button(Content: Image(iconSource), onClick)
+    .AutomationName("Close dialog")
+
+// Headings for screen reader navigation
+Heading("Settings").HeadingLevel(AutomationHeadingLevel.Level1)
+SubHeading("General").HeadingLevel(AutomationHeadingLevel.Level2)
+```
+
+#### Keyboard Navigation
+
+```csharp
+Button("Tab stop", onClick)
+    .IsTabStop(true)
+    .TabIndex(0)
+    .AccessKey("S")  // Alt+S
+```
+
+#### Tier 2: Lists and Collections
+
+```csharp
+// Position-in-set for screen readers
+items.Select((item, i) =>
+    Text(item.Name)
+        .PositionInSet(i + 1, items.Count)
+        .WithKey(item.Id))
+```
+
+#### Live Regions
+
+```csharp
+// Announce dynamic content changes to screen readers
+Text(statusMessage)
+    .LiveRegion(AutomationLiveSetting.Polite)
+```
+
+**Rules:**
+- Set `AutomationName` on every control without visible text.
+- Test Light, Dark, and High Contrast themes (especially NightSky).
+- Test at 100%, 150%, 200%, 250% display scaling.
+- Test with maximum text scaling (Settings > Accessibility > Text size).
+- Hit-test targets for light-dismiss must be visible: `Background("#00000000")`.
+- Use `DividerStrokeColorDefaultBrush` for dividers — custom brushes with opacity break in HC.
+
+See [code-review-checklist.md](docs/code-review-checklist.md) for the full accessibility checklist.
+
+### 8. Acrylic Surface Pairings
+
+Acrylic backgrounds have specific border pairings. Using the wrong combination produces incorrect visuals.
+
+| Surface Type | Background | Border |
+|--------------|------------|--------|
+| Flyouts, tooltips | `AcrylicBackgroundFillColorDefaultBrush` | `SurfaceStrokeColorFlyoutBrush` |
+| UI surfaces | `AcrylicBackgroundFillColorBaseBrush` | `SurfaceStrokeColorDefaultBrush` |
+
+```csharp
+// Correct: flyout acrylic pairing
+Border(content)
+    .Background(Theme.Ref("AcrylicBackgroundFillColorDefaultBrush"))
+    .WithBorder(Theme.Ref("SurfaceStrokeColorFlyoutBrush"), 1)
+    .CornerRadius(8)
+    .Translation(0, 0, 32)
+    .Set(b =>
+    {
+        b.BackgroundSizing = BackgroundSizing.InnerBorderEdge;
+        b.Shadow = new ThemeShadow();
+    })
+```
+
+- Overlays on acrylic use `LayerOnAcrylicFillColorDefaultBrush`.
+- Keep one acrylic layer per visual surface to avoid stacked-material artifacts.
+
+### 9. Animation and Motion
+
+#### Implicit Transitions (Recommended)
+
+Animate property changes smoothly — the framework handles interpolation:
+
+```csharp
+// Opacity fade
+Border(child)
+    .OpacityTransition()
+    .Opacity(isVisible ? 1.0 : 0.0)
+
+// Background color crossfade
+VStack(children)
+    .BackgroundTransition()
+    .Background(isActive ? Theme.Accent : Theme.ControlFill)
+
+// Scale bounce
+Border(child)
+    .ScaleTransition()
+    .Scale(isPressed ? 0.95f : 1.0f)
+```
+
+#### Layout Animations
+
+Animate children being added, removed, or repositioned:
+
+```csharp
+VStack(items.Select(item =>
+    Text(item.Name).WithKey(item.Id)
+).ToArray()).LayoutAnimation()
+```
+
+#### Element Enter/Exit Transitions
+
+```csharp
+// Fade + slide from bottom on mount
+Border(child).WithTransitions(
+    Transition.Fade,
+    Transition.Slide(Edge.Bottom))
+```
+
+**Rules:**
+- Use `ThemeShadow` instead of composition drop shadows.
+- Avoid gradient animations in High Contrast.
+- Use `BrushTransition` (via `BackgroundTransition()`) for smooth color changes.
+- Always set `Translation(0, 0, 32)` when using `ThemeShadow`.
+
+### 10. Reconciliation and Performance
+
+#### Keys for Lists
+
+Always set `.WithKey()` on items in dynamic lists. Without keys, the reconciler matches by position, causing unnecessary re-mounts on insert/reorder:
+
+```csharp
+// Correct: keyed children — stable identity
+VStack(items.Select(item =>
+    HStack(8,
+        Image(item.Avatar).Size(32, 32),
+        Text(item.Name)
+    ).WithKey(item.Id)
+).ToArray())
+
+// Wrong: unkeyed — insert at index 0 re-renders everything
+VStack(items.Select(item =>
+    HStack(8,
+        Image(item.Avatar).Size(32, 32),
+        Text(item.Name)
+    ).ToArray())
+```
+
+#### Memoize Expensive Computations
+
+```csharp
+var sorted = UseMemo(() =>
+    items.OrderBy(x => x.Name).ToList(),
+    items);
+
+var handler = UseCallback(() => save(count), count);
+```
+
+#### Avoid Deep Nesting
+
+Flatten visual tree depth where possible. Use `Border` instead of single-child `Grid`/`VStack`.
+
+```csharp
+// Correct: flat
+Border(Text("Hello")).Background(Theme.CardBackground).Padding(16)
+
+// Wrong: unnecessary nesting
+VStack(
+    Grid(["*"], ["*"],
+        Text("Hello")
+    ).Background(Theme.CardBackground)
+).Padding(16)
+```
+
+#### Use `.Set()` Sparingly
+
+`.Set()` is an escape hatch to raw WinUI. It's valid but bypasses the virtual element model — use it for properties Duct doesn't expose, not as a general pattern.
+
+```csharp
+// Good: property not exposed by Duct
+Text("Clock").Set(tb => tb.Typography.NumeralAlignment = FontNumeralAlignment.Tabular)
+
+// Bad: property that Duct exposes as a modifier
+Text("Hello").Set(tb => tb.Margin = new Thickness(16))  // Use .Margin(16) instead
+```
+
+### 11. Formatting Conventions
+
+- Use `using static Duct.UI;` to access the DSL without prefix.
+- One element per line when nesting gets deep.
+- Group modifiers logically: layout first, then appearance, then behavior.
+- Use trailing `.WithKey()` as the last modifier.
+
+```csharp
+// Good: readable modifier order
+Border(
+    VStack(16,
+        Heading("Title"),
+        Text("Description").Foreground(Theme.SecondaryText),
+        HStack(8,
+            Button("Cancel", onCancel),
+            Button("Save", onSave).Resources(r => r
+                .Set("ButtonBackground", Theme.Accent)
+                .Set("ButtonForeground", Theme.Ref("TextOnAccentFillColorPrimaryBrush")))
+        )
+    )
+)
+.Padding(24)
+.CornerRadius(8)
+.Background(Theme.CardBackground)
+.WithBorder(Theme.CardStroke, 1)
+.AutomationName("Settings card")
+```
+
+### 12. Text Scaling and Localization
+
+Every UI change must survive text scaling and long strings:
+
+- Use `MinHeight` instead of `Height` on containers with text.
+- Avoid fixed widths on buttons and text containers.
+- Use `VAlign(VerticalAlignment.Center)` instead of margin-based centering.
+- Use tabular numerals for changing numbers (clock, battery, progress):
+  ```csharp
+  Text($"{percent}%").Set(tb =>
+      tb.Typography.NumeralAlignment = FontNumeralAlignment.Tabular)
+  ```
+
+### 13. Avoid Setting WinUI Defaults
+
+Do not explicitly set properties to their WinUI default values — it blocks future WinUI updates.
+
+```csharp
+// Wrong: these are all WinUI defaults
+Button("Action")
+    .Padding(12)       // Default button padding
+    .CornerRadius(4)   // Default ControlCornerRadius
+    .Height(32)        // Default button height
+
+// Correct: only set what differs
+Button("Action").MinHeight(40)
+```
+
+Defaults you should not set:
+- Default `Foreground` on Text (it's `TextFillColorPrimaryBrush` already)
+- `Padding(0)` or `Margin(0)` (zero is the default)
+- `Opacity(1.0)` (1.0 is the default)
+- `CornerRadius(4)` on buttons (WinUI default is `ControlCornerRadius`)
+
+---
+
+## Code Review Checklist
+
+When reviewing Duct UI code, verify:
+
+- [ ] Uses `Theme.*` tokens for colors/brushes — no hardcoded hex on themed surfaces
+- [ ] Uses semantic text factories (`Heading`, `SubHeading`, `Caption`) or WinUI style tokens
+- [ ] Layout values use multiples of 4
+- [ ] Uses `MinHeight`/`MinWidth` instead of fixed sizing for text containers
+- [ ] Uses `Border` for single-child containers (not `VStack`/`Grid` wrappers)
+- [ ] `HStack` does not contain text that needs `TextTrimming`
+- [ ] `.WithKey()` set on items in dynamic lists
+- [ ] `AutomationName` set on icon-only controls
+- [ ] `.Resources()` used for button visual state overrides (not `.Background()` directly)
+- [ ] Resource keys end in `Brush` (not Color name)
+- [ ] No opacity on elements in High Contrast
+- [ ] No fixed heights on text containers — uses `MinHeight`
+- [ ] Acrylic surfaces use correct background + border pairings
+- [ ] `ThemeShadow` has `Translation(0, 0, 32)`
+- [ ] No explicit setting of WinUI default values
+- [ ] `FontWeight` is SemiBold (600), not Bold (700) — except `Heading()` page titles
+- [ ] Hooks are unconditional and in consistent order
+- [ ] `UseCallback` wraps handlers passed to child components
+- [ ] `UseMemo` wraps expensive computations
+- [ ] Corner radius is 4 (controls) or 8 (overlays) — no non-standard values
+
+**If changing colors:** Test in NightSky HC theme, hover on interactive elements.
+
+**If changing text/containers:** Test with scaled text and long strings.
+
+**If changing layout:** Test at 100%, 150%, 200%, 250% display scaling.
+
+---
+
+## Testing Guidance
+
+- Test Light, Dark, and High Contrast themes (especially NightSky).
+- Test hover/pressed states on all interactive elements.
+- Test at 100%, 150%, 200%, and 250% display scaling.
+- Test with text scaling and long/localized strings for clipping and trimming.
+- Verify acrylic pairings and shadow clipping after layout changes.
+- Validate Figma implementation measurements at 100% scale factor.
+- Capture before/after screenshots for visual changes including Light/Dark/HC evidence.
+
+---
+
+## References
+
+Consult these for detailed guidance:
+- [Theme-aware resources](docs/theme-aware-resources.md)
+- [Typography and colors](docs/typography-and-colors.md)
+- [Layout and scaling](docs/layout-and-scaling.md)
+- [Control styles](docs/control-styles.md)
+- [Code review checklist](docs/code-review-checklist.md)
+
+## External References
+
+- [Microsoft Design Guidelines](https://learn.microsoft.com/en-us/windows/apps/design/guidelines-overview)
+- [Color in Windows](https://learn.microsoft.com/en-us/windows/apps/design/signature-experiences/color)
+- [Typography in Windows](https://learn.microsoft.com/en-us/windows/apps/design/signature-experiences/typography)
+- [WinUI 3 Gallery App](https://apps.microsoft.com/detail/9P3JFPWWDZRC)
+- [WinUI Button Theme Resources](https://github.com/microsoft/microsoft-ui-xaml/blob/winui2/main/dev/CommonStyles/Button_themeresources.xaml)
+- [WinUI TextBlock Theme Resources](https://github.com/microsoft/microsoft-ui-xaml/blob/winui2/main/dev/CommonStyles/TextBlock_themeresources.xaml)
+- [WinUI Common Theme Resources](https://github.com/microsoft/microsoft-ui-xaml/blob/winui2/main/dev/CommonStyles/Common_themeresources_any.xaml)

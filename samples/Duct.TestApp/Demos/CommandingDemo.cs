@@ -98,7 +98,7 @@ class CommandingTestDemo : Component
                 ),
                 VStack(2,
                     log.TakeLast(10).Select(entry =>
-                        Text($"\u2192 {entry}").FontSize(12).Foreground(SecondaryText)
+                        Caption($"\u2192 {entry}").Foreground(SecondaryText)
                     ).ToArray()
                 )
             )

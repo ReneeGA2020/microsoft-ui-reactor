@@ -72,7 +72,7 @@ class NavHomePage : Component
             onNavigatedTo: ctx => setVisitCount(visitCount + 1));
 
         return VStack(8,
-            Text("Home Page").FontSize(20).SemiBold(),
+            SubHeading("Home Page"),
             Text($"Visit count: {visitCount} (persisted across navigations)").Foreground(SecondaryText),
             Text("Select an item to view details:"),
             VStack(4,
@@ -100,7 +100,7 @@ class NavDetailPage : Component<int>
             });
 
         return VStack(8,
-            Text($"Detail Page — Item #{id}").FontSize(20).SemiBold(),
+            SubHeading($"Detail Page — Item #{id}"),
             Text($"Viewing details for item {id}."),
             TextField(notes, setNotes)
                 .Set(t => t.PlaceholderText = "Notes (persisted via UsePersisted)"),
@@ -125,7 +125,7 @@ class NavSettingsPage : Component
             onNavigatedFrom: _ => Debug.WriteLine("[Nav] Settings: navigated from"));
 
         return VStack(8,
-            Text("Settings Page").FontSize(20).SemiBold(),
+            SubHeading("Settings Page"),
             Text("Application settings would go here."),
             Text("Lifecycle hooks log to debug output.").Foreground(TertiaryText),
             Button("Back to Home", () => nav.Reset(new NavHome()))

@@ -217,7 +217,7 @@ class PerfStressDemo : Component
         }
         else
         {
-            bars = Text("Click 'Start Sort' to begin").Opacity(0.5).Height(220);
+            bars = Text("Click 'Start Sort' to begin").Foreground(TertiaryText).MinHeight(220);
         }
 
         return ScrollView(VStack(12,
@@ -266,9 +266,9 @@ class PerfStressDemo : Component
             // Status
             sortState?.Sorted == true
                 ? Text($"Sorted in {totalSortMs:F0} ms  ({totalSwaps} swaps, {stepCount} steps)")
-                    .Bold().FontSize(16)
+                    .SemiBold()
                 : running
-                    ? Text($"Sorting... step {stepCount}, {totalSwaps} swaps").Opacity(0.8)
+                    ? Text($"Sorting... step {stepCount}, {totalSwaps} swaps").Foreground(SecondaryText)
                     : Empty(),
 
             // Visualization area
@@ -312,7 +312,7 @@ class PerfStressDemo : Component
                 ),
 
                 // Mini histogram of render times
-                Text("Render time distribution (last 200 ticks):").Opacity(0.6).Margin(0, 8, 0, 0),
+                Caption("Render time distribution (last 200 ticks):").Foreground(SecondaryText).Margin(0, 8, 0, 0),
                 HStack(0,
                     renderTimes.TakeLast(100).Select((t, i) =>
                     {
@@ -342,6 +342,6 @@ class PerfStressDemo : Component
     static Element LegendItem(string color, string label) =>
         HStack(4,
             Border(Empty()).Background(color).CornerRadius(2).Width(12).Height(12),
-            Text(label).FontSize(12).Opacity(0.7)
+            Caption(label).Foreground(SecondaryText)
         );
 }

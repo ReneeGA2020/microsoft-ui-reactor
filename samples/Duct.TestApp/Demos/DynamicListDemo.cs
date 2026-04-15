@@ -36,14 +36,14 @@ class DynamicListDemo : Component
                         HStack(8,
                             When(showIndices, () => Text($"#{i + 1}").SemiBold()),
                             Text($"Item {i + 1}"),
-                            Text($"(created dynamically)").Opacity(0.5)
+                            Text($"(created dynamically)").Foreground(TertiaryText)
                         )
                     ).CornerRadius(4).Background(SubtleFill).Padding(12, 8)
                 ).ToArray()
             ),
 
-            When(count == 0, () => Text("No items. Click Add to create some.").Opacity(0.6)),
-            When(count >= 10, () => Text("That's a lot of items!").Bold())
+            When(count == 0, () => Text("No items. Click Add to create some.").Foreground(TertiaryText)),
+            When(count >= 10, () => Text("That's a lot of items!").SemiBold())
         );
     }
 }

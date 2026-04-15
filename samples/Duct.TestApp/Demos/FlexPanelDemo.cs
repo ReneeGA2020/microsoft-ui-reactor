@@ -65,8 +65,8 @@ class FlexPanelDemo : Component
                 )
             ),
 
-            Text($"Direction={direction}  Wrap={wrap}  Justify={justify}  Align={alignItems}")
-                .FontSize(12).Opacity(0.5),
+            Caption($"Direction={direction}  Wrap={wrap}  Justify={justify}  Align={alignItems}")
+                .Foreground(TertiaryText),
 
             // Live flex container
             SubHeading("Live Preview"),
@@ -121,6 +121,6 @@ class FlexPanelDemo : Component
 
     static Element ColorBox(string label, string color) =>
         Border(
-            Text(label).Bold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
+            Text(label).SemiBold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
         ).Background(color).CornerRadius(4).Padding(8);
 }

@@ -47,7 +47,7 @@ class ConditionalDemo : Component
                                     Text("This sub-tree only exists when Feature A is checked."),
                                     Slider(50, 0, 100).Width(200)
                                 )
-                              ).CornerRadius(4).Background("#e8f5e9").Padding(12)
+                              ).CornerRadius(4).Background(SubtleFill).Padding(12)
                             : null,
 
                         enableFeatureB
@@ -57,11 +57,11 @@ class ConditionalDemo : Component
                                     Text("This sub-tree only exists when Feature B is checked."),
                                     ToggleSwitch(false, null, onContent: "On", offContent: "Off")
                                 )
-                              ).CornerRadius(4).Background("#e3f2fd").Padding(12)
+                              ).CornerRadius(4).Background(SubtleFill).Padding(12)
                             : null
                     )
                   ).CornerRadius(8).Background(SubtleFill).Padding(16)
-                : Text("Check the box above to reveal advanced options.").Opacity(0.6),
+                : Text("Check the box above to reveal advanced options.").Foreground(TertiaryText),
 
             // 2. Switch expression -> completely different sub-trees
             SubHeading("2. Switch expression picks a sub-tree"),
@@ -104,7 +104,7 @@ class ConditionalDemo : Component
                         Enumerable.Range(1, itemCount),
                         i => Border(
                             Text($"Custom item {i}")
-                        ).CornerRadius(4).Background("#fff3e0").Padding(8, 4)
+                        ).CornerRadius(4).Background(SubtleFill).Padding(8, 4)
                     )
                 ),
 
@@ -120,13 +120,13 @@ class ConditionalDemo : Component
                 Text($"Advanced: {(showAdvanced ? "ON" : "OFF")}, " +
                      $"Features: {(enableFeatureA ? "A" : "")}{(enableFeatureB ? "B" : "")}{(!enableFeatureA && !enableFeatureB ? "none" : "")}, " +
                      $"View: {viewMode}")
-                    .Opacity(0.7),
+                    .Foreground(SecondaryText),
 
                 // Conditional warning
                 When(showAdvanced && enableFeatureA && enableFeatureB,
                     () => Border(
                         Text("Warning: Both features enabled simultaneously may cause conflicts.")
-                    ).CornerRadius(4).Background("#fff9c4").Padding(12)
+                    ).CornerRadius(4).Background(Theme.Ref("SystemFillColorCautionBackgroundBrush")).Padding(12)
                 )
             )
         ));

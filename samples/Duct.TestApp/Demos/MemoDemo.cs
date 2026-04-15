@@ -52,7 +52,7 @@ class MemoDemo : Component
                 count.Current++;
                 return Border(
                     Text($"Memo(dep: \"{childProp}\") — rendered {count.Current} time(s)").SemiBold()
-                ).Padding(8).CornerRadius(4).Background("#e3f2fd");
+                ).Padding(8).CornerRadius(4).Background(SubtleFill);
             }, childProp),
 
             // 4. Memo() with no deps
@@ -108,7 +108,7 @@ class MemoDemo : Component
             _renderCount++;
             return Border(
                 Text($"ProplessCounter — rendered {_renderCount} time(s)").SemiBold()
-            ).Padding(8).CornerRadius(4).Background("#fff3e0");
+            ).Padding(8).CornerRadius(4).Background(SubtleFill);
         }
     }
 }

@@ -51,7 +51,7 @@ class DataSystemDemo : Duct.Core.Component
 
         return FlexColumn(
             Heading("Data System Demo").Flex(shrink: 0),
-            Text("Phase 0 + Phase 1: FieldDescriptor, PropertyGrid FullEditor, VirtualList, ListDataSource, FormField").Opacity(0.6).Flex(shrink: 0),
+            Text("Phase 0 + Phase 1: FieldDescriptor, PropertyGrid FullEditor, VirtualList, ListDataSource, FormField").Foreground(SecondaryText).Flex(shrink: 0),
 
             HStack(8,
                 Text("Demo:"),
@@ -194,8 +194,8 @@ class PropertyGridFullEditorDemo : Duct.Core.Component
 
         return FlexColumn(
             SubHeading("PropertyGrid with FullEditor Expand").Flex(shrink: 0),
-            Text("The Tint property has a FullEditor registered. Look for the \"\u2026\" button next to the color value.").Opacity(0.6).Flex(shrink: 0),
-            Text("Clicking \"\u2026\" opens a flyout with individual R/G/B NumberBox editors and a live preview.").Opacity(0.6).Flex(shrink: 0),
+            Text("The Tint property has a FullEditor registered. Look for the \"\u2026\" button next to the color value.").Foreground(SecondaryText).Flex(shrink: 0),
+            Text("Clicking \"\u2026\" opens a flyout with individual R/G/B NumberBox editors and a live preview.").Foreground(SecondaryText).Flex(shrink: 0),
 
             ScrollView(
                 PropertyGridDsl.PropertyGrid(spriteRef.Current, registry)
@@ -226,7 +226,7 @@ class VirtualListFixedDemo : Duct.Core.Component
 
         return FlexColumn(
             SubHeading($"VirtualList — Fixed Height ({count:N0} items)").Flex(shrink: 0),
-            Text("Fixed-height mode: ItemHeight=32px, O(1) offset calculation, smooth scrolling.").Opacity(0.6).Flex(shrink: 0),
+            Text("Fixed-height mode: ItemHeight=32px, O(1) offset calculation, smooth scrolling.").Foreground(SecondaryText).Flex(shrink: 0),
 
             HStack(8,
                 Text("Items:"),
@@ -246,9 +246,9 @@ class VirtualListFixedDemo : Duct.Core.Component
             VirtualListDsl.VirtualList(
                 itemCount: count,
                 renderItem: i => FlexRow(
-                    Text($"{i:N0}").Width(80).Opacity(0.5),
+                    Text($"{i:N0}").Width(80).Foreground(TertiaryText),
                     Text($"Item {i:N0}").Flex(grow: 1),
-                    Text(i % 2 == 0 ? "Even" : "Odd").Width(60).Opacity(0.6)
+                    Text(i % 2 == 0 ? "Even" : "Odd").Width(60).Foreground(SecondaryText)
                 ) with { AlignItems = FlexAlign.Center, ColumnGap = 8 },
                 itemHeight: 32,
                 spacing: 1,
@@ -271,7 +271,7 @@ class VirtualListVariableDemo : Duct.Core.Component
 
         return FlexColumn(
             SubHeading($"VirtualList — Variable Height ({count:N0} items)").Flex(shrink: 0),
-            Text("Variable-height mode: each item renders at its natural size. EstimatedItemHeight=50px.").Opacity(0.6).Flex(shrink: 0),
+            Text("Variable-height mode: each item renders at its natural size. EstimatedItemHeight=50px.").Foreground(SecondaryText).Flex(shrink: 0),
 
             HStack(8,
                 Text("Items:"),
@@ -291,15 +291,15 @@ class VirtualListVariableDemo : Duct.Core.Component
                         FlexColumn(
                             FlexRow(
                                 Text($"#{i:N0}").SemiBold(),
-                                Text(DataDemoHelpers.GetDepartment(i)).Opacity(0.6)
+                                Text(DataDemoHelpers.GetDepartment(i)).Foreground(SecondaryText)
                             ) with { ColumnGap = 12, AlignItems = FlexAlign.Center },
                             isExpanded
                                 ? Text($"This is an expanded item with more detail. " +
                                        $"Employee #{i} works in {DataDemoHelpers.GetDepartment(i)} and has been " +
-                                       $"with the company for {(i % 20) + 1} years.").Opacity(0.7)
+                                       $"with the company for {(i % 20) + 1} years.").Foreground(SecondaryText)
                                 : null
                         ) with { RowGap = 4 }
-                    ).Padding(padding, 8).Background(i % 2 == 0 ? "#f5f5f5" : "#ffffff");
+                    ).Padding(padding, 8).Background(i % 2 == 0 ? SubtleFill : SolidBackground);
                 },
                 estimatedItemHeight: 50,
                 spacing: 2,
@@ -367,7 +367,7 @@ class DataSourceDemo : Duct.Core.Component
 
         return FlexColumn(
             SubHeading("ListDataSource — Paging, Sorting, Filtering").Flex(shrink: 0),
-            Text($"500 employees. Capabilities: {source.Capabilities}").Opacity(0.6).Flex(shrink: 0),
+            Text($"500 employees. Capabilities: {source.Capabilities}").Foreground(SecondaryText).Flex(shrink: 0),
 
             HStack(8,
                 Text("Sort:"),
@@ -386,10 +386,10 @@ class DataSourceDemo : Duct.Core.Component
             ).Flex(shrink: 0),
 
             loading
-                ? Text("Loading...").Opacity(0.6)
+                ? Text("Loading...").Foreground(SecondaryText)
                 : page is not null
                     ? FlexColumn(
-                        Text($"Showing {page.Items.Count} of {page.TotalCount} results").Opacity(0.6).FontSize(12).Flex(shrink: 0),
+                        Caption($"Showing {page.Items.Count} of {page.TotalCount} results").Foreground(SecondaryText).Flex(shrink: 0),
 
                         FlexRow(
                             Text("ID").Width(50).SemiBold(),
@@ -405,9 +405,9 @@ class DataSourceDemo : Duct.Core.Component
                             {
                                 var emp = page.Items[i];
                                 return FlexRow(
-                                    Text($"{emp.Id}").Width(50).Opacity(0.5),
+                                    Text($"{emp.Id}").Width(50).Foreground(TertiaryText),
                                     Text(emp.Name).Width(180),
-                                    Text(emp.Department).Width(120).Opacity(0.7),
+                                    Text(emp.Department).Width(120).Foreground(SecondaryText),
                                     Text($"{emp.Age}").Width(50),
                                     Text($"${emp.Salary:N0}").Width(100)
                                 ) with { ColumnGap = 8, AlignItems = FlexAlign.Center };
@@ -475,7 +475,7 @@ class FormFieldDemo : Duct.Core.Component
 
         return FlexColumn(
             SubHeading("FormField Auto-Wired from FieldDescriptor"),
-            Text("FormField overload resolves editors from TypeRegistry, sets label/description from FieldDescriptor, detects Required from validators.").Opacity(0.6),
+            Text("FormField overload resolves editors from TypeRegistry, sets label/description from FieldDescriptor, detects Required from validators.").Foreground(SecondaryText),
 
             FormField(nameField, name, v => setName((string)v), registry).Margin(0, 8),
             FormField(ageField, age, v => setAge(v), registry).Margin(0, 8),

@@ -207,9 +207,9 @@ class PropertyGridDemo : Component
             // Description
             selectedItem switch
             {
-                "Sprite" => Text("Reflection-based: INPC model with Duct attributes, categories, hidden/read-only props").Opacity(0.6),
-                "Material" => Text("Reflection-based: INPC class with enum (ComboBox), bool (ToggleSwitch), double (NumberBox)").Opacity(0.6),
-                "Color" => Text("Custom TypeMetadata: immutable record with Editor + Decompose + Compose, OnRootChanged").Opacity(0.6),
+                "Sprite" => Text("Reflection-based: INPC model with Duct attributes, categories, hidden/read-only props").Foreground(SecondaryText),
+                "Material" => Text("Reflection-based: INPC class with enum (ComboBox), bool (ToggleSwitch), double (NumberBox)").Foreground(SecondaryText),
+                "Color" => Text("Custom TypeMetadata: immutable record with Editor + Decompose + Compose, OnRootChanged").Foreground(SecondaryText),
                 _ => Empty()
             },
 

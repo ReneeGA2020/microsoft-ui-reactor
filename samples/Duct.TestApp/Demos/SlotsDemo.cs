@@ -25,7 +25,7 @@ class SlotsDemo : Component
             return Border(VStack(0,
                 Props.Header is not null
                     ? Border(Props.Header)
-                        .Padding(12, 10).Background(SubtleFill)
+                        .Padding(12, 8).Background(SubtleFill)
                         .WithBorder(ControlStroke)
                     : Empty(),
                 Props.Body is not null
@@ -33,7 +33,7 @@ class SlotsDemo : Component
                     : Empty(),
                 Props.Footer is not null
                     ? Border(Props.Footer)
-                        .Padding(10, 12).Background(LayerFill)
+                        .Padding(8, 12).Background(LayerFill)
                         .WithBorder(ControlStroke)
                     : Empty()
             )).CornerRadius(8).WithBorder(ControlStroke);
@@ -92,7 +92,7 @@ class SlotsDemo : Component
             TextField(name, setName, placeholder: "Type a name...").Width(220),
             Component<Card, CardProps>(new(
                 Header: HStack(8,
-                    Border(Empty()).Background("#0078D4").CornerRadius(12).Size(24, 24),
+                    Border(Empty()).Background(Accent).CornerRadius(12).Size(24, 24),
                     Text($"Hello, {name}!").SemiBold()
                 ),
                 Body: Text($"The slot content updates when you type. Name length: {name.Length} characters."),
@@ -104,30 +104,30 @@ class SlotsDemo : Component
             Text("Another slot pattern: a row with optional leading icon, title area, and trailing action."),
             VStack(4,
                 Component<InfoRow, InfoRowProps>(new(
-                    Leading: Text("\uE77B").Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets")),
+                    Leading: Text("\uE77B").Set(t => t.FontFamily = (FontFamily)Application.Current.Resources["SymbolThemeFontFamily"]),
                     Title: Text("Inbox").SemiBold(),
-                    Trailing: Text("12").Opacity(0.5)
+                    Trailing: Text("12").Foreground(TertiaryText)
                 )),
                 Component<InfoRow, InfoRowProps>(new(
-                    Leading: Text("\uE724").Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets")),
+                    Leading: Text("\uE724").Set(t => t.FontFamily = (FontFamily)Application.Current.Resources["SymbolThemeFontFamily"]),
                     Title: Text("Sent"),
-                    Trailing: Text("3").Opacity(0.5)
+                    Trailing: Text("3").Foreground(TertiaryText)
                 )),
                 Component<InfoRow, InfoRowProps>(new(
-                    Leading: Text("\uE74D").Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets")),
+                    Leading: Text("\uE74D").Set(t => t.FontFamily = (FontFamily)Application.Current.Resources["SymbolThemeFontFamily"]),
                     Title: Text("Deleted"),
-                    Trailing: Text("0").Opacity(0.5)
+                    Trailing: Text("0").Foreground(TertiaryText)
                 ))
             ),
 
             // 5. Naming conventions
             SubHeading("5. Slot naming conventions"),
             VStack(4,
-                Text("Single default slot: params Element?[] children").FontSize(12),
-                Text("Named slots: Element?-typed props on a record").FontSize(12),
-                Text("Common names: Header, Body/Content, Footer/Actions, Leading, Trailing, Icon, Label, Title").FontSize(12),
-                Text("Optional slots: Element? with = null default, skip rendering when null").FontSize(12),
-                Text("Memo tip: static slot content (Text) → memo works. Slots with handlers → use UseCallback.").FontSize(12).SemiBold()
+                Caption("Single default slot: params Element?[] children"),
+                Caption("Named slots: Element?-typed props on a record"),
+                Caption("Common names: Header, Body/Content, Footer/Actions, Leading, Trailing, Icon, Label, Title"),
+                Caption("Optional slots: Element? with = null default, skip rendering when null"),
+                Caption("Memo tip: static slot content (Text) → memo works. Slots with handlers → use UseCallback.").SemiBold()
             )
         ));
     }

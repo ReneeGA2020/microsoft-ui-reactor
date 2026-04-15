@@ -26,7 +26,7 @@ class PersistedDemo : Component
 
         string[] colors = ["Blue", "Red", "Green", "Purple"];
 
-        Element FormColumn(string heading, string bg,
+        Element FormColumn(string heading,
             string name, Action<string> setName,
             string email, Action<string> setEmail,
             string color, Action<string> setColor)
@@ -46,7 +46,7 @@ class PersistedDemo : Component
                     Text($"Name: {(string.IsNullOrEmpty(name) ? "(empty)" : name)}"),
                     Text($"Email: {(string.IsNullOrEmpty(email) ? "(empty)" : email)}"),
                     Text($"Color: {color}")
-                )).Padding(12).CornerRadius(6).Background(bg)
+                )).Padding(12).CornerRadius(8).Background(SubtleFill)
             );
         }
 
@@ -55,15 +55,15 @@ class PersistedDemo : Component
             Text("UsePersisted keeps values across unmount/remount (tab switches)."),
 
             HStack(32,
-                FormColumn("UsePersisted (survives)", "#e8f5e9",
+                FormColumn("UsePersisted (survives)",
                     pName, setPName, pEmail, setPEmail, pColor, setPColor),
-                FormColumn("UseState (lost on switch)", "#ffebee",
+                FormColumn("UseState (lost on switch)",
                     rName, setRName, rEmail, setREmail, rColor, setRColor)
             ),
 
             Border(
                 Text("Fill in both sides, switch to another tab, then come back. Left persists, right resets.")
-            ).Padding(12).CornerRadius(6).Background("#fff3e0")
+            ).Padding(12).CornerRadius(8).Background(SubtleFill)
         ));
     }
 }

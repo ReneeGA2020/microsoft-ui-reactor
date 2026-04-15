@@ -42,7 +42,7 @@ class FlyoutDemo : Component
         return ScrollView(VStack(16,
             Heading("Flyout Attachments"),
             Text("Tests declarative .WithFlyout(), .WithContextFlyout(), and .WithToolTip(Element) modifiers."),
-            Text($"Timer tick: {tick} (flyout content updates every second)").Opacity(0.6),
+            Text($"Timer tick: {tick} (flyout content updates every second)").Foreground(SecondaryText),
 
             // 1. ContentFlyout on a Button via .WithFlyout()
             SubHeading("1. Button with ContentFlyout (dynamic content)"),
@@ -54,7 +54,7 @@ class FlyoutDemo : Component
                         Text($"Timer tick: {tick}").FontSize(20),
                         Border(
                             Text($"Elapsed: {tick} seconds")
-                        ).CornerRadius(4).Background("#e3f2fd").Padding(12, 8),
+                        ).CornerRadius(4).Background(SubtleFill).Padding(12, 8),
                         HStack(8,
                             Enumerable.Range(0, Math.Min(tick % 10, 8)).Select(i =>
                                 (Element)Border(Empty())

@@ -61,7 +61,7 @@ class FormDemo : Component
             CheckBox(agreeToTerms, setAgree, label: "I agree to the terms"),
 
             When(!isValid, () =>
-                Text("Please fill all fields and agree to terms").Opacity(0.6)),
+                Text("Please fill all fields and agree to terms").Foreground(TertiaryText)),
 
             Button("Submit", () => setSubmitted(true)).Disabled(!isValid)
         );

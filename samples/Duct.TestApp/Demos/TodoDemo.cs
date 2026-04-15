@@ -71,7 +71,7 @@ class TodoDemo : Component
 
             // Conditional: show "All done!" when everything is checked
             When(totalCount > 0 && doneCount == totalCount,
-                () => Text("All done! \U0001f389").Bold().FontSize(18))
+                () => Text("All done! \U0001f389").SemiBold())
         );
     }
 }

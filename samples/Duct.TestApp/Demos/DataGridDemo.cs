@@ -62,7 +62,7 @@ class DataGridDemo : Component
 
         return FlexColumn(
             Heading("DataGrid Demo").Flex(shrink: 0),
-            Text("Phase 2-3: DataGrid with VirtualList, sort, selection, keyboard nav, inline editing").Opacity(0.6).Flex(shrink: 0),
+            Text("Phase 2-3: DataGrid with VirtualList, sort, selection, keyboard nav, inline editing").Foreground(SecondaryText).Flex(shrink: 0),
 
             HStack(8,
                 Text("Demo:"),
@@ -111,7 +111,7 @@ class ExplicitColumnsDemo : Component
 
         return FlexColumn(
             SubHeading("Explicit Columns with Column DSL").Flex(shrink: 0),
-            Text("Columns defined via Column<T> builder. Click column headers to sort.").Opacity(0.6).Flex(shrink: 0),
+            Text("Columns defined via Column<T> builder. Click column headers to sort.").Foreground(SecondaryText).Flex(shrink: 0),
 
             DataGridDsl.DataGrid(
                 source: source,
@@ -155,8 +155,8 @@ class AutoColumnsDemo : Component
 
         return FlexColumn(
             SubHeading("Auto-Generated Columns (Reflection)").Flex(shrink: 0),
-            Text("Columns auto-generated from Product record properties via TypeRegistry + reflection.").Opacity(0.6).Flex(shrink: 0),
-            Text("Click column headers to sort. Columns auto-size from FieldDescriptor metadata.").Opacity(0.6).Flex(shrink: 0),
+            Text("Columns auto-generated from Product record properties via TypeRegistry + reflection.").Foreground(SecondaryText).Flex(shrink: 0),
+            Text("Click column headers to sort. Columns auto-size from FieldDescriptor metadata.").Foreground(SecondaryText).Flex(shrink: 0),
 
             DataGridDsl.DataGrid(
                 source: source,
@@ -196,7 +196,7 @@ class SingleSelectionDemo : Component
 
         return FlexColumn(
             SubHeading("Single Selection").Flex(shrink: 0),
-            Text("Click a row to select it. Only one row can be selected at a time.").Opacity(0.6).Flex(shrink: 0),
+            Text("Click a row to select it. Only one row can be selected at a time.").Foreground(SecondaryText).Flex(shrink: 0),
 
             DataGridDsl.DataGrid(
                 source: source,
@@ -248,7 +248,7 @@ class MultiSelectionDemo : Component
 
         return FlexColumn(
             SubHeading("Multiple Selection").Flex(shrink: 0),
-            Text("Click rows to select. Ctrl+click to toggle. Shift+click for range selection.").Opacity(0.6).Flex(shrink: 0),
+            Text("Click rows to select. Ctrl+click to toggle. Shift+click for range selection.").Foreground(SecondaryText).Flex(shrink: 0),
 
             DataGridDsl.DataGrid(
                 source: source,
@@ -295,7 +295,7 @@ class CustomRenderersDemo : Component
 
         return FlexColumn(
             SubHeading("Custom Cell Renderers").Flex(shrink: 0),
-            Text("Custom cell template: price is color-coded, stock shows a progress bar, availability uses an icon.").Opacity(0.6).Flex(shrink: 0),
+            Text("Custom cell template: price is color-coded, stock shows a progress bar, availability uses an icon.").Foreground(SecondaryText).Flex(shrink: 0),
 
             DataGridDsl.DataGrid(
                 source: source,
@@ -308,20 +308,27 @@ class CustomRenderersDemo : Component
                         .CellRenderer(val =>
                         {
                             var price = (double)val;
-                            var color = price > 200 ? "#c62828" : price > 100 ? "#e65100" : "#2e7d32";
-                            return Text($"${price:N2}").Foreground(color);
+                            return price > 200
+                                ? Text($"${price:N2}").Foreground(Theme.Ref("SystemFillColorCriticalBrush"))
+                                : price > 100
+                                    ? Text($"${price:N2}").Foreground(Theme.Ref("SystemFillColorCautionBrush"))
+                                    : Text($"${price:N2}").Foreground(Theme.Ref("SystemFillColorSuccessBrush"));
                         })).Build(),
                     (ColumnDsl.Column<Product>("Stock", p => p.Stock, displayName: "Stock Level", width: 160)
                         .CellRenderer(val =>
                         {
                             var stock = (int)val;
                             var pct = Math.Min(100, stock * 100.0 / 150);
-                            var color = stock > 100 ? "#4caf50" : stock > 30 ? "#ff9800" : "#f44336";
+                            var color = stock > 100
+                                ? Theme.Ref("SystemFillColorSuccessBrush")
+                                : stock > 30
+                                    ? Theme.Ref("SystemFillColorCautionBrush")
+                                    : Theme.Ref("SystemFillColorCriticalBrush");
                             return FlexRow(
                                 Text($"{stock}").Width(40),
                                 Border(
-                                    Border(Empty()).Background(color).Width(pct).Height(12).CornerRadius(2)
-                                ).Background("#e0e0e0").Width(100).Height(12).CornerRadius(2)
+                                    Border(Empty()).Background(color).Width(pct).Height(12).CornerRadius(4)
+                                ).Background(SubtleFill).Width(100).Height(12).CornerRadius(4)
                             ) with { AlignItems = FlexAlign.Center, ColumnGap = 8 };
                         })).Build(),
                     (ColumnDsl.Column<Product>("InStock", p => p.InStock, displayName: "Available", width: 80)
@@ -362,7 +369,7 @@ class LargeDatasetDemo : Component
 
         return FlexColumn(
             SubHeading($"Large Dataset ({count:N0} rows)").Flex(shrink: 0),
-            Text("Virtualized via VirtualList composition. Fixed-height rows for O(1) scroll offset.").Opacity(0.6).Flex(shrink: 0),
+            Text("Virtualized via VirtualList composition. Fixed-height rows for O(1) scroll offset.").Foreground(SecondaryText).Flex(shrink: 0),
 
             HStack(8,
                 Text("Row count:"),
@@ -417,8 +424,8 @@ class InlineEditMutableDemo : Component
 
         return FlexColumn(
             SubHeading("Inline Editing — Mutable Class").Flex(shrink: 0),
-            Text("Click a cell to edit. Arrow keys navigate. Enter/F2 starts editing. Escape cancels. Tab commits and moves.").Opacity(0.6).Flex(shrink: 0),
-            Text("Editable columns: Name, Department, Salary, Active. Id is read-only.").Opacity(0.6).Flex(shrink: 0),
+            Text("Click a cell to edit. Arrow keys navigate. Enter/F2 starts editing. Escape cancels. Tab commits and moves.").Foreground(SecondaryText).Flex(shrink: 0),
+            Text("Editable columns: Name, Department, Salary, Active. Id is read-only.").Foreground(SecondaryText).Flex(shrink: 0),
 
             DataGridDsl.DataGrid(
                 source: source,
@@ -473,8 +480,8 @@ class InlineEditRecordDemo : Component
 
         return FlexColumn(
             SubHeading("Inline Editing — Immutable Record").Flex(shrink: 0),
-            Text("Editing immutable records: SetValue creates a new object (return-new-owner pattern).").Opacity(0.6).Flex(shrink: 0),
-            Text("Click a cell to edit. Name, Category, Price are editable. Id, Stock, InStock are read-only.").Opacity(0.6).Flex(shrink: 0),
+            Text("Editing immutable records: SetValue creates a new object (return-new-owner pattern).").Foreground(SecondaryText).Flex(shrink: 0),
+            Text("Click a cell to edit. Name, Category, Price are editable. Id, Stock, InStock are read-only.").Foreground(SecondaryText).Flex(shrink: 0),
 
             DataGridDsl.DataGrid(
                 source: source,
@@ -530,13 +537,13 @@ class AdvancedFeaturesDemo : Component
 
         return FlexColumn(
             SubHeading("Advanced Features — Phase 3-5").Flex(shrink: 0),
-            Text("Column reorder: drag headers to reorder columns").Opacity(0.6).Flex(shrink: 0),
-            Text("Column resize: drag header right edge to resize").Opacity(0.6).Flex(shrink: 0),
-            Text("Row editing: click Edit button, edit multiple cells, Save/Cancel").Opacity(0.6).Flex(shrink: 0),
-            Text("Search: type in the search box to filter + highlight matched cells").Opacity(0.6).Flex(shrink: 0),
-            Text("Row details: click the expand arrow to see product details").Opacity(0.6).Flex(shrink: 0),
-            Text("Validation: Name is required (min 2 chars), Price must be 0-10000").Opacity(0.6).Flex(shrink: 0),
-            Text("Pinned columns: Id is pinned left, InStock is pinned right").Opacity(0.6).Flex(shrink: 0),
+            Text("Column reorder: drag headers to reorder columns").Foreground(SecondaryText).Flex(shrink: 0),
+            Text("Column resize: drag header right edge to resize").Foreground(SecondaryText).Flex(shrink: 0),
+            Text("Row editing: click Edit button, edit multiple cells, Save/Cancel").Foreground(SecondaryText).Flex(shrink: 0),
+            Text("Search: type in the search box to filter + highlight matched cells").Foreground(SecondaryText).Flex(shrink: 0),
+            Text("Row details: click the expand arrow to see product details").Foreground(SecondaryText).Flex(shrink: 0),
+            Text("Validation: Name is required (min 2 chars), Price must be 0-10000").Foreground(SecondaryText).Flex(shrink: 0),
+            Text("Pinned columns: Id is pinned left, InStock is pinned right").Foreground(SecondaryText).Flex(shrink: 0),
 
             DataGridDsl.DataGrid(
                 source: source,
@@ -569,7 +576,7 @@ class AdvancedFeaturesDemo : Component
                         Text($"Product #{product.Id}: {product.Name}").SemiBold(),
                         Text($"Category: {product.Category}"),
                         Text($"Price: {product.Price:C2}  |  Stock: {product.Stock}  |  Available: {(product.InStock ? "Yes" : "No")}"),
-                        Text($"Row Key: {key.Value}").Opacity(0.5).FontSize(11)
+                        Caption($"Row Key: {key.Value}").Foreground(TertiaryText)
                     ) with { RowGap = 4 }
             ),
 

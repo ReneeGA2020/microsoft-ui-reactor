@@ -19,7 +19,7 @@ class CounterDemo : Component
 
         return VStack(12,
             Heading("Counter"),
-            Text($"Current count: {count}").FontSize(24).SemiBold(),
+            SubHeading($"Current count: {count}"),
 
             HStack(8,
                 Button($"- {step}", () => setCount(count - step)),
@@ -36,12 +36,12 @@ class CounterDemo : Component
             // Conditional rendering — shows different messages based on count
             count switch
             {
-                0 => Text("Try clicking the buttons!").Opacity(0.6),
+                0 => Text("Try clicking the buttons!").Foreground(TertiaryText),
                 > 0 and < 10 => Text("Going up..."),
                 >= 10 and < 50 => Text("Getting bigger!").SemiBold(),
-                >= 50 => Text("That's a LOT!").Bold().FontSize(20),
+                >= 50 => Text("That's a LOT!").SemiBold(),
                 < 0 and > -10 => Text("Going negative..."),
-                _ => Text("Way down there!").Bold()
+                _ => Text("Way down there!").SemiBold()
             }
         );
     }

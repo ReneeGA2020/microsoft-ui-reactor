@@ -33,11 +33,11 @@ class VirtualizationDemo : Component
                 (item, index) => Border(
                     HStack(12,
                         Border(
-                            Text($"{item.Id}").FontSize(12)
-                        ).Background("#e3f2fd").CornerRadius(4).Width(48).Height(32).HAlign(HorizontalAlignment.Center),
-                        VStack(2,
+                            Caption($"{item.Id}")
+                        ).Background(SubtleFill).CornerRadius(4).Width(48).MinHeight(32).HAlign(HorizontalAlignment.Center),
+                        VStack(4,
                             Text(item.Title).SemiBold(),
-                            Text(item.Subtitle).FontSize(12).Opacity(0.6)
+                            Caption(item.Subtitle).Foreground(SecondaryText)
                         )
                     )
                 ).Padding(12, 8).Margin(0, 0, 0, 1)
@@ -47,11 +47,11 @@ class VirtualizationDemo : Component
                 items.Select(item => (Element)Border(
                     HStack(12,
                         Border(
-                            Text($"{item.Id}").FontSize(12)
-                        ).Background("#e3f2fd").CornerRadius(4).Width(48).Height(32).HAlign(HorizontalAlignment.Center),
-                        VStack(2,
+                            Caption($"{item.Id}")
+                        ).Background(SubtleFill).CornerRadius(4).Width(48).MinHeight(32).HAlign(HorizontalAlignment.Center),
+                        VStack(4,
                             Text(item.Title).SemiBold(),
-                            Text(item.Subtitle).FontSize(12).Opacity(0.6)
+                            Caption(item.Subtitle).Foreground(SecondaryText)
                         )
                     )
                 ).Padding(12, 8)).ToArray()
@@ -87,7 +87,7 @@ class VirtualizationDemo : Component
                 )
             ),
 
-            Text($"Mode: {mode} | Items: {itemCount}").Opacity(0.6),
+            Text($"Mode: {mode} | Items: {itemCount}").Foreground(SecondaryText),
 
             // The list itself
             Border(list)
