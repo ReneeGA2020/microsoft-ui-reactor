@@ -9,18 +9,25 @@ Use this checklist when reviewing Duct UI code for Windows 11 design compliance.
 - [ ] No hardcoded colors in High Contrast code paths
 - [ ] No opacity on elements in HC — translucency encoded in alpha channel for Light/Dark only
 - [ ] Acrylic surfaces use correct background + border pairings
+- [ ] `BackgroundSizing = InnerBorderEdge` set on bordered acrylic containers
 - [ ] `HighContrastAdjustment` set at app level if custom theme dictionaries are used
+- [ ] No partial theme updates — Light/Dark `.Resources()` changes tested with HC in the same change
+- [ ] Interactive containers (clickable cards, list items) have visible borders in HC
 
 ## Typography
 
 - [ ] Uses semantic text factories (`Heading`, `SubHeading`, `Caption`, `Text`) or WinUI style tokens
 - [ ] No raw `FontSize` + `FontWeight` for standard UI text
 - [ ] `FontWeight` is SemiBold (600), not Bold (700) — except `Heading()` page titles
+- [ ] Applied WinUI styles via `.Set()` don't also re-declare properties the style already defines
 - [ ] Minimum font size is 12px
 - [ ] Icon fonts use `SymbolThemeFontFamily` — not hardcoded `"Segoe Fluent Icons"`
 - [ ] Icon TextBlocks set `IsTextScaleFactorEnabled = false`
+- [ ] Icons and text top-aligned in wrapping scenarios (not center, which drifts at large text scales)
 - [ ] Default foreground (`TextFillColorPrimaryBrush`) not explicitly set on `Text()`
 - [ ] Changing numbers use tabular numerals
+- [ ] Trimmed text has a tooltip for overflow content
+- [ ] TextWrapping choice is intentional — `Wrap` / `WrapWholeWords` where text should flow
 
 ## Layout
 
@@ -30,17 +37,21 @@ Use this checklist when reviewing Duct UI code for Windows 11 design compliance.
 - [ ] No fixed heights on text containers — clips at larger text scales
 - [ ] No fixed widths on buttons — clips long localized strings
 - [ ] Uses `Border` for single-child containers (not `Grid`/`VStack` wrappers)
+- [ ] No unnecessary wrapper containers without layout or styling purpose
 - [ ] `HStack` does not contain text that needs `TextTrimming`
+- [ ] Text trimming columns use `"*"` (not `"Auto"`, which also prevents trimming)
 - [ ] Uses spacing parameters, not spacer elements
 - [ ] Mixed-control rows explicitly set `VAlign(VerticalAlignment.Center)`
 - [ ] `ThemeShadow` has `Translation(0, 0, 32)` for elevation
 - [ ] Shadow containers have 12px parent padding for clipping prevention
+- [ ] ScrollView sets `HorizontalContentAlignment = Stretch`
 
 ## Controls and Styling
 
 - [ ] `.Resources()` used for button visual state overrides (not `.Background()` directly)
 - [ ] All visual states covered when overriding (rest + hover + pressed + disabled)
 - [ ] No explicit setting of WinUI default values (default padding, corner radius, etc.)
+- [ ] No no-op `.Resources()` overrides that repeat WinUI defaults
 - [ ] Uses existing WinUI styles before creating custom overrides
 
 ## Accessibility
@@ -68,6 +79,12 @@ Use this checklist when reviewing Duct UI code for Windows 11 design compliance.
 - [ ] `Border` used instead of single-child `Grid`/`VStack`
 - [ ] `.Set()` used only for properties not exposed as modifiers
 - [ ] Large lists use `ListView` (virtualized), not `VStack` + `.Select()`
+
+## PR Hygiene
+
+- [ ] PR scope excludes unrelated churn — every `.Resources()` or styling change maps to a concrete UX reason
+- [ ] No broad styling edits unrelated to the feature being changed
+- [ ] Reviewer can map each visual change to an intent
 
 ## Testing Evidence
 

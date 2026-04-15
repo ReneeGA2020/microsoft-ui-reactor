@@ -145,10 +145,22 @@ Wrap content that may exceed available space.
 ```csharp
 ScrollView(
     VStack(8, longContent)
-)
+).Set(sv => sv.HorizontalContentAlignment = HorizontalAlignment.Stretch)
 ```
 
-Headers and action bars should remain outside the ScrollView — only the content area scrolls.
+**Configuration:**
+- Set `HorizontalContentAlignment = Stretch` to prevent content from collapsing to natural width.
+- Use `Auto` scrollbar visibility (the default) — scrollbar appears only when content overflows.
+- Headers and action bars should remain outside the ScrollView — only the content area scrolls.
+
+```csharp
+// Correct: fixed header, scrolling content
+VStack(
+    Heading("Page Title").Padding(16, 16, 16, 8),
+    ScrollView(
+        VStack(8, contentItems)
+    ).Set(sv => sv.HorizontalContentAlignment = HorizontalAlignment.Stretch))
+```
 
 ## Sizing
 
@@ -272,6 +284,7 @@ Grid(
     Image(avatar).Size(32, 32).Grid(column: 0),
     Text(title)
         .TextTrimming(TextTrimming.CharacterEllipsis)
+        .ToolTip(title)  // Show full text on hover when trimmed
         .Grid(column: 1))
 
 // Wrong: TextTrimming never fires in HStack
@@ -280,7 +293,20 @@ HStack(8,
     Text(title).TextTrimming(TextTrimming.CharacterEllipsis))
 ```
 
-Note: `Grid` column `"Auto"` also sizes to content and prevents trimming — use `"*"` for the text column.
+**Important:** `Grid` column `"Auto"` also sizes to content and prevents trimming — always use `"*"` for the column that contains trimmable text. This is a common mistake when multiple columns are present.
+
+### Unnecessary Container Wrappers
+
+Remove wrapper containers (`Border`, `Grid`, `VStack`) that exist only for nesting without contributing layout, styling, or semantic purpose:
+
+```csharp
+// Wrong: Grid wrapper serves no purpose
+Grid(["*"], ["*"],
+    Text("Hello").Grid(row: 0, column: 0))
+
+// Correct: just the text
+Text("Hello")
+```
 
 ## BiDi / RTL Support
 

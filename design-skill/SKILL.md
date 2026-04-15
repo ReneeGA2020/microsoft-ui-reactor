@@ -146,6 +146,9 @@ High Contrast users rely on a fixed set of 8 system color brushes. Your UI must 
 - No accent colors or regular WinUI brushes in HC.
 - No gradient animations in HC — use a single system brush.
 - Use 2px border thickness for flyouts, dialogs, and cards in HC.
+- **No partial theme updates** — when changing Light/Dark visual resources via `.Resources()`, include matching HC-safe values in the same change. Don't leave HC untested.
+- **Interactive containers in HC need a highlight border** — for clickable cards or list items, add a `SystemColorHighlightColor` border in HC to indicate interactivity.
+- **Empty HC dictionary is valid** — when `.Resources()` overrides target only Light/Dark and WinUI defaults already satisfy accessibility, you don't need to add HC-specific overrides.
 - Set `HighContrastAdjustment` at app level to prevent system overrides:
   ```csharp
   Application.Current.HighContrastAdjustment = ApplicationHighContrastAdjustment.None;
@@ -202,6 +205,14 @@ Text("Title").FontSize(28).FontWeight(new FontWeight(700))
   ```csharp
   Text("\uE710").Set(tb =>
       tb.FontFamily = (FontFamily)Application.Current.Resources["SymbolThemeFontFamily"])
+  ```
+- When icons and text are paired, **top-align both** in wrapping scenarios to prevent visual drift at larger text scales.
+- **TextWrapping:** `NoWrap` is the default — use `TextWrapping.Wrap` or `TextWrapping.WrapWholeWords` when text should flow to multiple lines. Choose `WrapWholeWords` for body text to avoid mid-word breaks.
+- **Smart tooltips for trimmed text:** When text is trimmed with `TextTrimming`, add a tooltip that only appears when the text is actually trimmed:
+  ```csharp
+  Text(longText)
+      .TextTrimming(TextTrimming.CharacterEllipsis)
+      .ToolTip(longText)
   ```
 
 See [typography-and-colors.md](docs/typography-and-colors.md) for the full type ramp and color token list.
@@ -269,7 +280,9 @@ Pick the right container:
 | Positional row/column layout | `Grid(columns, rows, children)` | Canvas or absolute positioning |
 | Text that needs trimming | `Grid` with `"*"` column | `HStack` (prevents trimming) |
 
-**Text trimming caveat:** `HStack` (StackPanel) gives children unbounded width, so `TextTrimming` never activates. Use a `Grid` with a `"*"` column:
+Remove wrapper containers (`Border`, `Grid`, `VStack`) that exist only for nesting without contributing layout, styling, or semantic purpose.
+
+**Text trimming caveat:** `HStack` (StackPanel) gives children unbounded width, so `TextTrimming` never activates. Use a `Grid` with a `"*"` column. Note: `Grid` column `"Auto"` also sizes to content and prevents trimming — always use `"*"` for the column that contains trimmable text.
 
 ```csharp
 // Correct: Grid constrains width so trimming works
@@ -283,6 +296,21 @@ Grid(
 HStack(8,
     Image(source).Size(32, 32),
     Text(title).TextTrimming(TextTrimming.CharacterEllipsis))
+```
+
+#### ScrollView Configuration
+
+- Use `Auto` scrollbar visibility — scrollbar appears only when content overflows.
+- Set `HorizontalContentAlignment = Stretch` on the ScrollView to prevent content from collapsing.
+- Only the content area should scroll — headers and action bars remain outside the ScrollView.
+
+```csharp
+// Correct: header stays fixed, content scrolls
+VStack(
+    Heading("Page Title"),
+    ScrollView(
+        VStack(8, contentItems)
+    ).Set(sv => sv.HorizontalContentAlignment = HorizontalAlignment.Stretch))
 ```
 
 #### Spacing
@@ -446,8 +474,31 @@ Border(content)
     })
 ```
 
+**`BackgroundSizing = InnerBorderEdge`** is required on any bordered acrylic surface. It prevents the background from bleeding through the border edge. Always set it on acrylic containers with a border.
+
 - Overlays on acrylic use `LayerOnAcrylicFillColorDefaultBrush`.
 - Keep one acrylic layer per visual surface to avoid stacked-material artifacts.
+
+#### Flyout Surface Pattern
+
+Flyout/popup surfaces should follow a standard elevation pattern:
+
+```csharp
+Border(
+    ScrollView(VStack(8, flyoutContent))
+)
+.Background(Theme.Ref("FlyoutPresenterBackground"))
+.WithBorder(Theme.Ref("FlyoutBorderThemeBrush"), 1)
+.CornerRadius(8)
+.Translation(0, 0, 32)
+.Set(b =>
+{
+    b.BackgroundSizing = BackgroundSizing.InnerBorderEdge;
+    b.Shadow = new ThemeShadow();
+})
+```
+
+Use `FlyoutPresenterBackground` and `FlyoutBorderThemeBrush` for standard popup surfaces. Use the explicit acrylic resource pairings (above) only when building custom surfaces that don't use WinUI's flyout presenter resources.
 
 ### 9. Animation and Motion
 
@@ -626,26 +677,55 @@ Defaults you should not set:
 
 When reviewing Duct UI code, verify:
 
+**Theming:**
 - [ ] Uses `Theme.*` tokens for colors/brushes — no hardcoded hex on themed surfaces
-- [ ] Uses semantic text factories (`Heading`, `SubHeading`, `Caption`) or WinUI style tokens
-- [ ] Layout values use multiples of 4
-- [ ] Uses `MinHeight`/`MinWidth` instead of fixed sizing for text containers
-- [ ] Uses `Border` for single-child containers (not `VStack`/`Grid` wrappers)
-- [ ] `HStack` does not contain text that needs `TextTrimming`
-- [ ] `.WithKey()` set on items in dynamic lists
-- [ ] `AutomationName` set on icon-only controls
-- [ ] `.Resources()` used for button visual state overrides (not `.Background()` directly)
 - [ ] Resource keys end in `Brush` (not Color name)
 - [ ] No opacity on elements in High Contrast
-- [ ] No fixed heights on text containers — uses `MinHeight`
 - [ ] Acrylic surfaces use correct background + border pairings
-- [ ] `ThemeShadow` has `Translation(0, 0, 32)`
-- [ ] No explicit setting of WinUI default values
+- [ ] `BackgroundSizing = InnerBorderEdge` set on bordered acrylic containers
+- [ ] No partial theme changes — Light/Dark `.Resources()` updates tested with HC in the same change
+- [ ] Interactive containers (cards, list items) have visible borders in HC
+
+**Typography:**
+- [ ] Uses semantic text factories (`Heading`, `SubHeading`, `Caption`) or WinUI style tokens
 - [ ] `FontWeight` is SemiBold (600), not Bold (700) — except `Heading()` page titles
+- [ ] No fixed heights on text containers — uses `MinHeight`
+- [ ] Trimmed text has a tooltip for overflow content
+- [ ] Icons and text top-aligned in wrapping scenarios
+
+**Layout:**
+- [ ] Layout values use multiples of 4
+- [ ] Corner radius is 4 (controls) or 8 (overlays) — no non-standard values
+- [ ] Uses `MinHeight`/`MinWidth` instead of fixed sizing for text containers
+- [ ] Uses `Border` for single-child containers (not `VStack`/`Grid` wrappers)
+- [ ] No unnecessary wrapper containers without layout or styling purpose
+- [ ] `HStack` does not contain text that needs `TextTrimming`
+- [ ] Text trimming columns use `"*"` (not `"Auto"`, which also prevents trimming)
+- [ ] `ThemeShadow` has `Translation(0, 0, 32)` and 12px parent padding
+- [ ] ScrollView content uses `HorizontalContentAlignment = Stretch`
+
+**Controls and Styling:**
+- [ ] `.Resources()` used for button visual state overrides (not `.Background()` directly)
+- [ ] All visual states covered when overriding — rest + hover + pressed + disabled
+- [ ] No explicit setting of WinUI default values
+- [ ] No no-op `.Resources()` overrides that repeat WinUI defaults
+- [ ] Uses existing WinUI styles before creating custom overrides
+
+**Accessibility:**
+- [ ] `AutomationName` set on icon-only controls
+- [ ] `HeadingLevel` set on heading text
+- [ ] `PositionInSet` / `SizeOfSet` set on list items
+- [ ] Hit-test targets for light-dismiss are visible (`Background("#00000000")`)
+
+**State and Reconciliation:**
+- [ ] `.WithKey()` set on items in dynamic lists
 - [ ] Hooks are unconditional and in consistent order
 - [ ] `UseCallback` wraps handlers passed to child components
 - [ ] `UseMemo` wraps expensive computations
-- [ ] Corner radius is 4 (controls) or 8 (overlays) — no non-standard values
+
+**PR Hygiene:**
+- [ ] PR scope excludes unrelated churn — every change maps to a concrete UX reason
+- [ ] No broad `.Resources()` or styling edits unrelated to the feature being changed
 
 **If changing colors:** Test in NightSky HC theme, hover on interactive elements.
 

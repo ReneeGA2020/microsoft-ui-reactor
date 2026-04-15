@@ -96,7 +96,7 @@ Text("Prominent text").Set(tb =>
        tb.Typography.NumeralAlignment = FontNumeralAlignment.Tabular)
    ```
 
-7. **Text trimming requires constrained width** — `HStack` gives unbounded width so trimming never fires. Use `Grid` with a `"*"` column:
+7. **Text trimming requires constrained width** — `HStack` gives unbounded width so trimming never fires. Use `Grid` with a `"*"` column (not `"Auto"`, which also sizes to content and prevents trimming):
 
    ```csharp
    Grid(
@@ -108,7 +108,34 @@ Text("Prominent text").Set(tb =>
            .Grid(column: 1))
    ```
 
-8. **Default foreground** — `TextFillColorPrimaryBrush` is the default TextBlock foreground. Do not set it explicitly.
+8. **Smart tooltips for trimmed text** — When text is trimmed, add a tooltip so the user can read the full content on hover:
+
+   ```csharp
+   Text(longTitle)
+       .TextTrimming(TextTrimming.CharacterEllipsis)
+       .ToolTip(longTitle)
+   ```
+
+9. **Default foreground** — `TextFillColorPrimaryBrush` is the default TextBlock foreground. Do not set it explicitly.
+
+10. **TextWrapping** — `NoWrap` is the default (do not set it explicitly). Choose `Wrap` when text should flow to multiple lines, or `WrapWholeWords` for body text to avoid mid-word breaks:
+
+    ```csharp
+    Text(paragraph).Set(tb => tb.TextWrapping = TextWrapping.WrapWholeWords)
+    ```
+
+11. **Top-align icons with text** — When icons and text are paired in wrapping layouts, prefer top alignment for both. At larger text scales, center-aligned icons drift visually:
+
+    ```csharp
+    HStack(8,
+        Text("\uE710")
+            .Set(tb => tb.FontFamily = (FontFamily)Application.Current.Resources["SymbolThemeFontFamily"])
+            .Set(tb => tb.IsTextScaleFactorEnabled = false)
+            .VAlign(VerticalAlignment.Top),
+        Text(description)
+            .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
+            .VAlign(VerticalAlignment.Top))
+    ```
 
 ## Colors
 
@@ -173,6 +200,23 @@ SubtleFillColorTertiaryBrush
 SubtleFillColorDisabledBrush
 ```
 
+#### ControlAlt Fill Colors
+```
+ControlAltFillColorTransparentBrush
+ControlAltFillColorSecondaryBrush
+ControlAltFillColorTertiaryBrush
+ControlAltFillColorQuarternaryBrush
+ControlAltFillColorDisabledBrush
+```
+
+#### ControlOnImage Fill Colors
+```
+ControlOnImageFillColorDefaultBrush
+ControlOnImageFillColorSecondaryBrush
+ControlOnImageFillColorTertiaryBrush
+ControlOnImageFillColorDisabledBrush
+```
+
 #### Accent Fill Colors
 ```
 AccentFillColorDefaultBrush
@@ -188,6 +232,9 @@ ControlStrokeColorDefaultBrush
 ControlStrokeColorSecondaryBrush
 ControlStrokeColorOnAccentDefaultBrush
 ControlStrokeColorOnAccentSecondaryBrush
+ControlStrokeColorOnAccentTertiaryBrush
+ControlStrokeColorOnAccentDisabledBrush
+ControlStrokeColorForStrongFillWhenOnImageBrush
 CardStrokeColorDefaultBrush
 CardStrokeColorDefaultSolidBrush
 ControlStrongStrokeColorDefaultBrush
@@ -204,16 +251,22 @@ FocusStrokeColorInnerBrush
 ```
 CardBackgroundFillColorDefaultBrush
 CardBackgroundFillColorSecondaryBrush
+CardBackgroundFillColorTertiaryBrush
 SmokeFillColorDefaultBrush
 LayerFillColorDefaultBrush
 LayerFillColorAltBrush
 LayerOnAcrylicFillColorDefaultBrush
 LayerOnAccentAcrylicFillColorDefaultBrush
 LayerOnMicaBaseAltFillColorDefaultBrush
+LayerOnMicaBaseAltFillColorSecondaryBrush
 SolidBackgroundFillColorBaseBrush
 SolidBackgroundFillColorSecondaryBrush
 SolidBackgroundFillColorTertiaryBrush
 SolidBackgroundFillColorQuarternaryBrush
+SolidBackgroundFillColorQuinaryBrush
+SolidBackgroundFillColorSenaryBrush
+SolidBackgroundFillColorTransparentBrush
+SolidBackgroundFillColorBaseAltBrush
 ```
 
 #### System / Signal Colors
@@ -228,7 +281,22 @@ SystemFillColorSuccessBackgroundBrush
 SystemFillColorCautionBackgroundBrush
 SystemFillColorCriticalBackgroundBrush
 SystemFillColorNeutralBackgroundBrush
+SystemFillColorSolidAttentionBackgroundBrush
+SystemFillColorSolidNeutralBackgroundBrush
 ```
+
+#### Accent Colors
+```
+SystemAccentColor
+SystemAccentColorLight1
+SystemAccentColorLight2
+SystemAccentColorLight3
+SystemAccentColorDark1
+SystemAccentColorDark2
+SystemAccentColorDark3
+```
+
+Note: Accent entries above are `Color` resources (not Brush). Use via `Theme.Ref("SystemAccentColor")`.
 
 ### High Contrast System Colors
 

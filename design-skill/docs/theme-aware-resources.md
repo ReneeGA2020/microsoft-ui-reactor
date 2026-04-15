@@ -90,6 +90,16 @@ Use via `Theme.Ref("TextOnAccentFillColorPrimaryBrush")`.
 
 Background variants: `Theme.SystemSuccessBackground`, `Theme.SystemCautionBackground`, `Theme.SystemCriticalBackground`, `Theme.SystemAttentionBackground`, `Theme.SystemNeutralBackground`.
 
+### Accent Colors
+
+| WinUI Resource Key | Purpose |
+|-------------------|---------|
+| `SystemAccentColor` | User-chosen accent color |
+| `SystemAccentColorLight1` through `Light3` | Progressively lighter accent |
+| `SystemAccentColorDark1` through `Dark3` | Progressively darker accent |
+
+Use via `Theme.Ref("SystemAccentColor")`. These are `Color` resources (not `Brush`); wrap in a brush when needed.
+
 ### Acrylic
 
 | WinUI Resource Key | Purpose |
@@ -149,11 +159,35 @@ SystemColorGrayTextColorBrush
 SystemColorHotlightColorBrush
 ```
 
+**HC color pairings — never mix incompatible pairs:**
+
+| Background | Foreground | Use Case |
+|------------|------------|----------|
+| `SystemColorWindowColor` | `SystemColorWindowTextColor` | General content |
+| `SystemColorHighlightColor` | `SystemColorHighlightTextColor` | Selected/hover states |
+| `SystemColorButtonFaceColor` | `SystemColorButtonTextColor` | Buttons |
+| `SystemColorWindowColor` | `SystemColorGrayTextColor` | Disabled content |
+| `SystemColorWindowColor` | `SystemColorHotlightColor` | Hyperlinks |
+
 **Rules:**
 - Never use opacity on elements in HC.
 - Never use accent colors or regular WinUI brushes in HC-specific code paths.
 - Never use gradient animations in HC.
 - Use 2px border thickness in HC for flyouts, dialogs, and cards.
+- **No partial theme updates** — when changing Light/Dark resource overrides, include matching HC-safe values in the same change.
+- **Empty HC is valid** — when `.Resources()` overrides target only Light/Dark and WinUI defaults already satisfy HC accessibility, you do not need HC-specific overrides.
+
+**Interactive containers in HC** — clickable cards and list items must show a visible border in HC to indicate interactivity. Use `SystemColorHighlightColor` for the border:
+
+```csharp
+// Interactive card — highlight border visible in HC
+Border(cardContent)
+    .Background(Theme.CardBackground)
+    .WithBorder(Theme.CardStroke, 1)
+    .CornerRadius(4)
+    // In HC, WinUI maps CardStroke appropriately.
+    // For custom interactive surfaces, test that the border is visible in NightSky.
+```
 
 **HC setup at app level:**
 

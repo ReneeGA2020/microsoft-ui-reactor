@@ -119,4 +119,15 @@ Text("Body strong").Set(tb =>
    .Set("ButtonBackground", Theme.Ref("ControlFillColorDefault"))
    ```
 4. **Use `.Resources()` for single-control overrides** — don't create shared style resources for one-off customizations.
-5. **Don't override defaults** — if the default WinUI button style is what you want, don't set `.Resources()` at all.
+5. **Don't override defaults** — if the default WinUI button style is what you want, don't set `.Resources()` at all. No-op resource overrides that repeat WinUI defaults add noise and block future WinUI updates.
+6. **Don't re-declare inherited properties** — when applying a WinUI style via `.Set()`, don't also set properties the style already defines (FontSize, FontWeight, etc.). They are redundant and block future updates.
+   ```csharp
+   // Wrong: FontSize is already in BodyStrongTextBlockStyle
+   Text("Bold body").SemiBold().FontSize(14).Set(tb =>
+       tb.Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"])
+
+   // Correct: style handles size and weight
+   Text("Bold body").Set(tb =>
+       tb.Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"])
+   ```
+7. **Empty HC is valid for `.Resources()` patterns** — when your overrides target only Light/Dark appearance and WinUI defaults already satisfy HC accessibility, you do not need HC-specific resource overrides. This is the common case for subtle/accent button patterns.
