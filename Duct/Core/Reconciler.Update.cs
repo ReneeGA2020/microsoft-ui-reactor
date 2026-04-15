@@ -267,6 +267,8 @@ public sealed partial class Reconciler
                 => UpdateValidationVisualizer(oldVv, newVv, sp, requestRerender),
             (ValidationRuleElement, ValidationRuleElement n, WinUI.StackPanel)
                 => UpdateValidationRule(n),
+            (Hooks.AnnounceRegionElement, Hooks.AnnounceRegionElement, TextBlock)
+                => null, // static element — nothing to update
             (XamlHostElement, XamlHostElement n, FrameworkElement hostCtrl)
                 => UpdateXamlHost(n, hostCtrl),
             (XamlPageElement o, XamlPageElement n, WinUI.Frame f)

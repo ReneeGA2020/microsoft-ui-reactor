@@ -1,4 +1,5 @@
 using Duct.Animation;
+using Duct.Hooks;
 using Duct.Validation;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -147,6 +148,7 @@ public sealed partial class Reconciler
             Validation.FormFieldElement ff => MountFormField(ff, requestRerender),
             Validation.ValidationVisualizerElement vv => MountValidationVisualizer(vv, requestRerender),
             Validation.ValidationRuleElement rule => MountValidationRule(rule),
+            AnnounceRegionElement ann => MountAnnounceRegion(ann),
             XamlHostElement host => MountXamlHost(host),
             XamlPageElement page => MountXamlPage(page),
             ComponentElement comp => MountComponent(comp, requestRerender),
@@ -2594,5 +2596,29 @@ public sealed partial class Reconciler
         frame.Navigate(page.PageType, page.Parameter);
         SetElementTag(frame, page);
         return frame;
+    }
+
+    /// <summary>
+    /// Mounts a zero-size hidden TextBlock for screen reader live-region announcements.
+    /// The TextBlock is connected to the <see cref="AnnounceHandle"/> so that
+    /// <see cref="AnnounceHandle.Announce"/> can raise UIA notifications through it.
+    /// </summary>
+    private static UIElement MountAnnounceRegion(AnnounceRegionElement ann)
+    {
+        var tb = new TextBlock
+        {
+            Width = 0,
+            Height = 0,
+            Opacity = 0,
+            IsHitTestVisible = false,
+            IsTabStop = false,
+        };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetLiveSetting(
+            tb, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAccessibilityView(
+            tb, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
+        ann.Handle.SetTextBlock(tb);
+        SetElementTag(tb, ann);
+        return tb;
     }
 }

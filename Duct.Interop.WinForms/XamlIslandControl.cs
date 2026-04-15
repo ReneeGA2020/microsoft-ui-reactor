@@ -57,6 +57,10 @@ public class XamlIslandControl : SWF.Control
         var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(Handle);
         _source.Initialize(windowId);
 
+        // Constrain WinUI popups/flyouts/tooltips to the work area so they don't
+        // escape the WinForms window bounds.
+        _source.ShouldConstrainPopupsToWorkArea = true;
+
         // Initial size — may be default size before Dock layout runs
         UpdateBridgeSize();
 
@@ -66,12 +70,19 @@ public class XamlIslandControl : SWF.Control
             _pendingContent = null;
         }
 
-        // When XAML releases focus (Tab out), move to the next WinForms control
+        // When XAML releases focus (Tab out), move to the next WinForms control.
+        // Only handle First (forward Tab) and Last (Shift+Tab) — ignore Programmatic,
+        // Restore, and directional reasons which shouldn't leave the island.
         _source.TakeFocusRequested += (_, args) =>
         {
-            bool forward = args.Request.Reason == XamlSourceFocusNavigationReason.First;
-            Parent?.SelectNextControl(this, forward,
-                tabStopOnly: true, nested: true, wrap: true);
+            var reason = args.Request.Reason;
+            if (reason is XamlSourceFocusNavigationReason.First
+                       or XamlSourceFocusNavigationReason.Last)
+            {
+                bool forward = reason == XamlSourceFocusNavigationReason.First;
+                Parent?.SelectNextControl(this, forward,
+                    tabStopOnly: true, nested: true, wrap: true);
+            }
         };
     }
 
@@ -136,9 +147,20 @@ public class XamlIslandControl : SWF.Control
     protected override void OnGotFocus(EventArgs e)
     {
         base.OnGotFocus(e);
-        _source?.NavigateFocus(
-            new XamlSourceFocusNavigationRequest(
-                XamlSourceFocusNavigationReason.Programmatic));
+        // Check Shift state at the moment focus arrives: if Shift is held, the user
+        // Shift+Tabbed backward into the island → focus the last element. Otherwise
+        // focus the first element (forward Tab or programmatic focus).
+        bool shiftHeld = (SWF.Control.ModifierKeys & SWF.Keys.Shift) != 0;
+        var reason = shiftHeld
+            ? XamlSourceFocusNavigationReason.Last
+            : XamlSourceFocusNavigationReason.First;
+        _source?.NavigateFocus(new XamlSourceFocusNavigationRequest(reason));
+    }
+
+    protected override void OnDpiChangedAfterParent(EventArgs e)
+    {
+        base.OnDpiChangedAfterParent(e);
+        UpdateBridgeSize();
     }
 
     protected override void Dispose(bool disposing)

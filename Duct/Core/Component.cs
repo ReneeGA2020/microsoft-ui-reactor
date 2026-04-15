@@ -1,3 +1,5 @@
+using Duct.Hooks;
+
 namespace Duct.Core;
 
 /// <summary>
@@ -108,6 +110,15 @@ public abstract class Component
 
     protected DuctCommand<T> UseCommand<T>(DuctCommand<T> command)
         => Context.UseCommand(command);
+
+    protected Hooks.AnnounceHandle UseAnnounce()
+        => Context.UseAnnounce();
+
+    protected bool UseHighContrast()
+        => Context.UseHighContrast();
+
+    protected string? UseHighContrastScheme()
+        => Context.UseHighContrastScheme();
 }
 
 /// <summary>

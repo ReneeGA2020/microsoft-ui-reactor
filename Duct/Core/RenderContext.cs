@@ -660,6 +660,65 @@ public sealed class RenderContext
     public bool UseIsDarkTheme() => UseColorScheme() == ColorScheme.Dark;
 
     // ════════════════════════════════════════════════════════════════
+    //  High contrast / accessibility display hooks
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Returns <c>true</c> when the system is in a High Contrast (forced colors) theme.
+    /// Automatically re-renders the component when high contrast is toggled.
+    /// <para>
+    /// Use this to conditionally override custom styling (hardcoded backgrounds,
+    /// foregrounds, border colors) that would ignore forced-colors mode.
+    /// WinUI controls using ThemeResource brushes adapt automatically — this hook
+    /// is for Duct components that use explicit color values.
+    /// </para>
+    /// </summary>
+    public bool UseHighContrast() => UseHighContrastState().IsHighContrast;
+
+    /// <summary>
+    /// Returns the high contrast scheme name (e.g., "High Contrast Black",
+    /// "High Contrast White") or <c>null</c> if not in high contrast mode.
+    /// Automatically re-renders the component when the scheme changes.
+    /// <para>
+    /// Must be called instead of (not in addition to) <see cref="UseHighContrast"/>
+    /// because each consumes the same hook slots. Use one or the other.
+    /// </para>
+    /// </summary>
+    public string? UseHighContrastScheme() => UseHighContrastState().HighContrastScheme;
+
+    private HighContrastState UseHighContrastState()
+    {
+        var (state, _) = UseState(new HighContrastState());
+
+        // Subscribe once to HighContrastChanged and re-render when it fires.
+        UseEffect(() =>
+        {
+            state.Settings ??= new Windows.UI.ViewManagement.AccessibilitySettings();
+            var rerender = _requestRerender;
+            void OnChanged(Windows.UI.ViewManagement.AccessibilitySettings sender, object args)
+            {
+                state.IsHighContrast = sender.HighContrast;
+                state.HighContrastScheme = sender.HighContrast ? sender.HighContrastScheme : null;
+                rerender?.Invoke();
+            }
+            state.Settings.HighContrastChanged += OnChanged;
+            // Sync initial value
+            state.IsHighContrast = state.Settings.HighContrast;
+            state.HighContrastScheme = state.Settings.HighContrast ? state.Settings.HighContrastScheme : null;
+            return () => state.Settings.HighContrastChanged -= OnChanged;
+        });
+
+        return state;
+    }
+
+    private sealed class HighContrastState
+    {
+        public Windows.UI.ViewManagement.AccessibilitySettings? Settings;
+        public bool IsHighContrast;
+        public string? HighContrastScheme;
+    }
+
+    // ════════════════════════════════════════════════════════════════
     //  Localization hooks
     // ════════════════════════════════════════════════════════════════
 

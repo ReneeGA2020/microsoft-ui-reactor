@@ -1958,6 +1958,45 @@ public sealed partial class Reconciler : IDisposable
 
         if (a.TabFocusNavigation.HasValue && a.TabFocusNavigation != oldA?.TabFocusNavigation)
             fe.TabFocusNavigation = a.TabFocusNavigation.Value;
+
+        // LabeledBy — resolve AutomationId string to the target element in the visual tree.
+        if (a.LabeledBy is not null && a.LabeledBy != oldA?.LabeledBy)
+        {
+            var target = FindByAutomationId(fe, a.LabeledBy);
+            if (target is not null)
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetLabeledBy(fe, target);
+        }
+        else if (a.LabeledBy is null && oldA?.LabeledBy is not null)
+        {
+            fe.ClearValue(Microsoft.UI.Xaml.Automation.AutomationProperties.LabeledByProperty);
+        }
+    }
+
+    /// <summary>
+    /// Walks the visual tree from <paramref name="element"/>'s XamlRoot to find
+    /// the first UIElement whose AutomationProperties.AutomationId matches <paramref name="automationId"/>.
+    /// </summary>
+    private static UIElement? FindByAutomationId(FrameworkElement element, string automationId)
+    {
+        var root = element.XamlRoot?.Content;
+        if (root is null) return null;
+        return WalkForAutomationId(root, automationId);
+    }
+
+    private static UIElement? WalkForAutomationId(DependencyObject node, string automationId)
+    {
+        if (node is UIElement uie
+            && Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(uie) == automationId)
+            return uie;
+
+        int count = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(node);
+        for (int i = 0; i < count; i++)
+        {
+            var child = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChild(node, i);
+            var found = WalkForAutomationId(child, automationId);
+            if (found is not null) return found;
+        }
+        return null;
     }
 
     // ════════════════════════════════════════════════════════════════

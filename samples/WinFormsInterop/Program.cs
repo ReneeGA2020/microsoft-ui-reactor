@@ -87,7 +87,7 @@ static class Program
             WinForms.FormClosedEventHandler onClosed = (_, _) =>
             {
                 if (Interlocked.Decrement(ref openForms) <= 0)
-                    Microsoft.UI.Xaml.Application.Current.Exit();
+                    WinForms.Application.Exit();
             };
             ductWindow.FormClosed += onClosed;
             winFormsWindow.FormClosed += onClosed;

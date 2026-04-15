@@ -108,6 +108,12 @@ public sealed partial class DuctHostControl : ContentControl, IDisposable
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         HorizontalContentAlignment = HorizontalAlignment.Stretch;
         VerticalContentAlignment = VerticalAlignment.Stretch;
+        // ContentControl inherits IsTabStop=true from Control. Set it to false
+        // so focus navigation passes through to child elements directly. Without
+        // this, Shift+Tab from the first child stops on the DuctHostControl itself
+        // (invisible focus) before departing — especially problematic in XAML Islands
+        // where that extra stop prevents TakeFocusRequested from firing.
+        IsTabStop = false;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
 
