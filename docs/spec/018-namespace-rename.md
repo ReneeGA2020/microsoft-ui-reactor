@@ -1,7 +1,7 @@
 # 018 — Namespace Rename: Duct → Microsoft.UI.Reactor
 
 **Status:** Draft  
-**Date:** 2026-04-15
+**Date:** 2026-04-16
 
 ## Overview
 
@@ -49,6 +49,7 @@ The CLI tool is renamed to **mur** (Microsoft.UI.Reactor).
 | `Duct.Cli` | `Microsoft.UI.Reactor.Cli` |
 | `Duct.Cli.Docs` | `Microsoft.UI.Reactor.Cli.Docs` |
 | `Duct.Cli.Loc` | `Microsoft.UI.Reactor.Cli.Loc` |
+| `Duct.Accessibility` | `Microsoft.UI.Reactor.Accessibility` |
 | `Duct.Interop.WinForms` | `Microsoft.UI.Reactor.Interop.WinForms` |
 
 ### Test / infrastructure namespaces
@@ -74,6 +75,7 @@ The CLI tool is renamed to **mur** (Microsoft.UI.Reactor).
 | `DuctRegedit` / `DuctRegedit.*` | `ReactorRegedit` / `ReactorRegedit.*` |
 | `DuctD3.Gallery` | `ReactorCharting.Gallery` |
 | `DuctHostControlDemo` | `ReactorHostControlDemo` |
+| `WinUIGalleryDuct` | `WinUIGalleryReactor` |
 | `Duct.TestApp` | `Reactor.TestApp` |
 
 ---
@@ -282,6 +284,12 @@ Used in: `UseThemeRefAnalyzer.cs`, `UseLightweightStylingAnalyzer.cs`,
 | WinFormsOutsideForm.Designer.cs text | `"hosting a Duct component tree"` | `"hosting a Reactor component tree"` |
 | SampleDuctComponent.cs heading | `"Duct Component (via XAML Island)"` | `"Reactor Component (via XAML Island)"` |
 | SampleDuctComponent.cs body | `"This Duct/WinUI component…"` | `"This Reactor/WinUI component…"` |
+| GalleryShell.cs title | `"Duct WinUI Gallery"` | `"Reactor WinUI Gallery"` |
+| HomePage.cs heading | `"Duct WinUI Gallery"` | `"Reactor WinUI Gallery"` |
+| SettingsPage.cs label | `"Duct (declarative C# DSL)"` | `"Reactor (declarative C# DSL)"` |
+| TypographyPage.cs body | `"Duct provides shorthand helpers…"` | `"Reactor provides shorthand helpers…"` |
+| GAPS.md (Gallery) | ~20 occurrences of `"Duct"` in prose and table | `"Reactor"` throughout |
+| a11y-showcase App.cs comment | `"Duct's accessibility tooling"` | `"Reactor's accessibility tooling"` |
 
 ---
 
@@ -298,6 +306,7 @@ Used in: `UseThemeRefAnalyzer.cs`, `UseLightweightStylingAnalyzer.cs`,
 | `Duct/Validation/` | `Reactor/Controls/Validation/` (see Section 9a) |
 | `Duct/Virtualization/` | `Reactor/Controls/Virtualization/` (see Section 9a) |
 | `Duct/Flex/` | *(merged into `Reactor/Layout/`)* |
+| `Duct/Accessibility/` | `Reactor/Accessibility/` |
 | `Duct/Yoga/` | `Reactor/Layout/` |
 | `Duct.Analyzers/` | `Reactor.Analyzers/` |
 | `Duct.Interop.WinForms/` | `Reactor.Interop.WinForms/` |
@@ -345,6 +354,7 @@ Every `*.Duct/` directory becomes `*.Reactor/`:
 | `samples/DuctHostControlDemo/` | `samples/ReactorHostControlDemo/` |
 | `samples/DuctD3.Gallery/` | `samples/ReactorCharting.Gallery/` |
 | `samples/DuctD3.Sample/` | `samples/ReactorCharting.Sample/` |
+| `samples/WinUI-Gallery-Duct/` | `samples/ReactorGallery/` |
 
 ### .csproj file renames (within directories)
 
@@ -354,6 +364,7 @@ Each project's `.csproj` filename changes to match, e.g.:
 - `DuctD3.Tests.csproj` → `ReactorD3.Tests.csproj`
 - `Duct.Interop.WinForms.csproj` → `Reactor.Interop.WinForms.csproj`
 - `Duct.WinFormsTests.Host.csproj` → `Reactor.WinFormsTests.Host.csproj`
+- `WinUI-Gallery-Duct.csproj` → `ReactorGallery.csproj`
 - etc.
 
 ---
@@ -804,6 +815,10 @@ Drop `-duct` / `duct` from filenames rather than replacing with `-reactor`:
 | `docs/worksummary/work-summary.md` | Update references (~13 occurrences) |
 | `docs/worksummary/*.svg` | Update embedded "Duct" text labels (~7 occurrences across 2 SVGs) |
 | `reviewer/reports/fix-list.md` | Update references |
+| `docs/reactor-pitch.md` | Already uses "Reactor" naming — verify no stale "Duct" refs |
+| `docs/apps/data-system/App.cs` | Update `using Duct` / `using static Duct.UI` / ProjectReference paths |
+| `docs/apps/winforms-interop/App.cs` | Update `using Duct` / `using static Duct.UI` / ProjectReference paths |
+| `samples/WinUI-Gallery-Duct/GAPS.md` | Update ~20 occurrences of "Duct" in prose and table |
 | `Duct/Docs/Architecture.md` | Move to `Reactor/Docs/`, update content |
 | `Duct/Docs/GettingStarted.md` | Move to `Reactor/Docs/`, update content |
 
@@ -824,7 +839,9 @@ The rename should be executed in this order to keep the build green at each step
 7. **Generator attribution** — Update `GeneratedCode` attribute string.
 8. **XAML namespaces** — Update `xmlns` references.
 9. **InternalsVisibleTo** — Update assembly friend names.
-10. **RootNamespace / AssemblyName** — Update all `.csproj` files.
+10. **RootNamespace / AssemblyName** — Update all `.csproj` files (including
+    `WinUI-Gallery-Duct.csproj` RootNamespace `WinUIGalleryDuct` → `WinUIGalleryReactor`,
+    and `docs/apps/` project ProjectReference paths).
 11. **Verify build** — `dotnet build Duct.sln` (still old .sln name).
 
 ### Phase 2: Assembly merges + namespace consolidation
@@ -882,11 +899,13 @@ After Phase 1, namespaces are already renamed but files are in old directories.
 ### Phase 4: Documentation & metadata
 
 1. Rename spec files.
-2. Find-replace "Duct" → "Reactor" (with case sensitivity) across all `.md` files.
+2. Find-replace "Duct" → "Reactor" (with case sensitivity) across all `.md` files,
+   including `samples/ReactorGallery/GAPS.md` (~20 occurrences).
 3. Manual review pass: ensure first occurrence in each doc is "Microsoft.UI.Reactor".
-4. Update `reviewer/manifest.json`, `es-metadata.yml`.
-5. Update VS Code extension (`vscode-duct/`).
-6. Update `selfhost/` artifacts.
+4. Update `docs/apps/` project files (ProjectReference paths, using statements).
+5. Update `reviewer/manifest.json`, `es-metadata.yml`.
+6. Update VS Code extension (`vscode-duct/`).
+7. Update `selfhost/` artifacts.
 
 ### Phase 5: Verification
 
