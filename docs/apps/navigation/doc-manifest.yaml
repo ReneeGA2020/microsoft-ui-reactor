@@ -35,6 +35,11 @@ screenshots:
     component: DeepLinkingDemo
     region: client
     format: png
+  - id: state-serialization
+    description: "Navigation state save and restore"
+    component: StateSerializationDemo
+    region: client
+    format: png
   - id: page-caching
     description: "NavigationHost with page caching enabled"
     component: PageCachingDemo

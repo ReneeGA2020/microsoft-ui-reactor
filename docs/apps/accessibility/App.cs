@@ -1,5 +1,6 @@
 using Duct;
 using Duct.Core;
+using Duct.Hooks;
 using static Duct.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation.Peers;
@@ -141,6 +142,102 @@ class HeadingHierarchyDemo : Component
     }
 }
 // </snippet:heading-hierarchy>
+
+// <snippet:focus-trap>
+class FocusTrapDemo : Component
+{
+    public override Element Render()
+    {
+        var (showModal, setShowModal) = UseState(false);
+        var trap = this.UseFocusTrap(showModal);
+
+        return VStack(12,
+            SubHeading("Focus Trapping"),
+            Button("Open Modal", () => setShowModal(true)),
+            When(showModal, () =>
+                Border(
+                    VStack(12,
+                        Text("Modal Dialog").FontSize(18).Bold(),
+                        Text("Tab/Shift+Tab stays inside this panel."),
+                        TextField("", _ => { }, placeholder: "Name")
+                            .TabIndex(0),
+                        Button("Close", () => setShowModal(false))
+                            .TabIndex(1)
+                    ).Padding(24)
+                ).WithBorder("#888", 1)
+                 .CornerRadius(8)
+                 .Background("#ffffff")
+                 .FocusTrap(trap)
+            )
+        ).Padding(24);
+    }
+}
+// </snippet:focus-trap>
+
+// <snippet:announcements>
+class AnnouncementsDemo : Component
+{
+    public override Element Render()
+    {
+        var (count, setCount) = UseState(0);
+        var announce = this.UseAnnounce();
+
+        return VStack(12,
+            SubHeading("Screen Reader Announcements"),
+            Button("Save", () =>
+            {
+                setCount(count + 1);
+                announce.Announce($"Document saved ({count + 1} times)");
+            }),
+            Button("Error (Assertive)", () =>
+                announce.Announce("Connection lost!", assertive: true)),
+            Text($"Saves: {count}").Opacity(0.6),
+            announce.Region  // invisible live region — must be in tree
+        ).Padding(24);
+    }
+}
+// </snippet:announcements>
+
+// <snippet:semantic-panel>
+class SemanticPanelDemo : Component
+{
+    public override Element Render()
+    {
+        var (rating, setRating) = UseState(3);
+
+        // .Semantics() wraps the element in a SemanticPanel so
+        // screen readers announce it as a slider, not raw buttons
+        return VStack(12,
+            SubHeading("Star Rating (Semantic Panel)"),
+            HStack(4, Enumerable.Range(1, 5).Select(i =>
+                Button(i <= rating ? "\u2605" : "\u2606",
+                    () => setRating(i))
+                    .AutomationName($"{i} star{(i == 1 ? "" : "s")}")
+            ).ToArray())
+            .Semantics(
+                role: "slider",
+                value: $"{rating} of 5 stars",
+                rangeMin: 1, rangeMax: 5, rangeValue: rating),
+            Text($"Current: {rating}/5").Opacity(0.6)
+        ).Padding(24);
+    }
+}
+// </snippet:semantic-panel>
+
+// <snippet:scanner>
+// Run AccessibilityScanner during development or CI:
+//
+// var diagnostics = AccessibilityScanner.Scan(rootElement);
+// foreach (var d in diagnostics)
+// {
+//     Console.WriteLine($"[{d.Severity}] {d.Message}");
+//     Console.WriteLine($"  WCAG: {d.WcagCriterion}");
+//     Console.WriteLine($"  Fix: {d.Fix?.Modifier}({d.Fix?.SuggestedValue})");
+// }
+//
+// Export structured JSON for CI integration:
+// AccessibilityScanner.ExportJson(diagnostics, "a11y-report.json");
+// </snippet:scanner>
 
 // Main app
 class AccessibilityApp : Component

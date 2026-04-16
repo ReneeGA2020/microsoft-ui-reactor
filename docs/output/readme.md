@@ -117,11 +117,13 @@ to wire up, no dispatcher threading to worry about.
 ### Advanced
 
 - **[Context](context.md)** — Share state across the component tree without prop drilling
-- **[Accessibility](accessibility.md)** — Screen readers, keyboard navigation, ARIA patterns
+- **[Accessibility](accessibility.md)** — Screen readers, keyboard navigation, focus trapping, runtime scanning
 - **[Localization](localization.md)** — Multi-language support, resource strings, RTL layouts
 - **[Animation](animation.md)** — Transitions, keyframes, interaction states, choreography
 - **[Charting](charting.md)** — Line, bar, area, and pie charts with the DuctD3 library
 - **[Advanced Patterns](advanced.md)** — Performance tuning, custom hooks, large-scale architecture
+- **[Data System](data-system.md)** — DataGrid with sort, filter, search, inline editing, paging
+- **[WinForms Interop](winforms-interop.md)** — Host Duct components inside WinForms apps via XAML Islands
 
 ## Minimal Project Setup
 

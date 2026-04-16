@@ -257,6 +257,8 @@ these rules:
 | 16 | Animation | `animation.md` |
 | 17 | Charting | `charting.md` |
 | 18 | Advanced Patterns | `advanced.md` |
+| 19 | Data System | `data-system.md` |
+| 20 | WinForms Interop | `winforms-interop.md` |
 
 ---
 
@@ -325,12 +327,31 @@ class MyComponent : Component<MyProps>
 | `UseNavigationLifecycle` | `void UseNavigationLifecycle(onNavigatedTo?, onNavigatingFrom?, onNavigatedFrom?)` | Page lifecycle callbacks |
 | `UseSystemBackButton` | `void UseSystemBackButton<TRoute>(NavigationHandle<TRoute> nav, Window win)` | Wire system back button |
 
+`NavigationHandle<TRoute>` additional members:
+`.CanGoForward`, `.ForwardStack`, `.GoForward()` — forward navigation,
+`.PopTo(predicate)` — pop until matching route,
+`.Navigate(route, NavigateOptions)` — with transition override and `PushToBackStack` flag,
+`.GetState(options?)` / `.SetState(json)` — serialize/restore full nav state.
+
 **Validation & forms:**
 
 | Hook | Signature | Purpose |
 |------|-----------|---------|
 | `UseValidationContext` | `ValidationContext UseValidationContext()` | Create/access nearest validation context |
 | `UseFocus` | `FocusManager UseFocus()` | Programmatic focus, enter-to-advance |
+
+**Accessibility:**
+
+| Hook | Signature | Purpose |
+|------|-----------|---------|
+| `UseAnnounce` | `AnnounceHandle UseAnnounce()` | Screen reader announcements via live regions |
+| `UseFocusTrap` | `FocusTrapHandle UseFocusTrap(bool isActive)` | Keyboard focus trapping for modals/flyouts |
+
+`AnnounceHandle` — `.Region` (invisible Element to include in tree),
+`.Announce(message)`, `.Announce(message, assertive)` (polite vs. interrupt).
+
+`FocusTrapHandle` — `.IsActive`, `.SetContainer(UIElement)`.
+Apply with `.FocusTrap(handle)` modifier on a container element.
 
 **Styling & theming:**
 
@@ -365,21 +386,62 @@ class MyComponent : Component<MyProps>
 
 **Collections:** `ListView<T>(items, keySelector, viewBuilder)`,
 `LazyVStack<T>(items, keySelector, viewBuilder)`,
-`GridView<T>(items, keySelector, viewBuilder)`
+`GridView<T>(items, keySelector, viewBuilder)`,
+`VirtualList(itemCount, renderItem, getItemKey?, itemHeight?, estimatedItemHeight, spacing, ref?, onVisibleRangeChanged?)`
+
+`VirtualListRef` — `.ScrollToIndex(index)`, `.ScrollOffset`,
+`.RestoreScrollOffset(offset)`, `.Repeater` (raw WinUI access).
 
 **Navigation:** `NavigationView(menuItems, content)`, `TabView(tabs)`,
 `BreadcrumbBar(items)`, `NavigationHost(nav, routeMap)` with
-`Transition`, `CacheMode`, `CacheSize` properties
+`Transition`, `CacheMode` (`Disabled`, `Enabled`, `Required`), `CacheSize`
+properties.
+
+`DeepLinkMap<TRoute>` — `.Map(pattern, factory)` with URI patterns
+(`/users/{id:int}/posts/{postId}?sort=date`), optional params `{name?}`,
+wildcards `{**}`, typed extraction via `RouteArgs.Get<T>()` /
+`RouteArgs.Query<T>()`. `.Resolve(uri)` → `DeepLinkResult<TRoute>`.
+
+`NavigationDiagnostics` — static events: `NavigationRequested`,
+`NavigationCompleted`, `NavigationCancelled`, plus cache and transition
+events. Subscribe for debugging/telemetry.
 
 **Validation:** `FormField(content, label?, required?, description?)`,
 `ValidationRule(predicate, message, field)`,
 `ValidationVisualizer(style, content)` with styles: Inline, Summary,
 InfoBar, Custom. `.Validate(fieldName, value, validators...)` extension.
 
+**Data System:** `DataGrid<T>(source, columns, selectionMode?, onSelectionChanged?,
+onRowChanged?, rowHeight?, editable?, editMode?, templates...)` — full-featured
+virtualized grid with sort, filter, search, inline editing, column resize/reorder.
+
+`Column<T>(name, accessor, editable?, displayName?, format?, width?, pin?)` →
+`ColumnBuilder<T>` — `.Validate(...)`, `.CellRenderer(...)`, `.NotSortable()`,
+`.Build()`. `AutoColumns<T>(registry?, overrides?)` — auto-generate from
+reflection. Import: `using static Duct.DataGrid.DataGridDsl;` and
+`using static Duct.DataGrid.ColumnDsl;`
+
+Data sources: `IDataSource<T>` (abstract), `ListDataSource<T>` (in-memory
+with client-side sort/filter/search), `ObservableListDataSource<T>` (wraps
+`ObservableCollection<T>`). `IMutableDataSource<T>` adds CRUD.
+`DataPageCache<T>(source, blockSize, maxBlocks)` for incremental paging.
+`FieldDescriptor` — unified field metadata (name, type, getter/setter,
+width, pin, sortable, validators, cell renderer, formatter).
+
 **Charting** (via DuctD3): `LineChart<T>(data, x, y)`,
 `BarChart<T>(data, x, y)`, `AreaChart<T>(data, x, y)`,
 `PieChart<T>(data, value, label?)`, `TreeChart<T>(root, children, label?)`,
 `ForceGraph(nodes, links)`. Import: `using static Duct.D3.Charts.ChartDsl;`
+
+**Accessibility elements:** `SemanticPanel` — wraps a child to provide
+custom automation peer metadata (role, value, range) for complex components
+like star ratings. Properties: `SemanticRole`, `SemanticValue`,
+`RangeMinimum`, `RangeMaximum`, `RangeValue`, `IsReadOnly`.
+
+`AccessibilityScanner.Scan(root)` — post-reconciliation diagnostic tool
+that walks the element tree, returns `List<A11yDiagnostic>` with WCAG
+criterion, fix suggestions, and context. 8 built-in checks (icon buttons,
+images, form labels, headings, landmarks, TabIndex gaps, etc.).
 
 **Helpers:** `When(bool, () => element)`, `If(bool, then, else?)`,
 `ForEach(items, render)`, `Empty()`, `Group(children)`
@@ -394,6 +456,7 @@ InfoBar, Custom. `.Validate(fieldName, value, validators...)` extension.
 `.HAlign(alignment)`, `.VAlign(alignment)`,
 `.Disabled(bool)`, `.Visible(bool)`, `.WithKey(string)`,
 `.Flex(grow?, shrink?, basis?)`, `.ToolTip(string)`,
+`.FocusTrap(FocusTrapHandle)`,
 `.Set(control => { /* raw WinUI access */ })`
 
 **Styling:**
@@ -445,8 +508,8 @@ Generate these as `<topic>.md.dt` + `docs/apps/<topic>/` pairs:
 
 6. **flex-layout** — FlexPanel powered by Yoga (CSS Flexbox): direction, justify, align, wrap, grow/shrink/basis, gap, absolute positioning; when to use Flex vs. VStack/Grid
 7. **forms** — TextField, CheckBox, ComboBox, Slider, NumberBox, PasswordBox, RadioButtons, ToggleSwitch; controlled-input idioms, ValidationContext + .Validate() with 11 built-in validators, FormField helper, MaskEngine (8 presets), InputFormatter (11 built-ins), AutoSuggest\<T\>, UseFocus for focus management
-8. **collections** — ListView\<T\>, LazyVStack\<T\>, GridView\<T\>; virtualization, key selection, ForEach, stable identity with WithKey
-9. **navigation** — UseNavigation\<TRoute\> hook, NavigationHandle, type-safe stack-based routing, NavigationView/TabView/BreadcrumbBar elements, DeepLinkMap for URL routing, NavigationCache, page lifecycle (UseNavigationLifecycle), UseSystemBackButton, animated transitions via TransitionEngine
+8. **collections** — ListView\<T\>, LazyVStack\<T\>, GridView\<T\>, VirtualList (count-based); virtualization, key selection, ForEach, stable identity with WithKey, VirtualListRef for imperative scrolling
+9. **navigation** — UseNavigation\<TRoute\> hook, NavigationHandle (forward nav, state serialization, PopTo), type-safe stack-based routing, NavigationView/TabView/BreadcrumbBar elements, DeepLinkMap for URL routing (query params, wildcards, typed extraction), NavigationCache with Required mode, page lifecycle (UseNavigationLifecycle with cancel guards), UseSystemBackButton, animated transitions via TransitionEngine, NavigationDiagnostics events
 10. **styling** — Theme tokens (37+ semantic ThemeRef values), UseColorScheme/UseIsDarkTheme hooks, .RequestedTheme() modifier, lightweight styling via .Resources() + ResourceBuilder, Style caching, Roslyn analyzers (DUCT001-003), fonts, CornerRadius
 11. **effects** — UseEffect lifecycle: mount, update, cleanup; timers, async data loading, file I/O, dependency arrays, infinite-loop pitfalls
 12. **commanding** — DuctCommand, DuctCommand\<T\>, StandardCommand, UseCommand hook, keyboard accelerators, async commands with IsExecuting tracking
@@ -454,11 +517,13 @@ Generate these as `<topic>.md.dt` + `docs/apps/<topic>/` pairs:
 
 ### Advanced
 
-14. **accessibility** — AutomationName, HeadingLevel, landmarks, live regions, IsTabStop/TabIndex, AccessKey, FullDescription; tiered modifier pattern (common vs. advanced); WCAG compliance patterns
+14. **accessibility** — AutomationName, HeadingLevel, landmarks, live regions, IsTabStop/TabIndex, AccessKey, FullDescription; tiered modifier pattern (common vs. advanced); WCAG compliance patterns; UseFocusTrap for modals, UseAnnounce for screen reader notifications, SemanticPanel for custom automation peers, AccessibilityScanner runtime diagnostics, Roslyn analyzers (DUCT\_A11Y\_001-003)
 15. **localization** — LocaleProvider, UseIntl, RtlHelper, logical layout properties (MarginInlineStart/End), string resource providers, date/number formatting, pseudo-localization for testing
 16. **animation** — Implicit transitions (opacity, scale, translate, rotation, background), .Animate() compositor modifier, enter/exit .Transition() with combinators (+, |), .InteractionStates() zero-reconcile hover/press/focus, .Stagger() cascade, .Keyframes() trigger animations, .ScrollLinked() expression animations, WithAnimation/WithAnimationAsync ambient scopes, spring/ease curves, LayoutAnimation, ConnectedAnimation
 17. **charting** — DuctD3 chart DSL: LineChart, BarChart, AreaChart, PieChart, TreeChart, ForceGraph; scales (Linear, Band, Log, Pow, Ordinal); shape generators; D3 Canvas drawing primitives; ChartHandle for live updates
-18. **advanced** — ErrorBoundary + fallback UI, Memo for subtree skip, performance tuning (ElementPool, batched renders, bitmask diffs), WinUI escape hatch (`.Set()`), XAML interop (XamlHostElement), observable data binding (UseObservableTree, UseCollection)
+18. **advanced** — ErrorBoundary + fallback UI, Memo for subtree skip, performance tuning (ElementPool, batched renders, bitmask diffs), WinUI escape hatch (`.Set()`), observable data binding (UseObservableTree, UseCollection)
+19. **data-system** — DataGrid\<T\> with sort, filter, search, inline editing (cell/row modes), column resize/reorder, selection; IDataSource\<T\> abstraction, ListDataSource, ObservableListDataSource; FieldDescriptor and ColumnDsl for column definition; DataPageCache for incremental paging; DataGridState headless state machine
+20. **winforms-interop** — Hosting Duct components in WinForms via XAML Islands; XamlIslandBootstrap.Run() initialization flow, XamlIslandControl (code and designer), ComponentType property with Properties-grid dropdown, Tab/keyboard bridging, accessibility hooks, background/stretch considerations
 
 ---
 

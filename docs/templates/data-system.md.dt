@@ -1,0 +1,202 @@
+---
+title: "Data System"
+app: data-system
+order: 19
+audience: intermediate
+goal: |
+  Cover DataGrid<T> with sort, filter, search, inline editing (cell and row
+  modes), column resize/reorder, and selection. Teach IDataSource<T> for data
+  access, ListDataSource and ObservableListDataSource providers, FieldDescriptor
+  and ColumnDsl for column definition, DataPageCache for incremental paging,
+  and DataGridState for headless testing.
+---
+
+# Data System
+
+Duct's data system provides a virtualized `DataGrid<T>` backed by a
+pluggable data source abstraction. You define columns (or auto-generate
+them), connect a data source, and the grid handles sorting, filtering,
+searching, selection, and inline editing.
+
+## Data Sources
+
+All data flows through `IDataSource<T>` — an async, page-based abstraction.
+You never pass raw lists to the grid; instead you wrap your data in a
+source that declares its capabilities:
+
+```csharp snippet="data-system/data-source"
+```
+
+`ListDataSource<T>` wraps an in-memory list and provides client-side sort,
+filter, and search. For data-bound collections, use
+`ObservableListDataSource<T>` which tracks `ObservableCollection<T>`
+mutations and fires `DataChanged`.
+
+| Source | Best for |
+|--------|---------|
+| `ListDataSource<T>` | In-memory lists, local data |
+| `ObservableListDataSource<T>` | Observable collections, live-updating data |
+| Custom `IDataSource<T>` | REST APIs, databases, GraphQL endpoints |
+
+## Defining Columns
+
+Use `Column<T>()` to define columns with a fluent builder. Each column has
+a name, an accessor function, and optional configuration:
+
+```csharp snippet="data-system/explicit-columns"
+```
+
+![DataGrid with explicit columns](screenshot://data-system/explicit-columns)
+
+The `ColumnBuilder<T>` supports chaining:
+
+| Method | Effect |
+|--------|--------|
+| `.Validate(validators...)` | Attach validators for inline editing |
+| `.CellRenderer(fn)` | Custom cell rendering function |
+| `.NotSortable()` | Disable sort for this column |
+| `.Build()` | Finalize the `FieldDescriptor` |
+
+Import both DSLs: `using static Duct.DataGrid.DataGridDsl;` and
+`using static Duct.DataGrid.ColumnDsl;`
+
+## Auto-Generated Columns
+
+For quick prototyping, `AutoColumns<T>()` generates columns from public
+properties using reflection:
+
+```csharp snippet="data-system/auto-columns"
+```
+
+![DataGrid with auto-generated columns](screenshot://data-system/auto-columns)
+
+Auto-generation uses `TypeRegistry` for custom type metadata when available.
+Pass a `columnOverrides` function to tweak individual columns without
+defining them all manually.
+
+## Sorting and Filtering
+
+Click column headers to sort. The grid delegates sorting to the data
+source — `ListDataSource` handles it client-side, while custom sources can
+implement server-side sorting:
+
+```csharp snippet="data-system/sort-filter"
+```
+
+![Sorted and filtered grid](screenshot://data-system/sort-filter)
+
+Filtering uses `FilterDescriptor` with 10 operators: `Equals`, `NotEquals`,
+`Contains`, `StartsWith`, `EndsWith`, `GreaterThan`, `LessThan`,
+`GreaterThanOrEqual`, `LessThanOrEqual`, and `Between`.
+
+Enable `showSearch: true` to add a built-in search bar that highlights
+matching cells.
+
+## Selection
+
+`DataGrid` supports single and multiple selection modes. Selection state is
+reported via the `onSelectionChanged` callback:
+
+```csharp snippet="data-system/selection"
+```
+
+![Grid with multi-select](screenshot://data-system/selection)
+
+| Mode | Behavior |
+|------|----------|
+| `SelectionMode.None` | No selection (default) |
+| `SelectionMode.Single` | One row at a time |
+| `SelectionMode.Multiple` | Ctrl+Click, Shift+Click, anchor-based |
+
+Selected rows are identified by `RowKey` — a stable identity derived from
+your data source's `GetRowKey` implementation.
+
+## Inline Editing
+
+Set `editable: true` to enable inline editing. Two edit modes are available:
+
+```csharp snippet="data-system/inline-editing"
+```
+
+![Inline cell editing](screenshot://data-system/inline-editing)
+
+| Mode | Behavior |
+|------|----------|
+| `EditMode.Cell` | Edit one cell at a time; commits on blur/Enter |
+| `EditMode.Row` | Edit an entire row; explicit Save/Cancel buttons |
+
+Editing supports validation — attach validators via `Column<T>().Validate()`.
+The `onRowChanged` callback fires after a successful commit, receiving the
+`RowKey` and updated item. For mutable classes, the grid updates in place;
+for records, it creates a new instance with the changed values.
+
+## Column Resize and Reorder
+
+Users can drag column borders to resize and drag headers to reorder.
+Column state (widths, order, visibility, pinning) is managed by
+`DataGridState` and can be persisted:
+
+```csharp snippet="data-system/column-features"
+```
+
+![Column resize and pin](screenshot://data-system/column-features)
+
+Pin columns to `PinPosition.Left` or `PinPosition.Right` to keep them
+visible during horizontal scrolling. Set `width` in the column definition
+for an initial width, or let the grid auto-size.
+
+## Incremental Paging
+
+For large datasets, `DataPageCache<T>` loads data in blocks as the user
+scrolls. The grid shows placeholder rows for unloaded blocks:
+
+```csharp snippet="data-system/paging"
+```
+
+![Incremental paging with block loading](screenshot://data-system/paging)
+
+The cache uses an LRU eviction policy — when `maxBlocks` is reached, the
+least-recently-accessed block is evicted. The `BlockLoaded` event fires
+when a block finishes loading, triggering a re-render for the affected rows.
+
+## Row Details
+
+Expand individual rows to show additional detail content. Pass a
+`rowDetailTemplate` to render expandable content below each row:
+
+```csharp snippet="data-system/row-details"
+```
+
+![Expanded row detail](screenshot://data-system/row-details)
+
+Row details are lazily rendered — the template function only runs when a
+row is expanded. Use this for showing related data, inline forms, or
+nested grids.
+
+## Tips
+
+**Start with `ListDataSource` and explicit columns.** Auto-columns and
+custom data sources add complexity. Get the grid working with a simple
+in-memory list first, then evolve.
+
+**Use `EditMode.Cell` for spreadsheet-style editing.** Cell mode is faster
+for quick edits. Use `EditMode.Row` when edits need validation across
+multiple fields before committing.
+
+**Pin ID or key columns.** When horizontal scrolling is likely, pin the
+identifying column so users always know which row they are looking at.
+
+**Prefer records for immutable data.** The grid handles both mutable classes
+and immutable records. Records are simpler and safer — the grid creates
+`with` copies automatically.
+
+**Set `rowHeight` for uniform rows.** A fixed height enables O(1) scroll
+offset calculation. Omit it only when rows genuinely vary in height.
+
+## Next Steps
+
+- **[WinForms Interop](winforms-interop.md)** — next topic: host Duct components inside WinForms apps
+- **[Collections](collections.md)** — simpler list and grid elements for non-tabular data
+- **[Forms and Input](forms.md)** — controlled inputs and validation patterns used in grid editing
+- **[Advanced Patterns](advanced.md)** — performance tuning, error boundaries, and observable data binding
+- **[Hooks](hooks.md)** — the hook system powering DataGrid's internal state

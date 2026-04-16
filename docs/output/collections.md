@@ -98,7 +98,8 @@ When to use which:
 | Collection | Virtualized | Best for |
 |-----------|------------|---------|
 | `ListView<T>` | No | Small lists (< 50 items) |
-| `LazyVStack<T>` | Yes | Large lists (50+ items) |
+| `LazyVStack<T>` | Yes | Large lists with known items |
+| `VirtualList` | Yes | Count-based / async-loaded lists |
 
 ## GridView
 
@@ -135,6 +136,87 @@ class GridViewDemo : Component
 
 Each item is sized by the element you return from the view builder. The
 grid automatically wraps items into rows based on the container width.
+
+## VirtualList (Count-Based)
+
+`VirtualList` provides count-based virtualization — you tell it how many
+items exist and it calls your render function only for visible indices.
+Use it when items are loaded asynchronously or your data source provides
+a count but not all items upfront:
+
+```csharp
+class VirtualListDemo : Component
+{
+    public override Element Render()
+    {
+        return VStack(12,
+            SubHeading("VirtualList (10,000 items)"),
+            VirtualList(
+                itemCount: 10_000,
+                renderItem: index =>
+                    HStack(12,
+                        Text($"{index + 1}.").Width(50),
+                        Text($"Item {index + 1}").Bold(),
+                        Text($"data-{index}@example.com").Opacity(0.6)
+                    ).Padding(8),
+                getItemKey: index => $"item-{index}",
+                itemHeight: 40
+            ).Height(300)
+        ).Padding(24);
+    }
+}
+```
+
+![VirtualList with 10,000 items](images/collections/virtuallist.png)
+
+Unlike `LazyVStack<T>` which takes a full list, `VirtualList` takes an
+`itemCount` and a `renderItem(index)` callback. This makes it ideal for
+paginated data sources where items load on demand.
+
+`VirtualListRef` provides imperative control over the virtualized list:
+
+```csharp
+class VirtualListRefDemo : Component
+{
+    public override Element Render()
+    {
+        var listRef = UseRef<VirtualListRef?>(null);
+        var (targetIndex, setTargetIndex) = UseState("5000");
+
+        return VStack(12,
+            SubHeading("VirtualListRef — Imperative Scroll"),
+            HStack(8,
+                TextField(targetIndex, setTargetIndex,
+                    placeholder: "Index"),
+                Button("Scroll To", () =>
+                {
+                    if (int.TryParse(targetIndex, out var idx))
+                        listRef.Current?.ScrollToIndex(idx);
+                })
+            ),
+            VirtualList(
+                itemCount: 10_000,
+                renderItem: index =>
+                    Text($"Row {index + 1}").Padding(8),
+                getItemKey: index => $"row-{index}",
+                itemHeight: 36,
+                @ref: r => listRef.Current = r
+            ).Height(250)
+        ).Padding(24);
+    }
+}
+```
+
+| Member | Purpose |
+|--------|---------|
+| `ScrollToIndex(index)` | Jump to a specific item |
+| `ScrollOffset` | Current scroll position |
+| `RestoreScrollOffset(offset)` | Restore a saved scroll position |
+| `Repeater` | Access the underlying WinUI ItemsRepeater |
+
+Set `itemHeight` for a fixed-height fast path (O(1) offset calculation) or
+`estimatedItemHeight` for variable-height rows with automatic measurement.
+Use `onVisibleRangeChanged` to load data blocks as the user scrolls.
 
 ## ForEach
 
@@ -252,5 +334,6 @@ Use the index for display (row numbers) but not for keys.
 
 - **[Forms and Input](forms.md)** — controlled input controls and validation patterns
 - **[Navigation](navigation.md)** — stack-based routing, NavigationView, and tabs
+- **[Data System](data-system.md)** — DataGrid with sort, filter, search, and inline editing
 - **[Flex Layout](flex-layout.md)** — wrapping grids and proportional sizing for collection items
 - **[Components](components.md)** — extract item templates into reusable memoized components

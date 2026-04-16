@@ -1,0 +1,151 @@
+using Duct;
+using Duct.Core;
+using Duct.Interop.WinForms;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation.Peers;
+using static Duct.UI;
+using static Duct.Core.Theme;
+using SWF = System.Windows.Forms;
+
+// <snippet:bootstrap>
+XamlIslandBootstrap.Run(() =>
+{
+    var form = new SWF.Form
+    {
+        Text = "My WinForms + Duct App",
+        Width = 800,
+        Height = 500
+    };
+
+    var island = new XamlIslandControl
+    {
+        ComponentType = typeof(WinFormsHostDemo),
+        Dock = SWF.DockStyle.Fill
+    };
+
+    form.Controls.Add(island);
+    form.Show();
+});
+// </snippet:bootstrap>
+
+// <snippet:island-control>
+class WinFormsHostDemo : Component
+{
+    public override Element Render()
+    {
+        // This component is hosted via XamlIslandControl.ComponentType
+        var (count, setCount) = UseState(0);
+
+        return VStack(12,
+            Heading("Duct in WinForms"),
+            Text($"Count: {count}").FontSize(24),
+            Button("+1", () => setCount(count + 1))
+        ).Padding(24).Background(SolidBackground);
+    }
+}
+// </snippet:island-control>
+
+// <snippet:designer>
+// In the form's Designer.cs file:
+//
+// this.ductIsland = new XamlIslandControl();
+// this.ductIsland.ComponentType = typeof(DashboardComponent);
+// this.ductIsland.Dock = DockStyle.Fill;
+// this.panel1.Controls.Add(this.ductIsland);
+//
+// The Properties grid shows a dropdown of all Component subclasses
+// with parameterless constructors. Select your component and the
+// designer serializes it as typeof(DashboardComponent).
+// </snippet:designer>
+
+// <snippet:keyboard>
+class KeyboardDemo : Component
+{
+    public override Element Render()
+    {
+        var (text, setText) = UseState("");
+
+        // Tab moves focus into this Duct tree from WinForms controls.
+        // Tab/Shift+Tab cycles through Duct controls normally.
+        // Tab out of the last Duct control returns focus to WinForms.
+        return VStack(12,
+            TextField(text, setText, placeholder: "Type here...")
+                .TabIndex(0),
+            Button("Submit", () => { })
+                .TabIndex(1)
+                .AccessKey("S")
+        ).Padding(24).Background(SolidBackground);
+    }
+}
+// </snippet:keyboard>
+
+// <snippet:accessibility>
+class AccessibleIslandComponent : Component
+{
+    public override Element Render()
+    {
+        var (name, setName) = UseState("");
+
+        // All accessibility modifiers work inside XAML Islands
+        return VStack(12,
+            Heading("Registration")
+                .HeadingLevel(AutomationHeadingLevel.Level1),
+            TextField(name, setName, header: "Full Name")
+                .AutomationName("Full name")
+                .Required()
+                .TabIndex(0),
+            Button("Register", () => { })
+                .AutomationName("Submit registration")
+                .TabIndex(1)
+        ).Padding(24)
+         .Landmark(AutomationLandmarkType.Form)
+         .Background(SolidBackground);
+    }
+}
+// </snippet:accessibility>
+
+// <snippet:background>
+class BackgroundDemo : Component
+{
+    public override Element Render()
+    {
+        var (count, setCount) = UseState(0);
+
+        // Always set an explicit background on root content.
+        // XAML Islands have no default background — without this,
+        // content renders on a transparent surface.
+        return VStack(12,
+            Text("Theme-aware background").Bold(),
+            Text($"Count: {count}"),
+            Button("Increment", () => setCount(count + 1))
+        ).Padding(24).Background(SolidBackground);
+    }
+}
+// </snippet:background>
+
+// <snippet:content-factory>
+// Use ContentFactory for components needing parameters:
+//
+// var island = new XamlIslandControl
+// {
+//     ContentFactory = () =>
+//     {
+//         var host = new DuctHostControl();
+//         host.SetComponent<ConfigurableComponent>();
+//         return host;
+//     }
+// };
+
+class ConfigurableComponent : Component
+{
+    public override Element Render()
+    {
+        var (count, setCount) = UseState(0);
+        return VStack(12,
+            Heading("Dashboard"),
+            Text($"Value: {count}"),
+            Button("+1", () => setCount(count + 1))
+        ).Padding(24).Background(SolidBackground);
+    }
+}
+// </snippet:content-factory>

@@ -19,12 +19,14 @@ the new features have implementation concerns that temper the enthusiasm:
 1. **The component model is now a real framework foundation** — context system,
    memoization, generic hook state, persisted state, and post-render effect
    cleanup have all landed, closing the most fundamental gaps
-2. **Navigation has shipped and is architecturally strong** — type-safe routes,
-   developer-owned back stack, composition-layer transitions, lifecycle guards,
-   LRU caching, serialization, and deep linking. The design is competitive with
-   Compose Navigation 3 and ahead of SwiftUI's type-erased NavigationPath. But
-   connected transitions are a stub, E2E tests are unexecuted, and there's no
-   adaptive multi-pane layout story
+2. **Navigation has matured beyond initial implementation** — type-safe routes,
+   developer-owned back stack, composition-layer transitions, lifecycle guards
+   (now including destination-side guards), LRU caching, serialization, and
+   enhanced deep linking (query strings, optional params, wildcards). Navigation
+   diagnostics provide observability. E2E test discovery was broken (44/46 tests
+   invisible behind a filter bug) and is now fixed — 43 Appium tests pass across
+   6 classes. But connected transitions are still a stub, and there's no adaptive
+   multi-pane layout story
 3. **Commanding is a genuine differentiator** — define-once commands with
    metadata bundling, 16 standard commands, async lifecycle, focus-scoped
    keyboard accelerators, and ICommand interop. No competing framework (React,
@@ -40,9 +42,18 @@ the new features have implementation concerns that temper the enthusiasm:
    feature, and three Roslyn analyzers provide static guidance. But custom branded
    theme resources still don't exist, and the `UseColorScheme` bug undermines
    the RequestedTheme story
-6. **Accessibility has improved significantly but still has structural limits** —
-   16 properties exposed with real UIA tests, but hooks, diagnostics, and custom
-   automation peers remain unbuilt
+6. **Accessibility has crossed a meaningful threshold** — SemanticPanel +
+   `.Semantics()` modifier solves the custom automation peer problem for
+   composite components (the single hardest architectural limitation), a runtime
+   WCAG scanner (AccessibilityScanner) and 3 Roslyn analyzers (DUCT_A11Y_001/
+   002/003) provide both runtime and compile-time diagnostics, UseFocusTrap adds
+   the first imperative accessibility hook, LabeledBy is now wired with deferred
+   resolution, ElementPool clears 14 UIA properties on return, and a dedicated
+   a11y-showcase sample demonstrates the full surface. But SemanticPanel adds
+   another invisible wrapper, the scanner is DEBUG-only and runtime-only,
+   UseFocusTrap doesn't cycle focus (it traps but doesn't wrap), and most
+   imperative hooks (UseAnnounce, UseReducedMotion, UseScreenReaderActive)
+   remain unbuilt
 7. **Animation is now a fully operational compositor animation system** — 8
    features (curves, transitions, interaction states, keyframes, stagger,
    scroll-linked, WithAnimation scope) with solid abstractions; 4 prior
@@ -50,33 +61,39 @@ the new features have implementation concerns that temper the enthusiasm:
    routing, stagger integration), plus 3 runtime fixes (async scope
    persistence, Opacity routing for .Animate(), pool crash prevention).
    Still compositor-property-bound, no arbitrary DP animation
-8. **The `.Set()` escape hatch is still load-bearing** — navigation and commanding
+8. **WinForms interop has landed as a new capability** — bidirectional hosting
+   via `XamlIslandControl` (WinForms hosts Duct/WinUI) and `WinFormsHostElement`
+   (Duct hosts WinForms), with E2E tests for Tab navigation, rendering, and
+   accessibility across boundaries. One direction is blocked (Duct-primary
+   hosting WinForms) due to WinUI's compositor-only rendering
+9. **The `.Set()` escape hatch is still load-bearing** — navigation and commanding
    reduce its surface area, but the majority of input handling, gestures, advanced
    styling, and composition-layer access still require it
 
-**Verdict:** Duct has crossed a second important threshold. The first was the
-component model foundation (context, memoization, hooks). The second is the
-application architecture layer: navigation and commanding are the features that
-separate "a component library" from "a framework you can build a real app with."
-Both are now shipped, tested, and demonstrated in sample apps. Navigation in
-particular is architecturally competitive with the industry's latest thinking —
-Compose Navigation 3 (stable Nov 2025) made the same philosophical choices
-(developer-owned typed stack, declarative destination mapping) that Duct
-independently arrived at. Commanding fills a gap that literally no competitor
-has filled — every serious app builds a custom command registry, and Duct
-provides one as a first-class feature.
+**Verdict:** Duct has crossed a third important threshold. The first was the
+component model foundation (context, memoization, hooks). The second was the
+application architecture layer (navigation, commanding). The third is the
+accessibility semantic layer: SemanticPanel solves the hardest architectural
+problem — composite components describing their own semantics to screen readers
+— and the diagnostic tooling (runtime scanner, compile-time analyzers) moves
+accessibility from "annotations on primitives" toward "a system with
+guardrails." Navigation and commanding continue to mature with incremental
+improvements (destination guards, deep link enhancements, diagnostics).
 
 The distance from "impressive demo" to "ships to real users" has narrowed
-substantially. Styling was the weakest mid-tier area and has received a focused
+further. Styling was the weakest mid-tier area and has received a focused
 investment: style caching, per-element theme control, a color scheme hook,
 lightweight styling (WinUI resource overrides through a fluent API), and Roslyn
-analyzers. Lightweight styling in particular is a genuine differentiator — no
-other C# declarative framework surfaces WinUI's per-control resource key
-overrides with an ergonomic API. The critical path now runs through: custom
-branded theme definitions (still missing), accessibility semantic/imperative
-layers, animation general-purpose value support, and reducing the `.Set()`
-surface area further. The framework is no longer blocked on any single P0 gap,
-but the sum of its P1/P2 gaps still adds up to a significant distance from
+analyzers. Accessibility was the weakest foundation-level area and has now
+received the investment it needed: SemanticPanel, AccessibilityScanner,
+UseFocusTrap, a11y Roslyn analyzers, and a dedicated showcase sample. WinForms
+interop expands the adoption story for brownfield applications. The critical
+path now runs through: custom branded theme definitions (still missing),
+fixing the UseColorScheme/RequestedTheme composition bug, remaining imperative
+accessibility hooks (UseAnnounce, UseReducedMotion), animation general-purpose
+value support, and reducing the `.Set()` surface area further. The framework
+is no longer blocked on any single P0 gap, and the sum of its P1/P2 gaps has
+shrunk meaningfully — but it still adds up to a real distance from
 production-readiness for apps that need polish.
 
 ---
@@ -1141,18 +1158,19 @@ preserves VisualStateManager integration.
 
 ## 7. Navigation
 
-### The navigation story: from "architecturally blocked" to competitive
+### The navigation story: from "architecturally blocked" to competitive and maturing
 
 The previous version of this review scored Navigation at F — "Roll your own
-string-based switch statement." That was the single most damning critique in the
-document. A comprehensive navigation system has now shipped: type-safe routes,
-developer-owned back stack, composition-layer GPU transitions, lifecycle hooks
-with cancellation guards, LRU page caching, JSON state serialization, deep
-linking, and NavigationView integration. 117 unit tests across 6 test files
-validate the implementation. A feature-complete sample app demonstrates all
-capabilities. The honest assessment now: **navigation is architecturally strong
-and competitive with the industry's latest thinking, but has implementation gaps
-and missing E2E validation that temper confidence.**
+string-based switch statement." A comprehensive navigation system shipped
+previously, and a follow-up diff has added: destination-side guards
+(`NavigatingToContext.Cancel()`), deep link enhancements (query strings, optional
+params, wildcards), `NavigationDiagnostics` for observability, thread-safe cache,
+configurable transition distance, and exposed `INavigationHandle`. Additionally,
+a critical test infrastructure discovery was made: 44 of 46 E2E tests were
+invisible behind a broken test filter (`ClassName=InteractiveTests` instead of
+`ClassName!=SelfTestBatch`). This has been fixed — 43 Appium tests now pass across
+6 test classes. The honest assessment now: **navigation is architecturally strong,
+competitively mature, and now has real E2E validation across the full pipeline.**
 
 ### What Duct has now
 
@@ -1189,10 +1207,11 @@ NavigationHost(nav, route => route switch {
     CacheSize = 10
 }
 
-// Lifecycle hooks with navigation guards
+// Lifecycle hooks with navigation guards (source AND destination)
 UseNavigationLifecycle(
     onNavigatedTo: ctx => LoadData(ctx.Route),
     onNavigatingFrom: ctx => { if (hasUnsavedChanges) ctx.Cancel(); },
+    onNavigatingTo: ctx => { if (!IsAuthorized(ctx.Route)) ctx.Cancel(); },  // NEW
     onNavigatedFrom: ctx => Cleanup()
 );
 
@@ -1200,10 +1219,14 @@ UseNavigationLifecycle(
 var json = nav.GetState();   // full stack to JSON
 nav.SetState(json);          // restore from JSON
 
-// Deep linking
+// Deep linking (enhanced: query strings, optional params, wildcards)
 var deepLinks = new DeepLinkMap<AppRoute>()
     .Map("/detail/{id:int}", args => new DetailRoute(args.Get<int>("id")))
+    .Map("/profile/{userId}/{tab?}", args =>                                 // NEW
+        new ProfileRoute(args.Get<string>("userId"), args.GetOrDefault<string>("tab")))
+    .Map("/docs/**", args => new DocsRoute(args.GetWildcard()))              // NEW
     .Map("/settings", _ => new SettingsRoute());
+// Query string access: args.Query<int>("page"), args.QueryString("search")  // NEW
 
 // NavigationView integration
 NavigationView(menuItems,
@@ -1242,7 +1265,7 @@ navigation model.**
 | Type-safe routes | Native (C# records) | Codegen | Native (Swift types) | Native (@Serializable) |
 | Developer-owned back stack | Yes (IReadOnlyList) | No (opaque) | Partial (type-erased) | Yes (SnapshotStateList) |
 | GPU-accelerated transitions | Yes (composition layer) | View Transitions API | System-managed | Basic |
-| Lifecycle guards (cancel nav) | Yes | useBlocker() | beforeRemove | Developer-managed |
+| Lifecycle guards (cancel nav) | Yes (source + destination) | useBlocker() | beforeRemove | Developer-managed |
 | Page caching (LRU) | Yes | N/A | N/A | Developer-managed |
 | State serialization | Yes (JSON) | N/A | Codable | Developer-managed |
 | Deep linking | Yes (pattern matching) | Built-in (URL) | Built-in (URI) | Developer-managed |
@@ -1315,14 +1338,16 @@ debug log message. Shipping a named API that doesn't do what the name says is
 worse than not shipping it — it's a trap. SwiftUI's `matchedGeometryEffect` and
 Compose's `SharedTransitionLayout` both work. Duct's doesn't.
 
-**2. E2E Appium tests are fixtures only — not executed.** The navigation
-implementation tasks show 6 E2E test scenarios marked as incomplete: NavigationView
-click, back button, navigation guards, multi-level deep navigation, selection
-sync, and tab state preservation. The 117 unit tests validate internal logic, but
-nobody has verified that pushing a route actually shows the right page on screen,
-that transitions are visible, or that NavigationView selection syncs visually.
-For a feature this central, the gap between "unit tests pass" and "it works in a
-real window" is not trivial.
+**2. E2E tests were silently broken — now fixed, but the blind spot is telling.**
+The previous review flagged E2E Appium tests as "fixtures only — not executed."
+The truth was worse: 44 of 46 E2E tests existed and ran, but the test filter
+(`ClassName=InteractiveTests`) made only 2 visible to `dotnet test`. The fix
+(changing to `ClassName!=SelfTestBatch`) now surfaces 43 Appium tests across 6
+test classes including `AccessibilityInteractionTests` (10 tests) and
+`WinFormsInteropTests` (14 tests). This is a significant improvement — E2E
+validation is real and running. But the fact that 44 tests were invisible for
+the entire development period means prior E2E "we shipped tests" claims were
+untested claims. How many other test configurations are silently misconfigured?
 
 **3. No adaptive multi-pane layout.** Compose Nav3's `Scene`/`SceneStrategy`
 abstraction handles the list-detail pattern: on a wide screen, show list and
@@ -1357,13 +1382,15 @@ user sees an instant snap when navigating back to a cached page but a smooth
 slide when navigating to an uncached one — an inconsistency that would feel
 broken.
 
-**7. No navigation middleware or route guards beyond `onNavigatingFrom`.**
-React Router has loaders that fetch data before navigation completes. SwiftUI
-has `navigationDestination` modifiers that can be conditional. Duct's guard
-system is limited to the outgoing page — there's no mechanism for the
-*destination* to reject or defer navigation (e.g., "load data first, show
-loading state, then transition"). The `onNavigatingFrom` guard is useful for
-"are you sure?" dialogs but not for data-dependent navigation.
+**7. Destination-side guards now exist but data-dependent navigation is still
+missing.** `NavigatingToContext.Cancel()` now allows the destination page to
+reject navigation — closing the "outgoing guard only" gap flagged in the
+previous review. This handles authorization checks and prerequisite validation.
+But React Router's loaders (fetch data before navigation completes, show loading
+state during fetch) still have no equivalent. The guard is synchronous — there's
+no way to say "defer this navigation until the data loads, then decide." For
+data-heavy apps where every page transition depends on an API call, the guard
+is necessary but not sufficient.
 
 **8. UseSystemBackButton is a separate opt-in hook.** The developer must
 explicitly call `UseSystemBackButton(nav, window)` to wire Alt+Left and the
@@ -1381,22 +1408,25 @@ pattern.
 
 ### Revised navigation verdict
 
-**Previously: F (blocked). Now: B+.**
+**Previously: F → B+. Now: B+ (solid, trending toward A-).**
 
-The improvement is extraordinary — from "architecturally blocked" to a
-comprehensive system that's competitive with the industry's latest and best.
-The type-safe route model, developer-owned back stack, and composition-layer
-transitions are genuinely strong. The design philosophy aligns with the modern
-consensus (Compose Nav3, SwiftUI NavigationStack) and the implementation is
-substantial (117 tests, 1200+ lines of core code, full sample app).
+The B+ holds, with meaningful incremental progress. Destination-side guards
+close a real gap (destination can now reject navigation). Deep link enhancements
+(query strings, optional params, wildcards) make the deep linking system more
+practical. `NavigationDiagnostics` provides the observability hooks that
+production apps need. Most importantly, the E2E test discovery fix means 43
+Appium tests are actually validating the full pipeline — the previous review's
+"E2E tests are unexecuted" critique was correct at the `dotnet test` level
+but the underlying problem was worse than assumed (broken filter, not missing
+tests).
 
-The grade is B+ rather than A because of real gaps: ConnectedTransition is a
-stub, E2E tests are unexecuted, no adaptive multi-pane layout, deep linking
-reintroduces string-typing, and the showcase apps haven't adopted it. The
-navigation system is architecturally sound but not yet battle-tested. A B+ for
-a feature that was an F three months ago is a remarkable trajectory — but the
-last 20% (adaptive layouts, connected transitions, E2E validation, showcase
-adoption) is where production confidence comes from.
+The grade stays B+ rather than moving to A- because: ConnectedTransition is
+still a stub, no adaptive multi-pane layout exists, deep linking still has a
+stringly-typed middle layer, the showcase apps still haven't adopted navigation,
+and the destination guard is synchronous (no async data loading). The trajectory
+is clear — each iteration closes real gaps — but the last 15% (adaptive layouts,
+connected transitions, showcase adoption, async guards) separates "competitive"
+from "best-in-class."
 
 ---
 
@@ -2189,16 +2219,23 @@ says it does.
 
 ## 11. Accessibility
 
-### The accessibility story: from checkbox to credible foundation (with limits)
+### The accessibility story: from credible foundation to a real system (with limits)
 
-The previous version of this review called accessibility "an afterthought, not a
-design principle" — 2 out of 12+ properties exposed, zero tests, everything
-else behind `.Set()`. That's no longer accurate. A significant accessibility
-diff has landed that implements 16 first-class modifiers, a tiered storage
-architecture, and 12 end-to-end UIA tests mapped to specific WCAG 2.1 success
-criteria. The honest assessment now: **accessibility has a solid modifier layer
-and real validation, but the harder problems — hooks, diagnostics, custom
-automation peers, and focus management — remain unbuilt.**
+The previous version of this review graded accessibility at C+ — 16 modifiers
+and 12 UIA tests, but "the harder problems — hooks, diagnostics, custom
+automation peers, and focus management — remain unbuilt." A focused accessibility
+diff has landed that attacks three of those four gaps directly: SemanticPanel +
+`.Semantics()` modifier for custom automation peers, AccessibilityScanner for
+runtime WCAG diagnostics, 3 Roslyn analyzers (DUCT_A11Y_001/002/003) for
+compile-time checks, and UseFocusTrap for modal focus management. Additionally,
+LabeledBy is now wired (with deferred resolution), ElementPool clears 14 UIA
+properties on return to prevent stale state, Heading/SubHeading DSL functions
+auto-set HeadingLevel, and a dedicated a11y-showcase sample demonstrates all
+features. The honest assessment now: **accessibility has crossed from "annotations
+on primitives" to a genuine accessibility system with semantic, diagnostic, and
+behavioral layers — but the SemanticPanel approach has real architectural costs,
+the scanner is runtime-only, UseFocusTrap doesn't cycle, and several imperative
+hooks remain unbuilt.**
 
 ### What shipped
 
@@ -2224,7 +2261,7 @@ automation peers, and focus management — remain unbuilt.**
 | AutomationProperties.ItemStatus | `.ItemStatus()` | Tier 2 (lazy) |
 | AutomationProperties.LabeledBy | `.LabeledBy()` | Tier 2 (lazy) — **defined but not reconciler-applied** |
 | UIElement.TabFocusNavigation | `.TabNavigation()` | Tier 2 (lazy) |
-| Custom AutomationPeer | N/A | **Blocked** — components aren't Controls |
+| Custom AutomationPeer (composite) | `.Semantics()` | **NEW** — SemanticPanel wrapper |
 
 **Lazy sub-record architecture.** Tier 1 properties (HeadingLevel, IsTabStop,
 TabIndex, AccessKey) are stored inline on `ElementModifiers` — zero allocation
@@ -2269,6 +2306,100 @@ calling the WinUI `AutomationProperties.Set*()` methods. This avoids redundant
 COM interop calls on re-render, following the same pattern used for other
 modifiers.
 
+### What shipped in the accessibility improvements diff
+
+**1. SemanticPanel + `.Semantics()` modifier — custom automation peers for
+composites.** This is the single most impactful accessibility feature. Duct
+components are C# records that can't override `OnCreateAutomationPeer()` on
+WinUI Controls. `SemanticPanel` is a lightweight WinUI `Panel` that does override
+it, providing a custom `SemanticPanelAutomationPeer` that exposes:
+- Semantic role (mapped to `AutomationControlType`)
+- Semantic value (exposed via `IValueProvider`)
+- Range value, min, max (exposed via `IRangeValueProvider`)
+
+```csharp
+// A star rating built from Image elements can now tell screen readers
+// "I am a slider with value 3 of 5 stars"
+StarRating(value: 3, max: 5)
+    .Semantics(role: "slider", value: "3 of 5 stars",
+               rangeValue: 3, rangeMin: 0, rangeMax: 5)
+```
+
+The `.Semantics()` extension method wraps the target element in a `SemanticElement`
+record, which the reconciler mounts as a `SemanticPanel` containing the child.
+The panel uses single-child passthrough layout (measure/arrange delegates to the
+child), so the visual appearance is unchanged.
+
+**2. AccessibilityScanner — runtime WCAG 2.1 diagnostic scanner.** A post-
+reconciliation scanner that walks the Duct virtual element tree and produces
+structured diagnostics. Each diagnostic includes:
+- Diagnostic ID (e.g., "A11Y_001"), severity, message
+- WCAG 2.1 criterion reference
+- Element type, AutomationId, component type
+- Fix suggestion (which modifier to add, suggested value, code snippet)
+- Rich context (parent names, nearest heading, sibling texts, child content)
+
+The context harvesting is designed for AI-agent consumption: an agent can
+generate semantically correct fixes from the JSON export alone, without
+re-reading source code. The scanner is intended for DEBUG builds only, accessed
+via `DuctHostControl.EnableAccessibilityDiagnostics`.
+
+**3. Three Roslyn accessibility analyzers (DUCT_A11Y_001/002/003).**
+
+| Analyzer | Severity | Detects | Suggests |
+|---|---|---|---|
+| DUCT_A11Y_001 | Warning | `Button(icon, action)` where icon is not a string literal, missing `.AutomationName()` | Add `.AutomationName()` |
+| DUCT_A11Y_002 | Warning | `Image(source)` without `.AutomationName()` or `.AccessibilityHidden()` | Add alt text or mark decorative |
+| DUCT_A11Y_003 | Warning | Interactive elements (CheckBox, ToggleSwitch, Slider, ComboBox) without `.AutomationName()` | Add `.AutomationName()` |
+
+Each has matching unit tests via `CSharpAnalyzerVerifier`. The analyzers walk
+the fluent modifier chain upward from the call site to check for the presence of
+`.AutomationName()` or `.AccessibilityHidden()`.
+
+**4. UseFocusTrap hook — modal focus management.**
+
+```csharp
+var trap = UseFocusTrap(isActive: isDialogOpen);
+Dialog(content).Set(el => trap.SetContainer(el))
+```
+
+`FocusTrapHandle` hooks into the `LosingFocus` event on the container element.
+When active, it cancels any focus change that would move focus outside the
+container by checking `IsDescendantOf(newFocus, container)` via a visual tree
+walk. The hook activates/deactivates reactively based on the `isActive` flag.
+
+**5. LabeledBy deferred resolution.** Previously, `LabeledBy` was defined in
+`AccessibilityModifiers` but `ApplyAccessibilityModifiers()` had no code to
+apply it. Now the reconciler resolves `LabeledBy` by finding the target element
+via `FindByAutomationId()`. During mount, the target may not be in the visual
+tree yet (XamlRoot is null), so resolution defers to the `Loaded` event:
+
+```csharp
+// If target isn't found at mount time, defer to Loaded
+fe.Loaded += OnLoaded; // resolves FindByAutomationId in Loaded handler
+```
+
+**6. ElementPool a11y cleanup.** The pool now clears all 14 UIA properties
+(`Name`, `AutomationId`, `HelpText`, `FullDescription`, `LandmarkType`,
+`AccessibilityView`, `IsRequiredForForm`, `LiveSetting`, `PositionInSet`,
+`SizeOfSet`, `Level`, `ItemStatus`, `LabeledBy`, `HeadingLevel`) plus
+`AccessKey` on pool return. This prevents stale accessibility state from
+leaking across element reuse.
+
+**7. Heading/SubHeading DSL auto-set HeadingLevel.** The `Heading()` factory
+now sets `AutomationHeadingLevel.Level1` and `SubHeading()` sets `Level2`
+automatically. Previously, heading structure required explicit
+`.HeadingLevel()` modifiers.
+
+**8. a11y-showcase sample app.** A dedicated accessibility sample demonstrating
+all features: SemanticPanel usage, scanner output, form patterns, heading
+structure, landmarks, live regions.
+
+**9. New tests (1,450+ lines).** `AccessibilityScannerTests` (324 lines),
+`AccessibilityAnalyzerTests` (249 lines), `A11yShowcaseScannerTest` (185 lines),
+`AccessibilityInteractionTests` (298 lines, E2E via Appium), plus selfhost
+fixtures and navigation stress tests.
+
 ### What's actually good about this (credit where due)
 
 The tiered storage design is smart engineering. Most elements in a typical UI
@@ -2292,133 +2423,201 @@ The WCAG criterion mapping in the tests is good practice. Each test says
 "do we cover WCAG 1.3.1?" by grepping the test file rather than reading
 implementation code.
 
+**SemanticPanel solves the right problem with the right WinUI mechanism.** The
+previous review called custom automation peers "architecturally blocked" because
+Duct components can't override `OnCreateAutomationPeer()` on Controls. The
+`SemanticPanel` solution is elegant: a real WinUI `Panel` subclass that *can*
+override `OnCreateAutomationPeer()`, wrapping the composite component's content.
+The panel delegates layout to its single child (passthrough measure/arrange), so
+it's visually transparent. The custom peer implements `IRangeValueProvider` and
+`IValueProvider`, which are the two most common patterns for composite widgets
+(sliders, ratings, progress indicators, gauges). SwiftUI's
+`.accessibilityRepresentation {}` and Compose's `Modifier.semantics { role =
+Role.Slider }` solve the same problem — SemanticPanel is Duct's answer, and
+it works within WinUI's automation peer model rather than fighting it.
+
+**The three-layer diagnostic approach (compile-time + runtime + E2E) is now
+comprehensive.** Roslyn analyzers catch missing `AutomationName` at edit time.
+The `AccessibilityScanner` catches issues at runtime after reconciliation. The
+Appium UIA tests validate that properties actually reach assistive technology.
+This is a defense-in-depth strategy that covers the full development lifecycle.
+No other C# UI framework has all three layers — WinUI has Accessibility Insights
+(external tool), but nothing at compile time or framework-integrated at runtime.
+
+**Auto-setting HeadingLevel on Heading/SubHeading is a pit-of-success design.**
+Every `Heading("Title")` now automatically exposes as Level1 to screen readers.
+This means developers who use the semantic DSL functions get correct heading
+structure for free. The alternative — requiring `.HeadingLevel(Level1)` on every
+heading — was an opt-in model that most developers would skip.
+
+**UseFocusTrap addresses a real production need.** Modal dialogs that don't
+trap focus are a WCAG 2.4.3 violation and a screen reader usability disaster.
+The `LosingFocus` event approach is the correct WinUI mechanism — it fires
+before focus actually moves, and `Cancel` prevents the move. This is better
+than the alternatives (keyboard event interception, which misses programmatic
+focus changes).
+
 ### What's still concerning (skeptic's view)
 
-**1. LabeledBy is defined but not wired.** The `AccessibilityModifiers` record
-has a `LabeledBy` property, the `.LabeledBy("EmailLabel")` fluent method exists,
-but `ApplyAccessibilityModifiers()` in the reconciler has no code to apply it.
-The property is accepted silently and does nothing. This is worse than not
-having the API at all — a developer who writes `.LabeledBy("EmailLabel")`
-believes they've associated a label with a field, but screen readers see nothing.
-No test covers it (because it can't pass). The implementation note suggests it
-requires a post-mount tree walk to resolve AutomationId references to elements,
-which is non-trivial in a declarative framework. But shipping a no-op API
-without a warning is a trap.
+**1. SemanticPanel adds yet another invisible wrapper element.** This is the
+fourth invisible wrapper in the stack (component Border, NavigationHost Grid,
+CommandHost Grid, and now SemanticPanel). A composite component with semantic
+annotations inside a navigation host produces: NavigationView > ... > Border
+(component) > Grid (nav host) > SemanticPanel > content. Each extra layout
+container costs measure/arrange time. SemanticPanel uses passthrough layout
+(delegates to single child), which minimizes the cost, but it's still a real
+WinUI element in the visual tree.
 
-**2. Custom AutomationPeer remains architecturally blocked.** This is unchanged
-and it's the hardest problem in the accessibility story. WinUI controls provide
-screen reader semantics by overriding `OnCreateAutomationPeer()` on `Control`.
-Duct components are pure C# classes that emit element trees — they can't override
-anything on `Control`. This means:
+The alternative — having the reconciler set automation properties directly on
+the child's WinUI control without a wrapper — would avoid this overhead. But
+WinUI's automation peer model is per-control (only the control that overrides
+`OnCreateAutomationPeer()` gets the custom peer), so the wrapper is
+architecturally necessary. This is an honest trade-off, not a design mistake.
 
-- A custom "StarRating" component built from Image and Text primitives can't tell
-  screen readers "I am a slider with value 3 of 5"
-- A custom "DatePicker" built from TextBox and Popup can't announce its role
-- Screen readers see the primitive controls, not the semantic composite
+**2. SemanticPanel only supports Value and RangeValue patterns.** WinUI's
+automation system has ~20 control patterns (`ISelectionProvider`,
+`IToggleProvider`, `IExpandCollapseProvider`, `IScrollProvider`,
+`IInvokeProvider`, etc.). SemanticPanel implements `IValueProvider` and
+`IRangeValueProvider`. A custom tree control that needs to expose
+`IExpandCollapseProvider`, or a custom multi-select widget that needs
+`ISelectionProvider`, can't use SemanticPanel. The two patterns cover the
+most common composite widgets (sliders, ratings, gauges), but the long tail
+of automation patterns is unaddressed.
 
-This is a fundamental architectural limitation, not a missing feature. React
-solves it with ARIA roles on DOM elements. SwiftUI solves it with
-`.accessibilityRepresentation {}`. Compose solves it with `Modifier.semantics {
-role = Role.Slider }`. Duct has no mechanism at all. The 16 modifiers help with
-annotating individual controls, but they can't describe what a *composite
-component* is.
+SwiftUI's `.accessibilityRepresentation {}` lets you provide an arbitrary
+native view as the accessibility representation. Compose's `Modifier.semantics
+{}` supports arbitrary role, state, and action descriptions. Both are open
+systems. SemanticPanel is closed to two patterns — it's a targeted solution,
+not a general one.
 
-**3. No accessibility hooks — the imperative side is missing.** The modifier
-system covers declarative annotations (setting static properties). But
-production accessibility also needs imperative operations:
+**3. The semantic role is a string, not an enum.** `.Semantics(role: "slider")`
+uses a bare string for the role. A typo like `"slidre"` silently maps to
+`AutomationControlType.Custom` (the fallback in `MapRoleToControlType`). There
+are ~40 `AutomationControlType` values; SemanticPanel's string-to-enum mapping
+covers a subset. An enum-based API (e.g., `SemanticRole.Slider`) would provide
+compile-time safety and IntelliSense discoverability. The string approach is
+more flexible but loses the type safety that Duct prizes elsewhere.
+
+**4. AccessibilityScanner is runtime-only and DEBUG-only.** The scanner walks
+the element tree after reconciliation and produces diagnostics. But it requires
+actually rendering the UI — you can't scan a component's accessibility from a
+unit test without a WinUI host. The Roslyn analyzers (DUCT_A11Y_001/002/003)
+cover the compile-time case, but they only check for missing `AutomationName`
+on three specific patterns (icon buttons, images, interactive elements). The
+scanner catches more issues (heading structure, landmark coverage, form
+labeling) but only at runtime. For comparison, React's `eslint-plugin-jsx-a11y`
+catches a broader set of issues at edit time without running the app.
+
+**5. UseFocusTrap traps but doesn't cycle.** The `LosingFocus` handler cancels
+focus changes that would leave the container, which prevents Tab from escaping
+a modal dialog. But when the user tabs past the last focusable element in the
+trap, focus simply stays on that element — it doesn't wrap to the first
+focusable element. The WAI-ARIA Dialog Pattern specifies that Tab should cycle
+within the dialog. React Focus Lock, the de facto React modal focus library,
+cycles Tab and Shift+Tab. Duct's trap prevents escape but doesn't implement
+the full cycling behavior that accessibility guidelines expect.
+
+Additionally, `UseFocusTrap` requires `.Set(el => trap.SetContainer(el))` to
+wire the container — the escape hatch is needed to connect the hook to the
+DOM. A first-class integration (e.g., a modifier or a `FocusTrapHost` element)
+would be more consistent with the framework's declarative model.
+
+**6. Remaining imperative accessibility hooks are still unbuilt.** UseFocusTrap
+is the first imperative accessibility hook. But the accessibility design doc
+specifies several more:
 
 - `UseAnnounce()` — triggering a live-region announcement from code (e.g., "3
   items deleted") without needing a visible element
-- `UseFocusTrap()` — trapping focus within a modal dialog
-- `UseHighContrast()` — detecting high contrast mode in render logic
-  (`UseColorScheme()` now partially covers this — it returns
-  `ColorScheme.HighContrast` — but it reads app-level theme, not element
-  effective theme)
 - `UseReducedMotion()` — respecting user's motion preferences
 - `UseScreenReaderActive()` — adapting UI when a screen reader is running
 
-These are all specified in the 7-layer accessibility design doc but none are
-implemented. The modifier system is Layer 1. Layers 2–7 (hooks, diagnostics,
-convenience DSL) are spec only. A developer who needs to announce a toast
-message to screen readers today has no option except `.Set()` on a hidden
-live-region element — which is exactly the kind of workaround the framework
-should eliminate.
+`UseHighContrast()` is partially covered by `UseColorScheme()` (returns
+`ColorScheme.HighContrast`), though that hook still reads app-level theme, not
+element effective theme (see Section 6 critique). A developer who needs to
+announce a toast message to screen readers today has no option except `.Set()`
+on a hidden live-region element.
 
-**4. No accessibility diagnostics or linting.** Still unimplemented. There's no
-way to detect at build time or runtime that an Image lacks an accessible name,
-that a Button has no label, or that a live region is missing. The design spec
-describes a diagnostic system with JSON export and even Roslyn analyzers, but
-none of it exists. React has `eslint-plugin-jsx-a11y` catching problems at edit
-time. SwiftUI has the Accessibility Inspector. Duct has nothing — you discover
-accessibility bugs when a screen reader user reports them or when you manually
-run the test suite.
+**7. DUCT_A11Y analyzer coverage is narrow.** DUCT_A11Y_001 only matches
+`Button` by identifier name, not by type resolution — if someone writes
+`var b = Button(icon, action)` and then chains modifiers on `b` in a
+separate statement, the analyzer misses it. DUCT_A11Y_001 doesn't check
+`AppBarButton`, `ToggleButton`, `SplitButton`, or `RepeatButton` — all of
+which can be icon-only. DUCT_A11Y_003 checks `CheckBox`, `ToggleSwitch`,
+`Slider`, `ComboBox` but misses `RadioButton`, `TextBox`, `PasswordBox`,
+`AutoSuggestBox`. The analyzers are a start, but the false negative rate
+will be high for real codebases that use the full control surface.
 
-**5. Focus management is limited to basic Tab properties.** `.IsTabStop()`,
-`.TabIndex()`, and `.TabNavigation()` now exist, which is a significant
-improvement over "completely missing." But there's still no:
+**8. Focus management beyond trapping is still missing.** UseFocusTrap
+addresses one focus scenario (modal dialogs). But there's still no:
 
 - Programmatic focus control (`FocusRequester` / `@FocusState` equivalent)
-- Focus trapping for modal dialogs
 - `XYFocusUp/Down/Left/Right` for directional D-pad/gamepad navigation
 - Focus restoration on back-navigation
 
 SwiftUI's `@FocusState` + `.focused()` and Compose's `FocusRequester` +
 `Modifier.focusable()` both provide programmatic focus management. Duct covers
-the Tab order basics but not the programmatic side. For a framework that
-doesn't have a navigation system (see Section 7), the inability to manage focus
-programmatically compounds the problem — you can't even build your own
-navigation with proper focus restoration.
+Tab order and trapping but not the programmatic side.
 
-**6. The test suite validates modifiers but not interaction patterns.** The 12
-E2E tests are good at verifying that UIA properties are set correctly. But they
-don't test:
+**9. E2E interaction tests have improved but still have gaps.** The new
+`AccessibilityInteractionTests` (10 methods via Appium) test keyboard
+navigation, live regions, headings, and semantic panels through the UIA
+pipeline. This addresses the previous critique that "the test suite validates
+modifiers but not interaction patterns." However, the tests still don't cover:
 
-- Keyboard navigation flow (can you Tab through a form in order?)
-- Live region announcements after state changes (does Narrator actually speak
-  when content updates?)
-- Focus behavior (does focus move to a dialog when it opens?)
+- Focus restoration after dialog dismiss
 - High contrast rendering (are all elements visible in HC mode?)
+- Reduced motion behavior
+- SemanticPanel range value interaction (can AT change the value?)
 
-These are the accessibility behaviors that break in real apps. Property
-annotations are necessary but not sufficient — a button can have a perfect
-accessible name and still be unreachable by keyboard. The test suite validates
-Layer 1 (annotations) but not Layers 2+ (behavior).
-
-**7. No sample apps demonstrate accessibility.** The Outlook clone, file
-manager, registry editor, and word puzzle game don't use any of the new
-accessibility modifiers. None of the showcase apps demonstrate heading
-structure, landmark regions, live regions, or accessible forms. When the
-framework's own demo apps don't dogfood accessibility, it sends a clear signal
-about maturity.
+**10. The original showcase apps still don't demonstrate accessibility.** The
+Outlook clone, file manager, registry editor, and word puzzle game still don't
+use any accessibility modifiers. The new a11y-showcase sample exists, but it's
+an isolated demo — not a proof that accessibility composes naturally in a real
+app. When the framework's most complex apps don't use heading structure,
+landmarks, or live regions, it signals that accessibility is still an add-on,
+not a default. The Heading/SubHeading auto-HeadingLevel fix helps — apps using
+those DSL functions get heading structure for free — but that's a narrow
+improvement, not a systemic adoption of accessibility in the showcase apps.
 
 ### Revised accessibility verdict
 
-**Previously: D- (afterthought). Now: C+.**
+**Previously: D- → C+. Now: B-.**
 
-The jump is real. Going from 2 properties and zero tests to 16 modifiers, a
-tiered architecture, and 12 WCAG-mapped E2E tests is a genuine investment. The
-modifier API is well-designed — the lazy sub-record avoids overhead, the flat
-fluent surface is discoverable, and the reconciler integration follows the
-framework's established patterns. The UIA test approach is rigorous and the
-right call for a Windows-native framework.
+The improvement from C+ to B- is earned by addressing the three hardest
+critiques from the previous review:
 
-But the grade is C+, not B, because the modifier system is the *easy* part of
-accessibility. Setting `HeadingLevel` on a TextBlock is straightforward WinUI
-plumbing. The hard problems — custom automation peers for composite components,
-imperative announcements, focus management, diagnostics, high contrast
-adaptation — are all unbuilt. Layers 2–7 of the accessibility spec are still
-spec-only. And fundamentally, the custom automation peer gap means Duct
-components can't describe their own semantics to screen readers, which limits
-accessibility to annotating individual primitives rather than building
-accessible composites.
+1. **Custom automation peers were "architecturally blocked."** SemanticPanel
+   provides a working solution — composite components can now describe their
+   role, value, and range to screen readers. The solution adds a wrapper
+   element and only covers two automation patterns (Value, RangeValue), but
+   it's a real answer to the hardest problem.
 
-The competition's gap has narrowed but not closed. SwiftUI's accessibility
-story includes `.accessibilityRepresentation {}` for composite semantics,
-`@FocusState` for focus management, and the Accessibility Inspector for
-diagnostics. Compose has `Modifier.semantics {}` with full role/state/action
-descriptions. React has ARIA on DOM elements plus `eslint-plugin-jsx-a11y`.
-Duct now has the annotation layer but lacks the semantic, imperative, and
-diagnostic layers that those frameworks provide.
+2. **"No accessibility diagnostics or linting."** Three Roslyn analyzers
+   provide compile-time checks. AccessibilityScanner provides runtime WCAG
+   diagnostics with structured JSON output. Between them, the development
+   lifecycle has coverage from edit-time to runtime.
+
+3. **"No accessibility hooks."** UseFocusTrap is the first imperative
+   accessibility hook. It handles the most critical scenario (modal dialogs)
+   but needs cycling behavior and better integration with the declarative model.
+
+The grade is B-, not B, because: SemanticPanel is closed to two patterns (the
+competition's semantic systems are open), the semantic role is stringly-typed,
+UseFocusTrap doesn't cycle (WAI-ARIA Dialog Pattern expects wrapping), the
+remaining imperative hooks (UseAnnounce, UseReducedMotion, UseScreenReaderActive)
+are still unbuilt, the analyzers have narrow coverage, and the showcase apps
+still don't use accessibility features.
+
+The competition gap has narrowed meaningfully. SwiftUI's
+`.accessibilityRepresentation {}` is still more flexible than SemanticPanel
+(arbitrary view as accessibility proxy vs. two fixed patterns). Compose's
+`Modifier.semantics {}` supports arbitrary roles, states, and actions. React
+has ARIA on DOM elements plus a mature lint ecosystem. But Duct now has
+something at each layer: annotations (16 modifiers), semantics (SemanticPanel),
+behavior (UseFocusTrap), compile-time diagnostics (3 analyzers), and runtime
+diagnostics (AccessibilityScanner). The coverage is uneven — some layers are
+thin — but the shape of a complete accessibility system is visible for the first
+time.
 
 ---
 
@@ -2616,11 +2815,11 @@ SwiftUI, Compose).
 | **Reconciler** | B- | A | A- | A | Works but monolithic, no concurrent mode |
 | **Layout** | B+ | B+ | A | A | Flex is good; Grid is stringly-typed |
 | **Theming** | B- | B+ | A | A | Style caching fixes XamlReader.Load perf; RequestedTheme modifier; UseColorScheme hook (reads app theme, not element effective); 3 ThemeRef props; no custom resources |
-| **Navigation** | B+ | A | A | A | Type-safe routes, dev-owned stack, GPU transitions, lifecycle guards, caching, serialization, deep linking; ConnectedTransition is stub, no adaptive multi-pane, E2E tests unexecuted |
+| **Navigation** | B+ | A | A | A | Type-safe routes, dev-owned stack, GPU transitions, source+destination guards, caching, serialization, enhanced deep linking (query strings, wildcards, optional params), diagnostics; ConnectedTransition is stub, no adaptive multi-pane, E2E now running (43 Appium tests) |
 | **Commanding** | B+ | N/A | C+ | N/A | Define-once commands, 16 standard, async lifecycle, focus-scoped accelerators; no competitor has this. Accelerator rebuild per render, labels not localized, no command routing, no palette UI |
 | **Lists/Collections** | B | B+ | A | A | Virtualization exists, no sections |
 | **Animation** | B- | B | A | A | Curve DSL, enter+exit, interaction states (hover/press/focus), keyframes, stagger+enter integration, scroll-linked, WithAnimation (all 5 props); 4 prior bugs fixed; compositor-property-bound ceiling; no per-frame hooks |
-| **Accessibility** | C+ | B | A | A | 16 modifiers, UIA E2E tests; no custom peers, no hooks, no diagnostics |
+| **Accessibility** | B- | B | A | A | 16 modifiers + SemanticPanel (custom peers for composites), UseFocusTrap hook, 3 Roslyn a11y analyzers, runtime WCAG scanner, 22+ E2E tests; SemanticPanel limited to 2 patterns, focus trap doesn't cycle, remaining hooks unbuilt |
 | **Input/Events** | C | B | A | A | Semantic events good; commanding helps but no gesture system, no pointer enter/exit, rest is .Set() |
 | **Styling** | B- | B+ | A | A | Lightweight styling is a genuine differentiator; ResourceBuilder fluent API; 3 Roslyn analyzers; stringly-typed resource keys; analyzer coverage shallow |
 | **Developer Experience** | C+ | A | B+ | B+ | Hot reload works; preview is screenshot-only; no devtools |
@@ -2633,17 +2832,20 @@ SwiftUI, Compose).
 
 ## 16. Conclusion
 
-### The sample apps are telling — and the story has shifted
+### The sample apps are telling — and the story has shifted again
 
-Duct now has seven sample apps: the original four (Outlook clone, file manager,
-registry editor, word puzzle game) plus NavigationDemo, CommandingDemo, and
-StylingGallery. The new samples demonstrate their respective features
-comprehensively: NavigationDemo covers routes, guards, transitions, caching,
-deep linking, and nested navigation. CommandingDemo covers standard commands,
-async lifecycle, parameterized commands, focus-scoped accelerators, per-site
-overrides, and context-based command sharing. StylingGallery demonstrates
-theme tokens, RequestedTheme, UseColorScheme, lightweight styling, and style
-caching with a 50-200 element grid.
+Duct now has eight sample apps: the original four (Outlook clone, file manager,
+registry editor, word puzzle game) plus NavigationDemo, CommandingDemo,
+StylingGallery, and the new a11y-showcase. Additionally, the WinFormsInterop
+sample demonstrates bidirectional hosting. The new samples demonstrate their
+respective features comprehensively: NavigationDemo covers routes, guards
+(including the new destination-side guards), transitions, caching, deep linking,
+and nested navigation. CommandingDemo covers standard commands, async lifecycle,
+parameterized commands, focus-scoped accelerators, per-site overrides, and
+context-based command sharing. StylingGallery demonstrates theme tokens,
+RequestedTheme, UseColorScheme, lightweight styling, and style caching.
+a11y-showcase demonstrates SemanticPanel, AccessibilityScanner, form patterns,
+heading structure, landmarks, and live regions.
 
 But the original showcase apps remain frozen in time:
 - **Outlook clone** still uses string-based view switching (`currentPage switch
@@ -2653,14 +2855,20 @@ But the original showcase apps remain frozen in time:
   off-thread state updates — no async state management
 - **Samples that use hard-coded colors** are still broken in dark mode
 - **None of the original samples** use the context system, memoization,
-  persisted state, commanding, navigation, or the new accessibility modifiers
+  persisted state, commanding, navigation, SemanticPanel, or the accessibility
+  modifiers
 
-This is a pattern: every new feature ships with its own isolated demo app, but
-the showcase apps — the ones that prove the framework works for *real* UIs —
-don't adopt the new features. The Outlook clone is the most telling case: it's
-the framework's most complex app, it has the navigation problem, and the
-navigation system was explicitly designed to solve it. It's still using
-`UseState<string>`.
+The positive signal: the Heading/SubHeading DSL change auto-sets HeadingLevel,
+so any showcase app that uses `Heading()` now gets correct a11y heading structure
+for free — a systemic improvement that doesn't require per-app adoption.
+
+But the fundamental pattern remains: every new feature ships with its own
+isolated demo app, while the showcase apps — the ones that prove the framework
+works for *real* UIs — don't adopt the new features. The Outlook clone is the
+most telling case: it's the framework's most complex app, it has the navigation
+problem *and* the accessibility problem *and* the commanding problem, and all
+three systems were explicitly designed to solve those problems. It's still using
+`UseState<string>` for navigation.
 
 The gap between "feature works in isolation" and "feature works in a real app"
 is where production confidence lives. Duct keeps building features and demo
@@ -2674,12 +2882,13 @@ This is a red flag for a framework that wants to be production-ready.
    mechanics that every declarative UI framework needs, and they're now
    implemented with correct semantics.
 
-2. **Navigation is architecturally competitive.** Type-safe routes via C#
-   records, developer-owned back stack, composition-layer GPU transitions,
-   lifecycle guards with cancellation, LRU caching, state serialization, deep
-   linking. The design independently converged with Compose Nav3's philosophy
-   and is arguably stronger on type safety (C# records vs Kotlin data classes)
-   and transitions (composition layer vs basic animation).
+2. **Navigation is architecturally competitive and maturing.** Type-safe routes
+   via C# records, developer-owned back stack, composition-layer GPU transitions,
+   source + destination lifecycle guards with cancellation, LRU caching, state
+   serialization, enhanced deep linking (query strings, optional params,
+   wildcards), and NavigationDiagnostics for observability. The design
+   independently converged with Compose Nav3's philosophy and is arguably
+   stronger on type safety and transitions.
 
 3. **Commanding is a genuine differentiator.** No competing declarative framework
    provides define-once commands with metadata bundling, standard commands, async
@@ -2709,11 +2918,25 @@ This is a red flag for a framework that wants to be production-ready.
    key overrides with proper cleanup, managed-key tracking, and ThemeRef
    integration. No other C# declarative framework does this.
 
-10. **Observable interop.** UseObservable, UseObservableTree, UseObservableProperty,
+10. **Accessibility now has a layered system, not just annotations.** SemanticPanel
+    solves the hardest problem (custom automation peers for composites). Three
+    Roslyn analyzers and AccessibilityScanner provide compile-time and runtime
+    diagnostics. UseFocusTrap handles modal focus. Auto-HeadingLevel on
+    Heading/SubHeading is a pit-of-success design. No other C# UI framework
+    has this combination of semantic, diagnostic, and behavioral accessibility
+    layers.
+
+11. **Observable interop.** UseObservable, UseObservableTree, UseObservableProperty,
     and UseCollection bridge cleanly to MVVM. Essential for incremental adoption
     in existing WinUI codebases.
 
-11. **The localization system validates the framework's own abstractions.** The
+12. **WinForms interop opens a brownfield migration path.** `XamlIslandControl`
+    lets WinForms apps host Duct/WinUI content in specific panels — the
+    incremental adoption story that enterprise apps need. E2E tests validate
+    Tab navigation, rendering, and accessibility across the WinForms/WinUI
+    boundary.
+
+13. **The localization system validates the framework's own abstractions.** The
     migration of LocaleProvider to `DuctContext<IntlAccessor?>` proves the context
     system works for real cross-cutting concerns. Navigation uses DuctContext for
     sharing handles. Commanding can use DuctContext for sharing commands. When
@@ -2740,10 +2963,15 @@ This is a red flag for a framework that wants to be production-ready.
    scenario and don't work together correctly in that exact scenario. Custom
    branded theme resources still don't exist.
 
-3. **Accessibility lacks the hard layers.** 16 modifiers and 12 UIA tests are
-   solid annotations, but custom automation peers are blocked (components can't
-   describe their own semantics), accessibility hooks are unbuilt, and there's no
-   diagnostics or linting. The annotation layer is the easy part.
+3. **Accessibility has real breadth but uneven depth.** SemanticPanel solves the
+   hardest architectural problem (custom automation peers for composites), 3
+   Roslyn analyzers and AccessibilityScanner provide diagnostics at compile-time
+   and runtime, and UseFocusTrap is the first imperative hook. But SemanticPanel
+   only covers 2 of ~20 automation patterns, UseFocusTrap doesn't cycle focus
+   (WAI-ARIA Dialog Pattern expects wrapping), the remaining imperative hooks
+   (UseAnnounce, UseReducedMotion) are unbuilt, and the semantic role is
+   stringly-typed. The shape of a complete system is visible, but the layers are
+   thin.
 
 4. **Animation is now fully operational within its ceiling.** The four
    integration bugs from the previous review (dead exit transitions, unwired
@@ -2774,12 +3002,21 @@ This is a red flag for a framework that wants to be production-ready.
    critiques, but no systematic profiling pass has occurred. No profiling tools
    exist to measure the remaining costs (Section 13).
 
-7. **E2E test gaps for the newest features.** Navigation's E2E Appium tests are
-   fixtures-only (not executed). Commanding has no integration tests. The unit
-   test coverage is strong (117 navigation tests, comprehensive commanding
-   tests), but nobody has verified these features work in a real WinUI window.
-   For features this central, the gap between "unit tests pass" and "it works
-   end-to-end" matters.
+7. **E2E test infrastructure has improved but revealed a process gap.** The
+   discovery that 44/46 E2E tests were invisible behind a broken filter is both
+   a fix and a warning. The fix: 43 Appium tests now run across 6 test classes,
+   covering interactive controls, accessibility, accessibility interactions,
+   events, data grid, and WinForms interop. The warning: these tests existed
+   for the entire development period without anyone noticing they weren't
+   running. How confident can we be in the rest of the CI pipeline? Commanding
+   still has no integration tests.
+8. **WinForms interop is promising but has a fundamental hosting asymmetry.**
+   WinForms hosting Duct/WinUI works fully. Duct hosting WinForms is blocked
+   in the Duct-primary scenario because WinUI windows use compositor-only
+   rendering (`WS_EX_NOREDIRECTIONBITMAP`) — there's no GDI surface for Win32
+   child HWNDs. This is a WinUI platform limitation, not a Duct design issue,
+   but it limits the brownfield migration story to "WinForms-primary apps
+   adopting Duct panels," not "Duct apps embedding legacy WinForms controls."
 
 ### The fundamental question (revisited)
 
@@ -2808,26 +3045,38 @@ navigation for WinUI" was a novelty has closed; now it needs to be competitive
 in quality, not just existence.
 
 Duct's strongest position is commanding — it's genuinely ahead of the entire
-industry. Its navigation is competitive. Its component model is solid. Animation
-has crossed a threshold — the four integration bugs are fixed, all advertised
+industry. Its navigation is competitive and maturing (destination guards, deep
+link enhancements, diagnostics). Its component model is solid. Animation has
+crossed a threshold — the four integration bugs are fixed, all advertised
 features now work, and the compositor-property ceiling is the only remaining
 structural concern. Styling has made a significant jump: style caching fixes the
 major perf concern, lightweight styling is a genuine differentiator, and Roslyn
 analyzers provide static guidance — but the UseColorScheme/RequestedTheme
 composition bug and missing custom theme resources keep it from being fully
-competitive. Accessibility is functional with scope limitations. The `.Set()`
-surface area is smaller but still too large.
+competitive. Accessibility has made the largest single-iteration improvement:
+SemanticPanel solves the hardest architectural problem, the three-layer
+diagnostic approach (compile-time + runtime + E2E) is now more comprehensive
+than any other C# UI framework, and UseFocusTrap is the first behavioral hook.
+But the layers are still thin — SemanticPanel covers 2 of ~20 automation
+patterns, and the remaining imperative hooks are unbuilt. WinForms interop
+opens a migration path that didn't exist before. The `.Set()` surface area is
+smaller but still too large.
 
 ### To become production-ready, Duct needs to:
 
 1. **Adopt its own features in the showcase apps.** The Outlook clone should
-   use UseNavigation, DuctContext, StandardCommand, and UsePersisted. This is
-   the highest-leverage work — it proves composition and finds real bugs.
-2. **Execute E2E tests for navigation and commanding.** The Appium fixtures
-   exist. Run them. Automate them in CI.
+   use UseNavigation, DuctContext, StandardCommand, SemanticPanel, and
+   UsePersisted. This is the highest-leverage work — it proves composition and
+   finds real bugs. The a11y-showcase is encouraging but isolated.
+2. **Audit and harden the CI pipeline.** The E2E test filter bug (44 invisible
+   tests) was a process failure, not a code failure. What other test
+   configurations are silently broken? A CI health check that validates test
+   counts, detects regressions in test discovery, and alerts on suspicious
+   drops would prevent this class of issue.
 3. **Do a performance pass.** Profile a real render cycle. Measure the cost of
    reflection-based ShouldUpdate, XamlReader.Load theming, accelerator rebuild,
-   and wrapper elements. Fix what's expensive.
+   wrapper elements (now 4 types: Border, Grid×2, SemanticPanel), and the
+   AccessibilityScanner overhead. Fix what's expensive.
 4. **Localize StandardCommand labels.** The framework's own commanding system
    should use the framework's own localization system. This is embarrassing in
    its absence.
@@ -2840,18 +3089,59 @@ surface area is smaller but still too large.
    styling.
 7. **Add command routing to the focused view.** This is the missing piece that
    makes Cut/Copy/Paste work in multi-panel apps.
+8. **Extend SemanticPanel to more automation patterns.** `IToggleProvider`,
+   `IExpandCollapseProvider`, and `ISelectionProvider` are the next three most
+   common patterns for composite widgets. Without them, custom toggle switches,
+   collapsible sections, and multi-select widgets can't describe themselves.
+9. **Fix UseFocusTrap cycling.** The current implementation traps focus but
+   doesn't wrap Tab to the first/last element. The WAI-ARIA Dialog Pattern
+   requires this. It's a small fix with big accessibility impact.
 
-The trajectory is right. The foundation is solid. Navigation and commanding
-moved Duct from "component library with hooks" to "framework with application
-architecture." The styling diff moves the theming story from "functional but
-thin" to "capable with a unique feature" — lightweight styling gives Duct
-something the competition doesn't have. The animation bug-fix diff is a good
-sign for the project's health: all four integration bugs called out in the
-previous review were fixed, plus three additional runtime issues — this is the
-kind of responsive iteration that builds confidence. But the composition bugs
-(UseColorScheme + RequestedTheme) and interaction gaps (ThemeRef +
-RequestedTheme) show that shipping individual features is easier than making
-them work together. The gap between "features exist" and "features compose
-correctly in real apps" is where the remaining work lives. That gap is narrower
-than before — and Duct now has two features (commanding, lightweight styling)
-where it's genuinely ahead of the competition, not just catching up.
+The trajectory is right, and the velocity is notable. In the last 24 hours
+alone: SemanticPanel solves the hardest accessibility architecture problem,
+AccessibilityScanner and 3 Roslyn analyzers add the diagnostic layers that were
+entirely missing, UseFocusTrap is the first imperative accessibility hook,
+destination-side navigation guards close a real gap, deep link enhancements
+make the routing system more practical, the E2E test filter fix surfaces 43
+previously invisible Appium tests, and WinForms interop opens a brownfield
+adoption story.
+
+Navigation and commanding moved Duct from "component library with hooks" to
+"framework with application architecture." The accessibility diff moves the
+story from "annotations on primitives" to "a system with semantic, diagnostic,
+and behavioral layers." WinForms interop moves the adoption story from
+"greenfield only" to "brownfield migration possible." These are real capability
+expansions, not just polish.
+
+But three themes keep recurring across every feature area:
+
+1. **Wrapper element accumulation.** Component Borders, NavigationHost Grids,
+   CommandHost Grids, and now SemanticPanels all add invisible layout containers
+   to the WinUI visual tree. Each is individually justified, but together they
+   compound — a well-structured Duct app can have 3-4 framework wrappers between
+   a component and its content. This is a systemic tax that needs measurement.
+
+2. **String-typed APIs at boundaries.** Routes are type-safe records, but deep
+   link patterns are strings. SemanticPanel roles are strings. Resource keys in
+   lightweight styling are strings. Connected animation keys are strings. The
+   pattern: Duct has excellent type safety at the core and stringly-typed
+   boundaries at the edges. Each individual instance is defensible (WinUI's
+   APIs are strings, deep links are URIs, etc.), but the cumulative effect is
+   that developers hit string-typing wherever they touch the framework's
+   integration points with the platform or the outside world.
+
+3. **The showcase apps remain the credibility gap.** Every new feature ships
+   with its own isolated demo, proving the feature works in a clean context.
+   But the Outlook clone — the framework's most complex and most public app —
+   still doesn't use navigation, commanding, context, memoization, or the new
+   accessibility features. Until it does, the claim "these features compose in
+   real apps" is unproven.
+
+Duct now has three features where it's genuinely ahead of the competition:
+commanding (no competitor has define-once commands), lightweight styling (no
+competitor surfaces WinUI's per-control resource overrides), and the
+AccessibilityScanner (no other C# UI framework has framework-integrated
+runtime WCAG diagnostics with structured AI-agent-friendly output). These
+are real differentiators, not just catch-up. The gap between "features exist"
+and "features compose correctly in real apps" is where the remaining work
+lives. That gap is narrower than before — and shrinking with each iteration.

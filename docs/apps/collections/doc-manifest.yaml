@@ -20,6 +20,11 @@ screenshots:
     component: GridViewDemo
     region: client
     format: png
+  - id: virtuallist
+    description: "VirtualList with 10,000 count-based items"
+    component: VirtualListDemo
+    region: client
+    format: png
   - id: foreach
     description: "ForEach rendering colored tags"
     component: ForEachDemo

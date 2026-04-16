@@ -198,8 +198,10 @@ The three callbacks fire at different points:
 | `onNavigatedFrom` | After this page is no longer active |
 
 Use `onNavigatedTo` to fetch data or start timers. Use `onNavigatingFrom` to
-save drafts or confirm unsaved changes. See [Effects and Lifecycle](effects.md)
-for more on lifecycle patterns.
+save drafts or confirm unsaved changes — you can call `context.Cancel()` on
+the `NavigatingToContext` to prevent navigation entirely (useful for
+"unsaved changes" guards). See [Effects and Lifecycle](effects.md) for more
+on lifecycle patterns.
 
 ## Page Transitions
 
@@ -286,9 +288,59 @@ class DeepLinkingDemo : Component
 
 ![Deep linking](images/navigation/deep-linking.png)
 
-Pattern segments: `/literal` matches exactly, `/{param}` captures a string,
-`/{param:int}` captures a typed parameter. The `backStackFactory` parameter
-builds a synthetic back stack so GoBack works even after deep-linked entry.
+Pattern segments support rich matching:
+
+| Segment | Matches |
+|---------|---------|
+| `/literal` | Exact match |
+| `/{param}` | Captures a string |
+| `/{param:int}` | Typed capture (int, long, bool, Guid) |
+| `/{param?}` | Optional parameter |
+| `/{**}` | Wildcard — matches remaining path |
+| `?key=value` | Query string parameters |
+
+Use `RouteArgs.Get<T>(name)` for required params, `RouteArgs.GetOrDefault<T>(name)`
+for optional ones, and `RouteArgs.Query<T>(name)` for query string values.
+The `backStackFactory` parameter builds a synthetic back stack so GoBack works
+even after deep-linked entry.
+
+```csharp
+class DeepLinkQueryDemo : Component
+{
+    public override Element Render()
+    {
+        var (info, setInfo) = UseState("(none)");
+
+        // RouteArgs are available inside the factory lambda —
+        // capture typed params and query values there
+        var map = UseMemo(() => new DeepLinkMap<Route>()
+            .Map("/", _ => Route.Home)
+            .Map("/settings", _ => Route.Settings)
+            .Map("/users/{id:int}/posts/{postId:int}",
+                args =>
+                {
+                    var userId = args.Get<int>("id");
+                    var postId = args.Get<int>("postId");
+                    var sort = args.Query<string>("sort");
+                    setInfo($"userId={userId}, postId={postId}, sort={sort}");
+                    return Route.Details;
+                },
+                () => new[] { Route.Home })
+        );
+
+        return VStack(12,
+            SubHeading("Deep Link Query Params"),
+            Button("Resolve /users/42/posts/7?sort=date", () =>
+                map.Resolve("/users/42/posts/7?sort=date")),
+            Text($"Captured: {info}").FontSize(14).Opacity(0.7)
+        ).Padding(24);
+    }
+}
+```
+
+This example shows query parameters and optional path segments. The resolver
+parses `/users/42/posts?sort=date&page=2` into typed values you can use
+directly in route constructors.
 
 ## Page Caching
 
@@ -383,6 +435,105 @@ class TabNavDemo : Component
 Unlike stack-based navigation, tabs keep all their content alive simultaneously.
 Use tabs when users need to switch freely between parallel workspaces.
 
+## State Serialization
+
+`NavigationHandle` can serialize and restore the full navigation state —
+back stack, current route, and forward stack — as JSON. Use this to persist
+navigation state across app restarts or to restore deep-linked sessions:
+
+```csharp
+class StateSerializationDemo : Component
+{
+    public override Element Render()
+    {
+        var nav = UseNavigation(Route.Home);
+        var (savedState, setSavedState) = UseState<string?>(null);
+
+        return VStack(12,
+            SubHeading("State Serialization"),
+            HStack(8,
+                Button("Navigate", () =>
+                    nav.Navigate(Route.Settings)),
+                Button("Save State", () =>
+                    setSavedState(nav.GetState())),
+                Button("Restore State", () =>
+                {
+                    if (savedState is not null)
+                        nav.SetState(savedState);
+                }).Disabled(savedState is null)
+            ),
+            Text($"Current: {nav.CurrentRoute}"),
+            Text($"Saved: {savedState?[..Math.Min(50, savedState?.Length ?? 0)] ?? "(none)"}")
+                .FontSize(12).Opacity(0.6),
+            NavigationHost(nav, route =>
+                Text($"Page: {route}").Padding(16))
+        ).Padding(24);
+    }
+}
+```
+
+![State serialization](images/navigation/state-serialization.png)
+
+`GetState()` returns a JSON string. `SetState(json)` restores the stacks
+and fires `Navigated` with `Reset` mode. Pass `JsonSerializerOptions` if
+your route type needs custom serialization.
+
+## Navigation Diagnostics
+
+`NavigationDiagnostics` exposes static events for debugging and telemetry.
+Subscribe to trace navigation activity without modifying page code:
+
+```csharp
+class DiagnosticsDemo : Component
+{
+    public override Element Render()
+    {
+        var nav = UseNavigation(Route.Home);
+        var (log, updateLog) = UseReducer(new List<string>());
+
+        UseEffect(() =>
+        {
+            Action<NavigationDiagnosticEvent> onRequested =
+                e => updateLog(l => [.. l, $"Requested: {e.From} → {e.To}"]);
+            Action<NavigationDiagnosticEvent> onCompleted =
+                e => updateLog(l => [.. l, $"Completed: {e.To}"]);
+
+            NavigationDiagnostics.NavigationRequested += onRequested;
+            NavigationDiagnostics.NavigationCompleted += onCompleted;
+            return () =>
+            {
+                NavigationDiagnostics.NavigationRequested -= onRequested;
+                NavigationDiagnostics.NavigationCompleted -= onCompleted;
+            };
+        });
+
+        return VStack(12,
+            SubHeading("Navigation Diagnostics"),
+            HStack(8,
+                Button("Home", () => nav.Navigate(Route.Home)),
+                Button("Settings", () => nav.Navigate(Route.Settings))
+            ),
+            VStack(4, log.TakeLast(6).Select(
+                entry => Text(entry).FontSize(11).Opacity(0.6)
+            ).ToArray()),
+            NavigationHost(nav, route =>
+                Text($"Page: {route}").Padding(16))
+        ).Padding(24);
+    }
+}
+```
+
+| Event | Fires when |
+|-------|-----------|
+| `NavigationRequested` | A navigation is about to start |
+| `NavigationCompleted` | A page has finished loading |
+| `NavigationCancelled` | A lifecycle guard cancelled the navigation |
+| Cache events | Page cached, evicted, or hit |
+| Transition events | Transition started or completed |
+
+Events fire synchronously on the UI thread. Use them for development
+logging, analytics, or custom progress indicators.
+
 ## Tips
 
 **Use enums for routes.** Enums give you compile-time safety — you cannot
@@ -410,3 +561,4 @@ or hardware) to your navigation stack automatically.
 - **[Context](context.md)** — share navigation handles and other state across the component tree
 - **[Effects and Lifecycle](effects.md)** — run side effects when pages appear or disappear
 - **[Animation](animation.md)** — combine page transitions with enter/exit animations
+- **[Data System](data-system.md)** — data grids with sort, filter, and inline editing

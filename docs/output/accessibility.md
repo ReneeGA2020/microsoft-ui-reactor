@@ -215,6 +215,191 @@ Keep your heading levels sequential — do not skip from Level1 to Level3.
 Screen readers use the hierarchy to build a page outline, and gaps confuse
 users.
 
+## Focus Trapping
+
+`UseFocusTrap` locks keyboard focus inside a container — essential for modal
+dialogs and flyouts. When active, Tab and Shift+Tab cycle within the
+trapped subtree and cannot escape:
+
+```csharp
+class FocusTrapDemo : Component
+{
+    public override Element Render()
+    {
+        var (showModal, setShowModal) = UseState(false);
+        var trap = this.UseFocusTrap(showModal);
+
+        return VStack(12,
+            SubHeading("Focus Trapping"),
+            Button("Open Modal", () => setShowModal(true)),
+            When(showModal, () =>
+                Border(
+                    VStack(12,
+                        Text("Modal Dialog").FontSize(18).Bold(),
+                        Text("Tab/Shift+Tab stays inside this panel."),
+                        TextField("", _ => { }, placeholder: "Name")
+                            .TabIndex(0),
+                        Button("Close", () => setShowModal(false))
+                            .TabIndex(1)
+                    ).Padding(24)
+                ).WithBorder("#888", 1)
+                 .CornerRadius(8)
+                 .Background("#ffffff")
+                 .FocusTrap(trap)
+            )
+        ).Padding(24);
+    }
+}
+```
+
+![Focus trap in a modal dialog](images/accessibility/focus-trap.png)
+
+Create a `FocusTrapHandle` with `UseFocusTrap(isActive)`. Apply it to a
+container with `.FocusTrap(handle)`. When `isActive` is true, focus wraps
+within the subtree; when false, normal tab behavior resumes.
+
+Use focus trapping for any overlay that should prevent interaction with
+background content: modal dialogs, confirmation sheets, and dropdown menus.
+
+## Screen Reader Announcements
+
+`UseAnnounce` sends programmatic announcements to screen readers via live
+regions (WCAG 4.1.3). Use it to notify users of dynamic state changes that
+are not visible in the focus path:
+
+```csharp
+class AnnouncementsDemo : Component
+{
+    public override Element Render()
+    {
+        var (count, setCount) = UseState(0);
+        var announce = this.UseAnnounce();
+
+        return VStack(12,
+            SubHeading("Screen Reader Announcements"),
+            Button("Save", () =>
+            {
+                setCount(count + 1);
+                announce.Announce($"Document saved ({count + 1} times)");
+            }),
+            Button("Error (Assertive)", () =>
+                announce.Announce("Connection lost!", assertive: true)),
+            Text($"Saves: {count}").Opacity(0.6),
+            announce.Region  // invisible live region — must be in tree
+        ).Padding(24);
+    }
+}
+```
+
+![Screen reader announcement](images/accessibility/announcements.png)
+
+Create an `AnnounceHandle` with `UseAnnounce()`. Include `announce.Region`
+somewhere in your element tree — it renders an invisible live region. Then
+call `announce.Announce(message)` for polite announcements (queued after
+current speech) or `announce.Announce(message, assertive: true)` to
+interrupt.
+
+Common use cases: form submission confirmations, async operation completions,
+error messages, and timer-based status updates.
+
+## Semantic Panel
+
+`SemanticPanel` wraps a child element to provide custom automation metadata
+that Duct components cannot expose directly (since they are C# records, not
+WinUI controls with overridable automation peers):
+
+```csharp
+class SemanticPanelDemo : Component
+{
+    public override Element Render()
+    {
+        var (rating, setRating) = UseState(3);
+
+        // .Semantics() wraps the element in a SemanticPanel so
+        // screen readers announce it as a slider, not raw buttons
+        return VStack(12,
+            SubHeading("Star Rating (Semantic Panel)"),
+            HStack(4, Enumerable.Range(1, 5).Select(i =>
+                Button(i <= rating ? "\u2605" : "\u2606",
+                    () => setRating(i))
+                    .AutomationName($"{i} star{(i == 1 ? "" : "s")}")
+            ).ToArray())
+            .Semantics(
+                role: "slider",
+                value: $"{rating} of 5 stars",
+                rangeMin: 1, rangeMax: 5, rangeValue: rating),
+            Text($"Current: {rating}/5").Opacity(0.6)
+        ).Padding(24);
+    }
+}
+```
+
+![Semantic panel for star rating](images/accessibility/semantic-panel.png)
+
+| Property | Purpose |
+|----------|---------|
+| `SemanticRole` | Automation role (e.g., "slider") |
+| `SemanticValue` | Current value reported to assistive tech |
+| `RangeMinimum` / `RangeMaximum` | Numeric range for range-value patterns |
+| `RangeValue` | Current numeric position in the range |
+| `IsReadOnly` | Whether the value can be changed |
+
+Use `SemanticPanel` for custom controls like star ratings, progress
+indicators, or any composite widget that needs a specific automation role
+beyond what WinUI infers from its visual tree.
+
+## Accessibility Scanner
+
+`AccessibilityScanner` is a post-reconciliation diagnostic tool that walks
+the element tree and flags common accessibility issues. Run it during
+development or in CI to catch violations early:
+
+```csharp
+// Run AccessibilityScanner during development or CI:
+//
+// var diagnostics = AccessibilityScanner.Scan(rootElement);
+// foreach (var d in diagnostics)
+// {
+//     Console.WriteLine($"[{d.Severity}] {d.Message}");
+//     Console.WriteLine($"  WCAG: {d.WcagCriterion}");
+//     Console.WriteLine($"  Fix: {d.Fix?.Modifier}({d.Fix?.SuggestedValue})");
+// }
+//
+// Export structured JSON for CI integration:
+// AccessibilityScanner.ExportJson(diagnostics, "a11y-report.json");
+```
+
+The scanner checks for 8 common issues:
+
+| Check | WCAG Criterion |
+|-------|---------------|
+| Icon buttons without AutomationName | 4.1.2 Name, Role, Value |
+| Images without alt text | 1.1.1 Non-text Content |
+| Form fields without labels | 1.3.1 Info and Relationships |
+| Heading-styled text missing HeadingLevel | 1.3.1 Info and Relationships |
+| Concrete brushes on interactive controls | 1.4.11 Non-text Contrast |
+| Missing Main landmark | 1.3.1 Info and Relationships |
+| TabIndex gaps | 2.4.3 Focus Order |
+| Unresolved LabeledBy references | 1.3.1 Info and Relationships |
+
+Each `A11yDiagnostic` includes a `Fix` suggestion with the exact modifier
+and value to add. Export to JSON with `AccessibilityScanner.ExportJson()`.
+
+## Roslyn Analyzers
+
+Duct ships three compile-time accessibility analyzers that flag violations
+as you type in your IDE:
+
+| Diagnostic ID | Rule |
+|--------------|------|
+| `DUCT_A11Y_001` | Icon-only `Button(icon, action)` calls without `.AutomationName()` |
+| `DUCT_A11Y_002` | `Image()` without `.AutomationName()` or `.AccessibilityHidden()` |
+| `DUCT_A11Y_003` | `TextField`/`NumberBox`/`PasswordBox` without `header:` arg or label modifier |
+
+These analyzers run automatically when you reference the `Duct.Analyzers`
+package. They complement the runtime `AccessibilityScanner` by catching the
+most common violations at compile time.
+
 ## Tips
 
 **Label every interactive control.** If the visible text is sufficient, WinUI
@@ -242,3 +427,4 @@ WinUI renders the key tips automatically when the user presses Alt.
 - **[Forms and Input](forms.md)** — build accessible forms with labels, validation, and tab order
 - **[Navigation](navigation.md)** — add landmarks and keyboard-navigable page structure
 - **[Styling and Theming](styling.md)** — ensure high-contrast themes work with your accessible controls
+- **[WinForms Interop](winforms-interop.md)** — accessibility bridging between WinForms and Duct

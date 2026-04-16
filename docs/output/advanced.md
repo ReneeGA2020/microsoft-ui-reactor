@@ -4,7 +4,10 @@
 This page covers escape hatches and performance tools for when the standard
 declarative API is not enough: error boundaries for resilience, `Memo` for
 render skipping, `.Set()` for raw WinUI access, and observable
-[hooks](hooks.md) for bridging to MVVM view models.
+[hooks](hooks.md) for bridging to MVVM view models. For hosting Duct
+components inside WinForms applications, see
+[WinForms Interop](winforms-interop.md). For data grids with sort, filter,
+and editing, see [Data System](data-system.md).
 
 ## Error Boundary
 
@@ -275,8 +278,9 @@ INPC objects, `UseObservable` is cheaper.
 
 ## Next Steps
 
+- **[Data System](data-system.md)** — next topic: DataGrid with sort, filter, and inline editing
+- **[WinForms Interop](winforms-interop.md)** — host Duct components inside WinForms applications
 - **[Charting](charting.md)** — previous topic: data visualization with line, bar, area, and pie charts
 - **[Duct](readme.md)** — back to the index: overview of the framework and full topic list
 - **[Hooks](hooks.md)** — review the hook system that `UseObservableTree` and `UseCollection` build on
 - **[Effects and Lifecycle](effects.md)** — manage side effects alongside observable data binding
-- **[Components](components.md)** — revisit component fundamentals for structuring large apps

@@ -194,6 +194,111 @@ class DeepLinkingDemo : Component
 }
 // </snippet:deep-linking>
 
+// <snippet:deep-link-query>
+class DeepLinkQueryDemo : Component
+{
+    public override Element Render()
+    {
+        var (info, setInfo) = UseState("(none)");
+
+        // RouteArgs are available inside the factory lambda —
+        // capture typed params and query values there
+        var map = UseMemo(() => new DeepLinkMap<Route>()
+            .Map("/", _ => Route.Home)
+            .Map("/settings", _ => Route.Settings)
+            .Map("/users/{id:int}/posts/{postId:int}",
+                args =>
+                {
+                    var userId = args.Get<int>("id");
+                    var postId = args.Get<int>("postId");
+                    var sort = args.Query<string>("sort");
+                    setInfo($"userId={userId}, postId={postId}, sort={sort}");
+                    return Route.Details;
+                },
+                () => new[] { Route.Home })
+        );
+
+        return VStack(12,
+            SubHeading("Deep Link Query Params"),
+            Button("Resolve /users/42/posts/7?sort=date", () =>
+                map.Resolve("/users/42/posts/7?sort=date")),
+            Text($"Captured: {info}").FontSize(14).Opacity(0.7)
+        ).Padding(24);
+    }
+}
+// </snippet:deep-link-query>
+
+// <snippet:state-serialization>
+class StateSerializationDemo : Component
+{
+    public override Element Render()
+    {
+        var nav = UseNavigation(Route.Home);
+        var (savedState, setSavedState) = UseState<string?>(null);
+
+        return VStack(12,
+            SubHeading("State Serialization"),
+            HStack(8,
+                Button("Navigate", () =>
+                    nav.Navigate(Route.Settings)),
+                Button("Save State", () =>
+                    setSavedState(nav.GetState())),
+                Button("Restore State", () =>
+                {
+                    if (savedState is not null)
+                        nav.SetState(savedState);
+                }).Disabled(savedState is null)
+            ),
+            Text($"Current: {nav.CurrentRoute}"),
+            Text($"Saved: {savedState?[..Math.Min(50, savedState?.Length ?? 0)] ?? "(none)"}")
+                .FontSize(12).Opacity(0.6),
+            NavigationHost(nav, route =>
+                Text($"Page: {route}").Padding(16))
+        ).Padding(24);
+    }
+}
+// </snippet:state-serialization>
+
+// <snippet:diagnostics>
+class DiagnosticsDemo : Component
+{
+    public override Element Render()
+    {
+        var nav = UseNavigation(Route.Home);
+        var (log, updateLog) = UseReducer(new List<string>());
+
+        UseEffect(() =>
+        {
+            Action<NavigationDiagnosticEvent> onRequested =
+                e => updateLog(l => [.. l, $"Requested: {e.From} → {e.To}"]);
+            Action<NavigationDiagnosticEvent> onCompleted =
+                e => updateLog(l => [.. l, $"Completed: {e.To}"]);
+
+            NavigationDiagnostics.NavigationRequested += onRequested;
+            NavigationDiagnostics.NavigationCompleted += onCompleted;
+            return () =>
+            {
+                NavigationDiagnostics.NavigationRequested -= onRequested;
+                NavigationDiagnostics.NavigationCompleted -= onCompleted;
+            };
+        });
+
+        return VStack(12,
+            SubHeading("Navigation Diagnostics"),
+            HStack(8,
+                Button("Home", () => nav.Navigate(Route.Home)),
+                Button("Settings", () => nav.Navigate(Route.Settings))
+            ),
+            VStack(4, log.TakeLast(6).Select(
+                entry => Text(entry).FontSize(11).Opacity(0.6)
+            ).ToArray()),
+            NavigationHost(nav, route =>
+                Text($"Page: {route}").Padding(16))
+        ).Padding(24);
+    }
+}
+// </snippet:diagnostics>
+
 // <snippet:page-caching>
 class PageCachingDemo : Component
 {

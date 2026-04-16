@@ -30,3 +30,18 @@ screenshots:
     component: HeadingHierarchyDemo
     region: client
     format: png
+  - id: focus-trap
+    description: "Modal dialog with keyboard focus trapped inside"
+    component: FocusTrapDemo
+    region: client
+    format: png
+  - id: announcements
+    description: "Save button triggering screen reader announcement"
+    component: AnnouncementsDemo
+    region: client
+    format: png
+  - id: semantic-panel
+    description: "Star rating with SemanticPanel providing slider role"
+    component: SemanticPanelDemo
+    region: client
+    format: png

@@ -4,9 +4,10 @@ app: collections
 order: 8
 audience: intermediate
 goal: |
-  Cover ListView<T>, LazyVStack<T>, GridView<T>, ForEach, and WithKey.
-  Teach virtualization, key selection for stable identity, and when to use
-  each collection type.
+  Cover ListView<T>, LazyVStack<T>, GridView<T>, VirtualList (count-based),
+  ForEach, and WithKey. Teach virtualization, key selection for stable
+  identity, VirtualListRef for imperative scrolling, and when to use each
+  collection type.
 ---
 
 # Collections
@@ -57,7 +58,8 @@ When to use which:
 | Collection | Virtualized | Best for |
 |-----------|------------|---------|
 | `ListView<T>` | No | Small lists (< 50 items) |
-| `LazyVStack<T>` | Yes | Large lists (50+ items) |
+| `LazyVStack<T>` | Yes | Large lists with known items |
+| `VirtualList` | Yes | Count-based / async-loaded lists |
 
 ## GridView
 
@@ -71,6 +73,38 @@ column count based on item width and available space:
 
 Each item is sized by the element you return from the view builder. The
 grid automatically wraps items into rows based on the container width.
+
+## VirtualList (Count-Based)
+
+`VirtualList` provides count-based virtualization — you tell it how many
+items exist and it calls your render function only for visible indices.
+Use it when items are loaded asynchronously or your data source provides
+a count but not all items upfront:
+
+```csharp snippet="collections/virtuallist"
+```
+
+![VirtualList with 10,000 items](screenshot://collections/virtuallist)
+
+Unlike `LazyVStack<T>` which takes a full list, `VirtualList` takes an
+`itemCount` and a `renderItem(index)` callback. This makes it ideal for
+paginated data sources where items load on demand.
+
+`VirtualListRef` provides imperative control over the virtualized list:
+
+```csharp snippet="collections/virtuallist-ref"
+```
+
+| Member | Purpose |
+|--------|---------|
+| `ScrollToIndex(index)` | Jump to a specific item |
+| `ScrollOffset` | Current scroll position |
+| `RestoreScrollOffset(offset)` | Restore a saved scroll position |
+| `Repeater` | Access the underlying WinUI ItemsRepeater |
+
+Set `itemHeight` for a fixed-height fast path (O(1) offset calculation) or
+`estimatedItemHeight` for variable-height rows with automatic measurement.
+Use `onVisibleRangeChanged` to load data blocks as the user scrolls.
 
 ## ForEach
 
@@ -135,5 +169,6 @@ Use the index for display (row numbers) but not for keys.
 
 - **[Forms and Input](forms.md)** — controlled input controls and validation patterns
 - **[Navigation](navigation.md)** — stack-based routing, NavigationView, and tabs
+- **[Data System](data-system.md)** — DataGrid with sort, filter, search, and inline editing
 - **[Flex Layout](flex-layout.md)** — wrapping grids and proportional sizing for collection items
 - **[Components](components.md)** — extract item templates into reusable memoized components

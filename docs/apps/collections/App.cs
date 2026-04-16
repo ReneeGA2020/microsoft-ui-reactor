@@ -1,6 +1,8 @@
 using Duct;
 using Duct.Core;
+using Duct.Virtualization;
 using static Duct.UI;
+using static Duct.Virtualization.VirtualListDsl;
 using Microsoft.UI.Xaml;
 
 DuctApp.Run<CollectionsApp>("Collections", width: 700, height: 600
@@ -94,6 +96,61 @@ class GridViewDemo : Component
     }
 }
 // </snippet:gridview>
+
+// <snippet:virtuallist>
+class VirtualListDemo : Component
+{
+    public override Element Render()
+    {
+        return VStack(12,
+            SubHeading("VirtualList (10,000 items)"),
+            VirtualList(
+                itemCount: 10_000,
+                renderItem: index =>
+                    HStack(12,
+                        Text($"{index + 1}.").Width(50),
+                        Text($"Item {index + 1}").Bold(),
+                        Text($"data-{index}@example.com").Opacity(0.6)
+                    ).Padding(8),
+                getItemKey: index => $"item-{index}",
+                itemHeight: 40
+            ).Height(300)
+        ).Padding(24);
+    }
+}
+// </snippet:virtuallist>
+
+// <snippet:virtuallist-ref>
+class VirtualListRefDemo : Component
+{
+    public override Element Render()
+    {
+        var listRef = UseRef<VirtualListRef?>(null);
+        var (targetIndex, setTargetIndex) = UseState("5000");
+
+        return VStack(12,
+            SubHeading("VirtualListRef — Imperative Scroll"),
+            HStack(8,
+                TextField(targetIndex, setTargetIndex,
+                    placeholder: "Index"),
+                Button("Scroll To", () =>
+                {
+                    if (int.TryParse(targetIndex, out var idx))
+                        listRef.Current?.ScrollToIndex(idx);
+                })
+            ),
+            VirtualList(
+                itemCount: 10_000,
+                renderItem: index =>
+                    Text($"Row {index + 1}").Padding(8),
+                getItemKey: index => $"row-{index}",
+                itemHeight: 36,
+                @ref: r => listRef.Current = r
+            ).Height(250)
+        ).Padding(24);
+    }
+}
+// </snippet:virtuallist-ref>
 
 // <snippet:foreach>
 class ForEachDemo : Component
