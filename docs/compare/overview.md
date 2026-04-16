@@ -109,14 +109,14 @@ to understand the gap, not to declare winners.
 | **Styling & Theming** | D | A- | A | B- |
 | **Navigation** | F | C | C+ | B+ |
 | **Animation** | F | B+ | A | C+ |
-| **Accessibility** | D+ | A- | A | B- |
+| **Accessibility** | D+ | A- | A | B |
 | **Input & Gestures** | C | B+ | B+ | C |
 | **Developer Experience** | B | B- | B- | C+ |
 | **Platform Reach** | D | D | D | D |
 | **Testing** | D+ | B | B- | B- |
 | **Error Handling** | C | C | C | B |
 | **Data Loading & Async** | D+ | B | B | B+ |
-| **Lists & Virtualization** | C+ | A- | A- | B |
+| **Lists & Virtualization** | C+ | A- | A- | B+ |
 | **Internationalization** | C+ | B | B+ | B+ |
 | **Interop & Adoption** | B+ | A- | B+ | A- |
 | **Forms & Data Entry** | B | A | B | B |
@@ -328,12 +328,21 @@ notoriously complex.
   but imperative and not type-safe for parameters
 - **Duct (B+):** Type-safe routes via C# records, developer-owned back stack,
   GPU-powered composition-layer transitions, lifecycle guards, LRU caching,
-  serialization, deep linking. Architecturally competitive with Compose Nav 3.
+  serialization, deep linking with `DeepLinkMap<TRoute>` supporting URI
+  pattern matching (typed parameters `{id:int}`, optional segments `{name?}`,
+  wildcards `/**`, query string extraction, synthetic back stacks).
+  **NavigationDiagnostics** provides a static event system for observing
+  navigation operations (requests, completions, cancellations, cache hits/
+  misses, transitions, deep link resolutions). 29 stress tests covering
+  concurrent cache access, rapid forward/back cycles, serialization round-trips,
+  and deep link edge cases. Architecturally competitive with Compose Nav 3.
   ConnectedTransition is stub, no adaptive multi-pane
 
 **Gap:** Duct's navigation is its strongest competitive position — architecturally
 on par with Compose Nav 3 and ahead of SwiftUI's type-erased NavigationPath.
-WPF and WinUI 3's navigation is a full generation behind.
+The deep linking system is now comprehensive (typed params, optionals, wildcards,
+query strings) and competitive with web-grade routers. WPF and WinUI 3's
+navigation is a full generation behind.
 
 ---
 
@@ -394,24 +403,39 @@ gaps on web.
 - **WinUI 3 (A):** Full UIA support, same as UWP. All standard controls
   accessible. High contrast mode via theme resources. Narrator integration
   is strong. Competitive with SwiftUI
-- **Duct (B-):** 16+ accessibility modifiers covering automation name, help
+- **Duct (B):** 16+ accessibility modifiers covering automation name, help
   text, landmarks, heading levels, live regions (Polite/Assertive), required
   fields, position-in-set, hierarchy level, tab navigation, and accessibility
   view. Smart lazy allocation (tier 1 inline, tier 2/3 on-demand). 12 E2E
   Appium tests with explicit WCAG 2.1 criterion mapping (1.1.1, 1.3.1,
   2.1.1, 3.3.2, 4.1.2, 4.1.3) testing the real UIA pipeline. Full RTL/BiDi
   support with CLDR-based locale detection and logical layout modifiers
-  (MarginInlineStart/End, PaddingInlineStart/End). Still no custom automation
-  peers (architectural — Duct components aren't Control subclasses), no
-  accessibility hooks (UseReducedMotion, UseFocusVisible), and `LabeledBy()`
-  is a silent no-op (API accepted but reconciler never applies it)
+  (MarginInlineStart/End, PaddingInlineStart/End). **SemanticPanel** wraps
+  composite components in a Panel with a custom AutomationPeer exposing UIA
+  roles (17 mappings including slider, progressbar, list, menu), IValueProvider,
+  and IRangeValueProvider — partially addresses the "no custom automation
+  peers" gap. **UseAnnounce** hook provides imperative screen reader
+  announcements via RaiseNotificationEvent with live-region fallback.
+  **UseFocusTrap** hook traps keyboard focus within a container (modal dialog
+  pattern), though focus cycling is not yet implemented. **AccessibilityScanner**
+  performs 8 WCAG-mapped runtime diagnostics (icon-only buttons, missing alt
+  text, unlabeled form fields, headings without HeadingLevel, concrete brushes
+  on interactive controls, missing Main landmark, non-sequential TabIndex gaps,
+  unresolved LabeledBy references) with structured JSON export. Three **Roslyn
+  analyzers** (DUCT_A11Y_001–003) catch accessibility issues at compile time
+  with code fix providers. Still limited: SemanticPanel is a workaround (not
+  true per-component AutomationPeer), `LabeledBy()` is still a no-op,
+  UseFocusTrap doesn't cycle focus, and AccessibilityScanner only runs in
+  DEBUG builds
 
 **Gap:** WPF and WinUI 3 have **no gap** in accessibility — UIA is the most
-comprehensive accessibility API on any platform. Duct has improved (from C+
-to B-) with WCAG-mapped E2E testing and comprehensive modifiers, but the
-lack of custom automation peers means composite components can't describe
-their own semantics to screen readers. The `LabeledBy()` no-op is a
-correctness bug that could ship accessibility violations.
+comprehensive accessibility API on any platform. Duct has improved (from B-
+to B) with SemanticPanel for custom UIA semantics, UseAnnounce/UseFocusTrap
+hooks, and compile-time + runtime a11y scanning. The AccessibilityScanner
+with WCAG-mapped diagnostics is developer tooling that no competitor provides
+built-in. The remaining gaps are `LabeledBy()` no-op (correctness bug) and
+SemanticPanel being a wrapper approach rather than true custom AutomationPeer
+support per component.
 
 ---
 
@@ -520,8 +544,11 @@ is fast and comprehensive. SwiftUI has the weakest testing story.
 - **WinUI 3 (B-):** MVVM + `x:Bind` compile-time checking catches binding
   errors. UI testing via WinAppDriver. Test infrastructure still evolving
 - **Duct (B-):** Pure C# function components are unit-testable. ErrorBoundary
-  exists. Navigation has 117 unit tests. E2E Appium tests exist but are not
-  executed. No component-level testing framework
+  exists. Navigation has 146+ unit tests (including 29 stress tests covering
+  concurrency, serialization, and deep linking). DataGrid has 1,600+ state
+  unit tests. Accessibility has ~34 tests (scanner + analyzer). E2E Appium
+  tests exist for DataGrid, WinForms interop (13 tests), and accessibility
+  interactions. No component-level testing framework
 
 **Gap:** WPF's MVVM testability is on par with competitors. The main gap is
 the lack of component-level testing frameworks (equivalent to ComposeTestRule
@@ -609,16 +636,31 @@ React has **no built-in virtualization** — a genuine gap.
   `GridView` with container recycling. `x:Phase` for incremental loading.
   `ContainerContentChanging` for efficient recycling. `ISupportIncrementalLoading`
   for automatic pagination
-- **Duct (B):** Typed `ListView<T>`/`GridView<T>` with `viewBuilder` pattern
+- **Duct (B+):** Typed `ListView<T>`/`GridView<T>` with `viewBuilder` pattern
   and `ContainerContentChanging` recycling. `LazyVStack<T>`/`LazyHStack<T>`
   via `ItemsRepeater`. `ElementPool` for interactive control recycling (capped
-  at 32 per type). No sections, no built-in pagination
+  at 32 per type). **VirtualListComponent** provides count-based virtualization
+  with fixed-height O(1) and variable-height modes, imperative scroll control
+  (`ScrollToIndex`, `RestoreScrollOffset`), and visible-range change callbacks.
+  **DataGrid** is a full-featured data grid with: `DataPageCache` (LRU block
+  cache with configurable block size, max blocks, and prefetch), `IDataSource`
+  abstraction declaring server-side capabilities (sort, filter, search, count,
+  CRUD), inline cell and row editing with per-edit `ValidationContext`, async
+  commit with optimistic updates and rollback on failure, multi-selection with
+  shift-click range selection, full keyboard navigation (arrow keys, Tab,
+  Home/End, Enter/F2 to edit, Escape to cancel), column pinning (Left/Right),
+  column resize, observable data source auto-refresh, and scroll-jank
+  prevention via deferred rendering during active scrolling. 1,600+ DataGrid
+  unit tests and E2E Appium tests. Still no grouping, no built-in pagination
+  UI, no column drag reorder
 
 **Gap:** WPF and WinUI 3 have **no gap** — their virtualization is on par with
 or ahead of competitors. WPF's `ICollectionView` for sorting/filtering/grouping
-has no equivalent in any declarative framework. Duct's collection elements
-work but lack grouping and pagination. React's lack of built-in virtualization
-means WPF/WinUI 3 are actually ahead of React here.
+has no equivalent in any declarative framework. Duct's DataGrid now provides
+server-side sort/filter with paged caching and inline editing — a substantial
+LOB capability — but still lacks grouping (WPF's ICollectionView) and built-in
+pagination UI. React's lack of built-in virtualization means WPF/WinUI 3/Duct
+are all ahead of React here.
 
 ---
 
@@ -680,12 +722,24 @@ is mature. Flutter's add-to-app works but platform views are costly.
   `XamlHostElement`/`XamlPageElement` embed existing XAML in Duct trees.
   `UseObservable`/`UseObservableTree`/`UseObservableProperty`/`UseCollection`
   bridge unmodified MVVM ViewModels. `.Set()` provides direct WinUI control
-  access. Same-project coexistence with no rewrite required
+  access. Same-project coexistence with no rewrite required.
+  **NEW: WinForms interop** via `Duct.Interop.WinForms` library:
+  `XamlIslandControl` hosts Duct/WinUI content inside WinForms layouts with
+  WinForms designer support (ComponentType property with dropdown), proper
+  Tab/Shift+Tab focus bridging across the WinForms↔WinUI boundary, per-monitor
+  DPI awareness, and `XamlIslandBootstrap` for WinForms-primary apps (WinForms
+  owns the message loop). 13 E2E tests covering rendering, keyboard navigation,
+  and accessibility across the island boundary. Duct can now be incrementally
+  adopted from both WinUI 3 and WinForms — the two largest Windows desktop
+  frameworks
 
-**Gap:** Duct's interop is a **genuine strength** — possibly the best
-incremental adoption story across all frameworks. The ability to bridge
-existing MVVM ViewModels with a single hook call (`UseObservable(viewModel)`)
-and to embed Duct alongside XAML in the same window is a strong selling point.
+**Gap:** Duct's interop is a **genuine strength** — the best incremental
+adoption story across all frameworks analyzed. Three adoption paths: WinUI→Duct
+(`DuctHostControl`), WinForms→Duct (`XamlIslandControl`), and XAML-in-Duct
+(`XamlHostElement`). The ability to bridge existing MVVM ViewModels with a
+single hook call (`UseObservable(viewModel)`) and to embed Duct alongside
+XAML in the same window, plus WinForms designer support, means Duct can be
+adopted from the vast majority of existing Windows desktop apps.
 
 ---
 
@@ -785,7 +839,8 @@ customization and binding-level validation integration.
 6. **Layout** (WPF/WinUI 3) — Panel system matches the best competitors
 7. **Error Handling** (Duct) — ErrorBoundary is ahead of all but React
 8. **Interop & Adoption** (Duct) — UseObservable bridges unmodified MVVM
-   ViewModels; DuctHostControl drops into existing WinUI windows
+   ViewModels; DuctHostControl drops into existing WinUI windows;
+   XamlIslandControl drops into WinForms with designer support
 9. **Rendering** (WinUI 3) — Composition layer's independent animation thread
    is competitive
 10. **Navigation** (Duct) — Architecturally competitive with Compose Nav 3
@@ -872,28 +927,41 @@ type safety and no XAML.
 **Profile:** The only Microsoft-ecosystem option with a modern declarative
 component model: function components, hooks, reconciler, context, navigation,
 commanding. 94% of WinUI controls wrapped. Navigation is architecturally
-competitive. Commanding is a genuine industry-first. ErrorBoundary exists
-(rare). Interop with existing WinUI/MVVM code is excellent
-(`DuctHostControl`, `UseObservable`, `XamlHostElement`). ICU localization
-closes WinUI 3's plural/gender gap. Form validation system with automatic
-validation pipeline, 10+ built-in validators, FormField component, and
-ValidationVisualizer. 37 theme tokens with ResourceBuilder lightweight
-styling, style caching, and Roslyn analyzers. 16+ accessibility modifiers
-with WCAG-mapped E2E tests and full RTL/BiDi support. Enter/exit transitions,
-keyframe animations, and scroll-linked animations. But: pre-release,
-animation limited to 5 compositor properties, accessibility lacks custom
-automation peers and hooks, `LabeledBy()` is a no-op, `.Set()` escape hatch
-is still load-bearing for many scenarios, no DevTools or component inspector.
+competitive with comprehensive deep linking (typed params, wildcards, query
+strings) and runtime diagnostics. Commanding is a genuine industry-first.
+ErrorBoundary exists (rare). Interop with existing WinUI/MVVM code is
+excellent (`DuctHostControl`, `UseObservable`, `XamlHostElement`) and now
+extends to WinForms via `XamlIslandControl` with designer support and focus
+bridging. ICU localization closes WinUI 3's plural/gender gap. Form
+validation system with automatic validation pipeline, 10+ built-in
+validators, FormField component, and ValidationVisualizer. **DataGrid** with
+paged LRU caching, server-side sort/filter, inline cell/row editing with
+validation, async commit with optimistic updates, multi-selection, and full
+keyboard navigation. 37 theme tokens with ResourceBuilder lightweight
+styling, style caching, and Roslyn analyzers. Accessibility: 16+ modifiers
+with WCAG-mapped E2E tests, full RTL/BiDi support, SemanticPanel for custom
+UIA roles/values on composite components, UseAnnounce hook for screen reader
+announcements, UseFocusTrap for modal focus management, AccessibilityScanner
+with 8 WCAG-mapped runtime diagnostics, and 3 compile-time Roslyn analyzers.
+Enter/exit transitions, keyframe animations, and scroll-linked animations.
+But: pre-release, animation limited to 5 compositor properties, `LabeledBy()`
+is a no-op, SemanticPanel is a workaround not true per-component
+AutomationPeer, `.Set()` escape hatch is still load-bearing for many
+scenarios, no DevTools or component inspector.
 
 **Competitive position:** Duct is the most interesting Microsoft option from
 a declarative-framework perspective. It's the only one that competes on
 the same playing field as SwiftUI, Compose, and React. Its component model,
-navigation, commanding, and interop are competitive. Theming, forms, and
-accessibility have improved substantially but remain behind the platform
-(WinUI 3) in depth. Animation and developer tooling are the largest
-remaining gaps. The trajectory is right — four categories improved in the
-latest development cycle — but significant work remains before
-production-readiness.
+navigation, commanding, and interop are competitive. Accessibility now
+includes both compile-time and runtime scanning — developer tooling that no
+competitor provides built-in. The DataGrid with paged caching and inline
+editing is a genuine LOB capability. Theming and forms have improved
+substantially but remain behind the platform (WinUI 3/WPF) in depth.
+Animation and developer tooling are the largest remaining gaps. The
+trajectory is right — six categories improved in the latest development
+cycle (accessibility, lists/virtualization, navigation deep linking,
+interop/WinForms, developer diagnostics, DataGrid) — but significant work
+remains before production-readiness.
 
 ---
 
@@ -929,10 +997,14 @@ relative to competitors (declarative syntax, component model, navigation
 type safety). The commanding system is genuinely novel. Recent work has
 deepened coverage in theming (37 tokens, ResourceBuilder, analyzers),
 forms (automatic validation pipeline, FormField, ValidationVisualizer),
-accessibility (WCAG-mapped E2E tests, RTL/BiDi), and animation (exit
-transitions, keyframes, scroll-linked). The key remaining gaps are
-animation depth (5 compositor properties), developer tooling (no inspector
-or profiler), and accessibility completeness (no custom automation peers).
+accessibility (SemanticPanel for custom UIA semantics, UseAnnounce/
+UseFocusTrap hooks, 8-rule WCAG scanner, 3 compile-time analyzers),
+animation (exit transitions, keyframes, scroll-linked), data grids (paged
+caching, inline editing, server-side sort/filter), navigation (typed deep
+linking with wildcards and query strings, diagnostics), and interop
+(WinForms adoption via XamlIslandControl with designer support). The key
+remaining gaps are animation depth (5 compositor properties), developer
+tooling (no inspector or profiler), and `LabeledBy()` no-op.
 
 ### 4. Error handling is an industry-wide gap
 
@@ -972,11 +1044,14 @@ to learn from.
 ### 7. Interop is Duct's strongest selling point for adoption
 
 Duct's `DuctHostControl` (drop into existing WinUI XAML), `UseObservable`
-(bridge unmodified MVVM ViewModels with one line), and `XamlHostElement`
-(embed existing XAML pages in Duct trees) provide the smoothest incremental
-adoption story across all frameworks analyzed. This matters because the
-realistic path for Duct adoption is not greenfield apps — it's existing
-WinUI 3 apps that want to go declarative without a rewrite.
+(bridge unmodified MVVM ViewModels with one line), `XamlHostElement`
+(embed existing XAML pages in Duct trees), and now `XamlIslandControl`
+(host Duct in WinForms with designer support and focus bridging) provide the
+smoothest incremental adoption story across all frameworks analyzed. This
+matters because the realistic path for Duct adoption is not greenfield apps
+— it's existing WinUI 3 and WinForms apps that want to go declarative
+without a rewrite. With WinForms interop, Duct now covers the two largest
+Windows desktop frameworks as adoption entry points.
 
 ### 8. Avalonia validates the self-rendering cross-platform approach for .NET
 
@@ -1012,8 +1087,9 @@ Every framework has embarrassing gaps:
 - **WinUI 3:** Packaging complexity, small community, Windows-only, no
   plural/gender i18n
 - **Duct:** Animation limited to 5 compositor properties, no DevTools or
-  component inspector, no custom automation peers, `LabeledBy()` no-op,
-  `.Set()` escape hatch still load-bearing for many scenarios
+  component inspector, `LabeledBy()` no-op, SemanticPanel is a workaround
+  not true per-component AutomationPeer, `.Set()` escape hatch still
+  load-bearing for many scenarios, DataGrid has no grouping
 
 The "perfect framework" doesn't exist. The question is which gaps matter
 most for your specific application.
