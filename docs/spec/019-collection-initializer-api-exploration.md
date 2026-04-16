@@ -310,7 +310,209 @@ return new Button(Props.OnSelected) {
   initializer capability.
 
 **Verdict:** Strong improvement for complex components (Outlook, regedit), worse for simple ones
-(TodoApp helpers, one-liners). The `new` keyword noise is the biggest downside.
+(TodoApp helpers, one-liners). The `new` keyword noise is the biggest downside. The `IEnumerable` +
+`Add()` approach also has a fundamental limitation: you can't splat `.Select().ToArray()` inline
+(see Part 7B stress tests).
+
+---
+
+## Part 2B: Option A' — `new` + Collection Expressions for Children (Works Today, C# 12+)
+
+### The Idea
+
+A variant of Option A that drops the `IEnumerable` + `Add()` collection initializer pattern
+entirely. Instead, container elements have an explicit `Children` property typed as `Element?[]`
+(with `init`), and developers use **C# 12 collection expressions** (`[a, b, c]`) to populate it.
+
+This fixes Option A's two biggest flaws:
+1. **No immutability hack** — no mutable `Add()` method. `Children` is a pure `init` property.
+2. **Spread works** — `[..items.Select(Render)]` splats LINQ results inline, mixing freely
+   with static children.
+
+### Required Type Changes
+
+```csharp
+// No IEnumerable, no Add() — just an init property for children
+public record StackElement : Element
+{
+    public Orientation Orientation { get; init; } = Orientation.Vertical;
+    public double Spacing { get; init; } = 8;
+    public Element?[] Children { get; init; } = [];
+
+    // Layout modifiers promoted to properties (same as Option A)
+    public double? Width { get; init; }
+    public double? Height { get; init; }
+    public Thickness? Margin { get; init; }
+    public Thickness? Padding { get; init; }
+    public Brush? Background { get; init; }
+    // ... all ElementModifiers promoted to init properties
+}
+
+public record FlexElement : Element
+{
+    public Flex.FlexDirection Direction { get; init; } = Flex.FlexDirection.Row;
+    public Flex.FlexJustify JustifyContent { get; init; }
+    public double ColumnGap { get; init; }
+    public double RowGap { get; init; }
+    public Flex.FlexWrap Wrap { get; init; }
+    public Element?[] Children { get; init; } = [];
+    // ...
+}
+
+// Leaf elements — no Children property
+public record TextElement : Element
+{
+    public string Content { get; init; } = "";
+    public double? FontSize { get; init; }
+    public FontWeight? Weight { get; init; }
+    // ...
+}
+```
+
+### TodoApp — Option A'
+
+```csharp
+return new VStack {
+    Spacing = 0,
+    Background = SolidBackground,
+    MaxWidth = 600,
+    HAlign = HorizontalAlignment.Center,
+    Children = [
+        // Header
+        new Text("todos") {
+            FontSize = 36,
+            Weight = FontWeights.Light,
+            Foreground = AccentText,
+            HAlign = HorizontalAlignment.Center,
+            Margin = Thick(0, 16, 0, 8),
+        },
+
+        // Input bar
+        new HStack {
+            Spacing = 8,
+            Padding = Thick(16, 8, 16, 8),
+            Background = CardBackground,
+            Children = [
+                new TextField {
+                    Value = state.NewItemText,
+                    OnChanged = v => dispatch(new SetNewItemText(v)),
+                    Placeholder = "What needs to be done?",
+                    HAlign = HorizontalAlignment.Stretch,
+                },
+                new Button(addCmd),
+            ],
+        },
+
+        // List — spread shines here
+        new ScrollView {
+            Flex = new(grow: 1, basis: 0),
+            Child = new VStack {
+                Spacing = 0,
+                Children = [..filtered.Select(item => TodoRow(item, dispatch))],
+            },
+        },
+
+        // Footer
+        new HStack {
+            Spacing = 8,
+            Padding = Thick(12, 8, 12, 8),
+            Border = new(DividerStroke),
+            Children = [
+                new Text($"{remaining} items left") {
+                    FontSize = 12, Foreground = SecondaryText,
+                    VAlign = VerticalAlignment.Center,
+                },
+                new Spacer(),
+                FilterButton("All", "all", state.Filter, dispatch),
+                FilterButton("Active", "active", state.Filter, dispatch),
+                FilterButton("Completed", "completed", state.Filter, dispatch),
+            ],
+        },
+    ],
+};
+```
+
+### Outlook MessageRow — Option A'
+
+```csharp
+var senderLine = new FlexRow {
+    ColumnGap = 8,
+    Children = [
+        new Text(msg.SenderName) {
+            FontSize = 14,
+            Weight = bold,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            Flex = new(grow: 1),
+        },
+        new Text(dateStr) { FontSize = 12, Foreground = TertiaryText },
+    ],
+};
+
+return new Button(Props.OnSelected) {
+    Background = bg,
+    BorderThickness = Thick(0, 0, 0, 1),
+    BorderBrush = BorderBrush,
+    Padding = Thick(0),
+    HAlign = HorizontalAlignment.Stretch,
+    HContentAlign = HorizontalAlignment.Stretch,
+    CornerRadius = 0,
+    Resources = r => r
+        .Set("ButtonBackgroundPointerOver", HoverBrush)
+        .Set("ButtonBackgroundPressed", SelectedBrush),
+    Content = new Grid(["*"], ["*"]) {
+        Children = [
+            content with { Padding = Thick(14, 10, 14, 10), Grid = new(0, 0) },
+            unreadBar with { Grid = new(0, 0) },
+        ],
+    },
+};
+```
+
+### Analysis — Option A'
+
+**Compared to Option A, what's different:**
+
+| | Option A (`Add()`) | Option A' (`Children = [...]`) |
+|---|---|---|
+| Immutability | Requires mutable `Add()` hack | Pure `init` property — fully immutable |
+| Spread / splat | Can't splat arrays inline | `[..expr]` works natively |
+| Mixing static + dynamic | Broken | `[static1, ..dynamic, static2]` works |
+| Null handling | `Add(null)` custom no-op | Needs `Element?[]` or filter post-init |
+| Bare children in `{ }` | `new VStack { child1, child2 }` — clean | `new VStack { Children = [child1, child2] }` — noisier |
+| Syntax weight | Lighter for static trees | `Children = [` adds ~15 chars per container |
+
+**What's better than Option A:**
+- **No immutability tension** — `Children` is a pure `init` property. The record is never mutated.
+- **Spread solves the LINQ problem** — `[..items.Select(Render)]` works inline, mixing freely
+  with static children. This was Option A's fatal flaw.
+- **`.SelectMany()` works** — `[..grid, ..series.SelectMany(...)]` is natural.
+- **Conditional children via spread** — `[header, ..(condition ? [extra] : []), footer]`.
+
+**What's worse than Option A:**
+- **`Children = [` boilerplate** — every container needs this prefix. For a 2-child VStack,
+  `new VStack { child1, child2 }` (Option A) is cleaner than
+  `new VStack { Children = [child1, child2] }` (A'). The extra `Children = [` and `]` add noise.
+- **Nested `Children = [` gets deep** — each nesting level adds another `Children = [` line,
+  increasing indentation pressure.
+
+**What's the same as Option A:**
+- **`new` keyword noise** — still present on every element.
+- **Properties via object initializer** — `{ FontSize = 14, Weight = bold }` — same.
+- **No `.Set()` needed** — same as A.
+- **API surface reduction** — same as A.
+
+**Compared to other options:**
+- **Vs. Option B** (factory + `with { }`): A' has clearer visual grouping (`{ }` for everything)
+  but more noise (`new`, `Children = [`). B has cleaner simple cases but the `with { }` precedence
+  gotcha.
+- **Vs. Current**: A' eliminates `.Set()` and the three-syntax split but adds `new` noise
+  and `Children = [` boilerplate. Strictly better for 5+ property elements, strictly worse for
+  1-2 property one-liners.
+
+**Verdict:** A' fixes Option A's two fatal flaws (immutability and LINQ splatting) while retaining
+its structural clarity. The `Children = [...]` boilerplate is the main cost — it's ~15 extra
+characters per container element. Whether that cost is acceptable depends on how much you value
+the visual consistency of `{ }` blocks over the terseness of `params` arrays.
 
 ---
 
@@ -744,6 +946,32 @@ static Element TodoRow(TodoItem item, Action<TodoAction> dispatch) =>
     ) with { Padding = Thick(12, 6, 12, 6), Key = item.Id };
 ```
 
+**Option A' (`new` + collection expressions):**
+```csharp
+static Element TodoRow(TodoItem item, Action<TodoAction> dispatch) =>
+    new HStack {
+        Key = item.Id,
+        Spacing = 8,
+        Padding = Thick(12, 6, 12, 6),
+        Children = [
+            new CheckBox { IsChecked = item.IsCompleted, OnChanged = _ => dispatch(new ToggleItem(item.Id)) },
+            new Text(item.Text) {
+                FontSize = 14,
+                Opacity = item.IsCompleted ? 0.5 : 1,
+                TextDecorations = item.IsCompleted ? TextDecorations.Strikethrough : TextDecorations.None,
+                VAlign = VerticalAlignment.Center,
+            },
+            new Spacer(),
+            new Button("✕") {
+                OnClick = () => dispatch(new DeleteItem(item.Id)),
+                Padding = Thick(6, 2, 6, 2),
+                MinWidth = 0,
+                MinHeight = 0,
+            },
+        ],
+    };
+```
+
 **Option C (hybrid):**
 ```csharp
 static Element TodoRow(TodoItem item, Action<TodoAction> dispatch) =>
@@ -762,25 +990,25 @@ static Element TodoRow(TodoItem item, Action<TodoAction> dispatch) =>
 
 ### Scoring Matrix
 
-| Criteria | Current | A: `new` + init | B: factory + `with` | C: hybrid | E: collection expr |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Simple element (1-2 props) | **A+** | B | B+ | **A+** | B |
-| Complex element (5+ props) | C | **A** | **A-** | B+ | C |
-| Nested container trees | B+ | **A** | B | B+ | C- |
-| Conditional modifiers | **A** | B- | B | **A-** | B- |
-| No `.Set()` escape hatch | F | **A+** | **A** | B | B |
-| No `new` keyword noise | **A+** | D | **A+** | **A+** | B |
-| API surface size | D | **A+** | B | C | B |
-| Immutability correctness | **A+** | C | **A+** | **A+** | **A** |
-| Migration cost | **A+** | D | C+ | **A-** | C |
-| IntelliSense / discoverability | **A** | B+ | B | **A-** | B- |
-| Learning curve for new devs | B+ | B | B | B | C |
-| Reconciler perf impact | **A** | C | B+ | **A** | B+ |
-| `.Select().ToArray()` children | **A+** | C | **A+** | **A+** | B |
-| Switch/ternary as children | **A** | **A** | **A** | **A** | B- |
-| LINQ + `.SelectMany()` + spread | **A** | **A** | **A** | **A** | B |
-| Imperative `List<>` building | B+ | B+ | B+ | B+ | C |
-| Mixing static + dynamic children | **A+** | C+ | **A+** | **A+** | C |
+| Criteria | Current | A: `new`+init | A': `new`+`[..]` | B: factory+`with` | C: hybrid | E: coll expr |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| Simple element (1-2 props) | **A+** | B | B- | B+ | **A+** | B |
+| Complex element (5+ props) | C | **A** | **A** | **A-** | B+ | C |
+| Nested container trees | B+ | **A** | B+ | B | B+ | C- |
+| Conditional modifiers | **A** | B- | B- | B | **A-** | B- |
+| No `.Set()` escape hatch | F | **A+** | **A+** | **A** | B | B |
+| No `new` keyword noise | **A+** | D | D | **A+** | **A+** | B |
+| API surface size | D | **A+** | **A+** | B | C | B |
+| Immutability correctness | **A+** | C | **A+** | **A+** | **A+** | **A** |
+| Migration cost | **A+** | D | D | C+ | **A-** | C |
+| IntelliSense / discoverability | **A** | B+ | B+ | B | **A-** | B- |
+| Learning curve for new devs | B+ | B | B | B | B | C |
+| Reconciler perf impact | **A** | C | B+ | B+ | **A** | B+ |
+| `.Select().ToArray()` children | **A+** | C | **A+** | **A+** | **A+** | B |
+| Switch/ternary as children | **A** | **A** | **A** | **A** | **A** | B- |
+| LINQ + `.SelectMany()` + spread | **A** | **A** | **A+** | **A** | **A** | B |
+| Imperative `List<>` building | B+ | B+ | B+ | B+ | B+ | C |
+| Mixing static + dynamic children | **A+** | C+ | **A+** | **A+** | **A+** | C |
 
 ### Legend
 - **A+/A/A-** — Excellent / strong
@@ -925,6 +1153,72 @@ Element FolderRow(MailFolder folder)
 }
 ```
 
+**Option A' (`new` + collection expressions):**
+```csharp
+public override Element Render()
+{
+    var favorites = Props.Folders.Where(f => f.IsFavorite).ToArray();
+    var others = Props.Folders.Where(f => !f.IsFavorite).ToArray();
+
+    return new FlexColumn {
+        Children = [
+            NewMailButton(),
+
+            new Text("Favorites") {
+                Weight = FontWeights.SemiBold, FontSize = 13,
+                Foreground = SecondaryText, Padding = Thick(18, 6, 18, 6),
+            },
+
+            // Spread solves the LINQ problem — no Children = needed on inner VStack
+            new VStack { Spacing = 0, Children = [..favorites.Select(FolderRow)] },
+
+            new Border { Child = new Empty(), Height = 1, Background = DividerStroke, Margin = Thick(16, 10, 16, 10) },
+
+            new Text("Folders") {
+                Weight = FontWeights.SemiBold, FontSize = 13,
+                Foreground = SecondaryText, Padding = Thick(18, 4, 18, 6),
+            },
+
+            new ScrollView {
+                Flex = new(grow: 1, basis: 0),
+                Child = new VStack { Spacing = 0, Children = [..others.Select(FolderRow)] },
+            },
+        ],
+    };
+}
+
+Element FolderRow(MailFolder folder)
+{
+    var isSelected = folder.Id == Props.SelectedFolderId;
+    var bg = isSelected ? SelectedBrush : TransparentBrush;
+
+    return new Button(() => Props.OnFolderSelected(folder.Id)) {
+        Background = bg,
+        BorderThickness = Thick(0),
+        Padding = Thick(0),
+        CornerRadius = 0,
+        HAlign = HorizontalAlignment.Stretch,
+        HContentAlign = HorizontalAlignment.Stretch,
+        Resources = r => r
+            .Set("ButtonBackgroundPointerOver", isSelected ? SelectedBrush : HoverBrush)
+            .Set("ButtonBackgroundPressed", SelectedBrush),
+        Content = new FlexRow {
+            ColumnGap = 10,
+            Padding = Thick(18, 7, 18, 7),
+            Children = [
+                MdlIcon(folder.Icon, 16, SecondaryText),
+                new Text(folder.DisplayName) { FontSize = 14, Flex = new(grow: 1) },
+                folder.UnreadCount > 0
+                    ? new Text(folder.UnreadCount.ToString()) {
+                        Weight = FontWeights.SemiBold, FontSize = 13, Foreground = AccentText,
+                      }
+                    : null,
+            ],
+        },
+    };
+}
+```
+
 **Option B (factory + `with { }`):**
 ```csharp
 public override Element Render()
@@ -1052,6 +1346,39 @@ return new VStack {
 };
 ```
 
+**Option A' (`new` + collection expressions):**
+```csharp
+return new VStack {
+    Children = [
+        new Text("Duct Demo") { FontSize = 24, Bold = true, Margin = Thick(16, 16, 16, 8) },
+
+        // Spread handles LINQ inline — same as current ergonomics
+        new HStack {
+            Spacing = 8,
+            Margin = Thick(16, 0),
+            Children = [
+                ..tabs.Select((tab, i) =>
+                    new Button(tab) {
+                        OnClick = () => setSelectedTab(i),
+                        Background = i == selectedTab ? Accent : SubtleFill,
+                        Margin = Thick(0, 0, 0, 8),
+                    }),
+            ],
+        },
+
+        // Switch works fine — each arm is an element in the collection expression
+        selectedTab switch
+        {
+            0 => Component<StandardCommandsDemo>(),
+            1 => Component<AsyncCommandDemo>(),
+            2 => Component<ParameterizedCommandDemo>(),
+            3 => Component<CommandHostDemo>(),
+            _ => new Empty(),
+        },
+    ],
+};
+```
+
 **Option B (factory + `with { }`):**
 ```csharp
 return VStack(
@@ -1080,9 +1407,10 @@ return VStack(
 
 **Analysis:** Switch expressions work equally well across all options — each arm returns
 a single `Element`. The real differentiator is the LINQ `.Select().ToArray()` pipeline.
-Option B handles it identically to the current model. Option A forces you into either
-a `Children = expr` assignment (which prevents mixing static and dynamic children) or
-requires an `AddRange()` method on the collection initializer.
+Option A' fixes Option A's splat problem — `[..tabs.Select(...)]` works natively.
+Option B handles it identically to the current model. Option A (without collection
+expressions) forces a `Children = expr` assignment that prevents mixing static and
+dynamic children.
 
 ---
 
@@ -1248,6 +1576,85 @@ return new ScrollView {
 };
 ```
 
+**Option A' (`new` + collection expressions):**
+```csharp
+return new ScrollView { Child = new VStack { Spacing = 16, Children = [
+    new Heading("Conditional UI"),
+
+    new CheckBox { IsChecked = showAdvanced, OnChanged = setShowAdvanced, Label = "Show advanced options" },
+
+    // Nested ternaries: each arm is an element in the [...]
+    showAdvanced
+        ? new Border {
+            CornerRadius = 8, Background = SubtleFill, Padding = Thick(16),
+            Child = new VStack { Spacing = 8, Children = [
+                new Text("Advanced Settings") { Weight = FontWeights.SemiBold },
+                new CheckBox { IsChecked = enableFeatureA, OnChanged = setFeatureA, Label = "Enable Feature A" },
+                new CheckBox { IsChecked = enableFeatureB, OnChanged = setFeatureB, Label = "Enable Feature B" },
+
+                // Conditional children via spread: empty array when false
+                ..(enableFeatureA ? [
+                    new Border {
+                        CornerRadius = 4, Background = SubtleFill, Padding = Thick(12),
+                        Child = new VStack { Spacing = 4, Children = [
+                            new Text("Feature A Configuration") { Weight = FontWeights.SemiBold },
+                            new Slider { Value = 50, Min = 0, Max = 100, Width = 200 },
+                        ]},
+                    }
+                ] : Array.Empty<Element>()),
+
+                ..(enableFeatureB ? [
+                    new Border {
+                        CornerRadius = 4, Background = SubtleFill, Padding = Thick(12),
+                        Child = new VStack { Spacing = 4, Children = [
+                            new Text("Feature B Configuration") { Weight = FontWeights.SemiBold },
+                            new ToggleSwitch { OnContent = "On", OffContent = "Off" },
+                        ]},
+                    }
+                ] : Array.Empty<Element>()),
+            ]},
+          }
+        : (Element)new Text("Check the box above.") { Foreground = TertiaryText },
+
+    // Switch works identically
+    viewMode switch
+    {
+        ViewMode.Simple => new VStack { Spacing = 4, Children = [
+            new Text("Simple view — just a summary."),
+            new Text($"{itemCount} items in the list."),
+        ]},
+        ViewMode.Detailed => new VStack { Spacing = 4, Children = [
+            new Text("Detailed view:") { Weight = FontWeights.SemiBold },
+            ..Enumerable.Range(1, itemCount).Select(i =>
+                new HStack { Spacing = 4, Children = [
+                    new Text($"Item {i}") { Width = 80 },
+                    new Progress(i * 100.0 / itemCount) { Width = 150 },
+                ]}),
+        ]},
+        ViewMode.Custom => new VStack { Spacing = 8, Children = [
+            new Text("Custom view:") { Weight = FontWeights.SemiBold },
+            new HStack { Spacing = 8, Children = [
+                new Text("Item count:"),
+                new Slider { Value = itemCount, Min = 1, Max = 10, OnChanged = v => setItemCount((int)v), Width = 200 },
+                new Text($"{itemCount}"),
+            ]},
+            ..Enumerable.Range(1, itemCount).Select(i =>
+                new Border {
+                    CornerRadius = 4, Background = SubtleFill, Padding = Thick(8, 4),
+                    Child = new Text($"Custom item {i}"),
+                }),
+        ]},
+        _ => new Empty(),
+    },
+
+    When(showAdvanced && enableFeatureA && enableFeatureB,
+        () => new Border {
+            CornerRadius = 4, Background = CautionBackground, Padding = Thick(12),
+            Child = new Text("Warning: conflicts possible."),
+        }),
+]}};
+```
+
 **Option B (factory + `with { }`):**
 ```csharp
 return ScrollView(VStack(16,
@@ -1321,12 +1728,18 @@ return ScrollView(VStack(16,
 - **Current**: fluent chains after ternary branches read well (`.CornerRadius(4).Background(...).Padding(12)`).
 - **Option A**: `new` + initializer nesting is *deep* but has clear `{ }` scoping. The structure
   reads like a data literal. `new` noise accumulates in proportion to nesting depth.
+- **Option A'**: Same structure as A but uses `Children = [...]` throughout. Conditional children
+  can use **spread with ternary**: `..(condition ? [element] : [])`. This is more explicit than
+  `condition ? element : null` but avoids the null-handling issue entirely. The nesting gets deep:
+  `new VStack { Spacing = 4, Children = [...]}` at every level. The `ForEach` equivalent uses
+  spread: `..Enumerable.Range(1, n).Select(...)` — arguably cleaner than wrapping in `ForEach()`.
 - **Option B**: `with { }` after ternary branches requires parenthesizing the outer expression —
   `(Border(...)) with { ... }` — or using the rule "put `with` last." The ternary arms need
   explicit `(Element)` casts when the two arms have different concrete types.
 
 Switch expressions work equally well across all options. `ForEach` (which returns a GroupElement)
-works as a child in both `params` and collection initializer contexts.
+works as a child in both `params` and collection initializer contexts. In A', the spread operator
+replaces `ForEach` entirely — `..Enumerable.Range(1, n).Select(...)` is a direct LINQ spread.
 
 ---
 
@@ -1438,6 +1851,63 @@ public override Element Render()
 
     return new Grid(columns, ["Auto"]) {
         Children = children.ToArray(),
+        BorderBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 224, 224, 224)),
+        BorderThickness = Thick(0, 0, 0, 1),
+    };
+}
+```
+
+**Option A' (`new` + collection expressions):**
+```csharp
+public override Element Render()
+{
+    var columns = new[] { "60" }.Concat(Enumerable.Repeat("*", 7)).ToArray();
+
+    // Imperative building is identical to Option A — for loops can't become collection expressions.
+    // But inner VStack children use spread instead of Children = .ToArray().
+    var children = new List<Element>
+    {
+        new Text("") {
+            FontSize = 11, Foreground = TertiaryText,
+            Grid = new(0, 0), Padding = Thick(4, 2, 4, 2),
+        }
+    };
+
+    for (int d = 0; d < 7; d++)
+    {
+        var day = Props.WeekStart.AddDays(d).Date;
+        var dayEvents = Props.AllDayEvents
+            .Where(e => e.Start.Date <= day && e.End.Date > day)
+            .ToArray();
+
+        if (dayEvents.Length > 0)
+        {
+            var stack = new VStack {
+                Spacing = 1, Padding = Thick(2),
+                // Spread works — no need for Children = .ToArray()
+                Children = [..dayEvents.Select(e =>
+                {
+                    var color = Props.SourceColors.GetValueOrDefault(e.CalendarSourceId, "#0078D4");
+                    return (Element)new Border {
+                        Background = BrushHelper.Parse(color + "30"),
+                        BorderBrush = BrushHelper.Parse(color),
+                        BorderThickness = Thick(2, 0, 0, 0),
+                        CornerRadius = 2,
+                        Padding = Thick(4, 1, 4, 1),
+                        Child = new Text(e.Title) {
+                            FontSize = 10,
+                            TextTrimming = TextTrimming.CharacterEllipsis,
+                            MaxLines = 1,
+                        },
+                    };
+                })],
+            };
+            children.Add(stack with { Grid = new(0, d + 1) });
+        }
+    }
+
+    return new Grid(columns, ["Auto"]) {
+        Children = [..children],
         BorderBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 224, 224, 224)),
         BorderThickness = Thick(0, 0, 0, 1),
     };
@@ -1570,6 +2040,14 @@ return D3Canvas(W, H,
     ]);
 ```
 
+**Option A' (`new` + collection expressions):**
+```csharp
+// Identical to Option A. D3Canvas takes params Element[] — children are passed via
+// collection expression [..] spread, which is the same mechanism A' uses for Children.
+// D3Rect uses { Fill = fill } object initializer — same syntax in A and A'.
+// No difference between A and A' for this pattern.
+```
+
 **Option B (factory + `with { }`):**
 ```csharp
 // Identical to current — with { } is already used for D3Rect properties.
@@ -1692,6 +2170,56 @@ return new FlexColumn {
 };
 ```
 
+**Option A' (`new` + collection expressions):**
+```csharp
+var sections = categories.Select(group =>
+    (Element)new VStack {
+        Spacing = 8,
+        Children = [
+            new SubHeading(group.Key) { Foreground = PrimaryText },
+            new FlexPanel {
+                Direction = FlexDirection.Row,
+                Wrap = FlexWrap.Wrap,
+                ColumnGap = 8,
+                RowGap = 8,
+                // Spread works inside Children = [...] — this is the key A' improvement
+                Children = [..group.Select(sample =>
+                    new Button(() => navigate(sample)) {
+                        Width = 130, Height = 90,
+                        Content = new VStack {
+                            Spacing = 6,
+                            MaxWidth = 100,
+                            HAlign = HorizontalAlignment.Center,
+                            Children = [
+                                SampleIcon(sample, 36),
+                                new Text(sample.Title) { FontSize = 12 },
+                            ],
+                        },
+                    })],
+            },
+        ],
+    }
+).ToArray();
+
+return new FlexColumn {
+    Children = [
+        new HStack {
+            Spacing = 12,
+            Padding = Thick(24, 24, 24, 0),
+            Children = [
+                new Heading("Gallery") { Foreground = PrimaryText, Flex = new(grow: 1) },
+                ThemeToggle(isDark, setIsDark),
+            ],
+        },
+        new Caption($"{SampleRegistry.All.Length} samples") { Foreground = SecondaryText, Padding = Thick(24, 0) },
+        new ScrollView {
+            Flex = new(grow: 1, basis: 0),
+            Child = new VStack { Spacing = 24, Padding = Thick(24, 12, 24, 24), Children = [..sections] },
+        },
+    ],
+};
+```
+
 **Option B (factory + `with { }`):**
 ```csharp
 var sections = categories.Select(group =>
@@ -1739,26 +2267,33 @@ the pattern works today for `new`-constructed elements. The key findings:
 
 ### 7B.7 Updated Scoring (Including Complex Patterns)
 
-| Criteria | Current | A: `new` + init | B: factory + `with` | C: hybrid |
-|---|:---:|:---:|:---:|:---:|
-| `.Select().ToArray()` in children | **A+** | C | **A+** | **A+** |
-| `.SelectMany()` + spread `[..]` | **A** | **A** | **A** | **A** |
-| Switch expressions as children | **A** | **A** | **A** | **A** |
-| Nested ternary conditionals | **A-** | **A-** | B+ | **A-** |
-| Imperative `List<>` + loop | B+ | B+ | B+ | B+ |
-| `.GroupBy().Select()` pipelines | **A** | B | **A** | **A** |
-| `.Concat()` / collection building | **A** | B | **A** | **A** |
-| `.Where()` filter → `.Select()` map | **A+** | B+ | **A+** | **A+** |
-| Deep nesting (4+ levels) | B | **A-** | B | B |
-| Mixing static + dynamic children | **A+** | C+ | **A+** | **A+** |
+| Criteria | Current | A: `new`+init | A': `new`+`[..]` | B: factory+`with` | C: hybrid |
+|---|:---:|:---:|:---:|:---:|:---:|
+| `.Select().ToArray()` in children | **A+** | C | **A+** | **A+** | **A+** |
+| `.SelectMany()` + spread `[..]` | **A** | **A** | **A+** | **A** | **A** |
+| Switch expressions as children | **A** | **A** | **A** | **A** | **A** |
+| Nested ternary conditionals | **A-** | **A-** | B+ | B+ | **A-** |
+| Imperative `List<>` + loop | B+ | B+ | B+ | B+ | B+ |
+| `.GroupBy().Select()` pipelines | **A** | B | **A** | **A** | **A** |
+| `.Concat()` / collection building | **A** | B | **A+** | **A** | **A** |
+| `.Where()` filter → `.Select()` map | **A+** | B+ | **A+** | **A+** | **A+** |
+| Deep nesting (4+ levels) | B | **A-** | B- | B | B |
+| Mixing static + dynamic children | **A+** | C+ | **A** | **A+** | **A+** |
 
-**Key takeaway:** Option A's biggest weakness is `.Select().ToArray()` as inline children.
-The collection initializer `{ }` syntax can only accept individual `Add()` calls, not splatted
-arrays. This forces a `Children = expr` property assignment which prevents mixing static
-children with dynamic ones in the same block. This is a fundamental limitation that makes
-Option A significantly worse for data-driven UIs — exactly the kind of UI Duct targets.
+**Key takeaways:**
 
-Options B and C handle all LINQ patterns identically to the current model because children
+**Option A's** biggest weakness — `.Select().ToArray()` inline — is **fully solved by A'**.
+The collection expression spread `[..items.Select(Render)]` works natively inside
+`Children = [...]`, mixing freely with static elements. A' also eliminates the immutability
+hack (no `Add()` mutation).
+
+**A' trades one problem for another:** it fixes LINQ splatting but introduces `Children = [`
+boilerplate at every container level. Deep nesting (4+ levels, as in ConditionalDemo) gets
+visually heavy: `new VStack { Spacing = 8, Children = [` is a lot of ceremony per level
+compared to `VStack(8,`. The conditional-children pattern also shifts from clean `null`
+filtering to `...(condition ? [element] : [])` spread, which is more explicit but verbose.
+
+**Options B and C** handle all LINQ patterns identically to the current model because children
 remain in `params` arrays. The `with { }` block is purely additive — it replaces `.Set()` and
 augments fluent chains, without touching the child-passing mechanism.
 
@@ -1772,7 +2307,7 @@ augments fluent chains, without touching the child-passing mechanism.
 of real-world component code (see MessageRow, TodoApp, DirectoryTree). Each option addresses it
 differently:
 
-| What `.Set()` is used for | Current | Option A | Option B | Option C |
+| What `.Set()` is used for | Current | Option A / A' | Option B | Option C |
 |---|---|---|---|---|
 | FontWeight on TextBlock | `.Set(t => t.FontWeight = ...)` | `Weight = ...` in init | `with { Weight = ... }` | `with { Weight = ... }` |
 | TextTrimming | `.Set(t => t.TextTrimming = ...)` | `TextTrimming = ...` | `with { TextTrimming = ... }` | `with { TextTrimming = ... }` |
@@ -1789,7 +2324,7 @@ unnecessary for the top ~50 properties used in real code. The element records al
 of these (FontSize, IsEnabled, Spacing, etc.) — the gap is primarily FontWeight, TextDecorations,
 TextTrimming, Padding/MinWidth on Button, and resource dictionary access.
 
-### 8.2 The Immutability Problem (Option A Only)
+### 8.2 The Immutability Problem (Option A Only — Solved by A')
 
 Collection initializers require `Add()`, which is a mutating operation. Duct elements are immutable
 records. These are fundamentally at odds.
@@ -1810,8 +2345,14 @@ but C# guarantees sequential execution within an expression. No other code can o
 constructed state. This is the same pattern `List<T>` uses with collection initializers. It's safe
 in practice but aesthetically impure.
 
-**Recommendation:** Approach 4 (accept internal mutability) if pursuing Option A. The alternatives
-add too much ceremony.
+**Approach 5 (Option A'): Use `Children = [...]` instead of `Add()`.** The `Children` property is
+a pure `{ get; init; }` on the record, set via a C# 12 collection expression. No mutation at all —
+the collection expression builds the array, then the init property receives it. This is the cleanest
+solution and eliminates the entire problem.
+
+**Recommendation:** If pursuing the `new` + initializer model, use Option A' (Approach 5). It
+preserves full immutability with zero compromise. Option A's `Add()` hack (Approach 4) is only
+needed if you insist on bare children in `{ }` without the `Children = [` prefix.
 
 ### 8.3 The Conditional Children Problem
 
@@ -1829,6 +2370,13 @@ Each option handles this differently:
 
 **Option A:** `Add(null)` must be a no-op. The `Add()` method filters nulls. Works, but every
 call site pays a null check.
+
+**Option A':** Two approaches:
+1. Type `Children` as `Element?[]` — nulls are allowed, reconciler filters them. Clean:
+   `Children = [header, condition ? extra : null, footer]`.
+2. Type `Children` as `Element[]` — must use spread: `Children = [header, ..(condition ? [extra] : []), footer]`.
+   More explicit but verbose. For the `Element?[]` approach, the reconciler's `FilterChildren` logic
+   handles null stripping identically to the current model.
 
 **Option B:** No change — `params Element?[]` still handles this. The `with { }` block is only
 for properties, not children.
@@ -1902,9 +2450,18 @@ With `new` + initializer (Option A), the cost is:
 
 Also cheaper than the current model.
 
-**Performance verdict:** Both Options A and B are strictly better than the current fluent model
-for elements with multiple modifiers. The current model's per-modifier allocation + merge cost
-is its worst performance characteristic.
+With `new` + collection expression (Option A'), the cost is:
+1. One array allocation for `Children = [...]` (the collection expression builds a single array)
+2. One allocation of the element with all properties set at init time
+3. No intermediate copies, no merge operations
+
+This is the **cheapest option** — one array + one record allocation, no intermediate objects.
+The collection expression compiler can even stack-allocate the span for small child counts.
+
+**Performance verdict:** Options A, A', and B are all strictly better than the current fluent
+model for elements with multiple modifiers. A' is marginally best (no `Add()` overhead, no
+`with { }` copy). The current model's per-modifier allocation + merge cost is its worst
+performance characteristic.
 
 ---
 
@@ -1938,18 +2495,26 @@ is its worst performance characteristic.
    wrappers over `with { }`.
 4. This gives developers a choice: use fluent for quick one-liners, `with { }` for complex config.
 
-### Long Term (If C# Evolves)
+### Long Term (Consider A' or Wait for C# Evolution)
+
+**Option A' is viable today** and merits a prototype. Its strengths — full immutability, LINQ
+spread, unified `{ }` syntax — address the current model's deepest structural problems. The
+`Children = [...]` boilerplate and `new` noise are real costs, but they're consistent and
+predictable. A prototype branch migrating 2–3 production components (Outlook MessageRow,
+FolderPane, calendar AllDayRow) would reveal whether the boilerplate cost is acceptable in
+practice or just tolerable in a spec.
 
 **Watch for factory method initializers** ([csharplang #6602](https://github.com/dotnet/csharplang/discussions/6602)):
 If C# ever allows `VStack(16) { child1, child2 }` syntax (collection initializer after factory
 method calls), this unlocks the best possible Duct syntax — no `new`, `{ }` for children,
 properties inline. This is the "Option A without the `new`" future that Spec 008 §5 describes.
+A' would transition cleanly to this future — replace `new VStack { Children = [...] }` with
+`VStack() { children }` — since the property-setting side is identical.
 
 ### What NOT to Do
 
-1. **Don't pursue Option A (pure `new` + initializers) today.** The `new` keyword noise, immutability
-   tension, and name collision issues make it a poor fit for Duct's ergonomic goals. It could be
-   revisited if C# adds factory-method initializers.
+1. **Don't pursue Option A (mutable `Add()` initializers) today.** A' is strictly better — same
+   visual style, no immutability hack, spread works. There is no reason to choose A over A'.
 
 2. **Don't pursue Option E (collection expressions) as a primary model.** It solves half the problem
    (children) while creating a new split (children in `[ ]`, properties in `with { }`).
@@ -2026,16 +2591,24 @@ equivalents.
 | **MAUI (C# Markup)** | `new Label()` | Object initializer `{ }` | `.Content()` / `.Children()` |
 | **Fabulous (F#)** | View functions | Fluent modifiers | Computation expression `{ }` |
 | **Duct (current)** | Factory methods | Fluent + `.Set()` + `with { }` | `params Element?[]` |
+| **Duct (Option A')** | `new` constructors | Object initializer `{ }` | `Children = [...]` collection expr |
+| **Duct (Option B)** | Factory methods | `with { }` record copy | `params Element?[]` |
 
 **Key observation:** Every successful declarative UI framework lands on one of two models:
-1. **Function + modifier chain** (SwiftUI, Compose, Duct) — construction is a function call,
+1. **Function + modifier chain** (SwiftUI, Compose, Duct current) — construction is a function call,
    configuration is chained modifiers.
-2. **Constructor + properties** (Flutter, MAUI) — construction is `new`, configuration is named
+2. **Constructor + properties** (Flutter, MAUI, Duct A') — construction is `new`, configuration is named
    params or object initializer.
 
 No framework successfully mixes both as equals. Duct's `with { }` usage on FlexElement is already
-a sign of model #2 leaking into model #1. The question is whether to commit to one or deliberately
-operate in the hybrid space.
+a sign of model #2 leaking into model #1. Option A' commits fully to model #2 while Option B
+commits fully to model #1 (with `with { }` replacing fluent chains). The question is whether to
+commit to one or deliberately operate in the hybrid space.
+
+**Flutter parallel:** Option A' is structurally closest to Flutter's model — `new Widget(...)` with
+named constructor params and `children: [...]`. The difference is that Flutter uses constructor
+parameters while A' uses init properties, and Flutter doesn't have collection expression spread
+(`..`). Duct A' with C# 12 spread is arguably more powerful than Flutter's child-passing model.
 
 ## Appendix B: Detailed C# Syntax Limitations
 
