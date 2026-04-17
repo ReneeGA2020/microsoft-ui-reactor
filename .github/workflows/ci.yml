@@ -6,8 +6,29 @@ on:
     branches: [main]
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      non-md: ${{ steps.filter.outputs.non-md }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+
+      - name: Filter non-Markdown changes
+        id: filter
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          filters: |
+            non-md:
+              - '!(**/*.md)'
+              - '!(**/*.md)/**'
+
   unit-tests:
     name: Unit Tests
+    needs: changes
+    if: needs.changes.outputs.non-md == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
