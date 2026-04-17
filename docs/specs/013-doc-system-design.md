@@ -20,19 +20,20 @@ A "compilable documentation" system where:
 
 ```
 docs/
-  apps/                          ← Doc sample apps (source of truth)
-    getting-started/
-      App.cs                     ← Minimal Reactor app with snippet markers
-      doc-manifest.yaml          ← Screenshot regions, window size, delays
-      getting-started.csproj
-    commanding/
-      App.cs
-      doc-manifest.yaml
-      commanding.csproj
-  templates/                     ← Doc templates (human + AI authored)
-    getting-started.md.dt        ← Markdown with snippet/screenshot directives
-    commanding.md.dt
-  output/                        ← Compiled docs (generated, not hand-edited)
+  _pipeline/
+    apps/                        ← Doc sample apps (source of truth)
+      getting-started/
+        App.cs                   ← Minimal Reactor app with snippet markers
+        doc-manifest.yaml        ← Screenshot regions, window size, delays
+        getting-started.csproj
+      commanding/
+        App.cs
+        doc-manifest.yaml
+        commanding.csproj
+    templates/                   ← Doc templates (human + AI authored)
+      getting-started.md.dt      ← Markdown with snippet/screenshot directives
+      commanding.md.dt
+  guide/                         ← Compiled docs (generated, not hand-edited)
     getting-started.md
     commanding.md
     images/
@@ -47,12 +48,12 @@ docs/
 
 ## 1. Doc Apps
 
-Each documentation topic has a dedicated app in `docs/apps/`. These are minimal Reactor apps whose *only purpose* is to provide working code examples and screenshot targets.
+Each documentation topic has a dedicated app in `docs/_pipeline/apps/`. These are minimal Reactor apps whose *only purpose* is to provide working code examples and screenshot targets.
 
 ### Structure
 
 ```
-docs/apps/{topic}/
+docs/_pipeline/apps/{topic}/
   App.cs                   ← Single-file Reactor app
   doc-manifest.yaml        ← Metadata for doc compilation
   {topic}.csproj           ← Standard Reactor project file
@@ -131,7 +132,7 @@ If any step fails, the doc compile fails — guaranteeing that every snippet com
 
 ## 2. Doc Templates
 
-Templates live in `docs/templates/` with a `.md.dt` extension ("doc template"). They are Markdown files with directives that reference snippets and screenshots.
+Templates live in `docs/_pipeline/templates/` with a `.md.dt` extension ("doc template"). They are Markdown files with directives that reference snippets and screenshots.
 
 ### Snippet Directive
 
@@ -235,7 +236,7 @@ duct docs compile [--topic <name>] [--no-ai] [--no-screenshots] [--validate-only
 - Use the existing `PreviewCaptureServer` infrastructure (Win32 `PrintWindow`)
 - Wait for startup delay, execute any setup actions
 - Capture screenshots per manifest regions
-- Save to `docs/output/images/{topic}/{id}.{format}`
+- Save to `docs/guide/images/{topic}/{id}.{format}`
 - Shut down apps
 
 #### Phase 4: Extract
@@ -248,13 +249,13 @@ duct docs compile [--topic <name>] [--no-ai] [--no-screenshots] [--validate-only
   - Build the AI prompt (see §5) with front-matter goal, available snippets, screenshot references
   - AI generates the full document, using snippet and screenshot directives
   - `ai:lock` sections from any previous output are preserved verbatim
-- Write compiled `.md` files to `docs/output/`
+- Write compiled `.md` files to `docs/guide/`
 
 #### Phase 6: Assemble
 - Process the AI-generated output:
   - Replace `snippet=` directives with extracted code
   - Replace `screenshot://` URLs with relative image paths
-- Write final `.md` files to `docs/output/`
+- Write final `.md` files to `docs/guide/`
 
 ### Pipeline Flags
 
@@ -446,7 +447,7 @@ A scheduled pipeline or manual trigger runs the full compile with screenshots:
 duct docs compile --ci
 ```
 
-This captures fresh screenshots and verifies that the committed `docs/output/` matches the generated output. If they differ, the build fails — signaling that docs need to be recompiled.
+This captures fresh screenshots and verifies that the committed `docs/guide/` matches the generated output. If they differ, the build fails — signaling that docs need to be recompiled.
 
 ---
 
@@ -454,17 +455,17 @@ This captures fresh screenshots and verifies that the committed `docs/output/` m
 
 | Path | Format | Purpose |
 |---|---|---|
-| `docs/apps/{topic}/App.cs` | C# with `// <snippet:id>` markers | Source of truth for code examples |
-| `docs/apps/{topic}/doc-manifest.yaml` | YAML | Screenshot regions, app config |
-| `docs/templates/{topic}.md.dt` | YAML front-matter + optional `ai:lock` sections | AI instructions (human-edited) |
-| `docs/output/{topic}.md` | Markdown | AI-generated compiled docs (generated) |
-| `docs/output/images/{topic}/{id}.png` | PNG | Captured screenshots (generated) |
+| `docs/_pipeline/apps/{topic}/App.cs` | C# with `// <snippet:id>` markers | Source of truth for code examples |
+| `docs/_pipeline/apps/{topic}/doc-manifest.yaml` | YAML | Screenshot regions, app config |
+| `docs/_pipeline/templates/{topic}.md.dt` | YAML front-matter + optional `ai:lock` sections | AI instructions (human-edited) |
+| `docs/guide/{topic}.md` | Markdown | AI-generated compiled docs (generated) |
+| `docs/guide/images/{topic}/{id}.png` | PNG | Captured screenshots (generated) |
 
 ---
 
 ## 8. Example: End-to-End
 
-### Step 1: Doc App (`docs/apps/getting-started/App.cs`)
+### Step 1: Doc App (`docs/_pipeline/apps/getting-started/App.cs`)
 
 ```csharp
 using Microsoft.UI.Reactor;
@@ -489,7 +490,7 @@ class GettingStartedApp : Component
 }
 ```
 
-### Step 2: Manifest (`docs/apps/getting-started/doc-manifest.yaml`)
+### Step 2: Manifest (`docs/_pipeline/apps/getting-started/doc-manifest.yaml`)
 
 ```yaml
 app:
@@ -505,7 +506,7 @@ screenshots:
     format: png
 ```
 
-### Step 3: Template (`docs/templates/getting-started.md.dt`)
+### Step 3: Template (`docs/_pipeline/templates/getting-started.md.dt`)
 
 ~~~markdown
 ---
@@ -526,7 +527,7 @@ goal: |
 
 Note: The template is minimal — just front-matter with a `goal` and any locked sections. The AI writes everything else.
 
-### Step 4: Compiled Output (`docs/output/getting-started.md`)
+### Step 4: Compiled Output (`docs/guide/getting-started.md`)
 
 The AI generates the full document, using available snippets and screenshots:
 
@@ -608,7 +609,7 @@ Note how the locked prerequisites block appears verbatim. The AI chose to use th
 
 4. **Output format**: Compiled output is Markdown. Checked into the repo for browsing.
 
-5. **Versioning compiled output**: `docs/output/` is committed to the repo. CI verifies that committed output matches a fresh compile.
+5. **Versioning compiled output**: `docs/guide/` is committed to the repo. CI verifies that committed output matches a fresh compile.
 
 6. **AI-created apps**: The compile pipeline supports an agent mode where the AI autonomously creates doc apps and snippets to fill `doc:needs-snippet` gaps. The developer reviews the generated apps before committing.
 

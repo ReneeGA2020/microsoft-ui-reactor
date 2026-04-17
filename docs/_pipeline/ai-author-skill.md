@@ -8,12 +8,12 @@ must work with the `mur docs compile` pipeline.
 
 The doc system has two inputs and one output per topic:
 
-1. **Template** (`docs/templates/<topic>.md.dt`) — Markdown with YAML
+1. **Template** (`docs/_pipeline/templates/<topic>.md.dt`) — Markdown with YAML
    front-matter, snippet directives, screenshot references, and `ai:lock`
    sections.
-2. **Doc App** (`docs/apps/<topic>/`) — A compilable Reactor app containing
+2. **Doc App** (`docs/_pipeline/apps/<topic>/`) — A compilable Reactor app containing
    snippet-marked code and a `doc-manifest.yaml` for screenshots.
-3. **Output** (`docs/output/<topic>.md`) — Final compiled Markdown with
+3. **Output** (`docs/guide/<topic>.md`) — Final compiled Markdown with
    snippets inlined and screenshot paths resolved.
 
 You produce both the template and the doc app. The compile pipeline does the
@@ -28,7 +28,7 @@ rest.
 ```yaml
 ---
 title: "Human-readable title"
-app: <topic-id>            # matches the docs/apps/<topic-id>/ directory
+app: <topic-id>            # matches the docs/_pipeline/apps/<topic-id>/ directory
 order: 3                   # sort order in the final docset
 audience: beginner|intermediate|advanced
 goal: |
@@ -75,10 +75,10 @@ instructions.
 
 ## Doc App Structure
 
-Each topic has a companion app in `docs/apps/<topic>/`:
+Each topic has a companion app in `docs/_pipeline/apps/<topic>/`:
 
 ```
-docs/apps/my-topic/
+docs/_pipeline/apps/my-topic/
   my-topic.csproj          # Standard Reactor project
   App.cs                   # Main source with snippet markers
   doc-manifest.yaml        # App config + screenshot definitions
@@ -493,7 +493,7 @@ images, form labels, headings, landmarks, TabIndex gaps, etc.).
 
 ## Topic Ideas for the Full Docset
 
-Generate these as `<topic>.md.dt` + `docs/apps/<topic>/` pairs:
+Generate these as `<topic>.md.dt` + `docs/_pipeline/apps/<topic>/` pairs:
 
 ### Beginner
 
