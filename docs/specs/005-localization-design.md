@@ -535,8 +535,8 @@ showing the actual English string when hovering over `Loc.Cart.ItemCount`.
 At build time, the generator cross-references all locale folders and emits:
 
 ```
-warning DUCT_LOC001: Key 'Cart.ItemCount' exists in en-US but is missing in fr-FR
-warning DUCT_LOC001: Key 'Cart.ItemCount' exists in en-US but is missing in ar-SA
+warning REACTOR_LOC001: Key 'Cart.ItemCount' exists in en-US but is missing in fr-FR
+warning REACTOR_LOC001: Key 'Cart.ItemCount' exists in en-US but is missing in ar-SA
 ```
 
 These are warnings by default, errors in release builds (configurable via MSBuild property):

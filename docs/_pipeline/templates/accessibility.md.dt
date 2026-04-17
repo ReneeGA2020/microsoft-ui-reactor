@@ -8,7 +8,7 @@ goal: |
   AccessKey, FullDescription; tiered modifier pattern; WCAG compliance patterns;
   UseFocusTrap for modal dialogs, UseAnnounce for live announcements,
   SemanticPanel for custom automation peers, AccessibilityScanner runtime
-  diagnostics, and Roslyn analyzers (DUCT_A11Y_001-003).
+  diagnostics, and Roslyn analyzers (REACTOR_A11Y_001-003).
 ---
 
 # Accessibility
@@ -203,9 +203,9 @@ as you type in your IDE:
 
 | Diagnostic ID | Rule |
 |--------------|------|
-| `DUCT_A11Y_001` | Icon-only `Button(icon, action)` calls without `.AutomationName()` |
-| `DUCT_A11Y_002` | `Image()` without `.AutomationName()` or `.AccessibilityHidden()` |
-| `DUCT_A11Y_003` | `TextField`/`NumberBox`/`PasswordBox` without `header:` arg or label modifier |
+| `REACTOR_A11Y_001` | Icon-only `Button(icon, action)` calls without `.AutomationName()` |
+| `REACTOR_A11Y_002` | `Image()` without `.AutomationName()` or `.AccessibilityHidden()` |
+| `REACTOR_A11Y_003` | `TextField`/`NumberBox`/`PasswordBox` without `header:` arg or label modifier |
 
 These analyzers run automatically when you reference the `Reactor.Analyzers`
 package. They complement the runtime `AccessibilityScanner` by catching the

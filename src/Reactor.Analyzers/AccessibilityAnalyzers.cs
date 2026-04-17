@@ -8,14 +8,14 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace Microsoft.UI.Reactor.Analyzers;
 
 /// <summary>
-/// DUCT_A11Y_001: Icon-only buttons need <c>.AutomationName()</c> for screen readers.
+/// REACTOR_A11Y_001: Icon-only buttons need <c>.AutomationName()</c> for screen readers.
 /// Detects <c>Button(icon, action)</c> where the first argument is not a string literal
 /// and no <c>.AutomationName()</c> is present in the fluent chain.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class IconButtonAccessibilityAnalyzer : DiagnosticAnalyzer
 {
-    public const string DiagnosticId = "DUCT_A11Y_001";
+    public const string DiagnosticId = "REACTOR_A11Y_001";
 
     private static readonly LocalizableString Title =
         "Icon-only button needs an accessible name";
@@ -93,14 +93,14 @@ public sealed class IconButtonAccessibilityAnalyzer : DiagnosticAnalyzer
 }
 
 /// <summary>
-/// DUCT_A11Y_002: Images need alt text or <c>.AccessibilityHidden()</c>.
+/// REACTOR_A11Y_002: Images need alt text or <c>.AccessibilityHidden()</c>.
 /// Detects <c>Image(uri)</c> factory calls without <c>.AutomationName()</c> or
 /// <c>.AccessibilityHidden()</c> in the fluent chain.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class ImageAccessibilityAnalyzer : DiagnosticAnalyzer
 {
-    public const string DiagnosticId = "DUCT_A11Y_002";
+    public const string DiagnosticId = "REACTOR_A11Y_002";
 
     private static readonly LocalizableString Title =
         "Image needs alt text or AccessibilityHidden()";
@@ -167,7 +167,7 @@ public sealed class ImageAccessibilityAnalyzer : DiagnosticAnalyzer
 }
 
 /// <summary>
-/// DUCT_A11Y_003: Form fields need a label for screen readers.
+/// REACTOR_A11Y_003: Form fields need a label for screen readers.
 /// Detects <c>TextField(...)</c>, <c>NumberBox(...)</c>, <c>PasswordBox(...)</c>,
 /// and <c>AutoSuggestBox(...)</c> factory calls without a <c>header:</c> named argument,
 /// <c>.AutomationName()</c>, or <c>.LabeledBy()</c> in the fluent chain.
@@ -175,7 +175,7 @@ public sealed class ImageAccessibilityAnalyzer : DiagnosticAnalyzer
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class FormFieldLabelAnalyzer : DiagnosticAnalyzer
 {
-    public const string DiagnosticId = "DUCT_A11Y_003";
+    public const string DiagnosticId = "REACTOR_A11Y_003";
 
     private static readonly LocalizableString Title =
         "Form field needs a label";

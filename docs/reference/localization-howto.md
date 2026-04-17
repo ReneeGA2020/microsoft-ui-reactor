@@ -297,7 +297,7 @@ internal static class Loc
 
 If a key is referenced in code but missing from `.resw`, you get a
 compile error. If a key exists in `en-US` but is missing in another
-locale, you get `DUCT_LOC001` warning (or error, depending on
+locale, you get `REACTOR_LOC001` warning (or error, depending on
 `ReactorLocMissingKeySeverity`).
 
 ---

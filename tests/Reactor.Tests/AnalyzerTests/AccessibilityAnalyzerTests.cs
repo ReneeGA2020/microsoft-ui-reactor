@@ -6,7 +6,7 @@ using Xunit;
 namespace Microsoft.UI.Reactor.Tests.AnalyzerTests;
 
 /// <summary>
-/// Unit tests for DUCT_A11Y_001: icon-only button needs an accessible name.
+/// Unit tests for REACTOR_A11Y_001: icon-only button needs an accessible name.
 /// Uses class-level static stubs so Button/Image/etc. compile in the Roslyn test context.
 /// </summary>
 public class IconButtonAccessibilityAnalyzerTests
@@ -81,7 +81,7 @@ class C
 }
 
 /// <summary>
-/// Unit tests for DUCT_A11Y_002: image needs alt text or AccessibilityHidden().
+/// Unit tests for REACTOR_A11Y_002: image needs alt text or AccessibilityHidden().
 /// </summary>
 public class ImageAccessibilityAnalyzerTests
 {
@@ -155,7 +155,7 @@ class C
 }
 
 /// <summary>
-/// Unit tests for DUCT_A11Y_003: form field needs a label.
+/// Unit tests for REACTOR_A11Y_003: form field needs a label.
 /// </summary>
 public class FormFieldLabelAnalyzerTests
 {

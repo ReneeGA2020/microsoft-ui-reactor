@@ -8,7 +8,7 @@ without extra scripting.
 
 Add the following step group to your build pipeline. It runs after
 `dotnet build` so that the source generator has already validated
-structural issues (missing keys → `DUCT_LOC001` warnings/errors).
+structural issues (missing keys → `REACTOR_LOC001` warnings/errors).
 
 ```yaml
 # ── Localization quality gates ────────────────────────────────────
@@ -60,7 +60,7 @@ coverage visibility in CI logs:
 
 ### MSBuild-level gate (source generator)
 
-The source generator already emits `DUCT_LOC001` diagnostics for keys
+The source generator already emits `REACTOR_LOC001` diagnostics for keys
 present in the default locale but missing in other locales. To make these
 build-breaking:
 

@@ -20,8 +20,8 @@
 //    A11Y_008  — .LabeledBy() referencing a missing AutomationId   (1 instance)
 //
 //  Expected diagnostics (Roslyn compile-time analyzers):
-//    DUCT_A11Y_001 — Icon-only buttons without .AutomationName()
-//    DUCT_A11Y_003 — Form fields without header/AutomationName/LabeledBy
+//    REACTOR_A11Y_001 — Icon-only buttons without .AutomationName()
+//    REACTOR_A11Y_003 — Form fields without header/AutomationName/LabeledBy
 //
 //  To run the scanner at runtime, call AccessibilityScanner.Scan() on
 //  the rendered element tree and inspect the structured JSON output.
