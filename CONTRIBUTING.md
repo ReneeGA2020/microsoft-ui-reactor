@@ -23,7 +23,7 @@ dotnet restore Reactor.sln
 dotnet build Reactor.sln -p:Platform=x64
 
 # Build just the framework
-dotnet build Reactor/Reactor.csproj -p:Platform=x64
+dotnet build src/Reactor/Reactor.csproj -p:Platform=x64
 ```
 
 ### From Visual Studio
@@ -224,7 +224,7 @@ dotnet run --project samples/Reactor.TestApp -p:Platform=x64
 ## Project layout
 
 ```
-Reactor/                          Core framework library
+src/Reactor/                      Core framework library
   Core/
     Component.cs               Base Component class, hook methods
     Element.cs                 40+ virtual element record types
@@ -262,7 +262,7 @@ Reactor/                          Core framework library
         reconcile.rs           Keyed list reconciliation with LIS
         ffi.rs                 extern "C" FFI entry points
         arena.rs               Reusable diff context/buffer
-Reactor.Cli/                      CLI scaffolding tool (duct --create <Name>)
+src/Reactor.Cli/                  CLI scaffolding tool (mur --create <Name>)
 tests/
   Reactor.Tests/                  1. Unit tests — xUnit (2,200+ tests, no UI window)
   Reactor.AppTests/               2+3. Test runner — MSTest (orchestrates selfhost + E2E tests)
@@ -279,7 +279,7 @@ samples/
 
 Adding a new WinUI control to Reactor requires changes in four places:
 
-### 1. Define the element record (`Reactor/Core/Element.cs`)
+### 1. Define the element record (`src/Reactor/Core/Element.cs`)
 
 ```csharp
 public record MyControlElement(
@@ -288,14 +288,14 @@ public record MyControlElement(
 ) : Element;
 ```
 
-### 2. Add a DSL factory method (`Reactor/Elements/Dsl.cs`)
+### 2. Add a DSL factory method (`src/Reactor/Elements/Dsl.cs`)
 
 ```csharp
 public static MyControlElement MyControl(string label, Action? onClick = null)
     => new(label, onClick);
 ```
 
-### 3. Add a mount handler (`Reactor/Core/Reconciler.Mount.cs`)
+### 3. Add a mount handler (`src/Reactor/Core/Reconciler.Mount.cs`)
 
 ```csharp
 private FrameworkElement MountMyControl(MyControlElement el)
@@ -313,7 +313,7 @@ private FrameworkElement MountMyControl(MyControlElement el)
 
 Register it in the mount dispatch switch in `Mount()`.
 
-### 4. Add an update handler (`Reactor/Core/Reconciler.Update.cs`)
+### 4. Add an update handler (`src/Reactor/Core/Reconciler.Update.cs`)
 
 ```csharp
 private void UpdateMyControl(WinUI.MyControl control, MyControlElement old, MyControlElement @new)
@@ -325,7 +325,7 @@ private void UpdateMyControl(WinUI.MyControl control, MyControlElement old, MyCo
 
 Register it in the update dispatch switch in `Update()`.
 
-### 5. (Optional) Add modifiers (`Reactor/Elements/ElementExtensions.cs`)
+### 5. (Optional) Add modifiers (`src/Reactor/Elements/ElementExtensions.cs`)
 
 If the control has properties that make sense as fluent modifiers, add extension methods.
 
@@ -335,7 +335,7 @@ Add test cases in `tests/Reactor.Tests/` covering element creation, mount, and u
 
 ## How to add a new hook
 
-Hooks live in `Reactor/Core/Component.cs` (public API) and `Reactor/Core/RenderContext.cs` (implementation).
+Hooks live in `src/Reactor/Core/Component.cs` (public API) and `src/Reactor/Core/RenderContext.cs` (implementation).
 
 1. Add the hook method to `Component` (delegates to `RenderContext`)
 2. Implement the logic in `RenderContext`, using `GetOrCreateHook<T>()` to manage state
@@ -344,11 +344,11 @@ Hooks live in `Reactor/Core/Component.cs` (public API) and `Reactor/Core/RenderC
 
 ## Working on the Rust native differ
 
-The differ lives in `Reactor/Native/differ/`. It's a standalone Rust crate that builds as a `cdylib`.
+The differ lives in `src/Reactor/Native/differ/`. It's a standalone Rust crate that builds as a `cdylib`.
 
 ```bash
 # Build the differ directly
-cd Reactor/Native/differ
+cd src/Reactor/Native/differ
 cargo build
 cargo test
 
@@ -356,7 +356,7 @@ cargo test
 cargo clippy
 ```
 
-The C# interop layer is `Reactor/Native/ViewDiffer.cs`. If you change any struct layouts in `types.rs`, you **must** update the matching C# structs in `ViewDiffer.cs` — there are no compile-time checks across the FFI boundary (see the [code review](docs/viewdiffer-code-review.md) for details).
+The C# interop layer is `src/Reactor/Native/ViewDiffer.cs`. If you change any struct layouts in `types.rs`, you **must** update the matching C# structs in `ViewDiffer.cs` — there are no compile-time checks across the FFI boundary (see the [code review](docs/viewdiffer-code-review.md) for details).
 
 Key files:
 - `src/types.rs` — wire types shared between Rust and C#

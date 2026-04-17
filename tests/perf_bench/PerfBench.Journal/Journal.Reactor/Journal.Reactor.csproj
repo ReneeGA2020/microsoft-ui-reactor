@@ -15,6 +15,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\PerfBench.Shared\PerfBench.Shared.csproj" />
-    <ProjectReference Include="..\..\..\..\Reactor\Reactor.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Reactor\Reactor.csproj" />
   </ItemGroup>
 </Project>

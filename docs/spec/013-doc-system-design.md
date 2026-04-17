@@ -11,7 +11,7 @@ A "compilable documentation" system where:
 1. **Every code snippet** in the docs is extracted from a real, building, running app
 2. **Every screenshot** is captured from a live Reactor app window
 3. **Prose** is AI-authored by default, steered by a `goal` in each template
-4. Running `duct docs compile` produces final documentation with everything up to date
+4. Running `mur docs compile` produces final documentation with everything up to date
 5. CI can enforce that docs stay in sync with the framework
 
 ---

@@ -9,7 +9,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <WindowsPackageType>None</WindowsPackageType>
-    <SelfHostDir>$(MSBuildThisFileDirectory)..\selfhost</SelfHostDir>
+    <SelfHostDir>$(MSBuildThisFileDirectory)..\..\selfhost</SelfHostDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\SKILL.md" Link="SKILL.md" LogicalName="SKILL.md" />
+    <EmbeddedResource Include="..\..\SKILL.md" Link="SKILL.md" LogicalName="SKILL.md" />
   </ItemGroup>
 
   <!-- After build, populate selfhost/ with the CLI exe and bootstrap skill -->

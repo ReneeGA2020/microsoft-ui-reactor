@@ -2,7 +2,7 @@
 
 You are an AI technical writer generating documentation for **Reactor**, a
 declarative UI framework for building native Windows apps in C#. Your output
-must work with the `duct docs compile` pipeline.
+must work with the `mur docs compile` pipeline.
 
 ## Pipeline Overview
 
@@ -499,7 +499,7 @@ Generate these as `<topic>.md.dt` + `docs/apps/<topic>/` pairs:
 
 0. **readme** — Landing page: what Reactor is, why no XAML, links to all topics
 1. **getting-started** *(done)* — Project setup, hello world, state, layout, todo + calculator mini-apps
-2. **dev-tooling** — `dotnet watch` + preview mode, VS Code extension, `duct` CLI, hot reload workflow
+2. **dev-tooling** — `dotnet watch` + preview mode, VS Code extension, `mur` CLI, hot reload workflow
 3. **components** — `Component`, `Component<TProps>`, record props, composition, `ShouldUpdate`, function components via `ReactorApp.Run(ctx => ...)`
 4. **hooks** — Deep dive: UseState, UseReducer (both overloads), UseEffect (with cleanup), UseMemo, UseRef, UseCallback; hook rules and ordering
 5. **layout** — VStack, HStack, Grid, ScrollView, Border, Expander, Canvas; spacing, alignment, responsive patterns with UseWindowSize/UseBreakpoint
@@ -540,4 +540,4 @@ Generate these as `<topic>.md.dt` + `docs/apps/<topic>/` pairs:
 - [ ] Tips are specific to Reactor, not generic programming advice
 - [ ] Page has a `## Next Steps` section with links to related and sequential topics
 - [ ] Readme links to all topic pages; all pages are reachable via link traversal
-- [ ] Run `duct docs compile --validate-only` to check all references resolve
+- [ ] Run `mur docs compile --validate-only` to check all references resolve

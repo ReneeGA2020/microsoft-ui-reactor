@@ -14,7 +14,7 @@
                       Version="$(WindowsAppSDKVersion)" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Reactor\Reactor.csproj" />
-    <ProjectReference Include="..\..\..\Reactor.Interop.WinForms\Reactor.Interop.WinForms.csproj" />
+    <ProjectReference Include="..\..\..\src\Reactor\Reactor.csproj" />
+    <ProjectReference Include="..\..\..\src\Reactor.Interop.WinForms\Reactor.Interop.WinForms.csproj" />
   </ItemGroup>
 </Project>

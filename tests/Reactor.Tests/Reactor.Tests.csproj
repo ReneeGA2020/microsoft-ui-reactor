@@ -29,10 +29,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Reactor\Reactor.csproj" />
-    <ProjectReference Include="..\..\Reactor.Localization.Generator\Reactor.Localization.Generator.csproj" />
-    <ProjectReference Include="..\..\Reactor.Cli\Reactor.Cli.csproj" />
-    <ProjectReference Include="..\..\Reactor.Analyzers\Reactor.Analyzers.csproj" />
+    <ProjectReference Include="..\..\src\Reactor\Reactor.csproj" />
+    <ProjectReference Include="..\..\src\Reactor.Localization.Generator\Reactor.Localization.Generator.csproj" />
+    <ProjectReference Include="..\..\src\Reactor.Cli\Reactor.Cli.csproj" />
+    <ProjectReference Include="..\..\src\Reactor.Analyzers\Reactor.Analyzers.csproj" />
   </ItemGroup>
 
 </Project>
