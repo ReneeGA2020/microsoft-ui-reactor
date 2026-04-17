@@ -2,7 +2,6 @@ using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Data;
 using Microsoft.UI.Reactor.Layout;
 using Microsoft.UI.Reactor.Controls;
-using Microsoft.UI.Reactor.Controls;
 using Microsoft.UI.Xaml;
 using Windows.System;
 using static Microsoft.UI.Reactor.Factories;
@@ -828,7 +827,7 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
             if (el.AllowColumnResize || el.AllowColumnReorder)
             {
                 // Overlay the header content and optional resize grip / reorder handler.
-                var overlayChildren = new List<Element?>
+                var overlayChildren = new List<Element>
                 {
                     headerContent.Grid(row: 0, column: 0)
                 };

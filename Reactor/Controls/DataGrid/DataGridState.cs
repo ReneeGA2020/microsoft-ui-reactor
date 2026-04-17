@@ -1,6 +1,5 @@
 using Microsoft.UI.Reactor.Data;
 using Microsoft.UI.Reactor.Controls.Validation;
-using Microsoft.UI.Reactor.Controls.Validation;
 
 namespace Microsoft.UI.Reactor.Controls;
 
