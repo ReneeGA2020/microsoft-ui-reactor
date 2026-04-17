@@ -232,7 +232,7 @@ This is the right lens on the spec. Everything in §9 is a concrete instance of 
 | XAML compile-time `PerfReport.json` per Page/UserControl | **XAML compiler** | Direct Compose Compiler Metrics analog; no runtime cost. |
 | `x:Bind` compile-time complexity annotations | **XAML compiler** | `x:Bind` is compile-time already; enrichment is incremental. |
 | `DataTemplate` recyclability verdict + reasons at compile time | **XAML compiler** | Static analysis. Drives analyzer rule PERF001 with zero runtime work. |
-| `Microsoft.UI.Xaml.Analyzers` NuGet (PERF001–PERF004) | **WinUI** | Roslyn + XAML analyzers. Rules target XAML constructs, not Reactor. |
+| `Microsoft.UI.Xaml.Analyzers` NuGet (PERF001–PERF004, PERF006, PERF007) | **WinUI** | Roslyn + XAML analyzers. Rules target XAML constructs, not Reactor. |
 | Public dependency-graph query API (`GetBindingsReferencing(dp)`, binding-edge introspection) | **WinUI** | The AttributeGraph analog. Internal data VisualDiagnostics already uses; promote to public. |
 | `xamlperf` CLI + canonical JSON trace export | **WinUI / WindowsAppSDK** | Framework-neutral at the XAML layer. |
 | MCP server over the JSON trace | **WinUI / WindowsAppSDK** | Agent surface over the same schema. |
@@ -287,6 +287,7 @@ Per Page / UserControl / `DataTemplate`, the XAML compiler emits a JSON report d
 - **Binding census** — `x:Bind` expressions with their complexity class (one-time / one-way / two-way, function call depth, fallback usage).
 - **Template recyclability** — boolean + reasons ("non-recyclable: binds to `Product.Title` where `Product` does not implement `INotifyPropertyChanged`").
 - **Effect inventory** — shadows, blurs, opacity masks applied to template roots.
+- **Resource-dictionary census** — merged-dictionary graph with duplicate detection. Each `ResourceDictionary.MergedDictionaries` edge is recorded; any dictionary reached by more than one path is flagged with both paths and the estimated redundant-lookup multiplier (XAML searches in reverse order, so a dictionary included twice is walked twice per lookup). Drives `XAML_PERF007` in §9.7. Caveat: the compiler only sees its own compilation unit; inclusions through `package.appxfragment` or dynamically merged dictionaries are out of reach here and are caught instead by the runtime signposts in §9.4.
 - **Static cost estimate** — a number and confidence band from the lookup table in §12, keyed on the census.
 
 Location: `obj/$(Configuration)/$(TFM)/PerfReport.json`. Consumed by: the IDE (hover tooltip, Problems window), CI (regression gates), AI agents (structured cost signal before runtime).
@@ -341,8 +342,10 @@ Roslyn + XAML analyzers emitting warnings at compile time:
 - **`XAML_PERF002`** — Non-virtualizing panel (`StackPanel`, `Grid`) used inside an `ItemsControl` with an unbounded source.
 - **`XAML_PERF003`** — Nested `ItemsRepeater` without explicit key function.
 - **`XAML_PERF004`** — Effect or shadow applied to a template root (cost scales with list length).
+- **`XAML_PERF006`** — Use of a `Windows.UI.*` type (notably `Windows.UI.Colors`, `Windows.UI.Text.FontWeights`) that transitively loads `Windows.UI.Xaml.dll` into a WinUI 3 app. The rule flags references from C# and XAML, names the loaded assembly, and offers a code fix to the `Microsoft.UI.*` equivalent. Pure Roslyn + XAML static analysis — the symbol's defining assembly tells us everything we need. Highest-confidence, lowest-cost rule in the set; observed in production 1P apps on the hot path.
+- **`XAML_PERF007`** — Duplicate `ResourceDictionary` in a `MergedDictionaries` graph. Driven by §9.3's resource-dictionary census. Reports each dictionary reached by more than one path with all paths listed, because the offending include is often in a different file than the dictionary itself (e.g., one path via `package.appxfragment`, another via an explicitly merged `*Resources.xaml`). Best-effort when inclusions cross compilation units; the runtime signposts in §9.4 cover the residual case.
 
-All four are XAML-general. Shipped under the WinUI org.
+All six are XAML-general. Shipped under the WinUI org.
 
 ### 9.8 `xamlperf` CLI + canonical JSON export
 
@@ -556,6 +559,8 @@ Secondary metrics:
 
 9. **Who curates "suggested next action" rules in §13.1?** A small table owned by the WinUI team for v1. Not a general rule engine.
 
+10. **Non-render-loop perf issues that this spec deliberately does not catch.** Some known-wins are invisible to an Intent→cost model because they are not render work — e.g., unpackaged C++ apps failing to opt into the Segment Heap (manifest/linker switch), binplaced CRT version, or app-manifest startup-task misconfiguration. §9.5's working-set-delta makes the *symptom* visible but not the *fix*. The right home is a separate `Microsoft.WindowsAppSDK.Analyzers` / project-template-default effort. Calling it out here so reviewers don't expect this spec to absorb it.
+
 ## 17. Implementation Phases
 
 ### Phase 0 — Spike (2 weeks)
@@ -581,7 +586,7 @@ Secondary metrics:
 
 - `PerfReport.json` from the XAML compiler (§9.3).
 - `x:Bind` complexity annotations and `DataTemplate` recyclability verdict.
-- `Microsoft.UI.Xaml.Analyzers` NuGet with PERF001–PERF004 (§9.7).
+- `Microsoft.UI.Xaml.Analyzers` NuGet with PERF001–PERF004, PERF006, PERF007 (§9.7).
 - Lookup-table design-time estimator in VS + VS Code (§12.2).
 - Public dependency-graph query API (§9.6).
 - `xamlperf compare` for regression diffs.
