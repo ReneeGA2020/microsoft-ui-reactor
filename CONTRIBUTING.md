@@ -1,15 +1,25 @@
 # Contributing to Reactor
 
+Reactor lives at **[github.com/microsoft/microsoft-ui-reactor](https://github.com/microsoft/microsoft-ui-reactor)**. Reactor is an experimental project — the API surface, DSL, and layering are all subject to change as we iterate in the open. Contributions and feedback are welcome from day one.
+
+- **Report a bug or propose a feature:** [open an issue](https://github.com/microsoft/microsoft-ui-reactor/issues/new/choose)
+- **Ask a question or float an idea:** [start a discussion](https://github.com/microsoft/microsoft-ui-reactor/discussions)
+- **Submit a change:** open a PR against `main` — please link the issue it addresses, keep the change focused, and include tests
+
+When filing an issue, include the platform (`x64` / `ARM64`), .NET SDK version, and a minimal repro. For bugs that involve real WinUI controls, a selfhost fixture (see below) is the ideal repro format.
+
+---
+
 ## Prerequisites
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - Windows App SDK 2.0 (experimental) — restored automatically from NuGet, no manual install required
 - Visual Studio 2022 (17.8+) or VS Code with C# Dev Kit
-- (Optional) [Rust toolchain](https://rustup.rs/) via rustup — needed only for the native differ
+- (Optional) [Rust toolchain](https://rustup.rs/) via rustup — only needed for the native differ
 
-> **Package version:** All projects reference `Microsoft.WindowsAppSDK` version **2.0.0-experimental6**
-> (public NuGet). The version is centralized in `Directory.Build.props` — update it there to change
-> the version for every project at once.
+> **Package version:** All projects reference `Microsoft.WindowsAppSDK` **2.0.0-experimental6** (public NuGet). The version is centralized in `Directory.Build.props` — update it there to change the version for every project at once.
+
+---
 
 ## Building
 
@@ -32,47 +42,56 @@ dotnet build src/Reactor/Reactor.csproj -p:Platform=x64
 2. Select the **x64** or **ARM64** platform from the toolbar (not "Any CPU")
 3. Build the solution (Ctrl+Shift+B)
 
-Visual Studio will automatically restore NuGet packages on first load, pulling the
-experimental Windows App SDK package.
+Visual Studio will restore NuGet packages on first load, pulling the experimental Windows App SDK.
 
-The Reactor.csproj has an MSBuild target that automatically builds the Rust differ DLL (`viewdiffer.dll`) via Cargo if the Rust toolchain is installed. If Rust is not installed, the build succeeds and the framework falls back to the pure C# reconciliation path at runtime.
+`Reactor.csproj` has an MSBuild target that builds the Rust differ DLL (`viewdiffer.dll`) via Cargo if the Rust toolchain is installed. If Rust is not installed, the build still succeeds and the framework falls back to the pure C# reconciliation path at runtime.
 
 ### Platforms
 
 The solution targets `x64` and `ARM64`. MSBuild maps these to Rust target triples automatically:
+
 - x64 → `x86_64-pc-windows-msvc`
 - ARM64 → `aarch64-pc-windows-msvc`
 
+Omit `-p:Platform=...` to use the default (ARM64 on ARM machines, x64 on Intel). Add `-p:Platform=ARM64` or `-p:Platform=x64` to force one.
+
+---
+
 ## Running tests
 
-Reactor has **three types of tests**. Each serves a different purpose — make sure you run the right one.
+Reactor has three types of tests. Each serves a different purpose — make sure you run the right one.
+
+| # | Type | Project | Runner | Count | What it tests |
+|---|------|---------|--------|-------|---------------|
+| 1 | **Unit** | `tests/Reactor.Tests` | xUnit | 2,200+ | Algorithms, element equality, Yoga layout, hooks — no WinUI window |
+| 2 | **Selfhost** | `tests/Reactor.AppTests.Host` | TAP | 350+ | Full reconciler pipeline against real WinUI controls, in-process |
+| 3 | **E2E** | `tests/Reactor.AppTests` | Appium/MSTest | 46 | Cross-process UIA validation via WinAppDriver (6 test classes) |
 
 ### Quick reference
 
 ```bash
-# ── 1. Unit tests (xUnit, no UI window, ~3s) ──
+# 1. Unit tests (xUnit, no UI window, ~3s)
 dotnet test tests/Reactor.Tests
 
-# ── 2. Selfhost tests (in-process WinUI window, ~10s) ──
+# 2. Selfhost tests (in-process WinUI window, ~10s) — raw TAP output
 dotnet run --project tests/Reactor.AppTests.Host -- --self-test
 
-# ── 3. Appium / E2E tests (requires WinAppDriver) ──
+# 3. Appium / E2E tests (requires WinAppDriver)
 dotnet test tests/Reactor.AppTests --filter "ClassName!=Reactor.AppTests.Tests.SelfTestBatch"
 
-# ── ALL tests (unit + selfhost + E2E) ──
+# Everything at once (unit + selfhost + E2E)
 dotnet test tests/Reactor.Tests && dotnet test tests/Reactor.AppTests
 ```
 
-> **Platform note:** Omit `-p:Platform=...` to use the default (ARM64 on ARM machines,
-> x64 on Intel). Add `-p:Platform=ARM64` or `-p:Platform=x64` to force a specific platform.
+> `dotnet test tests/Reactor.AppTests` without a filter runs both the `SelfTestBatch` (selfhost via subprocess) and all 6 E2E test classes — the simplest way to run everything non-unit.
+>
+> `Reactor.AppTests.csproj` has a `ProjectReference` to the Host app with `ReferenceOutputAssembly="false"`, so `dotnet test` always rebuilds the Host before running. No stale binaries.
 
 ### 1. Unit tests (`tests/Reactor.Tests`) — xUnit
 
-2,200+ xUnit tests covering framework internals **without a WinUI window**:
-element creation, reconciliation algorithms (LIS, keyed/positional), Yoga layout,
-localization, property hashing, control pooling, hooks.
+2,200+ xUnit tests covering framework internals **without a WinUI window**: element creation, reconciliation algorithms (LIS, keyed/positional), Yoga layout, localization, property hashing, control pooling, hooks.
 
-**When to run:** After any code change. Fast (~3s), no prerequisites beyond .NET SDK.
+**When to run:** after any code change. Fast (~3s), no prerequisites beyond the .NET SDK.
 
 ```bash
 dotnet test tests/Reactor.Tests
@@ -83,14 +102,9 @@ dotnet test tests/Reactor.Tests --filter "FullyQualifiedName~TreeSerializerTests
 
 ### 2. Selfhost tests (`tests/Reactor.AppTests.Host --self-test`) — TAP
 
-350+ in-process checks that run inside a real WinUI window at CPU speed. Each fixture
-(in `tests/Reactor.AppTests.Host/SelfTest/Fixtures/`) mounts UI via `ReactorHost`, runs
-assertions through `VisualTreeHelper`, and outputs TAP results to stdout.
+350+ in-process checks that run inside a real WinUI window at CPU speed. Each fixture (in `tests/Reactor.AppTests.Host/SelfTest/Fixtures/`) mounts UI via `ReactorHost`, runs assertions through `VisualTreeHelper`, and emits TAP results to stdout. This is the **only** way to test the reconciler end-to-end against real WinUI controls.
 
-These exercise the full reconciler pipeline (mount → update → unmount) against real
-WinUI controls — the **only** way to test the diff system end-to-end.
-
-**When to run:** After reconciler, control mount/update, or UI-related changes.
+**When to run:** after reconciler, control mount/update, or any UI-related changes.
 
 ```bash
 # Run directly (TAP output to stdout, ~10s)
@@ -100,26 +114,18 @@ dotnet run --project tests/Reactor.AppTests.Host -- --self-test
 dotnet run --project tests/Reactor.AppTests.Host -- --self-test --filter "Flex"
 ```
 
-> **How it connects to `dotnet test`:** The `SelfTestBatch` class in
-> `tests/Reactor.AppTests/Tests/SelfTestBatch.cs` launches the Host app as a subprocess
-> with `--self-test`, parses the TAP output, and maps each fixture result to an MSTest
-> `[TestMethod]`. This means selfhost tests also run as part of `dotnet test
-> tests/Reactor.AppTests` — you don't need to run them separately unless you want the
-> raw TAP output or faster iteration.
+> **How this connects to `dotnet test`:** `SelfTestBatch` in `tests/Reactor.AppTests/Tests/SelfTestBatch.cs` launches the Host app as a subprocess with `--self-test`, parses TAP output, and maps each fixture result to an MSTest `[TestMethod]`. You don't need to run selfhost tests separately unless you want raw TAP output or faster iteration.
 
-### 3. Appium / E2E tests (`tests/Reactor.AppTests`) — MSTest + WinAppDriver
+### 3. E2E tests (`tests/Reactor.AppTests`) — MSTest + WinAppDriver
 
-End-to-end tests that use Appium/WinAppDriver to simulate real user input (button
-clicks, keyboard input, tab navigation) through the cross-process UI Automation
-pipeline. These verify the full input→render→output path and validate that UIA
-properties are visible to assistive technology.
+End-to-end tests that use Appium/WinAppDriver to simulate real user input (clicks, keyboard, tab navigation) through the cross-process UI Automation pipeline. These verify the full input → render → output path and validate that UIA properties are visible to assistive technology.
 
-**When to run:** Before shipping. These are slow and require WinAppDriver.
+**When to run:** before shipping. Slow, and requires WinAppDriver.
 
 There are **6 E2E test classes** across two host apps:
 
-| Class | Host app | Methods | What it tests |
-|-------|----------|---------|---------------|
+| Class | Host | Count | What it tests |
+|-------|------|-------|---------------|
 | `InteractiveTests` | WinUI | 2 | Counter clicks, observable mutation |
 | `AccessibilityTests` | WinUI | 14 | WCAG property validation via UIA |
 | `AccessibilityInteractionTests` | WinUI | 10 | Keyboard nav, live regions, headings, semantic panels |
@@ -131,16 +137,13 @@ There are **6 E2E test classes** across two host apps:
 # All E2E tests (excludes SelfTestBatch)
 dotnet test tests/Reactor.AppTests --filter "ClassName!=Reactor.AppTests.Tests.SelfTestBatch"
 
-# Run a specific E2E test class
+# A specific class
 dotnet test tests/Reactor.AppTests --filter "ClassName=Reactor.AppTests.Tests.AccessibilityTests"
 ```
 
-> **Requires:** [WinAppDriver](https://github.com/microsoft/WinAppDriver/releases) installed
-> at `C:\Program Files (x86)\Windows Application Driver\WinAppDriver.exe`. The unit tests
-> and selfhost tests run without it.
+> **Requires:** [WinAppDriver](https://github.com/microsoft/WinAppDriver/releases) installed at `C:\Program Files (x86)\Windows Application Driver\WinAppDriver.exe`. Unit and selfhost tests run without it.
 >
-> **WinForms tests** also require the `Reactor.WinFormsTests.Host` project to be built.
-> It launches a separate WinForms app with a XAML Island.
+> **WinForms tests** also require the `Reactor.WinFormsTests.Host` project to be built. It launches a separate WinForms app with a XAML Island.
 
 ### Code coverage
 
@@ -150,68 +153,28 @@ dotnet test tests/Reactor.Tests --collect:"XPlat Code Coverage"
 
 # Selfhost tests — covers Reactor.dll and ReactorCharting.dll
 # (install once: dotnet tool install -g dotnet-coverage)
-#
+
 # Step 1: Rebuild with explicit Debug settings (required for instrumentation)
 dotnet build tests/Reactor.AppTests.Host -c Debug -p:Optimize=false -p:DebugType=portable
-#
-# Step 2: Statically instrument Reactor.dll and ReactorCharting.dll (dynamic instrumentation
-#          skips referenced assemblies with "optimized_or_instrumented")
+
+# Step 2: Instrument Reactor.dll and ReactorCharting.dll statically
+#         (dynamic instrumentation skips referenced assemblies)
 dotnet-coverage instrument \
   "tests/Reactor.AppTests.Host/bin/$(RuntimeIdentifier)/Debug/net9.0-windows10.0.22621.0/Reactor.dll" \
   -s coverage.settings.xml
 dotnet-coverage instrument \
   "tests/Reactor.AppTests.Host/bin/$(RuntimeIdentifier)/Debug/net9.0-windows10.0.22621.0/ReactorCharting.dll" \
   -s coverage.settings.xml
-#
-# Step 3: Collect coverage
+
+# Step 3: Collect
 dotnet-coverage collect -s coverage.settings.xml \
   --output selftest.cobertura.xml --output-format cobertura \
   -- dotnet run --project tests/Reactor.AppTests.Host --no-build -- --self-test
 ```
 
-> **Platform note:** Replace `$(RuntimeIdentifier)` with `ARM64` or `x64` depending on your machine,
-> or omit the platform segment if you used the default platform from `Directory.Build.props`.
+Replace `$(RuntimeIdentifier)` with `ARM64` or `x64`, or omit the platform segment if you used the default platform from `Directory.Build.props`. The `coverage.settings.xml` file in the repo root controls which modules are included.
 
-The `coverage.settings.xml` file in the repo root controls which modules are included:
-
-### Test architecture
-
-| # | Type | Project | Runner | Count | What it tests |
-|---|------|---------|--------|-------|---------------|
-| 1 | **Unit** | `tests/Reactor.Tests` | xUnit | 2,200+ | Algorithms, element equality, Yoga layout, hooks — no WinUI window |
-| 2 | **Selfhost** | `tests/Reactor.AppTests.Host` | TAP | 350+ | Full reconciler pipeline against real WinUI controls, in-process |
-| 3 | **E2E** | `tests/Reactor.AppTests` | Appium/MSTest | 46 | Cross-process UIA validation via WinAppDriver (6 test classes) |
-
-> **No stale binaries:** `Reactor.AppTests.csproj` has a `ProjectReference` to the Host app with `ReferenceOutputAssembly="false"`, so `dotnet test` always builds the Host before running tests.
-
-> **`dotnet test tests/Reactor.AppTests` without a filter runs everything:** both the
-> SelfTestBatch (selfhost via subprocess) and all 6 E2E test classes. This is the
-> simplest way to run all non-unit tests.
-
-### What the tests cover
-
-- **Element creation and equality** — `ElementTests.cs`
-- **Tree serialization** — `TreeSerializerTests.cs`
-- **Child reconciliation** — `ChildReconcilerTests.cs`
-- **Native differ integration** — `DiffTreesReconcilerTests.cs`, `NativeDifferIntegrationTests.cs`
-- **Property hashing** — `PropValueRegistryTests.cs`
-- **Control pooling** — `ElementPoolTests.cs`
-- **Component props** — `ComponentPropsTests.cs`
-- **MVVM interop hooks** — `ObservableHookTests.cs`
-- **Regression cases** — `ReconcilerRegressionTests.cs`
-- **Yoga layout engine** — `YogaGenerated/*.cs` (590 fixtures ported from Yoga C++ test suite)
-- **Flex layout E2E** — 24 fixtures covering nesting, composition, grow/shrink, gaps, padding, margins, alignment, layout-cycle regressions
-- **Reconciler E2E** — mount, update, add/remove children, keyed list reuse
-- **Error boundaries** — catch and recover from render errors
-- **Observable/INPC** — `UseObservable`, `UseObservableProperty`, `UseCollection` hooks
-- **PropertyGrid** — reflection, categories, enums, immutable records, custom editors, target switching
-- **Localization** — locale switching with ICU MessageFormat
-- **Interactive input** — counter buttons, INPC mutation via WinAppDriver (`InteractiveTests.cs`)
-- **Accessibility (WCAG)** — UIA property validation for Name, HelpText, HeadingLevel, Landmarks, LiveRegions, AccessKeys, PositionInSet (`AccessibilityTests.cs`)
-- **Accessibility interactions** — keyboard tab order, live region announcements, heading hierarchy, semantic panels, LabeledBy resolution (`AccessibilityInteractionTests.cs`)
-- **Event handlers** — OnTapped, OnSizeChanged, OnPointerPressed, OnKeyDown, UseReducer via Appium (`EventHandlerTests.cs`)
-- **DataGrid editing** — click-to-edit, keyboard commit, cross-row navigation via Appium (`DataGridTests.cs`)
-- **WinForms interop** — XAML Island rendering, forward/backward tab cycle across WinForms ↔ WinUI boundary, UIA properties through the island (`WinFormsInteropTests.cs`)
+---
 
 ## Running the demo app
 
@@ -221,63 +184,67 @@ The interactive demo app exercises every built-in control:
 dotnet run --project samples/Reactor.TestApp -p:Platform=x64
 ```
 
+---
+
 ## Project layout
 
 ```
 src/Reactor/                      Core framework library
   Core/
-    Component.cs               Base Component class, hook methods
-    Element.cs                 40+ virtual element record types
-    RenderContext.cs            Hook state storage, effect tracking
-    Reconciler.cs              Tree diff orchestration
-    Reconciler.Mount.cs        Mount handlers for each element type
-    Reconciler.Update.cs       Update handlers for each element type
-    Reconciler.DiffTrees.cs    Native Rust differ integration
-    ChildReconciler.cs         Keyed child list reconciliation
-    TreeSerializer.cs          Flat tree serialization for the Rust differ
-    ElementPool.cs             Control reuse pool
-    PropValueRegistry.cs       Property value caching/hashing
+    Component.cs                  Base Component class, hook methods
+    Element.cs                    40+ virtual element record types
+    RenderContext.cs              Hook state storage, effect tracking
+    Reconciler.cs                 Tree diff orchestration
+    Reconciler.Mount.cs           Mount handlers for each element type
+    Reconciler.Update.cs          Update handlers for each element type
+    Reconciler.DiffTrees.cs       Native Rust differ integration
+    ChildReconciler.cs            Keyed child list reconciliation
+    TreeSerializer.cs             Flat tree serialization for the Rust differ
+    ElementPool.cs                Control reuse pool
+    PropValueRegistry.cs          Property value caching/hashing
   Elements/
-    Dsl.cs                     200+ static factory methods (Text, Button, VStack, Flex, etc.)
-    ElementExtensions.cs       Fluent modifiers (.Bold(), .Margin(), .Width(), etc.)
-    FlexExtensions.cs          .Flex() attached property modifier for flex children
+    Dsl.cs                        200+ static factory methods (Text, Button, VStack, Flex, etc.)
+    ElementExtensions.cs          Fluent modifiers (.Bold(), .Margin(), .Width(), etc.)
+    FlexExtensions.cs             .Flex() attached property modifier for flex children
   Flex/
-    FlexPanel.cs               CSS Flexbox panel backed by Yoga layout engine
+    FlexPanel.cs                  CSS Flexbox panel backed by Yoga layout engine
   Yoga/
-    YogaAlgorithm.cs           Pure C# port of Meta's Yoga layout algorithm
-    YogaNode.cs                Yoga node tree structure
-    YogaStyle.cs               Style properties (direction, justify, align, etc.)
-    YogaEnums.cs               Yoga enum types (YogaFlexDirection, YogaJustify, etc.)
+    YogaAlgorithm.cs              Pure C# port of Meta's Yoga layout algorithm
+    YogaNode.cs                   Yoga node tree structure
+    YogaStyle.cs                  Style properties (direction, justify, align, etc.)
+    YogaEnums.cs                  Yoga enum types (YogaFlexDirection, YogaJustify, etc.)
   Hosting/
     ReactorApp.cs                 Static entry point — ReactorApp.Run<T>()
     ReactorHost.cs                Render loop, state batching, dispatcher scheduling
     ReactorHostControl.cs         Embeddable host for existing WinUI apps
-    HotReloadService.cs        .NET Hot Reload integration for Visual Studio
+    HotReloadService.cs           .NET Hot Reload integration for Visual Studio
   Native/
-    ViewDiffer.cs              C# P/Invoke wrapper for the Rust differ
-    differ/                    Rust crate (Cargo.toml, src/)
+    ViewDiffer.cs                 C# P/Invoke wrapper for the Rust differ
+    differ/                       Rust crate (Cargo.toml, src/)
       src/
-        types.rs               Wire types (DifferNode, DifferProp, DifferPatch)
-        diff.rs                Tree diff algorithm
-        reconcile.rs           Keyed list reconciliation with LIS
-        ffi.rs                 extern "C" FFI entry points
-        arena.rs               Reusable diff context/buffer
-src/Reactor.Cli/                  CLI scaffolding tool (mur --create <Name>)
+        types.rs                  Wire types (DifferNode, DifferProp, DifferPatch)
+        diff.rs                   Tree diff algorithm
+        reconcile.rs              Keyed list reconciliation with LIS
+        ffi.rs                    extern "C" FFI entry points
+        arena.rs                  Reusable diff context/buffer
+src/Reactor.Cli/                  CLI scaffolding tool
 tests/
   Reactor.Tests/                  1. Unit tests — xUnit (2,200+ tests, no UI window)
-  Reactor.AppTests/               2+3. Test runner — MSTest (orchestrates selfhost + E2E tests)
-  Reactor.AppTests.Host/          2. Selfhost test app — WinUI host with 60+ in-process fixtures
-  stress_perf/                 Performance benchmarks
+  Reactor.AppTests/               2+3. Test runner — MSTest (orchestrates selfhost + E2E)
+  Reactor.AppTests.Host/          2. Selfhost test app — WinUI host with 350+ in-process fixtures
+  stress_perf/                    Performance benchmarks
 samples/
   Reactor.TestApp/                Interactive control showcase / demo app
-  apps/                        Sample apps (wordpuzzle, ductfiles, regedit, etc.)
-  FlexPanelGallery/            FlexPanel layout gallery
-  TodoApp/                     Todo app sample
+  apps/                           Sample apps (wordpuzzle, ductfiles, regedit, etc.)
+  FlexPanelGallery/               FlexPanel layout gallery
+  TodoApp/                        Todo app sample
 ```
+
+---
 
 ## How to add a new element type
 
-Adding a new WinUI control to Reactor requires changes in four places:
+Adding a new WinUI control to Reactor requires changes in four places (plus optional modifiers and tests).
 
 ### 1. Define the element record (`src/Reactor/Core/Element.cs`)
 
@@ -331,7 +298,9 @@ If the control has properties that make sense as fluent modifiers, add extension
 
 ### 6. Add tests
 
-Add test cases in `tests/Reactor.Tests/` covering element creation, mount, and update.
+Add unit tests in `tests/Reactor.Tests/` for element creation, mount, and update. If the control has user-facing behavior, add a selfhost fixture in `tests/Reactor.AppTests.Host/SelfTest/Fixtures/`.
+
+---
 
 ## How to add a new hook
 
@@ -342,27 +311,29 @@ Hooks live in `src/Reactor/Core/Component.cs` (public API) and `src/Reactor/Core
 3. Follow the convention: hooks must be called in the same order every render, no conditional calls
 4. Add tests in `tests/Reactor.Tests/`
 
+---
+
 ## Working on the Rust native differ
 
 The differ lives in `src/Reactor/Native/differ/`. It's a standalone Rust crate that builds as a `cdylib`.
 
 ```bash
-# Build the differ directly
 cd src/Reactor/Native/differ
 cargo build
 cargo test
-
-# Run clippy
 cargo clippy
 ```
 
-The C# interop layer is `src/Reactor/Native/ViewDiffer.cs`. If you change any struct layouts in `types.rs`, you **must** update the matching C# structs in `ViewDiffer.cs` — there are no compile-time checks across the FFI boundary (see the [code review](docs/viewdiffer-code-review.md) for details).
+The C# interop layer is `src/Reactor/Native/ViewDiffer.cs`. If you change any struct layouts in `types.rs`, you **must** update the matching C# structs in `ViewDiffer.cs` — there are no compile-time checks across the FFI boundary.
 
 Key files:
+
 - `src/types.rs` — wire types shared between Rust and C#
 - `src/diff.rs` — tree diff algorithm
 - `src/reconcile.rs` — keyed list reconciliation (LIS-based)
 - `src/ffi.rs` — `extern "C"` entry points called from C#
+
+---
 
 ## Code style
 
@@ -372,6 +343,8 @@ Key files:
 - **Fluent modifiers for layout.** `.Margin(16).Bold()` not constructor parameters.
 - **Tag-based event dispatch.** Event handlers are wired once at mount; the current element is stored in `Tag` so handlers always read the latest closure.
 - **No XAML.** Everything is C#.
+
+---
 
 ## Hot reload
 
