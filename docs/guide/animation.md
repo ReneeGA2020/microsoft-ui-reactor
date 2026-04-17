@@ -22,7 +22,7 @@ class OpacityDemo : Component
             SubHeading("Opacity Transition"),
             Button(visible ? "Fade Out" : "Fade In",
                 () => setVisible(!visible)),
-            Factories.Text("This text fades in and out")
+            Text("This text fades in and out")
                 .FontSize(18).Bold()
                 .Opacity(visible ? 1.0 : 0.0)
                 .OpacityTransition(TimeSpan.FromMilliseconds(500))
@@ -53,7 +53,7 @@ class ScaleDemo : Component
             Button(enlarged ? "Shrink" : "Enlarge",
                 () => setEnlarged(!enlarged)),
             Border(
-                Factories.Text("Scales up and down").FontSize(18).Bold()
+                Text("Scales up and down").FontSize(18).Bold()
             ).Padding(12)
              .CornerRadius(8)
              .Background("#e8e8e8")
@@ -85,7 +85,7 @@ class TranslationDemo : Component
             SubHeading("Translation Transition"),
             Button(moved ? "Slide Back" : "Slide Right",
                 () => setMoved(!moved)),
-            Factories.Text("Slides horizontally")
+            Text("Slides horizontally")
                 .FontSize(18).Bold()
                 .Translation(moved ? 120f : 0f, 0f, 0f)
                 .TranslationTransition()
@@ -117,7 +117,7 @@ class BackgroundDemo : Component
             Button(warm ? "Cool Colors" : "Warm Colors",
                 () => setWarm(!warm)),
             VStack(8,
-                Factories.Text("Background animates between colors")
+                Text("Background animates between colors")
                     .Foreground("#ffffff").Bold()
             ).Padding(16)
              .CornerRadius(8)
@@ -151,7 +151,7 @@ class CombinedDemo : Component
             Button(active ? "Reset" : "Animate",
                 () => setActive(!active)),
             Border(
-                Factories.Text("All at once").FontSize(16).Bold()
+                Text("All at once").FontSize(16).Bold()
                     .Foreground("#ffffff")
             ).Padding(16)
              .CornerRadius(8)
@@ -197,7 +197,7 @@ class LayoutAnimationDemo : Component
                     l.Count > 0 ? l.Take(l.Count - 1).ToList() : l))
             ),
             VStack(4, items.Select(item =>
-                Factories.Text(item).Padding(8, 12).Background("#f0f0f0")
+                Text(item).Padding(8, 12).Background("#f0f0f0")
                     .CornerRadius(4).LayoutAnimation()
                     .WithKey($"item-{item}")
             ).ToArray())
@@ -232,7 +232,7 @@ class ConnectedAnimationDemo : Component
         if (selected is not null)
             return VStack(12,
                 Button("Back to list", () => setSelected(null)),
-                Factories.Text(selected)
+                Text(selected)
                     .FontSize(28).Bold()
                     .ConnectedAnimation($"title-{selected}")
             ).Padding(24);
@@ -281,7 +281,7 @@ class WithAnimationDemo : Component
                         setOpacity(opacity > 0.5 ? 0.2 : 1.0);
                     });
             }),
-            Factories.Text("Compositor-animated via WithAnimation scope")
+            Text("Compositor-animated via WithAnimation scope")
                 .FontSize(18).Bold()
                 .Opacity(opacity)
         ).Padding(24);
@@ -313,7 +313,7 @@ class AnimateDemo : Component
             SubHeading(".Animate() Modifier"),
             Button(active ? "Reset" : "Animate", () => setActive(!active)),
             Border(
-                Factories.Text("Spring-animated").FontSize(18).Bold()
+                Text("Spring-animated").FontSize(18).Bold()
             ).Padding(12).CornerRadius(8).Background("#e8e8e8")
              .Opacity(active ? 0.5 : 1.0)
              .Animate(Microsoft.UI.Reactor.Animation.Curve.Spring(0.65f))
@@ -341,17 +341,17 @@ class InteractionStatesDemo : Component
     {
         return VStack(12,
             SubHeading("InteractionStates"),
-            Factories.Text("Hover and press — zero reconcile, compositor-driven."),
+            Text("Hover and press — zero reconcile, compositor-driven."),
             HStack(12,
                 Border(
-                    Factories.Text("Hover me").FontSize(16).Bold()
+                    Text("Hover me").FontSize(16).Bold()
                         .HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
                 ).Padding(16).CornerRadius(8).Size(150, 60).Background("#50C878")
                  .InteractionStates(s => s
                     .PointerOver(opacity: 0.85f, scale: 1.05f)
                     .Pressed(scale: 0.95f, opacity: 0.7f)),
                 Border(
-                    Factories.Text("Press me").FontSize(16).Bold()
+                    Text("Press me").FontSize(16).Bold()
                         .HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
                 ).Padding(16).CornerRadius(8).Size(150, 60).Background("#9B59B6")
                  .InteractionStates(s => s
@@ -388,11 +388,11 @@ class TransitionDemo : Component
             Button(visible ? "Hide" : "Show", () => setVisible(!visible)),
             visible
                 ? Border(
-                    Factories.Text("Fade + Slide").FontSize(16).Bold()
+                    Text("Fade + Slide").FontSize(16).Bold()
                         .HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
                 ).Padding(12).CornerRadius(8).Size(200, 60).Background("#E74C3C")
                  .Transition(Microsoft.UI.Reactor.Animation.Transition.Fade + Microsoft.UI.Reactor.Animation.Transition.Slide(Microsoft.UI.Reactor.Animation.Edge.Bottom))
-                : (Element)Factories.Text("(removed from tree)")
+                : (Element)Text("(removed from tree)")
         ).Padding(24);
     }
 }
@@ -429,7 +429,7 @@ class StaggerDemo : Component
             SubHeading("Staggered Animation"),
             Button("Shuffle", () => setItems(items.OrderBy(_ => Random.Shared.Next()).ToArray())),
             VStack(4, items.Select(item =>
-                Factories.Text(item).Padding(8, 12).Background("#f0f0f0")
+                Text(item).Padding(8, 12).Background("#f0f0f0")
                     .CornerRadius(4).LayoutAnimation()
                     .WithKey(item)
             ).ToArray()).Stagger(TimeSpan.FromMilliseconds(40))
@@ -461,7 +461,7 @@ class KeyframeDemo : Component
             SubHeading("Keyframe Animation"),
             Button("Pulse!", () => setCount(count + 1)),
             Border(
-                Factories.Text("Pulse target").FontSize(16).Bold()
+                Text("Pulse target").FontSize(16).Bold()
                     .HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
             ).Padding(12).CornerRadius(8).Size(200, 60).Background("#9B59B6")
              .Keyframes("pulse", count, kf => kf
@@ -504,7 +504,7 @@ class ChoreographyDemo : Component
                 await Microsoft.UI.Reactor.Animation.AnimationScope.WithAnimationAsync(
                     Microsoft.UI.Reactor.Animation.Curve.Spring(0.7f), () => setPhase(2));
             }),
-            Factories.Text($"Phase: {phase}").FontSize(18).Bold()
+            Text($"Phase: {phase}").FontSize(18).Bold()
                 .Opacity(phase == 0 ? 1.0 : phase == 1 ? 0.3 : 1.0)
         ).Padding(24);
     }

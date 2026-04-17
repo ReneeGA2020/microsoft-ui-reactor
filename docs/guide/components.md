@@ -16,7 +16,7 @@ class Greeting : Component
         var (name, setName) = UseState("World");
 
         return VStack(12,
-            Factories.Text($"Hello, {name}!").FontSize(20).Bold(),
+            Text($"Hello, {name}!").FontSize(20).Bold(),
             TextField(name, setName, placeholder: "Your name")
                 .Width(200)
         ).Padding(16);
@@ -53,8 +53,8 @@ class Alert : Component<AlertProps>
 
         return Border(
             VStack(4,
-                Factories.Text(Props.Title).Bold(),
-                Factories.Text(Props.Message)
+                Text(Props.Title).Bold(),
+                Text(Props.Message)
             ).Padding(12)
         ).Background(bg).CornerRadius(4);
     }
@@ -88,7 +88,7 @@ class ExpensiveDisplay : Component<ExpensiveProps>
 
     public override Element Render()
     {
-        return Factories.Text($"Value: {Props.Value}").FontSize(18).Bold();
+        return Text($"Value: {Props.Value}").FontSize(18).Bold();
     }
 }
 ```
@@ -117,12 +117,12 @@ class FunctionComponentDemo : Component
                 var (on, setOn) = ctx.UseState(false);
                 return HStack(8,
                     ToggleSwitch(on, setOn),
-                    Factories.Text(on ? "Active" : "Inactive")
+                    Text(on ? "Active" : "Inactive")
                 );
             }),
             Memo(ctx =>
             {
-                return Factories.Text("I only re-render when deps change")
+                return Text("I only re-render when deps change")
                     .Opacity(0.6);
             }, "stable-dep")
         ).Padding(16);

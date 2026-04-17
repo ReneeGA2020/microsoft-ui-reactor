@@ -19,11 +19,11 @@ class StateDemo : Component
 
         return VStack(12,
             SubHeading("UseState"),
-            Factories.Text("Sample text").FontSize(size).Foreground(color),
+            Text("Sample text").FontSize(size).Foreground(color),
             TextField(color, setColor, placeholder: "#hex color")
                 .Width(150),
             HStack(8,
-                Factories.Text("Size:"),
+                Text("Size:"),
                 Slider(size, 10, 48, setSize).Width(200)
             )
         );
@@ -66,7 +66,7 @@ class ReducerDemo : Component
                 Button("Clear", () =>
                     updateItems(_ => new List<string>()))
             ),
-            ForEach(items, item => Factories.Text($"  - {item}"))
+            ForEach(items, item => Text($"  - {item}"))
         );
     }
 }
@@ -102,7 +102,7 @@ class ReduxReducerDemo : Component
 
         return VStack(8,
             SubHeading("UseReducer (Redux-style)"),
-            Factories.Text($"Count: {state.Count}  (last: {state.LastAction})")
+            Text($"Count: {state.Count}  (last: {state.LastAction})")
                 .FontSize(18).Bold(),
             HStack(8,
                 Button("-", () => dispatch(new Decrement())),
@@ -148,7 +148,7 @@ class EffectDemo : Component
 
         return VStack(8,
             SubHeading("UseEffect"),
-            Factories.Text($"Elapsed: {seconds}s").FontSize(18),
+            Text($"Elapsed: {seconds}s").FontSize(18),
             HStack(8,
                 Button(running ? "Stop" : "Start", () => setRunning(!running)),
                 Button("Reset", () => updateSeconds(_ => 0))
@@ -191,7 +191,7 @@ class MemoDemo : Component
         return VStack(8,
             SubHeading("UseMemo"),
             TextField(input, setInput).Width(250),
-            Factories.Text($"Characters: {stats.Chars}, Words: {stats.Words}"),
+            Text($"Characters: {stats.Chars}, Words: {stats.Words}"),
             Caption($"Uppercased: {stats.Upper}")
         );
     }
@@ -220,7 +220,7 @@ class RefDemo : Component
 
         return VStack(8,
             SubHeading("UseRef"),
-            Factories.Text($"Render count: {renderCount.Current}").SemiBold(),
+            Text($"Render count: {renderCount.Current}").SemiBold(),
             TextField(value, setValue, placeholder: "Type to trigger renders")
                 .Width(250),
             Caption("UseRef persists across renders without causing them")
@@ -256,7 +256,7 @@ class CallbackDemo : Component
 
         return VStack(8,
             SubHeading("UseCallback"),
-            Factories.Text($"Count: {count}").FontSize(18),
+            Text($"Count: {count}").FontSize(18),
             TextField(label, setLabel, placeholder: "Button label")
                 .Width(200),
             Button(label, stableIncrement),

@@ -32,8 +32,8 @@ class HelloWorld : Component
     public override Element Render()
     {
         return VStack(12,
-            Factories.Text("Hello from Reactor!").FontSize(24).Bold(),
-            Factories.Text("No XAML. No data binding. Just C#.")
+            Text("Hello from Reactor!").FontSize(24).Bold(),
+            Text("No XAML. No data binding. Just C#.")
         ).Padding(24);
     }
 }
@@ -52,7 +52,7 @@ class QuickCounter : Component
 
         return HStack(8,
             Button("- 1", () => setCount(count - 1)),
-            Factories.Text($"{count}").FontSize(20).SemiBold().Width(40)
+            Text($"{count}").FontSize(20).SemiBold().Width(40)
                 .HAlign(HorizontalAlignment.Center),
             Button("+ 1", () => setCount(count + 1))
         ).Padding(24);
@@ -72,7 +72,7 @@ class StyledText : Component
         return VStack(8,
             Heading("Heading element"),
             SubHeading("SubHeading element"),
-            Factories.Text("Regular text with modifiers")
+            Text("Regular text with modifiers")
                 .FontSize(14).Foreground("#0078D4"),
             Caption("Caption for fine print")
         ).Padding(24);

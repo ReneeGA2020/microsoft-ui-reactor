@@ -21,16 +21,16 @@ class FlexDirectionDemo : Component
         return VStack(16,
             SubHeading("Row (default)"),
             FlexRow(
-                Factories.Text("A").Padding(12).Background("#e0e0ff"),
-                Factories.Text("B").Padding(12).Background("#ffe0e0"),
-                Factories.Text("C").Padding(12).Background("#e0ffe0")
+                Text("A").Padding(12).Background("#e0e0ff"),
+                Text("B").Padding(12).Background("#ffe0e0"),
+                Text("C").Padding(12).Background("#e0ffe0")
             ) with { ColumnGap = 8 },
 
             SubHeading("Column"),
             FlexColumn(
-                Factories.Text("A").Padding(12).Background("#e0e0ff"),
-                Factories.Text("B").Padding(12).Background("#ffe0e0"),
-                Factories.Text("C").Padding(12).Background("#e0ffe0")
+                Text("A").Padding(12).Background("#e0e0ff"),
+                Text("B").Padding(12).Background("#ffe0e0"),
+                Text("C").Padding(12).Background("#e0ffe0")
             ) with { RowGap = 8 }
         ).Padding(24);
     }
@@ -56,16 +56,16 @@ class JustifyAlignDemo : Component
         return VStack(16,
             SubHeading("JustifyContent: SpaceBetween"),
             FlexRow(
-                Factories.Text("Left").Padding(8).Background("#e0e0ff"),
-                Factories.Text("Center").Padding(8).Background("#ffe0e0"),
-                Factories.Text("Right").Padding(8).Background("#e0ffe0")
+                Text("Left").Padding(8).Background("#e0e0ff"),
+                Text("Center").Padding(8).Background("#ffe0e0"),
+                Text("Right").Padding(8).Background("#e0ffe0")
             ) with { JustifyContent = FlexJustify.SpaceBetween },
 
             SubHeading("AlignItems: Center"),
             FlexRow(
-                Factories.Text("Short").Padding(8).Background("#e0e0ff"),
-                Factories.Text("Tall\nItem").Padding(8).Background("#ffe0e0"),
-                Factories.Text("Med").Padding(8).Background("#e0ffe0")
+                Text("Short").Padding(8).Background("#e0e0ff"),
+                Text("Tall\nItem").Padding(8).Background("#ffe0e0"),
+                Text("Med").Padding(8).Background("#e0ffe0")
             ) with {
                 AlignItems = FlexAlign.Center,
                 ColumnGap = 8
@@ -113,7 +113,7 @@ class WrapGapDemo : Component
             SubHeading("Wrapping Tags"),
             FlexRow(
                 tags.Select(tag =>
-                    Factories.Text(tag)
+                    Text(tag)
                         .Padding(6, 12)
                         .Background("#e8e8e8")
                         .CornerRadius(12)
@@ -152,19 +152,19 @@ class GrowShrinkDemo : Component
         return VStack(16,
             SubHeading("Grow: sidebar + content"),
             FlexRow(
-                Factories.Text("Sidebar")
+                Text("Sidebar")
                     .Padding(16).Background("#e0e0ff")
                     .Flex(basis: 200, shrink: 0),
-                Factories.Text("Main content area")
+                Text("Main content area")
                     .Padding(16).Background("#f0f0f0")
                     .Flex(grow: 1)
             ) with { ColumnGap = 8 },
 
             SubHeading("Equal columns"),
             FlexRow(
-                Factories.Text("Column 1").Padding(16).Background("#ffe0e0").Flex(grow: 1),
-                Factories.Text("Column 2").Padding(16).Background("#e0ffe0").Flex(grow: 1),
-                Factories.Text("Column 3").Padding(16).Background("#e0e0ff").Flex(grow: 1)
+                Text("Column 1").Padding(16).Background("#ffe0e0").Flex(grow: 1),
+                Text("Column 2").Padding(16).Background("#e0ffe0").Flex(grow: 1),
+                Text("Column 3").Padding(16).Background("#e0e0ff").Flex(grow: 1)
             ) with { ColumnGap = 8 }
         ).Padding(24);
     }
@@ -191,7 +191,7 @@ class ToolbarDemo : Component
 
         return VStack(0,
             FlexRow(
-                Factories.Text("MyApp").Bold().Flex(shrink: 0),
+                Text("MyApp").Bold().Flex(shrink: 0),
                 Empty().Flex(grow: 1),
                 Button("Home", () => setSelected("Home")),
                 Button("Settings", () => setSelected("Settings")),
@@ -201,7 +201,7 @@ class ToolbarDemo : Component
                 ColumnGap = 8,
                 FlexPadding = new Thickness(16, 8, 16, 8)
             },
-            Factories.Text($"Current page: {selected}")
+            Text($"Current page: {selected}")
                 .Padding(24).FontSize(18)
         );
     }

@@ -19,11 +19,11 @@ class StackDemo : Component
         return VStack(16,
             SubHeading("VStack and HStack"),
             VStack(4,
-                Factories.Text("VStack: items top to bottom"),
-                Factories.Text("Item A"), Factories.Text("Item B"), Factories.Text("Item C")
+                Text("VStack: items top to bottom"),
+                Text("Item A"), Text("Item B"), Text("Item C")
             ),
             HStack(8,
-                Factories.Text("HStack:"),
+                Text("HStack:"),
                 Button("One"), Button("Two"), Button("Three")
             )
         );
@@ -55,12 +55,12 @@ class GridDemo : Component
             Grid(
                 columns: ["120", "1*", "Auto"],
                 rows: ["Auto", "Auto"],
-                Factories.Text("Label").Bold().Grid(row: 0, column: 0),
+                Text("Label").Bold().Grid(row: 0, column: 0),
                 TextField("", _ => { }, placeholder: "Input...")
                     .Grid(row: 0, column: 1),
                 Button("Go").Grid(row: 0, column: 2),
-                Factories.Text("Status").Grid(row: 1, column: 0),
-                Factories.Text("Ready").Foreground("#0078D4")
+                Text("Status").Grid(row: 1, column: 0),
+                Text("Ready").Foreground("#0078D4")
                     .Grid(row: 1, column: 1, columnSpan: 2)
             ).Height(80)
         );
@@ -99,7 +99,7 @@ class ScrollBorderDemo : Component
                     VStack(4,
                         ForEach(
                             Enumerable.Range(1, 20),
-                            i => Factories.Text($"Scrollable item {i}"))
+                            i => Text($"Scrollable item {i}"))
                     ).Padding(8)
                 ).Height(120)
             ).CornerRadius(4).Background("#F5F5F5")
@@ -127,17 +127,17 @@ class ExpanderCanvasDemo : Component
         return VStack(12,
             SubHeading("Expander"),
             Expander("Click to expand", VStack(8,
-                Factories.Text("Hidden content revealed!"),
-                Factories.Text("Expanders are great for optional details.")
+                Text("Hidden content revealed!"),
+                Text("Expanders are great for optional details.")
             )),
             SubHeading("Canvas"),
             Border(
                 Canvas(
-                    Factories.Text("Top-left").Set(c => {
+                    Text("Top-left").Set(c => {
                         Microsoft.UI.Xaml.Controls.Canvas.SetLeft((UIElement)c, 10);
                         Microsoft.UI.Xaml.Controls.Canvas.SetTop((UIElement)c, 10);
                     }),
-                    Factories.Text("Center").Set(c => {
+                    Text("Center").Set(c => {
                         Microsoft.UI.Xaml.Controls.Canvas.SetLeft((UIElement)c, 120);
                         Microsoft.UI.Xaml.Controls.Canvas.SetTop((UIElement)c, 40);
                     })
@@ -172,18 +172,18 @@ class ResponsiveDemo : Component
 
         var content = new Element[]
         {
-            Border(Factories.Text("Panel A").Padding(16))
+            Border(Text("Panel A").Padding(16))
                 .Background("#E3F2FD").CornerRadius(4),
-            Border(Factories.Text("Panel B").Padding(16))
+            Border(Text("Panel B").Padding(16))
                 .Background("#FFF3E0").CornerRadius(4),
-            Border(Factories.Text("Panel C").Padding(16))
+            Border(Text("Panel C").Padding(16))
                 .Background("#E8F5E9").CornerRadius(4),
         };
 
         return VStack(8,
             SubHeading("Responsive Layout"),
             HStack(8,
-                Factories.Text("Simulate wide screen:"),
+                Text("Simulate wide screen:"),
                 ToggleSwitch(wide, setWide)
             ),
             If(wide,

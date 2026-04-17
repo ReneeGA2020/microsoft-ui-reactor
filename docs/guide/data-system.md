@@ -156,7 +156,7 @@ class SelectionDemo : Component
         var columns = UseMemo(() => AutoColumns<Product>());
 
         return VStack(12,
-            Factories.Text($"Selected: {selected.Count} items").Opacity(0.6),
+            Text($"Selected: {selected.Count} items").Opacity(0.6),
             DataGrid<Product>(source, columns,
                 selectionMode: SelectionMode.Multiple,
                 onSelectionChanged: setSelected).Height(350)
@@ -307,10 +307,10 @@ class RowDetailsDemo : Component
         return DataGrid<Product>(source, columns,
             rowDetailTemplate: (product, key) =>
                 VStack(8,
-                    Factories.Text($"Product ID: {product.Id}").Bold(),
-                    Factories.Text($"Full details for {product.Name}"),
-                    Factories.Text($"Category: {product.Category}"),
-                    Factories.Text($"Unit price: {product.Price:C2}, Stock: {product.Stock}")
+                    Text($"Product ID: {product.Id}").Bold(),
+                    Text($"Full details for {product.Name}"),
+                    Text($"Category: {product.Category}"),
+                    Text($"Unit price: {product.Price:C2}, Stock: {product.Stock}")
                 ).Padding(16).Background("#f5f5f5")
         ).Height(400);
     }
