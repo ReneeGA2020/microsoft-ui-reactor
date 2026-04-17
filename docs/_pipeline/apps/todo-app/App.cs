@@ -30,7 +30,7 @@ class TodoApp : Component
 
         return VStack(16,
             Heading("Todo List"),
-            Factories.Text($"{doneCount}/{items.Count} completed").Opacity(0.6),
+            Text($"{doneCount}/{items.Count} completed").Opacity(0.6),
 
             // Input row
             HStack(8,

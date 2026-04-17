@@ -23,7 +23,7 @@ class BasicNavDemo : Component
 
         return VStack(12,
             SubHeading($"Current: {nav.CurrentRoute}"),
-            Factories.Text($"Stack depth: {nav.Depth}"),
+            Text($"Stack depth: {nav.Depth}"),
             HStack(8,
                 Button("Home", () => nav.Navigate(Route.Home)),
                 Button("Settings", () => nav.Navigate(Route.Settings)),
@@ -33,10 +33,10 @@ class BasicNavDemo : Component
             ),
             NavigationHost(nav, route => route switch
             {
-                Route.Home => Factories.Text("Welcome home!").FontSize(18).Padding(16),
-                Route.Settings => Factories.Text("Settings page").FontSize(18).Padding(16),
-                Route.Profile => Factories.Text("Your profile").FontSize(18).Padding(16),
-                _ => Factories.Text("Not found").Padding(16)
+                Route.Home => Text("Welcome home!").FontSize(18).Padding(16),
+                Route.Settings => Text("Settings page").FontSize(18).Padding(16),
+                Route.Profile => Text("Your profile").FontSize(18).Padding(16),
+                _ => Text("Not found").Padding(16)
             })
         ).Padding(24);
     }
@@ -58,15 +58,15 @@ class NavViewDemo : Component
             content: NavigationHost(nav, route => route switch
             {
                 Route.Home => VStack(12, Heading("Home"),
-                    Factories.Text("Welcome to the app."),
+                    Text("Welcome to the app."),
                     Button("Go to Settings",
                         () => nav.Navigate(Route.Settings))).Padding(24),
                 Route.Settings => VStack(12, Heading("Settings"),
-                    Factories.Text("Configure your preferences."),
+                    Text("Configure your preferences."),
                     Button("Back", () => nav.GoBack())).Padding(24),
                 Route.Profile => VStack(12, Heading("Profile"),
-                    Factories.Text("View your profile info.")).Padding(24),
-                _ => Factories.Text("Not found").Padding(24)
+                    Text("View your profile info.")).Padding(24),
+                _ => Text("Not found").Padding(24)
             })
         );
     }
@@ -82,8 +82,8 @@ class StackOperationsDemo : Component
 
         return VStack(12,
             SubHeading($"Current: {nav.CurrentRoute}"),
-            Factories.Text($"Back stack: {nav.BackStack.Count}"),
-            Factories.Text($"Forward stack: {nav.ForwardStack.Count}"),
+            Text($"Back stack: {nav.BackStack.Count}"),
+            Text($"Forward stack: {nav.ForwardStack.Count}"),
             HStack(8,
                 Button("Navigate", () =>
                     nav.Navigate(Route.Settings)),
@@ -97,7 +97,7 @@ class StackOperationsDemo : Component
                     .Disabled(!nav.CanGoForward)
             ),
             NavigationHost(nav, route =>
-                Factories.Text($"Page: {route}")
+                Text($"Page: {route}")
                     .FontSize(18).Padding(16))
         ).Padding(24);
     }
@@ -127,7 +127,7 @@ class LifecyclePage : Component
             SubHeading("Lifecycle Events"),
             VStack(4,
                 log.TakeLast(5).Select(entry =>
-                    Factories.Text(entry).FontSize(12).Opacity(0.7)
+                    Text(entry).FontSize(12).Opacity(0.7)
                 ).ToArray()
             )
         ).Padding(16);
@@ -154,12 +154,12 @@ class PageTransitionsDemo : Component
             NavigationHost(nav, route => route switch
             {
                 Route.Home => VStack(8,
-                    Factories.Text("Home").FontSize(24).Bold(),
-                    Factories.Text("Slide transition on navigate")).Padding(16),
+                    Text("Home").FontSize(24).Bold(),
+                    Text("Slide transition on navigate")).Padding(16),
                 Route.Settings => VStack(8,
-                    Factories.Text("Settings").FontSize(24).Bold(),
-                    Factories.Text("DrillIn transition to detail")).Padding(16),
-                _ => Factories.Text($"{route}").FontSize(18).Padding(16)
+                    Text("Settings").FontSize(24).Bold(),
+                    Text("DrillIn transition to detail")).Padding(16),
+                _ => Text($"{route}").FontSize(18).Padding(16)
             }) with { Transition = NavigationTransition.DrillIn() }
         ).Padding(24);
     }
@@ -188,7 +188,7 @@ class DeepLinkingDemo : Component
                 Button("Resolve /unknown", () =>
                     setResult($"/unknown -> {map.Resolve("/unknown").Matched}"))
             ),
-            Factories.Text($"Result: {result}").FontSize(14).Opacity(0.7)
+            Text($"Result: {result}").FontSize(14).Opacity(0.7)
         ).Padding(24);
     }
 }
@@ -222,7 +222,7 @@ class DeepLinkQueryDemo : Component
             SubHeading("Deep Link Query Params"),
             Button("Resolve /users/42/posts/7?sort=date", () =>
                 map.Resolve("/users/42/posts/7?sort=date")),
-            Factories.Text($"Captured: {info}").FontSize(14).Opacity(0.7)
+            Text($"Captured: {info}").FontSize(14).Opacity(0.7)
         ).Padding(24);
     }
 }
@@ -249,11 +249,11 @@ class StateSerializationDemo : Component
                         nav.SetState(savedState);
                 }).Disabled(savedState is null)
             ),
-            Factories.Text($"Current: {nav.CurrentRoute}"),
-            Factories.Text($"Saved: {savedState?[..Math.Min(50, savedState?.Length ?? 0)] ?? "(none)"}")
+            Text($"Current: {nav.CurrentRoute}"),
+            Text($"Saved: {savedState?[..Math.Min(50, savedState?.Length ?? 0)] ?? "(none)"}")
                 .FontSize(12).Opacity(0.6),
             NavigationHost(nav, route =>
-                Factories.Text($"Page: {route}").Padding(16))
+                Text($"Page: {route}").Padding(16))
         ).Padding(24);
     }
 }
@@ -290,10 +290,10 @@ class DiagnosticsDemo : Component
                 Button("Settings", () => nav.Navigate(Route.Settings))
             ),
             VStack(4, log.TakeLast(6).Select(
-                entry => Factories.Text(entry).FontSize(11).Opacity(0.6)
+                entry => Text(entry).FontSize(11).Opacity(0.6)
             ).ToArray()),
             NavigationHost(nav, route =>
-                Factories.Text($"Page: {route}").Padding(16))
+                Text($"Page: {route}").Padding(16))
         ).Padding(24);
     }
 }
@@ -308,7 +308,7 @@ class PageCachingDemo : Component
 
         return VStack(12,
             SubHeading("Page Caching"),
-            Factories.Text("Text input is preserved across navigations."),
+            Text("Text input is preserved across navigations."),
             HStack(8,
                 Button("Home", () => nav.Navigate(Route.Home)),
                 Button("Settings", () => nav.Navigate(Route.Settings)),
@@ -319,7 +319,7 @@ class PageCachingDemo : Component
             {
                 Route.Home => CachedPage("Home"),
                 Route.Settings => CachedPage("Settings"),
-                _ => Factories.Text($"{route}").Padding(16)
+                _ => Text($"{route}").Padding(16)
             }) with
             {
                 CacheMode = NavigationCacheMode.Enabled,
@@ -330,7 +330,7 @@ class PageCachingDemo : Component
 
     static Element CachedPage(string name) =>
         VStack(8,
-            Factories.Text(name).FontSize(20).Bold(),
+            Text(name).FontSize(20).Bold(),
             TextField("", _ => { }, placeholder: "Type here — state persists")
         ).Padding(16);
 }
@@ -344,20 +344,20 @@ class TabNavDemo : Component
         return TabView(
             Tab("Documents",
                 VStack(12,
-                    Factories.Text("Your documents appear here."),
+                    Text("Your documents appear here."),
                     Button("New Document", () => { })
                 ).Padding(24)
             ),
             Tab("Recent",
                 VStack(12,
-                    Factories.Text("Recently opened files."),
-                    Factories.Text("No recent files.").Opacity(0.5)
+                    Text("Recently opened files."),
+                    Text("No recent files.").Opacity(0.5)
                 ).Padding(24)
             ),
             Tab("Shared",
                 VStack(12,
-                    Factories.Text("Files shared with you."),
-                    Factories.Text("Nothing shared yet.").Opacity(0.5)
+                    Text("Files shared with you."),
+                    Text("Nothing shared yet.").Opacity(0.5)
                 ).Padding(24)
             )
         );

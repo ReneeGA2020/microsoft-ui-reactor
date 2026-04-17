@@ -80,7 +80,7 @@ class CalculatorApp : Component
 
         return VStack(4,
             // Display
-            Factories.Text(display)
+            Text(display)
                 .FontSize(32).Bold()
                 .HAlign(HorizontalAlignment.Right)
                 .Padding(12, 8),

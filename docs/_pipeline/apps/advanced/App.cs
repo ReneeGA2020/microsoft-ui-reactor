@@ -22,9 +22,9 @@ class ErrorBoundaryDemo : Component
             ErrorBoundary(
                 Component<BuggyComponent>(),
                 (Exception ex) => VStack(8,
-                    Factories.Text("Something went wrong").Bold()
+                    Text("Something went wrong").Bold()
                         .Foreground("#d13438"),
-                    Factories.Text(ex.Message).FontSize(12).Opacity(0.7)
+                    Text(ex.Message).FontSize(12).Opacity(0.7)
                 ).Padding(12)
                  .Background("#fde7e9")
                  .CornerRadius(8)
@@ -54,15 +54,15 @@ class MemoSubtreeDemo : Component
 
         return VStack(12,
             SubHeading("Memo"),
-            Factories.Text($"Parent renders: click count = {count}"),
+            Text($"Parent renders: click count = {count}"),
             Button("Increment", () => setCount(count + 1)),
             Memo(ctx =>
             {
                 // This subtree only re-renders when label changes
                 return Border(
                     VStack(4,
-                        Factories.Text($"Memoized: {label}").Bold(),
-                        Factories.Text("Skips re-render when deps unchanged")
+                        Text($"Memoized: {label}").Bold(),
+                        Text("Skips re-render when deps unchanged")
                             .FontSize(12).Opacity(0.6)
                     ).Padding(12)
                 ).Background("#f0f0f0").CornerRadius(8);
@@ -86,7 +86,7 @@ class SetEscapeHatchDemo : Component
                         .SetToolTip(btn, "This is a native tooltip");
                     btn.Padding = new Thickness(20, 10, 20, 10);
                 }),
-            Factories.Text("Styled via .Set()")
+            Text("Styled via .Set()")
                 .Set(tb =>
                 {
                     tb.TextWrapping = TextWrapping.WrapWholeWords;
@@ -143,7 +143,7 @@ class ObservableTreeDemo : Component
             ToggleSwitch(vm.DarkMode, v => vm.DarkMode = v,
                 header: "Dark Mode"),
             Slider(vm.FontSize, 10, 32, v => vm.FontSize = (int)v),
-            Factories.Text($"Preview: {vm.UserName}")
+            Text($"Preview: {vm.UserName}")
                 .FontSize(vm.FontSize).Bold()
         ).Padding(24);
     }
@@ -171,10 +171,10 @@ class ObservableCollectionDemo : Component
                     { _tasks.Add(input.Trim()); setInput(""); }
                 })
             ),
-            Factories.Text($"{tasks.Count} tasks:").SemiBold(),
+            Text($"{tasks.Count} tasks:").SemiBold(),
             VStack(4, tasks.Select((task, i) =>
                 HStack(8,
-                    Factories.Text($"{i + 1}. {task}"),
+                    Text($"{i + 1}. {task}"),
                     Button("Remove", () => _tasks.RemoveAt(i))
                 ).WithKey($"task-{i}-{task}")
             ).ToArray())

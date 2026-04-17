@@ -24,7 +24,7 @@ class ProvideConsumeExample : Component
     public override Element Render()
     {
         return VStack(12,
-            Factories.Text("Outside: no provider"),
+            Text("Outside: no provider"),
             VStack(12,
                 Component<Greeting>()
             ).Provide(Contexts.UserName, "Alice")
@@ -37,7 +37,7 @@ class Greeting : Component
     public override Element Render()
     {
         var name = UseContext(Contexts.UserName);
-        return Factories.Text($"Hello, {name}!").FontSize(20).Bold();
+        return Text($"Hello, {name}!").FontSize(20).Bold();
     }
 }
 // </snippet:provide-consume>
@@ -64,8 +64,8 @@ class ThemePanel : Component
         var elTheme = theme == "dark" ? ElementTheme.Dark : ElementTheme.Light;
         return Border(
             VStack(8,
-                Factories.Text($"Current theme: {theme}").Bold(),
-                Factories.Text("Panel adapts to context.").Foreground(Theme.SecondaryText)
+                Text($"Current theme: {theme}").Bold(),
+                Text("Panel adapts to context.").Foreground(Theme.SecondaryText)
             ).Padding(16)
         ).Background(Theme.CardBackground)
          .CornerRadius(8)
@@ -98,7 +98,7 @@ class NameDisplay : Component
     public override Element Render()
     {
         var name = UseContext(Contexts.UserName);
-        return Factories.Text(name).FontSize(18).SemiBold().Foreground(Theme.Accent);
+        return Text(name).FontSize(18).SemiBold().Foreground(Theme.Accent);
     }
 }
 // </snippet:nested-override>
@@ -125,8 +125,8 @@ class ProfileCard : Component
 
         return Border(
             VStack(8,
-                Factories.Text(name).FontSize(fontSize).Bold(),
-                Factories.Text($"Font scale from context: {fontSize}px")
+                Text(name).FontSize(fontSize).Bold(),
+                Text($"Font scale from context: {fontSize}px")
                     .Foreground(Theme.SecondaryText)
             ).Padding(16)
         ).Background(Theme.CardBackground).CornerRadius(8);

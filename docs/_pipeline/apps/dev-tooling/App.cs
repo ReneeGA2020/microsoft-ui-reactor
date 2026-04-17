@@ -19,10 +19,10 @@ class DevToolingApp : Component
 
         return VStack(16,
             Heading("Preview Mode Demo"),
-            Factories.Text(message).FontSize(16),
+            Text(message).FontSize(16),
             HStack(8,
                 Button("Click me", () => setCount(count + 1)),
-                Factories.Text($"Clicked {count} times").SemiBold()
+                Text($"Clicked {count} times").SemiBold()
             ),
             TextField(message, setMessage, placeholder: "Type something")
                 .Width(300)
@@ -50,7 +50,7 @@ class DevToolingApp : Component
 // {
 //     var (n, setN) = ctx.UseState(0);
 //     return VStack(12,
-//         Factories.Text($"Count: {n}").FontSize(20),
+//         Text($"Count: {n}").FontSize(20),
 //         Button("+1", () => setN(n + 1))
 //     ).Padding(24);
 // }, width: 400, height: 300);
@@ -66,7 +66,7 @@ class IterationDemo : Component
 
         return VStack(12,
             Heading("Iteration Cycle Demo"),
-            Factories.Text("Add items, then edit this code and save to see hot reload."),
+            Text("Add items, then edit this code and save to see hot reload."),
             HStack(8,
                 TextField(input, setInput, placeholder: "New item")
                     .Width(200),
@@ -83,7 +83,7 @@ class IterationDemo : Component
                     }
                 })
             ),
-            ForEach(items, item => Factories.Text($"  - {item}"))
+            ForEach(items, item => Text($"  - {item}"))
         ).Padding(24);
     }
 }

@@ -72,10 +72,10 @@ class LocalizedContent : Component
             new { name = "Alice" });
 
         return VStack(12,
-            Factories.Text(title).FontSize(24).Bold(),
-            Factories.Text(greeting).FontSize(16),
-            Factories.Text($"Locale: {intl.Locale}").Opacity(0.6),
-            Factories.Text($"Direction: {intl.Direction}").Opacity(0.6)
+            Text(title).FontSize(24).Bold(),
+            Text(greeting).FontSize(16),
+            Text($"Locale: {intl.Locale}").Opacity(0.6),
+            Text($"Direction: {intl.Direction}").Opacity(0.6)
         );
     }
 }
@@ -99,10 +99,10 @@ class FormattingDemo : Component
 
         return VStack(8,
             SubHeading("Formatting"),
-            Factories.Text($"Price: {price}"),
-            Factories.Text($"Rate: {percent}"),
-            Factories.Text($"Date: {date}"),
-            Factories.Text($"List: {items}")
+            Text($"Price: {price}"),
+            Text($"Rate: {percent}"),
+            Text($"Date: {date}"),
+            Text($"List: {items}")
         ).Padding(24);
     }
 }
@@ -121,8 +121,8 @@ class RtlDemo : Component
             VStack(4,
                 locales.Select(loc =>
                     HStack(8,
-                        Factories.Text(loc).Width(60),
-                        Factories.Text(RtlHelper.IsRtlLocale(loc) ? "RTL" : "LTR")
+                        Text(loc).Width(60),
+                        Text(RtlHelper.IsRtlLocale(loc) ? "RTL" : "LTR")
                             .Bold()
                             .Foreground(RtlHelper.IsRtlLocale(loc)
                                 ? "#d13438" : "#107c10")
@@ -130,7 +130,7 @@ class RtlDemo : Component
                 ).ToArray()
             ),
             When(intl.IsRtl, () =>
-                Factories.Text("Current layout is right-to-left")
+                Text("Current layout is right-to-left")
                     .Foreground("#d13438").SemiBold())
         ).Padding(24);
     }
@@ -158,8 +158,8 @@ class PseudoLocDemo : Component
                         new MessageKey("App", "greeting"),
                         new { name = "World" });
                     return VStack(4,
-                        Factories.Text(title).FontSize(18).Bold(),
-                        Factories.Text(greeting));
+                        Text(title).FontSize(18).Bold(),
+                        Text(greeting));
                 }),
                 resourceProvider: provider,
                 pseudoLocalize: pseudo)

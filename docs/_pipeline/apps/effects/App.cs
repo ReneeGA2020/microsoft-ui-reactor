@@ -22,8 +22,8 @@ class MountEffectExample : Component
         }, Array.Empty<object>());
 
         return VStack(8,
-            Factories.Text("Component mounted at:"),
-            Factories.Text(loadedAt).FontSize(20).Bold()
+            Text("Component mounted at:"),
+            Text(loadedAt).FontSize(20).Bold()
         ).Padding(24);
     }
 }
@@ -47,7 +47,7 @@ class DependencyEffectExample : Component
 
         return VStack(12,
             TextField(query, setQuery, placeholder: "Search...").Width(300),
-            Factories.Text(results).Foreground(Theme.SecondaryText)
+            Text(results).Foreground(Theme.SecondaryText)
         ).Padding(24);
     }
 }
@@ -75,7 +75,7 @@ class TimerCleanupExample : Component
         }, isRunning);
 
         return VStack(12,
-            Factories.Text($"Elapsed: {seconds}s").FontSize(24).Bold(),
+            Text($"Elapsed: {seconds}s").FontSize(24).Bold(),
             HStack(8,
                 Button(isRunning ? "Stop" : "Start", () => setIsRunning(!isRunning)),
                 Button("Reset", () => updateSeconds(_ => 0))
@@ -102,11 +102,11 @@ class AsyncLoadingExample : Component
         }, Array.Empty<object>());
 
         if (items is null)
-            return Factories.Text("Loading...").Padding(24);
+            return Text("Loading...").Padding(24);
 
         return VStack(8,
             Heading("Loaded Users"),
-            VStack(4, items.Select(name => Factories.Text(name)).ToArray())
+            VStack(4, items.Select(name => Text(name)).ToArray())
         ).Padding(24);
     }
 }
@@ -128,7 +128,7 @@ class InfiniteLoopWarning : Component
             if (count < 5) setCount(count + 1);
         }, count);
 
-        return Factories.Text($"Count stopped at: {count}").Padding(24);
+        return Text($"Count stopped at: {count}").Padding(24);
     }
 }
 // </snippet:infinite-loop-warning>
