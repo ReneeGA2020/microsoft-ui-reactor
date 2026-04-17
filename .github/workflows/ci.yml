@@ -10,10 +10,10 @@ jobs:
     name: Unit Tests
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@c0f7d5c7f4f9b55b6f3f14a6f2c3c1d52f8a1c2e # v4
         with:
           dotnet-version: 9.0.x
 
