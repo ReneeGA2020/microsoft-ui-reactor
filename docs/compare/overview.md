@@ -19,6 +19,7 @@ relative to the industry.
 | Microsoft | WinForms | Windows | 2002 |
 | Microsoft | WPF | Windows | 2006 |
 | Microsoft | WinUI 3 | Windows | 2021 |
+| Microsoft | [Blazor](blazor.md) | Web (+ Desktop/Mobile via Hybrid WebView) | 2020 |
 | Microsoft | Reactor | Windows (on WinUI 3) | Pre-release |
 
 ---
@@ -99,27 +100,27 @@ to understand the gap, not to declare winners.
 
 ### Microsoft Frameworks
 
-| Category | WinForms | WPF | WinUI 3 | Reactor |
-|---|---|---|---|---|
-| **Declarative Syntax** | F | C+ | C+ | B |
-| **Component Architecture** | D | B- | B- | B+ |
-| **State & Reactivity** | D | B | B | B+ |
-| **Rendering & Performance** | C+ | B | B+ | B- |
-| **Layout** | D+ | A- | A- | B+ |
-| **Styling & Theming** | D | A- | A | B- |
-| **Navigation** | F | C | C+ | B+ |
-| **Animation** | F | B+ | A | C+ |
-| **Accessibility** | D+ | A- | A | B |
-| **Input & Gestures** | C | B+ | B+ | C |
-| **Developer Experience** | B | B- | B- | C+ |
-| **Platform Reach** | D | D | D | D |
-| **Testing** | D+ | B | B- | B- |
-| **Error Handling** | C | C | C | B |
-| **Data Loading & Async** | D+ | B | B | B+ |
-| **Lists & Virtualization** | C+ | A- | A- | B+ |
-| **Internationalization** | C+ | B | B+ | B+ |
-| **Interop & Adoption** | B+ | A- | B+ | A- |
-| **Forms & Data Entry** | B | A | B | B |
+| Category | WinForms | WPF | WinUI 3 | Blazor | Reactor |
+|---|---|---|---|---|---|
+| **Declarative Syntax** | F | C+ | C+ | B+ | B |
+| **Component Architecture** | D | B- | B- | B | B+ |
+| **State & Reactivity** | D | B | B | C+ | B+ |
+| **Rendering & Performance** | C+ | B | B+ | B | B- |
+| **Layout** | D+ | A- | A- | B+ | B+ |
+| **Styling & Theming** | D | A- | A | B | B- |
+| **Navigation** | F | C | C+ | B | B+ |
+| **Animation** | F | B+ | A | C | C+ |
+| **Accessibility** | D+ | A- | A | B | B |
+| **Input & Gestures** | C | B+ | B+ | B+ | C |
+| **Developer Experience** | B | B- | B- | B | C+ |
+| **Platform Reach** | D | D | D | B+ | D |
+| **Testing** | D+ | B | B- | A- | B- |
+| **Error Handling** | C | C | C | B+ | B |
+| **Data Loading & Async** | D+ | B | B | B+ | B+ |
+| **Lists & Virtualization** | C+ | A- | A- | B+ | B+ |
+| **Internationalization** | C+ | B | B+ | B+ | B+ |
+| **Interop & Adoption** | B+ | A- | B+ | A- | A- |
+| **Forms & Data Entry** | B | A | B | A- | B |
 
 ---
 
@@ -144,6 +145,10 @@ constructors are the weakest of the four but still declarative.
 - **WinUI 3 (C+):** Same XAML model as WPF/UWP with minor improvements.
   `x:Bind` is compile-time checked (unlike WPF's runtime binding), which
   is a genuine advantage, but the syntax is equally verbose
+- **Blazor (B+):** Razor mixes HTML-like markup with C# via `@` directives.
+  Full C# expressiveness inside `@{}` blocks, type-safe parameter passing,
+  mature Roslyn-based tooling. Separate language requiring a build step and
+  more verbose than function-as-component models, but more readable than XAML
 - **Reactor (B):** C# method calls with `params` arrays. Closer to Flutter's
   constructor style than SwiftUI/Compose's block syntax. Modifier chains
   (`.Bold().FontSize(24)`) are ergonomic. The main weakness is bracket-
@@ -151,7 +156,8 @@ constructors are the weakest of the four but still declarative.
   builders. Still, it's the most readable declarative option on Windows
 
 **Gap:** WPF/WinUI3's XAML is ~15 years behind modern declarative syntax.
-Reactor closes roughly half the gap to competitors.
+Blazor's Razor closes most of the gap (B+); Reactor closes roughly half the
+gap with its method-call syntax (B).
 
 ---
 
@@ -172,6 +178,11 @@ Flutter's StatefulWidget two-class pattern is the most verbose.
   but architecturally sound
 - **WinUI 3 (B-):** Same model as WPF with `x:Bind` improvements. Community
   Toolkit MVVM source generators reduce boilerplate significantly
+- **Blazor (B):** Class-based `ComponentBase` with `[Parameter]`/
+  `[CascadingParameter]`. `EventCallback<T>` is a clean child→parent event
+  primitive that auto-re-renders the subscriber. `RenderFragment` is a
+  first-class "piece of UI" value. No hooks equivalent — class-based
+  composition is a generation behind function-as-component models
 - **Reactor (B+):** React-style function components with hooks. Context system,
   memoization. The mental model transfers from React cleanly. No slots
   pattern (unlike Compose's named slot APIs), but children via params work
@@ -197,6 +208,12 @@ libraries. Flutter provides only `setState()`.
 - **WinUI 3 (B):** `x:Bind` (compiled) is faster and safer than WPF's
   reflection-based binding. CommunityToolkit.Mvvm source generators
   (`[ObservableProperty]`) dramatically reduce boilerplate
+- **Blazor (C+):** `ComponentBase.StateHasChanged()` is a manual render trigger.
+  Framework auto-calls it after lifecycle methods, parameter changes, and
+  `EventCallback` invocations; everything else (timers, observables, async
+  callbacks) requires `InvokeAsync(StateHasChanged)`. No built-in state
+  store — ecosystem uses Fluxor, Blazor-State, observable libraries. **No
+  automatic reactivity tracking** — Blazor's biggest ergonomic weakness
 - **Reactor (B+):** React-style hooks (UseState, UseReducer, UseEffect, UseMemo,
   UseContext). Context for shared state. UseObservable bridges to MVVM.
   No fine-grained property tracking (unlike SwiftUI's @Observable), but the
@@ -204,8 +221,11 @@ libraries. Flutter provides only `setState()`.
 
 **Gap:** No Microsoft framework has automatic fine-grained state tracking.
 WPF/WinUI3's INotifyPropertyChanged is functionally equivalent to Flutter's
-approach (manual notification). Reactor's hooks match React's model. None match
-SwiftUI/Compose's automatic observation.
+approach (manual notification). Blazor's `StateHasChanged` is more manual
+still — the framework auto-triggers only for lifecycle, parameters, and
+`EventCallback`, leaving observable/timer/async scenarios as developer
+responsibility. Reactor's hooks match React's model. None match SwiftUI/
+Compose's automatic observation.
 
 ---
 
@@ -227,6 +247,12 @@ concurrent rendering with priority scheduling. SwiftUI's AttributeGraph.
 - **WinUI 3 (B+):** Composition layer provides independent animation thread
   at 60fps even when UI thread is blocked. Better than WPF for modern
   scenarios. `x:Phase` for incremental list loading
+- **Blazor (B):** Compile-time sequence numbers injected by the Razor compiler
+  enable linear-time render-tree diffing (architecturally clever vs React's
+  general tree diff). Four render modes (Static SSR, Interactive Server,
+  Interactive WebAssembly, Interactive Auto). Server mode is latency-sensitive
+  (every interaction is a SignalR round-trip); WebAssembly has a significant
+  initial download cost even post-trim. No concurrent rendering
 - **Reactor (B-):** Single-threaded reconciler. No concurrent rendering. Known
   GC pressure from modifier chain allocations. No profiling tools. However,
   reconciler correctness is solid and perf experiments are underway
@@ -256,6 +282,10 @@ system). Flutter's constraint model is powerful but has a steep learning curve.
   modern frameworks
 - **WinUI 3 (A-):** Inherits WPF's panel model plus RelativePanel (constraint-
   based) and AdaptiveTrigger for responsive layouts. Strong
+- **Blazor (B+):** Delegates entirely to CSS — Flexbox, Grid, container queries.
+  Full CSS ecosystem compatibility including in Hybrid (WebView hosts HTML).
+  No framework-level layout primitive, but CSS is the most capable layout
+  system available
 - **Reactor (B+):** FlexPanel (full Flexbox implementation) is ambitious and
   useful — provides layout capabilities WinUI itself doesn't have. Grid is
   stringly-typed (`["*", "Auto", "200"]`). No custom layout protocol
@@ -289,6 +319,11 @@ Material-centric.
 - **WinUI 3 (A):** Fluent Design with Mica/Acrylic materials. Lightweight
   styling (override resources without re-templating). ThemeResource for
   automatic light/dark/high-contrast. This is a genuine strength
+- **Blazor (B):** CSS isolation (`MyComponent.razor.css` auto-scoped with
+  `b-xxx` attribute) is the distinctive feature — zero-runtime scoped CSS per
+  component. Limitation: third-party components don't participate (open issue
+  dotnet/aspnetcore#63091). No built-in design system — ecosystem relies on
+  Fluent UI Blazor, MudBlazor, Telerik, Syncfusion, DevExpress
 - **Reactor (B-):** 37 semantic theme tokens (accent, text, surface, control,
   stroke, signal colors) with `Theme.Ref(key)` for custom resources.
   ResourceBuilder supports 5 resource types (color string, Brush, ThemeRef,
@@ -326,6 +361,11 @@ notoriously complex.
   use MVVM navigation via ContentControl + DataTemplate
 - **WinUI 3 (C+):** NavigationView + Frame.Navigate(typeof(Page)). Functional
   but imperative and not type-safe for parameters
+- **Blazor (B):** `@page "/products/{id:int}"` directive with route constraints
+  (bool, int, long, guid, datetime, etc.), `NavigationManager` for programmatic
+  nav, `LocationChanging` with cancellation for unsaved-changes guards. URL-
+  native deep linking. **No type-safe navigation** — `NavigateTo(string)` is
+  not compile-checked against route templates
 - **Reactor (B+):** Type-safe routes via C# records, developer-owned back stack,
   GPU-powered composition-layer transitions, lifecycle guards, LRU caching,
   serialization, deep linking with `DeepLinkMap<TRoute>` supporting URI
@@ -364,6 +404,10 @@ has no built-in animation.
   implicit animations, connected animations, expression animations, spring
   animations. **Best animation system of any Microsoft framework and
   competitive with the best competitors.** This is WinUI 3's crown jewel
+- **Blazor (C):** No framework-level animation. CSS transitions/animations are
+  the floor. Small fragmented ecosystem (Blazor.Animate, blazor-transition-
+  group, Toolbelt.ViewTransition). Exit animations are awkward because Blazor
+  removes DOM nodes synchronously on state change
 - **Reactor (C+):** Spring, ease, and linear curves on compositor properties
   (Opacity, Offset, Scale, Rotation, CenterPoint). Enter **and exit**
   transitions now work — the ChildReconciler defers removal until exit
@@ -403,6 +447,11 @@ gaps on web.
 - **WinUI 3 (A):** Full UIA support, same as UWP. All standard controls
   accessible. High contrast mode via theme resources. Narrator integration
   is strong. Competitive with SwiftUI
+- **Blazor (B):** Inherits web accessibility — semantic HTML + ARIA attributes
+  + keyboard events. Framework contributes nothing on top (same as React).
+  Quality depends entirely on component library choice: Fluent UI Blazor,
+  Telerik (WCAG 2.2), Syncfusion (WCAG 2.2 / Section 508 / ADA) all provide
+  comprehensive a11y
 - **Reactor (B):** 16+ accessibility modifiers covering automation name, help
   text, landmarks, heading levels, live regions (Polite/Assertive), required
   fields, position-in-set, hierarchy level, tab navigation, and accessibility
@@ -456,6 +505,11 @@ capable. React has no built-in gesture system.
   UIElement.Focus() for focus management
 - **WinUI 3 (B+):** Same as WPF with improved touch/pen support. Composition
   interaction for smooth gesture-driven animations
+- **Blazor (B+):** Typed event argument types (`MouseEventArgs`,
+  `KeyboardEventArgs`, `ChangeEventArgs`) — safer than React's `SyntheticEvent`.
+  Declarative `@onclick:stopPropagation="true"` / `:preventDefault="true"`.
+  Typed form inputs (`<InputText>`, `<InputNumber>`, `<InputDate>`) with
+  two-way binding and validation integration. No gesture system
 - **Reactor (C):** Semantic events (OnClick, OnToggle) are good. Commanding
   system provides focus-scoped keyboard accelerators. But no gesture system,
   no pointer enter/exit, no right-click/double-click without `.Set()`. Most
@@ -486,6 +540,12 @@ and Preview are excellent.
 - **WinUI 3 (B-):** XAML Hot Reload, Live Visual Tree. But packaging complexity,
   deployment issues, smaller community for troubleshooting. Documentation
   has gaps for advanced scenarios
+- **Blazor (B):** Mature Roslyn-based tooling in Visual Studio and JetBrains
+  Rider. Hot Reload works across Server, WebAssembly, and Hybrid modes (Razor
+  edits, C# method bodies, CSS); reliability issues on VS Code. Unified C#
+  end-to-end. **No component DevTools** — no render tree inspector, no
+  parameter inspector, no render-count profiler. WebAssembly debugging has
+  debug-proxy handshake fragility
 - **Reactor (C+):** Hot reload works (via WinUI 3 XAML Hot Reload). Preview is
   screenshot-only. No DevTools for component inspection. No recomposition
   count tracking. No profiling tools
@@ -507,9 +567,15 @@ Native. Compose Multiplatform now covers Android, iOS, Desktop, Web.
 SwiftUI covers all Apple platforms.
 
 **Microsoft assessment:**
-- **All Microsoft frameworks (D):** Windows only. Full stop. WPF and WinForms
-  have no cross-platform story. WinUI 3 is Windows-only by design. Reactor
-  inherits WinUI 3's limitation
+- **WinForms, WPF, WinUI 3, Reactor (D):** Windows only. Full stop. WPF and
+  WinForms have no cross-platform story. WinUI 3 is Windows-only by design.
+  Reactor inherits WinUI 3's limitation
+- **Blazor (B+):** **The only Microsoft framework with genuine cross-platform
+  reach.** Same Razor components run on Web (Server/WASM), Windows (WPF,
+  WinForms, MAUI), Mac/iOS/Android (MAUI) via `BlazorWebView`. Caveat: Hybrid
+  renders HTML in a WebView, not platform-native controls — you don't get
+  native UIA, native look, or platform controls. Platform API access requires
+  MAUI APIs or JS interop bridges
 
 **Avalonia note:** Avalonia is the .NET ecosystem's answer to this gap,
 covering 7 platforms (Windows, macOS, Linux, iOS, Android, WebAssembly,
@@ -519,11 +585,15 @@ framework from the Microsoft stack — it self-renders via Skia rather than
 using platform controls, and its mobile/web platforms are less mature than
 its desktop story.
 
-**Gap:** This is the largest gap between Microsoft frameworks and competitors.
-Every competitor targets multiple platforms. All Microsoft options target one.
-This is an inherent architectural constraint, not a fixable bug. Avalonia
-provides a cross-platform path for .NET developers but requires leaving the
-WinUI 3/WPF ecosystem (unless using XPF for WPF binary compat).
+**Gap:** This is the largest gap between Microsoft's *native* frameworks and
+competitors. WinForms, WPF, WinUI 3, and Reactor target one platform.
+**Blazor Hybrid is the only first-party Microsoft framework that targets
+multiple platforms** — at the cost of rendering in a WebView rather than
+native controls. Avalonia provides a cross-platform native-ish path for .NET
+developers but requires leaving the WinUI 3/WPF ecosystem (unless using XPF
+for WPF binary compat). The architectural trade-off is clear: Blazor Hybrid
+prioritizes code reuse over native fidelity; WinUI 3/Reactor prioritize
+native fidelity over code reuse.
 
 ---
 
@@ -543,6 +613,11 @@ is fast and comprehensive. SwiftUI has the weakest testing story.
   WinAppDriver/FlaUI. Binding errors are silent at runtime (a testing gap)
 - **WinUI 3 (B-):** MVVM + `x:Bind` compile-time checking catches binding
   errors. UI testing via WinAppDriver. Test infrastructure still evolving
+- **Blazor (A-):** **bUnit is the best testing story in the Microsoft
+  ecosystem** — renderer-level component tests, semantic HTML assertions
+  (whitespace/attribute-order insensitive), officially endorsed by Microsoft
+  Learn, xUnit/NUnit/MSTest/TUnit compatible, milliseconds per test. Mocked
+  `IJSRuntime` and `NavigationManager` built in
 - **Reactor (B-):** Pure C# function components are unit-testable. ErrorBoundary
   exists. Navigation has 146+ unit tests (including 29 stress tests covering
   concurrency, serialization, and deep linking). DataGrid has 1,600+ state
@@ -550,9 +625,10 @@ is fast and comprehensive. SwiftUI has the weakest testing story.
   tests exist for DataGrid, WinForms interop (13 tests), and accessibility
   interactions. No component-level testing framework
 
-**Gap:** WPF's MVVM testability is on par with competitors. The main gap is
-the lack of component-level testing frameworks (equivalent to ComposeTestRule
-or React Testing Library). Reactor's ErrorBoundary is a genuine advantage over
+**Gap:** WPF's MVVM testability is on par with competitors. **Blazor's bUnit
+closes the component-testing gap entirely** — it's the renderer-level equivalent
+of ComposeTestRule / React Testing Library and is the best testing story in the
+Microsoft ecosystem. Reactor's ErrorBoundary is a genuine advantage over
 SwiftUI, Compose, and Flutter.
 
 ---
@@ -572,12 +648,18 @@ view errors.
   blessing). No error boundary concept
 - **WinUI 3 (C):** Application.UnhandledException. `x:Bind` compile-time
   checking prevents binding errors. No error boundary
+- **Blazor (B+):** `<ErrorBoundary>` component with `Recover()` method. Puts
+  Blazor in a small group with React and Reactor as the only component
+  frameworks with first-class error boundaries. Circuit-level unhandled
+  errors in Server mode trigger a default UI overlay
 - **Reactor (B):** ErrorBoundary component exists — this is a **genuine
   differentiator.** Neither SwiftUI nor Compose has this. Only React provides
   equivalent functionality. Reactor is ahead of every competitor except React
 
-**Gap:** Reactor is competitive or ahead. This is one of only two categories
-(alongside commanding) where a Microsoft framework leads the industry.
+**Gap:** Both Blazor and Reactor are competitive or ahead. Error boundaries
+are one of only two categories (alongside commanding) where Microsoft
+frameworks lead the industry. Blazor and Reactor share this with React —
+a small club.
 
 ---
 
@@ -602,6 +684,12 @@ runtime. Flutter's `FutureBuilder` is built-in but considered low-level.
 - **WinUI 3 (B):** Same async/await + MVVM pattern as WPF with
   `DispatcherQueue` instead of `Dispatcher`. `ISupportIncrementalLoading`
   for automatic pagination in lists. No built-in async loading framework
+- **Blazor (B+):** Streaming rendering (`@attribute [StreamRendering(true)]`)
+  is the SSR equivalent of Suspense — initial markup sent immediately, async
+  content streams in. `[PersistentState]` (.NET 10) closes the prerender →
+  interactive double-fetch gap. Auto-`StateHasChanged` after `OnInitializedAsync`
+  removes boilerplate. No Suspense equivalent in Interactive mode — manual
+  loading-state booleans. No built-in caching/retry (no TanStack Query peer)
 - **Reactor (B+):** `UseEffect` provides lifecycle-scoped side effects matching
   React's model. `UseState` for loading/error management. `UseObservable`
   bridges async ViewModel patterns. No built-in Suspense equivalent, but
@@ -636,6 +724,11 @@ React has **no built-in virtualization** — a genuine gap.
   `GridView` with container recycling. `x:Phase` for incremental loading.
   `ContainerContentChanging` for efficient recycling. `ISupportIncrementalLoading`
   for automatic pagination
+- **Blazor (B+):** `<Virtualize>` built-in for vertical lists (sync `Items` or
+  async `ItemsProvider`). **QuickGrid** is Microsoft's official simple data grid
+  with `IQueryable` integration (sorting, paging, column templates). Commercial
+  grids (Telerik, Syncfusion, DevExpress) cover high-end scenarios. No built-in
+  grouping, no horizontal/grid-of-items virtualization
 - **Reactor (B+):** Typed `ListView<T>`/`GridView<T>` with `viewBuilder` pattern
   and `ContainerContentChanging` recycling. `LazyVStack<T>`/`LazyHStack<T>`
   via `ItemsRepeater`. `ElementPool` for interactive control recycling (capped
@@ -685,6 +778,11 @@ has no built-in i18n.
   XAML resource binding. `ResourceLoader` for code access. No plural/gender
   built-in. `ApplicationLanguages.PrimaryLanguageOverride` for per-app language.
   RTL via `FlowDirection`
+- **Blazor (B+):** Inherits the mature .NET i18n stack — `IStringLocalizer<T>`,
+  `.resx`, `CultureInfo`, `NumberFormatInfo`. ICU support via WASM globalization
+  bundle (size trade-off). Runtime culture switching works cleanly in Server
+  mode. **No built-in CLDR plural/gender rules** — same gap as WPF/WinUI 3.
+  RTL is a CSS concern
 - **Reactor (B+):** ICU MessageFormat on top of WinUI's `.resw` system.
   `Context<IntlAccessor?>` provides context-based locale propagation.
   CLDR plural/gender/select support — **addresses WinUI 3's biggest i18n gap**.
@@ -717,6 +815,13 @@ is mature. Flutter's add-to-app works but platform views are costly.
 - **WinUI 3 (B+):** XAML Islands for WPF/WinForms hosting. WebView2 for web
   content. `AppWindow` for Win32 access. Migration from UWP is non-trivial
   (sandbox removal, API changes)
+- **Blazor (A-):** `BlazorWebView` hosts Razor components inside WPF, WinForms,
+  and MAUI. Same Razor components work in Blazor Web App and Blazor Hybrid —
+  genuinely shared UI code across web, desktop, and mobile. `IJSRuntime` +
+  `[JSInvokable]` for typed JS interop. Razor Class Libraries are the
+  reusable packaging unit. Caveat: Hybrid renders HTML in a WebView (not
+  native controls); platform API access requires MAUI APIs or JS interop
+  bridges. "Not actually native" is the defining trade-off
 - **Reactor (A-):** **Best interop story in the Microsoft ecosystem.**
   `ReactorHostControl` drops into any WinUI XAML layout — no `ReactorApp` required.
   `XamlHostElement`/`XamlPageElement` embed existing XAML in Reactor trees.
@@ -768,6 +873,16 @@ built-in validation.
   min/max/increment validation. No built-in validation framework (unlike WPF).
   CommunityToolkit.Mvvm's `ObservableValidator` fills the gap. `XYFocus` for
   directional navigation (gamepad/Xbox)
+- **Blazor (A-):** **`<EditForm>` + `<DataAnnotationsValidator>` + typed
+  `<Input*>` components is the most comprehensive form/validation story of
+  any modern declarative framework.** `EditContext` tracks per-field touched/
+  modified/valid state; expression-tree field identification (`@(() =>
+  m.Prop)`) is compile-checked against the model; typed inputs (`InputText`,
+  `InputNumber<T>`, `InputDate<T>`, `InputCheckbox`, `InputSelect<T>`,
+  `InputRadioGroup<T>`, `InputFile`) wrap native inputs with two-way binding,
+  validation state visualization, and accessibility markup. Works in both
+  Interactive and Static SSR with antiforgery integration. Only WPF's full
+  depth (BindingGroup, ErrorTemplate) is ahead
 - **Reactor (B):** Full validation system with `ValidationContext` (thread-safe,
   multi-error, multi-severity, touched/dirty state tracking, internal vs.
   external messages). 10+ built-in validators (Required, MinLength, MaxLength,
@@ -791,12 +906,14 @@ built-in validation.
 **Gap:** WPF's form/validation system is **ahead of every competitor** — no
 declarative framework has equivalent depth (transactional edits, multiple
 errors per field, binding-level validation rules, custom error templates).
-This is WPF's most underappreciated strength. Reactor has closed significant
-ground here (from C+ to B) with automatic validation, FormField rendering,
-and a comprehensive validator library. It's now comparable to Compose's
-approach (good primitives, explicit wiring) and approaching Flutter's
-`Form.validate()` integration. The remaining gap to WPF is in template
-customization and binding-level validation integration.
+This is WPF's most underappreciated strength. **Blazor's `<EditForm>` is a
+close second (A-)** — the best form story of any modern declarative framework
+and the feature most worth learning from. Reactor has closed significant
+ground (from C+ to B) with automatic validation, FormField rendering, and a
+comprehensive validator library — comparable to Compose's approach and
+approaching Flutter's `Form.validate()` integration. The remaining gap to
+Blazor/WPF is in data-annotation-driven validation, template customization,
+and binding-level validation integration.
 
 ---
 
@@ -804,7 +921,7 @@ customization and binding-level validation integration.
 
 | Category | Competitor Median | Best MS | MS Grade | Gap |
 |---|---|---|---|---|
-| Declarative Syntax | A- | Reactor (B) | B | **1 grade behind** |
+| Declarative Syntax | A- | Blazor (B+) | B+ | **Half grade behind** |
 | Component Architecture | A- | Reactor (B+) | B+ | **Half grade behind** |
 | State & Reactivity | B+ | Reactor (B+) | B+ | **Matched** |
 | Rendering & Performance | B+ | WinUI 3 (B+) | B+ | **Matched** |
@@ -813,54 +930,63 @@ customization and binding-level validation integration.
 | Navigation | B+ | Reactor (B+) | B+ | **Matched** |
 | Animation | B+ | WinUI 3 (A) | A | **Ahead** |
 | Accessibility | B+ | WinUI 3 (A) | A | **Ahead** |
-| Input & Gestures | B+ | WPF/WinUI 3 (B+) | B+ | **Matched** |
-| Developer Experience | A- | WinForms (B) | B | **1 grade behind** |
-| Platform Reach | A- | All (D) | D | **3+ grades behind** |
-| Testing | B+ | WPF (B) | B | **Half grade behind** |
-| Error Handling | C+ | Reactor (B) | B | **Ahead** |
-| Data Loading & Async | A- | Reactor (B+) | B+ | **Half grade behind** |
+| Input & Gestures | B+ | WPF/WinUI 3/Blazor (B+) | B+ | **Matched** |
+| Developer Experience | A- | WinForms/Blazor (B) | B | **1 grade behind** |
+| Platform Reach | A- | Blazor (B+) | B+ | **Half grade behind** |
+| Testing | B+ | Blazor (A-) | A- | **Ahead** |
+| Error Handling | C+ | Blazor (B+) | B+ | **Ahead** |
+| Data Loading & Async | A- | Blazor/Reactor (B+) | B+ | **Half grade behind** |
 | Lists & Virtualization | B+ | WPF/WinUI 3 (A-) | A- | **Ahead** |
-| Internationalization | B+ | Reactor (B+) | B+ | **Matched** |
-| Interop & Adoption | A- | Reactor (A-) | A- | **Matched** |
+| Internationalization | B+ | Blazor/Reactor/WinUI 3 (B+) | B+ | **Matched** |
+| Interop & Adoption | A- | Blazor/Reactor (A-) | A- | **Matched** |
 | Forms & Data Entry | B | WPF (A) | A | **Ahead** |
 
 ### Where Microsoft leads or matches:
 1. **Forms & Data Entry** (WPF) — The richest validation system of any
    framework. INotifyDataErrorInfo, ValidationRule, ErrorTemplate, BindingGroup.
-   No competitor matches this depth
-2. **Lists & Virtualization** (WPF/WinUI 3) — VirtualizingStackPanel,
-   ItemsRepeater, ICollectionView. Ahead of all competitors at the median
-3. **Animation** (WinUI 3) — Composition API is world-class. Ahead of the
+   No competitor matches this depth. **Blazor's `<EditForm>` (A-) is a close
+   second** and the best form story of any modern declarative framework
+2. **Testing** (Blazor) — bUnit is the renderer-level equivalent of
+   ComposeTestRule / React Testing Library. **Ahead of the competitor median**
+   (A- vs B+) and the best testing story in the Microsoft ecosystem
+3. **Lists & Virtualization** (WPF/WinUI 3) — VirtualizingStackPanel,
+   ItemsRepeater, ICollectionView. Ahead of all competitors at the median.
+   Blazor's built-in `<Virtualize>` + QuickGrid covers the web side
+4. **Animation** (WinUI 3) — Composition API is world-class. Ahead of the
    competitor median (B+)
-4. **Accessibility** (WPF/WinUI 3) — UIA is the most comprehensive a11y API.
+5. **Accessibility** (WPF/WinUI 3) — UIA is the most comprehensive a11y API.
    Ahead of the competitor median (B+)
-5. **Styling & Theming** (WPF/WinUI 3) — WPF's ControlTemplate is unmatched;
+6. **Styling & Theming** (WPF/WinUI 3) — WPF's ControlTemplate is unmatched;
    WinUI 3's Fluent Design is competitive. Matched or ahead of median (A-)
-6. **Layout** (WPF/WinUI 3) — Panel system matches the best competitors
-7. **Error Handling** (Reactor) — ErrorBoundary is ahead of all but React
-8. **Interop & Adoption** (Reactor) — UseObservable bridges unmodified MVVM
-   ViewModels; ReactorHostControl drops into existing WinUI windows;
-   XamlIslandControl drops into WinForms with designer support
-9. **Rendering** (WinUI 3) — Composition layer's independent animation thread
-   is competitive
-10. **Navigation** (Reactor) — Architecturally competitive with Compose Nav 3
-11. **Commanding** (Reactor) — No competitor has this. Unique differentiator
+7. **Layout** (WPF/WinUI 3) — Panel system matches the best competitors
+8. **Error Handling** (Blazor/Reactor) — `<ErrorBoundary>` in both Blazor
+   (B+) and Reactor (B) is ahead of all but React
+9. **Interop & Adoption** (Blazor/Reactor) — Both A-. Blazor's BlazorWebView
+   hosts in WPF/WinForms/MAUI (web components on desktop, not native);
+   Reactor's `UseObservable` + `ReactorHostControl` + `XamlIslandControl`
+   drops native declarative UI into existing WinUI/WinForms
+10. **Rendering** (WinUI 3) — Composition layer's independent animation thread
+    is competitive
+11. **Navigation** (Reactor) — Architecturally competitive with Compose Nav 3
+12. **Commanding** (Reactor) — No competitor has this. Unique differentiator
 
 ### Where Microsoft lags significantly:
-1. **Platform Reach** — Windows-only vs 2-7 platforms. Unbridgeable without
-   Avalonia/Uno. Avalonia now covers 7 platforms from .NET
+1. **Platform Reach (native frameworks)** — WinForms, WPF, WinUI 3, and
+   Reactor are Windows-only vs 2-7 platforms for competitors. Unbridgeable
+   without Avalonia/Uno. Blazor Hybrid is the only first-party way out, at
+   the cost of rendering HTML in a WebView rather than native controls
 2. **Developer Experience** — No equivalent to React DevTools, Flutter hot
-   reload, or Compose Layout Inspector
-3. **Declarative Syntax** — XAML is a generation behind; Reactor narrows the gap
-   but C# lacks the language features of Swift/Kotlin. Note: Avalonia
-   modernizes XAML (compiled bindings, CSS-like styling) but the syntax
-   remains fundamentally XAML
-4. **Testing** — No component-level testing framework. Avalonia's headless
-   testing is the best XAML-framework testing story but still behind
-   Compose/React's semantics-based approach
+   reload, or Compose Layout Inspector in *any* Microsoft framework including
+   Blazor and Reactor
+3. **Declarative Syntax** — XAML is a generation behind; Blazor's Razor and
+   Reactor's method-call syntax both narrow the gap but C# lacks the language
+   features of Swift/Kotlin. Avalonia modernizes XAML (compiled bindings,
+   CSS-like styling) but the syntax remains fundamentally XAML
+4. **State & Reactivity** — No Microsoft framework has automatic fine-grained
+   tracking. Blazor's `StateHasChanged` is notably the most manual of the set
 5. **Data Loading & Async** — No lifecycle-scoped async primitives (vs
    `.task`, `LaunchedEffect`, Suspense). MVVM async patterns work but are
-   imperative
+   imperative. Blazor's streaming rendering is SSR-only
 
 ---
 
@@ -919,6 +1045,50 @@ and styling. The gaps are in the declarative programming model (still XAML
 competitors), and platform reach. The Windows App SDK is active but
 adoption has been slower than hoped.
 
+### Blazor — "The Web Framework With a Desktop Side Door"
+
+**Best for:** Web apps written in C# end-to-end; LOB apps where form/
+validation depth matters; teams that need to ship the same UI across web,
+desktop, and mobile without learning JavaScript.
+
+**Profile:** Microsoft's only modern declarative component framework. Razor
+components mix HTML-like markup with C# via `@` directives, compiling to
+C# classes derived from `ComponentBase`. Four render modes (Static SSR,
+Interactive Server, Interactive WebAssembly, Interactive Auto) let different
+parts of an app pick different interactivity models. **Forms are Blazor's
+crown jewel** — `<EditForm>` + `<DataAnnotationsValidator>` + typed `<Input*>`
+components make it the best form/validation story of any modern declarative
+framework. **`<ErrorBoundary>`** puts Blazor in a small club with React and
+Reactor. **bUnit** is the best testing story in the Microsoft ecosystem.
+**`<Virtualize>` and QuickGrid** are built-in. Compile-time sequence numbers
+enable linear-time render-tree diffing.
+
+**Blazor Hybrid** (`BlazorWebView` in WPF/WinForms/MAUI) makes Blazor the
+only first-party Microsoft framework with genuine cross-platform reach —
+at the cost of rendering HTML in a WebView rather than platform-native
+controls. You don't get native UIA trees, native platform controls, or
+native look-and-feel. Platform API access requires MAUI APIs or JS interop
+bridges. `[PersistentState]` (.NET 10) closes the prerender → interactive
+double-fetch gap; streaming rendering is an SSR Suspense equivalent.
+
+**Biggest weaknesses:** `StateHasChanged()` is a manual render trigger —
+no automatic reactivity tracking. No component DevTools. WebAssembly
+initial download is hefty (hundreds of KB even post-trim). Server mode
+is latency-sensitive. No type-safe route navigation. Class-based
+components are a generation behind function-as-component models. No
+built-in animation system beyond CSS transitions.
+
+**Competitive position:** Blazor competes on the **same playing field as
+React, SwiftUI, and Compose** as a declarative component framework — the
+only Microsoft framework that does. It is **ahead of the competitor median
+in testing (A- vs B+) and error handling**, tied in interop, and close
+behind on forms (WPF still wins). Its main competitor positioning is vs
+React — with the value prop being "C# end-to-end and Microsoft support" at
+the cost of a smaller ecosystem. Vs Reactor, it sits across an architectural
+divide: Blazor Hybrid reuses web components on desktop (non-native);
+Reactor renders native WinUI 3 controls from a React-style component
+model (native, Windows-only).
+
 ### Reactor — "The Declarative Experiment"
 
 **Best for:** Teams wanting React-style declarative UI on WinUI 3 with
@@ -967,18 +1137,26 @@ remains before production-readiness.
 
 ## Key Takeaways
 
-### 1. The platform reach gap is structural — but Avalonia is a real option
+### 1. The platform reach gap is structural — Blazor and Avalonia are the two escape hatches
 
-Every competitor targets multiple platforms. All Microsoft frameworks target
-one. This is not a temporary deficit — it's an architectural reality.
-**Avalonia is now the strongest cross-platform .NET UI framework**, covering
-7 platforms with 30K+ GitHub stars and production use at JetBrains, Autodesk,
-and NASA. It is the only .NET framework with Linux desktop support and the
-first with native Linux accessibility (AT-SPI2). For teams that need cross-
-platform .NET, Avalonia is a credible choice — though its mobile/web
-platforms are less mature than desktop, and its self-rendering model means
-apps don't look platform-native. Teams committed to Windows-only still
-benefit from WPF/WinUI 3/Reactor's deeper platform integration.
+Every competitor targets multiple platforms. Microsoft's *native* frameworks
+(WinForms, WPF, WinUI 3, Reactor) all target one. Two first-party-or-adjacent
+escape hatches exist, each with a distinct trade-off:
+
+- **Blazor Hybrid** ships the same Razor components across web, WPF,
+  WinForms, MAUI (Windows/Mac/iOS/Android). The cost is rendering HTML in
+  a WebView rather than platform-native controls — no native UIA, no native
+  controls, no native look. Microsoft-owned and first-party
+- **Avalonia** covers 7 platforms with 30K+ GitHub stars and production use
+  at JetBrains, Autodesk, and NASA. Only .NET framework with Linux desktop
+  support and native Linux accessibility (AT-SPI2). Self-renders via Skia
+  (also non-native look), but closer to WinUI 3 in architecture than Blazor.
+  Third-party
+
+Teams committed to Windows-only still benefit from WPF/WinUI 3/Reactor's
+deeper platform integration. Teams that need cross-platform .NET have a
+real choice between Blazor (web-style components, WebView) and Avalonia
+(XAML-style components, Skia). Neither gives native platform controls.
 
 ### 2. WinUI 3 is stronger than its reputation
 
@@ -989,7 +1167,32 @@ the most powerful animation system across all frameworks analyzed. The gap
 is in developer experience and the declarative programming model, not in
 the underlying platform.
 
-### 3. Reactor addresses the right gaps
+### 3. Blazor is Reactor's closest cousin — but the bets are opposite
+
+Blazor and Reactor are both C#-first declarative component frameworks in the
+Microsoft ecosystem. They make opposite bets on the most important
+architectural choice:
+
+| | Blazor Hybrid | Reactor |
+|---|---|---|
+| **Renderer** | HTML in a WebView | Native WinUI 3 controls |
+| **Controls** | HTML elements | Native UIElement tree |
+| **Accessibility** | Manual ARIA | UIA (automatic from WinUI) |
+| **Look & feel** | Browser-chrome HTML | Native Windows + Fluent Design |
+| **Animation** | CSS transitions | Composition API |
+| **Component model** | Class-based + `StateHasChanged` | Function-as-component + hooks |
+| **Platform reach** | Web + Desktop + Mobile | Windows only |
+| **Forms** | `<EditForm>` (A-) | FormField + validators (B) |
+| **Testing** | bUnit (A-) | Unit tests per component (B-) |
+
+**Blazor's form story, testing infrastructure, and error boundary are three
+features Reactor should learn from directly.** Blazor's `StateHasChanged`
+model, string-literal routing, and class-based components are three things
+Reactor already does better. **Reactor's native-rendering, native-UIA,
+native-look positioning is its structural advantage over Blazor Hybrid on
+Windows desktop** — positioning that's worth stating explicitly in marketing.
+
+### 4. Reactor addresses the right gaps
 
 Reactor's declarative model, navigation, and commanding are not random feature
 additions — they directly address the areas where WPF/WinUI 3 are weakest
@@ -1006,14 +1209,16 @@ linking with wildcards and query strings, diagnostics), and interop
 remaining gaps are animation depth (5 compositor properties), developer
 tooling (no inspector or profiler), and `LabeledBy()` no-op.
 
-### 4. Error handling is an industry-wide gap
+### 5. Error handling is an industry-wide gap — but Microsoft has two answers
 
 React's ErrorBoundary is the only production-quality error containment
-mechanism in any major declarative UI framework. SwiftUI, Compose, and
-Flutter all crash the app on view-level errors. Reactor's ErrorBoundary
-is a genuine differentiator that should be more prominently marketed.
+mechanism among the big competitor set. SwiftUI, Compose, and Flutter all
+crash the app on view-level errors. **Both Blazor (`<ErrorBoundary>`) and
+Reactor (`ErrorBoundary`) ship error boundaries** — putting two Microsoft
+frameworks in a small club with React. This is a genuine Microsoft-ecosystem
+differentiator that's under-marketed.
 
-### 5. State management is converging on automatic observation
+### 6. State management is converging on automatic observation
 
 SwiftUI's `@Observable`, Compose's Snapshot system, and signals-based
 frameworks (SolidJS, Angular Signals, Vue's reactivity) all converge on
@@ -1027,21 +1232,25 @@ ecosystem, but they still require explicit subscription rather than automatic
 tracking. This is the most impactful architectural gap to close across the
 entire .NET UI landscape.
 
-### 6. WPF's form/validation system is an underappreciated asset
+### 7. WPF's form/validation system is an underappreciated asset — and Blazor's is the best modern version
 
 WPF's two-way binding engine with `INotifyDataErrorInfo`, `ValidationRule`,
 `ErrorTemplate`, `BindingGroup`, and `IValueConverter`/`IMultiValueConverter`
 is the most comprehensive form validation system of any framework in this
-analysis. No declarative framework comes close. Reactor has closed significant
-ground with automatic validation, FormField rendering, 10+ validators, and
-ValidationVisualizer — now comparable to Compose/Flutter's approach. But
-WPF's transactional editing (BindingGroup), custom error templates
-(ErrorTemplate), and binding-level validation rules remain unmatched. For
-LOB applications — which are the core use case for Windows desktop — WPF's
-depth here is a critical competitive advantage that Reactor should continue
-to learn from.
+analysis. **Blazor's `<EditForm>` + `<DataAnnotationsValidator>` + typed
+`<Input*>` components (A-) is the best form story of any modern declarative
+framework** — it inherits .NET's `DataAnnotations` attributes, adds
+expression-tree field identification, and integrates with ASP.NET Core
+antiforgery. Reactor has closed significant ground (from C+ to B) with
+automatic validation, FormField rendering, 10+ validators, and
+ValidationVisualizer. But WPF's transactional editing (BindingGroup), custom
+error templates (ErrorTemplate), and binding-level validation rules remain
+unmatched, and Blazor's data-annotation-driven validation is still ahead
+of Reactor's explicit-validator approach. For LOB applications — which are
+the core use case for Windows desktop — Reactor should study both WPF's
+depth and Blazor's declarative pattern.
 
-### 7. Interop is Reactor's strongest selling point for adoption
+### 8. Interop is Reactor's strongest selling point for adoption
 
 Reactor's `ReactorHostControl` (drop into existing WinUI XAML), `UseObservable`
 (bridge unmodified MVVM ViewModels with one line), `XamlHostElement`
@@ -1053,7 +1262,7 @@ matters because the realistic path for Reactor adoption is not greenfield apps
 without a rewrite. With WinForms interop, Reactor now covers the two largest
 Windows desktop frameworks as adoption entry points.
 
-### 8. Avalonia validates the self-rendering cross-platform approach for .NET
+### 9. Avalonia validates the self-rendering cross-platform approach for .NET
 
 Avalonia's trajectory mirrors Flutter's: self-render everything via Skia for
 pixel-perfect cross-platform consistency, accept the trade-off of non-native
@@ -1069,7 +1278,7 @@ need macOS/Linux (via XPF). It does not compete with Reactor's declarative
 model — Avalonia is still MVVM/class-based — but it competes directly with
 WPF for new desktop development where cross-platform is a requirement.
 
-### 9. No framework is complete
+### 10. No framework is complete
 
 Every framework has embarrassing gaps:
 - **SwiftUI:** No error boundaries, no official testing, type-checker issues,
@@ -1086,6 +1295,10 @@ Every framework has embarrassing gaps:
   no lifecycle-scoped async
 - **WinUI 3:** Packaging complexity, small community, Windows-only, no
   plural/gender i18n
+- **Blazor:** Manual `StateHasChanged` (no auto-reactivity), no component
+  DevTools, hefty WebAssembly payload, Server-mode latency sensitivity,
+  CSS isolation doesn't cover third-party components, no type-safe routing,
+  Hybrid renders in a WebView (not native), no built-in animation system
 - **Reactor:** Animation limited to 5 compositor properties, no DevTools or
   component inspector, `LabeledBy()` no-op, SemanticPanel is a workaround
   not true per-component AutomationPeer, `.Set()` escape hatch still
@@ -1106,12 +1319,15 @@ most for your specific application.
 - [Avalonia Analysis](avalonia.md) — Cross-platform .NET XAML framework
 
 ### Microsoft frameworks
+- [Blazor Analysis](blazor.md) — Microsoft's component-based web/hybrid framework
 - [Reactor Critical Review](../critical-review.md) — Detailed Reactor analysis
 - [WinUI 3 Gap Analysis](../spec/duct-winui3-gap-analysis.md) — Reactor vs WinUI 3 coverage
 - [Microsoft Learn: WinForms Overview](https://learn.microsoft.com/en-us/dotnet/desktop/winforms/overview)
 - [Microsoft Learn: WPF Architecture](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/advanced/wpf-architecture)
 - [Microsoft Learn: Windows App SDK](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/)
 - [Microsoft Learn: WinUI 3](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/)
+- [Microsoft Learn: Blazor](https://learn.microsoft.com/en-us/aspnet/core/blazor/)
+- [Microsoft Learn: Blazor Hybrid](https://learn.microsoft.com/en-us/aspnet/core/blazor/hybrid/)
 - [Microsoft Learn: Composition API](https://learn.microsoft.com/en-us/windows/uwp/composition/)
 - [Microsoft Learn: UI Automation](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/controls/ui-automation-of-a-wpf-custom-control)
 
