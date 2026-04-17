@@ -16,7 +16,7 @@ pub struct FsEntry {
     pub has_children: u8,
 }
 
-/// Result buffer returned to C#. Caller must free via `ductfs_free_result`.
+/// Result buffer returned to C#. Caller must free via `reactorfs_free_result`.
 #[repr(C)]
 pub struct FsResult {
     pub entries: *mut FsEntry,

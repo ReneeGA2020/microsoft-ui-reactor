@@ -51,7 +51,7 @@ pub fn enumerate_directory(path: &Path) -> FsResult {
 
         let name_ptr = name_utf16.as_ptr();
         let name_len = name_utf16.len() as u32;
-        std::mem::forget(name_utf16); // Caller frees via ductfs_free_result
+        std::mem::forget(name_utf16); // Caller frees via reactorfs_free_result
 
         entries.push(FsEntry {
             name_ptr,
@@ -65,7 +65,7 @@ pub fn enumerate_directory(path: &Path) -> FsResult {
 
     let count = entries.len() as u32;
     let ptr = entries.as_mut_ptr();
-    std::mem::forget(entries); // Caller frees via ductfs_free_result
+    std::mem::forget(entries); // Caller frees via reactorfs_free_result
 
     FsResult {
         entries: ptr,

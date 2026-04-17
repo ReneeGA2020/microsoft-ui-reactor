@@ -13,9 +13,9 @@ unsafe fn decode_path(path_ptr: *const u16, path_len: u32) -> PathBuf {
 ///
 /// # Safety
 /// `path_ptr` must point to a valid UTF-16 buffer of `path_len` code units.
-/// The returned `FsResult` must be freed via `ductfs_free_result`.
+/// The returned `FsResult` must be freed via `reactorfs_free_result`.
 #[no_mangle]
-pub unsafe extern "C" fn ductfs_enumerate(path_ptr: *const u16, path_len: u32) -> FsResult {
+pub unsafe extern "C" fn reactorfs_enumerate(path_ptr: *const u16, path_len: u32) -> FsResult {
     let path = unsafe { decode_path(path_ptr, path_len) };
     enumerate::enumerate_directory(&path)
 }
@@ -23,20 +23,20 @@ pub unsafe extern "C" fn ductfs_enumerate(path_ptr: *const u16, path_len: u32) -
 /// Enumerate only subdirectories of the given path (for tree lazy-loading).
 ///
 /// # Safety
-/// Same contract as `ductfs_enumerate`.
+/// Same contract as `reactorfs_enumerate`.
 #[no_mangle]
-pub unsafe extern "C" fn ductfs_enumerate_subdirs(path_ptr: *const u16, path_len: u32) -> FsResult {
+pub unsafe extern "C" fn reactorfs_enumerate_subdirs(path_ptr: *const u16, path_len: u32) -> FsResult {
     let path = unsafe { decode_path(path_ptr, path_len) };
     enumerate::enumerate_subdirs(&path)
 }
 
-/// Free a result previously returned by `ductfs_enumerate` or `ductfs_enumerate_subdirs`.
+/// Free a result previously returned by `reactorfs_enumerate` or `reactorfs_enumerate_subdirs`.
 ///
 /// # Safety
 /// `result` must be a value previously returned by one of the enumerate functions
 /// and must not have been freed already.
 #[no_mangle]
-pub unsafe extern "C" fn ductfs_free_result(result: FsResult) {
+pub unsafe extern "C" fn reactorfs_free_result(result: FsResult) {
     if result.entries.is_null() || result.count == 0 {
         return;
     }

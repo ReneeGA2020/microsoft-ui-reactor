@@ -17,7 +17,7 @@ internal static class FileSystemService
         try
         {
             // Try loading the DLL to see if it's present
-            NativeLibrary.TryLoad("ductfs", typeof(NativeFs).Assembly, null, out var handle);
+            NativeLibrary.TryLoad("reactorfs", typeof(NativeFs).Assembly, null, out var handle);
             return handle != 0;
         }
         catch
@@ -45,7 +45,7 @@ internal static class FileSystemService
         FsResult result;
         fixed (char* pathPtr = path)
         {
-            result = NativeFs.ductfs_enumerate(pathPtr, (uint)path.Length);
+            result = NativeFs.reactorfs_enumerate(pathPtr, (uint)path.Length);
         }
 
         try
@@ -54,7 +54,7 @@ internal static class FileSystemService
         }
         finally
         {
-            NativeFs.ductfs_free_result(result);
+            NativeFs.reactorfs_free_result(result);
         }
     }
 
@@ -63,7 +63,7 @@ internal static class FileSystemService
         FsResult result;
         fixed (char* pathPtr = path)
         {
-            result = NativeFs.ductfs_enumerate_subdirs(pathPtr, (uint)path.Length);
+            result = NativeFs.reactorfs_enumerate_subdirs(pathPtr, (uint)path.Length);
         }
 
         try
@@ -72,7 +72,7 @@ internal static class FileSystemService
         }
         finally
         {
-            NativeFs.ductfs_free_result(result);
+            NativeFs.reactorfs_free_result(result);
         }
     }
 

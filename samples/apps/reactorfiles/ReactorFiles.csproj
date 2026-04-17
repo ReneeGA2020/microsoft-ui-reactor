@@ -25,7 +25,7 @@
        Native Rust FS enumerator — built by cargo, DLL copied to output
        ═══════════════════════════════════════════════════════════════════ -->
   <PropertyGroup>
-    <RustCrateDir>$(MSBuildThisFileDirectory)native\ductfs</RustCrateDir>
+    <RustCrateDir>$(MSBuildThisFileDirectory)Native\reactorfs</RustCrateDir>
     <!-- Map MSBuild Platform → Rust target triple -->
     <RustTarget Condition="'$(Platform)' == 'ARM64'">aarch64-pc-windows-msvc</RustTarget>
     <RustTarget Condition="'$(Platform)' == 'x64'">x86_64-pc-windows-msvc</RustTarget>
@@ -33,7 +33,7 @@
     <RustProfile Condition="'$(Configuration)' != 'Release'">dev</RustProfile>
     <RustProfileDir Condition="'$(RustProfile)' == 'release'">release</RustProfileDir>
     <RustProfileDir Condition="'$(RustProfile)' != 'release'">debug</RustProfileDir>
-    <RustDllPath>$(RustCrateDir)\target\$(RustTarget)\$(RustProfileDir)\ductfs.dll</RustDllPath>
+    <RustDllPath>$(RustCrateDir)\target\$(RustTarget)\$(RustProfileDir)\reactorfs.dll</RustDllPath>
   </PropertyGroup>
 
   <Target Name="BuildRustFs" BeforeTargets="BeforeBuild"
@@ -50,7 +50,7 @@
 
   <!-- Also include in publish output -->
   <ItemGroup Condition="Exists('$(RustDllPath)')">
-    <None Include="$(RustDllPath)" CopyToOutputDirectory="PreserveNewest" Link="ductfs.dll" />
+    <None Include="$(RustDllPath)" CopyToOutputDirectory="PreserveNewest" Link="reactorfs.dll" />
   </ItemGroup>
 
 </Project>

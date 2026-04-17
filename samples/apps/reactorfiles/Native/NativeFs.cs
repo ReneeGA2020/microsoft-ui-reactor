@@ -22,12 +22,12 @@ internal struct FsResult
 
 internal static partial class NativeFs
 {
-    [LibraryImport("ductfs")]
-    internal static unsafe partial FsResult ductfs_enumerate(char* pathPtr, uint pathLen);
+    [LibraryImport("reactorfs")]
+    internal static unsafe partial FsResult reactorfs_enumerate(char* pathPtr, uint pathLen);
 
-    [LibraryImport("ductfs")]
-    internal static unsafe partial FsResult ductfs_enumerate_subdirs(char* pathPtr, uint pathLen);
+    [LibraryImport("reactorfs")]
+    internal static unsafe partial FsResult reactorfs_enumerate_subdirs(char* pathPtr, uint pathLen);
 
-    [LibraryImport("ductfs")]
-    internal static partial void ductfs_free_result(FsResult result);
+    [LibraryImport("reactorfs")]
+    internal static partial void reactorfs_free_result(FsResult result);
 }
