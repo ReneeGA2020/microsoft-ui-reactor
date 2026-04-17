@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore
+        run: dotnet restore tests/Reactor.Tests/Reactor.Tests.csproj
+
+      - name: Test
+        run: dotnet test tests/Reactor.Tests/Reactor.Tests.csproj --no-restore --logger "console;verbosity=normal"
