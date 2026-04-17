@@ -176,7 +176,7 @@ public sealed class LocSourceGenerator : IIncrementalGenerator
             : DiagnosticSeverity.Warning;
 
         var descriptor = new DiagnosticDescriptor(
-            "DUCT_LOC001",
+            "REACTOR_LOC001",
             "Missing localization key",
             "Key '{0}.{1}' is present in {2} but missing in locale '{3}'",
             "Localization",

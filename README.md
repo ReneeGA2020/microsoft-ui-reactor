@@ -298,11 +298,11 @@ dotnet run --project samples/apps/wordpuzzle
 
 | Doc | Description |
 |-----|-------------|
-| [Reactor pitch](docs/reactor-pitch.md) | The longer-form overview of what Reactor is and why |
+| [Reactor pitch](docs/pitch/reactor-pitch.md) | The longer-form overview of what Reactor is and why |
 | [Getting Started](src/Reactor/Docs/GettingStarted.md) | Tutorial — elements, layout, state, components |
 | [Architecture](src/Reactor/Docs/Architecture.md) | Virtual tree, reconciler, hooks, design decisions |
-| [Design Specs](docs/spec/) | Numbered specs covering theming, navigation, animation, data, accessibility |
-| [WinUI Integration Proposals](docs/winui3-integration-proposals.md) | 25 proposals for deeper platform integration |
+| [Design Specs](docs/specs/) | Numbered specs covering theming, navigation, animation, data, accessibility |
+| [WinUI Integration Proposals](docs/specs/proposals/winui3-integration.md) | 25 proposals for deeper platform integration |
 | [State & Hooks](docs/reference/state-and-hooks.md) | Deep dive on the hook system and reactivity |
 | [Reconciliation](docs/reference/reconciliation.md) | How tree diffing works (C# and Rust paths) |
 | [Native Differ](docs/reference/native-differ.md) | Rust differ architecture, FFI, experiments |

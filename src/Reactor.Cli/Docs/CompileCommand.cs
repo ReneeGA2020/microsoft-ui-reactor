@@ -25,9 +25,9 @@ internal static partial class CompileCommand
         }
 
         var docsRoot = Path.Combine(repoRoot, "docs");
-        var appsDir = Path.Combine(docsRoot, "apps");
-        var templatesDir = Path.Combine(docsRoot, "templates");
-        var outputDir = Path.Combine(docsRoot, "output");
+        var appsDir = Path.Combine(docsRoot, "_pipeline", "apps");
+        var templatesDir = Path.Combine(docsRoot, "_pipeline", "templates");
+        var outputDir = Path.Combine(docsRoot, "guide");
         var imagesDir = Path.Combine(outputDir, "images");
 
         // ── Phase 1: Validate ─────────────────────────────────────────────

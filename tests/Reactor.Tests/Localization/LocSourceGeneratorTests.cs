@@ -106,8 +106,8 @@ public class LocSourceGeneratorTests
             ("Strings/en-US/Resources.resw", enResw),
             ("Strings/fr-FR/Resources.resw", frResw));
 
-        // Should emit DUCT_LOC001 for "Cancel" missing in fr-FR
-        Assert.Contains(result.Diagnostics, d => d.Id == "DUCT_LOC001" && d.GetMessage().Contains("Cancel"));
+        // Should emit REACTOR_LOC001 for "Cancel" missing in fr-FR
+        Assert.Contains(result.Diagnostics, d => d.Id == "REACTOR_LOC001" && d.GetMessage().Contains("Cancel"));
     }
 
     [Fact]
