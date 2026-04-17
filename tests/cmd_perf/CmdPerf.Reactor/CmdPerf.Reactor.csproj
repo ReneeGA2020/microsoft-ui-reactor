@@ -17,6 +17,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CmdPerf.Shared\CmdPerf.Shared.csproj" />
-    <ProjectReference Include="..\..\..\Reactor\Reactor.csproj" />
+    <ProjectReference Include="..\..\..\src\Reactor\Reactor.csproj" />
   </ItemGroup>
 </Project>

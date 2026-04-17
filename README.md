@@ -214,15 +214,15 @@ The extension:
 ## Project structure
 
 ```
-Reactor/                  Core framework
+src/Reactor/              Core framework
   Core/                Reconciler, components, hooks, elements
   Elements/            DSL factory methods + fluent modifiers
   Flex/                FlexPanel — CSS Flexbox layout via Yoga engine
   Yoga/                Pure C# port of Meta's Yoga layout engine
   Hosting/             App bootstrap, render loop, hot reload, preview capture server
   Native/              Experimental Rust differ (ViewDiffer)
-Reactor.Cli/              CLI scaffolding tool
-vscode-reactor/           VS Code extension — live preview panel
+src/Reactor.Cli/          CLI scaffolding tool
+src/vscode-reactor/       VS Code extension — live preview panel
 tests/
   Reactor.Tests/          Unit tests — xUnit, 2,200+ tests incl. 590 Yoga layout fixtures
   Reactor.AppTests/       Test runner — MSTest, orchestrates selfhost + Appium tests
@@ -238,9 +238,9 @@ samples/
 
 | Doc | Description |
 |-----|-------------|
-| [Getting Started](Reactor/Docs/GettingStarted.md) | Tutorial — elements, layout, state, components |
-| [Architecture](Reactor/Docs/Architecture.md) | Virtual tree, reconciler, hooks, design decisions |
-| [Flex Layout Spec](Reactor/Docs/specs/flex-layout.md) | CSS Flexbox via Yoga — FlexPanel design and API |
+| [Getting Started](src/Reactor/Docs/GettingStarted.md) | Tutorial — elements, layout, state, components |
+| [Architecture](src/Reactor/Docs/Architecture.md) | Virtual tree, reconciler, hooks, design decisions |
+| [Flex Layout Spec](src/Reactor/Docs/specs/flex-layout.md) | CSS Flexbox via Yoga — FlexPanel design and API |
 | [Contributing](CONTRIBUTING.md) | Build, test, add features, code style |
 | [State & Hooks](docs/reference/state-and-hooks.md) | Deep dive on the hook system and reactivity |
 | [Reconciliation](docs/reference/reconciliation.md) | How tree diffing works (C# and Rust paths) |

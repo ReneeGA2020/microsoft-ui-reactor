@@ -12,6 +12,6 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="$(WindowsAppSDKVersion)" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Reactor\Reactor.csproj" />
+    <ProjectReference Include="..\..\src\Reactor\Reactor.csproj" />
   </ItemGroup>
 </Project>

@@ -125,7 +125,7 @@ That's it. The `XamlIslandControl` works anywhere in your WinForms layout — pa
 ## Architecture
 
 ```
-Reactor.Interop.WinForms/              Library
+src/Reactor.Interop.WinForms/          Library
   XamlIslandControl.cs               WinForms Control -> DesktopWindowXamlSource
   XamlIslandBootstrap.cs             Initialize WinAppSDK for WinForms-primary apps
   ReactorComponentTypeConverter.cs      TypeConverter for ComponentType property grid

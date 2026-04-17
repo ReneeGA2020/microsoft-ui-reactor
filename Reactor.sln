@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.4.11605.240
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reactor", "Reactor\Reactor.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reactor", "src\Reactor\Reactor.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reactor.Tests", "tests\Reactor.Tests\Reactor.Tests.csproj", "{F81B468C-EF75-4BF9-A7F6-08B716392575}"
 EndProject
@@ -15,7 +15,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "wordpuzzle", "wordpuzzle", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordPuzzle", "samples\apps\wordpuzzle\WordPuzzle.csproj", "{10FAAB08-2527-4869-960E-D3AB3600E5C9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reactor.Cli", "Reactor.Cli\Reactor.Cli.csproj", "{62CDF797-49E4-4226-A710-2568EADF346B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reactor.Cli", "src\Reactor.Cli\Reactor.Cli.csproj", "{62CDF797-49E4-4226-A710-2568EADF346B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "reactorfiles", "reactorfiles", "{7E6CF6B0-0B2E-9DA2-0313-0F50037052B7}"
 EndProject
@@ -61,7 +61,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReactorCharting.Sample", "s
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReactorCharting.Tests", "tests\ReactorCharting.Tests\ReactorCharting.Tests.csproj", "{AB5F71EF-1207-43EB-8F2A-CA71B69E9A9D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reactor.Localization.Generator", "Reactor.Localization.Generator\Reactor.Localization.Generator.csproj", "{668249A5-5FEE-4E78-B52E-9DE59E7F2F44}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reactor.Localization.Generator", "src\Reactor.Localization.Generator\Reactor.Localization.Generator.csproj", "{668249A5-5FEE-4E78-B52E-9DE59E7F2F44}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "perf_bench", "perf_bench", "{2268BD01-6EA1-E862-8C11-B8CD1B59120C}"
 EndProject
@@ -167,7 +167,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "validation-showcase", "vali
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ValidationShowcase", "samples\apps\validation-showcase\ValidationShowcase.csproj", "{2A0A6F22-B477-4DC2-8764-29D86CB8CAB6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reactor.Analyzers", "Reactor.Analyzers\Reactor.Analyzers.csproj", "{8FA513F7-C65E-4494-9250-CDAF9D12C814}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reactor.Analyzers", "src\Reactor.Analyzers\Reactor.Analyzers.csproj", "{8FA513F7-C65E-4494-9250-CDAF9D12C814}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StylingGallery", "samples\StylingGallery\StylingGallery.csproj", "{B0EBF931-A237-4C60-A726-781A98B0119D}"
 EndProject
@@ -177,7 +177,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeadTrax", "samples\apps\he
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StressPerf.ReactorGrid", "tests\stress_perf\StressPerf.ReactorGrid\StressPerf.ReactorGrid.csproj", "{C40A5F65-286C-401B-A996-47A48D4A84DF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reactor.Interop.WinForms", "Reactor.Interop.WinForms\Reactor.Interop.WinForms.csproj", "{0C150D1A-0233-4E8B-93D1-ACCB66ABA918}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reactor.Interop.WinForms", "src\Reactor.Interop.WinForms\Reactor.Interop.WinForms.csproj", "{0C150D1A-0233-4E8B-93D1-ACCB66ABA918}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinFormsInterop", "samples\WinFormsInterop\WinFormsInterop.csproj", "{098C0749-222B-40A6-9CF9-81C8AF44041B}"
 EndProject
