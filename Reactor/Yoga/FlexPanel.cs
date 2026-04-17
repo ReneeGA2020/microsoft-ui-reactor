@@ -11,7 +11,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Reactor.Layout;
-using Microsoft.UI.Reactor.Layout;
 using Windows.Foundation;
 
 namespace Microsoft.UI.Reactor.Layout;

@@ -179,7 +179,7 @@ public class PropertyGridComponent : Component<PropertyGridElement>
                 }
             };
 
-            var fullEditorContent = meta.FullEditor(currentValue, onChange);
+            var fullEditorContent = meta.FullEditor(currentValue!, onChange);
             editor = FlexRow(
                 editor.Flex(grow: 1),
                 Button("\u2026", () => { })
