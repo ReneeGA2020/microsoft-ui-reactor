@@ -58,7 +58,7 @@ Tests for this feature are classified by the infrastructure they require. Every 
 
 - [x] `src/Reactor.Cli/Program.cs` (`GenerateProgram`): rename the generated `preview: true` parameter to `devtools: true`.
 - [x] Update the generated source comment about hot reload / preview to mention `mur devtools` and the MCP endpoint.
-- [ ] Update `Reactor.Cli` help text: `mur new` output mentions `mur devtools`, not `--preview`. (Deferred — current help text doesn't mention `--preview`; needs a `mur devtools` line once the supervisor lands in Phase 2.)
+- [x] Update `Reactor.Cli` help text: `mur new` output mentions `mur devtools` with both the default and `--mcp-port` forms.
 
 ### 1.4 Update VS Code extension
 
@@ -337,39 +337,40 @@ Tests for this feature are classified by the infrastructure they require. Every 
 
 ### 3.4 Tool: `reactor.invoke`
 
-- [ ] Args: `selector`.
-- [ ] Calls `IInvokeProvider.Invoke` directly; errors if the element does not expose the pattern.
+- [x] Args: `selector`.
+- [x] Calls `IInvokeProvider.Invoke` directly; errors with `{ code: "no-pattern", pattern: "Invoke" }` if the element doesn't expose it.
 
 ### 3.5 Tool: `reactor.toggle`
 
-- [ ] Args: `selector`.
-- [ ] Calls `IToggleProvider.Toggle`.
-- [ ] Returns `{ ok, state }`.
+- [x] Args: `selector`.
+- [x] Calls `IToggleProvider.Toggle`.
+- [x] Returns `{ ok, state }` with state `"on" | "off" | "indeterminate"`.
 
 ### 3.6 Tool: `reactor.select`
 
-- [ ] Args: `selector` (container), `itemSelector` (within container).
-- [ ] Calls `ISelectionItemProvider.Select` on the item.
-- [ ] Works with `ListView`, `ComboBox`, `GridView` at minimum.
+- [x] Args: `selector` (container), `itemSelector` (within container).
+- [x] Calls `ISelectionItemProvider.Select` on the item.
+- [x] Works with `ListView`, `ComboBox`, `GridView` at minimum — via the generic UIA peer path.
 
 ### 3.7 Tool: `reactor.scroll`
 
-- [ ] Args: `selector`, `by?` (offset pair), `to?` (selector of descendant to scroll into view).
-- [ ] Uses `IScrollProvider` where available, `IScrollItemProvider.ScrollIntoView` for `to`.
-- [ ] Returns `{ ok, scrollPosition }`.
+- [x] Args: `selector`, `by?` (offset pair), `to?` (selector of descendant to scroll into view).
+- [x] Uses `IScrollProvider` for `by`, `IScrollItemProvider.ScrollIntoView` for `to` (takes precedence if both given).
+- [x] Returns `{ ok, scrollPosition: { horizontal, vertical } }`.
 
 ### 3.8 Tool: `reactor.fire` (escape hatch)
 
-- [ ] Args: `component`, `event`, `args?`.
-- [ ] Resolves to the live `Component` instance by `component` name; finds the handler by event name.
-- [ ] Calls the handler on the UI dispatcher.
-- [ ] Response carries `{ ok, via: "reactor-event-injection" }` so logs make the shortcut visible.
-- [ ] Inappropriate-use docs: link from the tool description back to §11.
+- [x] Args: `component`, `event`, `args?`.
+- [x] Resolves to the live `Component` instance by `component` name; finds the handler by event name (case-insensitive, public or private).
+- [x] Calls the handler on the UI dispatcher.
+- [x] Response carries `{ ok, via: "reactor-event-injection" }` so logs make the shortcut visible.
+- [ ] Inappropriate-use docs: link from the tool description back to §11. *(Description notes "escape hatch — prefer UIA patterns first"; a deeper back-link doc lands with the Phase 3 full pass.)*
+- [ ] Child-component traversal: v1 resolves only the root component. Full tree traversal depends on reconciler-level component registration, deferred to a follow-up.
 
 ### 3.9 Snapshot / diff — deferred
 
-- [ ] Create `docs/specs/notes/024-snapshot-diff-watch.md` stub: records why `reactor.snapshot`/`reactor.diff` are deferred (§10) and the signal we're watching for before shipping them.
-- [ ] No code.
+- [x] Create `docs/specs/notes/024-snapshot-diff-watch.md` stub: records why `reactor.snapshot`/`reactor.diff` are deferred (§10) and the signal we're watching for before shipping them.
+- [x] No code.
 
 ### 3.10 Phase 3 tests — Unit
 

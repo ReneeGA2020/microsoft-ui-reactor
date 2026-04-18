@@ -144,6 +144,10 @@ int CreateProject(string name)
     Console.WriteLine($"    cd {name}");
     Console.WriteLine($"    dotnet build {name}.sln");
     Console.WriteLine($"    dotnet run");
+    Console.WriteLine();
+    Console.WriteLine("To develop with an AI agent (MCP) and a VS Code preview panel:");
+    Console.WriteLine($"    mur devtools                 # prints MCP_ENDPOINT to stdout");
+    Console.WriteLine($"    mur devtools --mcp-port 9000 # pin the port across reloads");
 
     return 0;
 }

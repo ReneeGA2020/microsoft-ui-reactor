@@ -28,6 +28,191 @@ internal static class DevtoolsUiaTools
         Register_Focus(server, resolver);
         Register_WaitFor(server, resolver);
         Register_Screenshot(server, resolver, windows);
+        Register_Invoke(server, resolver);
+        Register_Toggle(server, resolver);
+        Register_Select(server, resolver);
+        Register_Scroll(server, resolver);
+    }
+
+    // -- invoke / toggle / select / scroll ---------------------------------------
+
+    private static void Register_Invoke(DevtoolsMcpServer server, SelectorResolver resolver)
+    {
+        server.Tools.Register(
+            new McpToolDescriptor(
+                Name: "invoke",
+                Description: "Calls IInvokeProvider.Invoke directly; errors if the element does not expose the pattern.",
+                InputSchema: new
+                {
+                    type = "object",
+                    properties = new { selector = new { type = "string" }, window = new { type = "string" } },
+                    required = new[] { "selector" },
+                    additionalProperties = false,
+                }),
+            @params => server.OnDispatcher(() =>
+            {
+                var el = resolver.Resolve(RequiredString(@params, "selector"), DevtoolsTools.ReadString(@params, "window"));
+                var peer = FrameworkElementAutomationPeer.CreatePeerForElement(el);
+                if (peer?.GetPattern(PatternInterface.Invoke) is IInvokeProvider invoke)
+                {
+                    invoke.Invoke();
+                    return new { ok = true };
+                }
+                throw new McpToolException(
+                    "Element does not expose the Invoke pattern.",
+                    JsonRpcErrorCodes.ToolExecution,
+                    new { code = "no-pattern", pattern = "Invoke" });
+            }));
+    }
+
+    private static void Register_Toggle(DevtoolsMcpServer server, SelectorResolver resolver)
+    {
+        server.Tools.Register(
+            new McpToolDescriptor(
+                Name: "toggle",
+                Description: "Calls IToggleProvider.Toggle; returns the resulting state.",
+                InputSchema: new
+                {
+                    type = "object",
+                    properties = new { selector = new { type = "string" }, window = new { type = "string" } },
+                    required = new[] { "selector" },
+                    additionalProperties = false,
+                }),
+            @params => server.OnDispatcher(() =>
+            {
+                var el = resolver.Resolve(RequiredString(@params, "selector"), DevtoolsTools.ReadString(@params, "window"));
+                var peer = FrameworkElementAutomationPeer.CreatePeerForElement(el);
+                if (peer?.GetPattern(PatternInterface.Toggle) is IToggleProvider toggle)
+                {
+                    toggle.Toggle();
+                    var state = toggle.ToggleState switch
+                    {
+                        global::Microsoft.UI.Xaml.Automation.ToggleState.On => "on",
+                        global::Microsoft.UI.Xaml.Automation.ToggleState.Off => "off",
+                        _ => "indeterminate",
+                    };
+                    return new { ok = true, state };
+                }
+                throw new McpToolException(
+                    "Element does not expose the Toggle pattern.",
+                    JsonRpcErrorCodes.ToolExecution,
+                    new { code = "no-pattern", pattern = "Toggle" });
+            }));
+    }
+
+    private static void Register_Select(DevtoolsMcpServer server, SelectorResolver resolver)
+    {
+        server.Tools.Register(
+            new McpToolDescriptor(
+                Name: "select",
+                Description: "Calls ISelectionItemProvider.Select on the item matched by itemSelector.",
+                InputSchema: new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        selector = new { type = "string", description = "Container selector (ListView, ComboBox, etc.)." },
+                        itemSelector = new { type = "string", description = "Selector of the descendant item to select." },
+                        window = new { type = "string" },
+                    },
+                    required = new[] { "selector", "itemSelector" },
+                    additionalProperties = false,
+                }),
+            @params => server.OnDispatcher(() =>
+            {
+                var windowId = DevtoolsTools.ReadString(@params, "window");
+                _ = resolver.Resolve(RequiredString(@params, "selector"), windowId); // validate container exists
+                var item = resolver.Resolve(RequiredString(@params, "itemSelector"), windowId);
+                var peer = FrameworkElementAutomationPeer.CreatePeerForElement(item);
+                if (peer?.GetPattern(PatternInterface.SelectionItem) is ISelectionItemProvider sel)
+                {
+                    sel.Select();
+                    return new { ok = true, selected = true };
+                }
+                throw new McpToolException(
+                    "Item does not expose the SelectionItem pattern.",
+                    JsonRpcErrorCodes.ToolExecution,
+                    new { code = "no-pattern", pattern = "SelectionItem" });
+            }));
+    }
+
+    private static void Register_Scroll(DevtoolsMcpServer server, SelectorResolver resolver)
+    {
+        server.Tools.Register(
+            new McpToolDescriptor(
+                Name: "scroll",
+                Description: "Scrolls a container by an offset pair or scrolls a descendant into view (to).",
+                InputSchema: new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        selector = new { type = "string" },
+                        by = new
+                        {
+                            type = "object",
+                            properties = new
+                            {
+                                horizontal = new { type = "number" },
+                                vertical = new { type = "number" },
+                            },
+                        },
+                        to = new { type = "string", description = "Descendant selector to scroll into view." },
+                        window = new { type = "string" },
+                    },
+                    required = new[] { "selector" },
+                    additionalProperties = false,
+                }),
+            @params => server.OnDispatcher<object>(() =>
+            {
+                var windowId = DevtoolsTools.ReadString(@params, "window");
+                var container = resolver.Resolve(RequiredString(@params, "selector"), windowId);
+
+                // "to" takes precedence if both are given.
+                var toSel = DevtoolsTools.ReadString(@params, "to");
+                if (!string.IsNullOrEmpty(toSel))
+                {
+                    var item = resolver.Resolve(toSel!, windowId);
+                    var itemPeer = FrameworkElementAutomationPeer.CreatePeerForElement(item);
+                    if (itemPeer?.GetPattern(PatternInterface.ScrollItem) is IScrollItemProvider scrollItem)
+                    {
+                        scrollItem.ScrollIntoView();
+                        return new { ok = true };
+                    }
+                    throw new McpToolException(
+                        "Target does not expose the ScrollItem pattern.",
+                        JsonRpcErrorCodes.ToolExecution,
+                        new { code = "no-pattern", pattern = "ScrollItem" });
+                }
+
+                // By-offset on the container's Scroll pattern.
+                var containerPeer = FrameworkElementAutomationPeer.CreatePeerForElement(container);
+                if (containerPeer?.GetPattern(PatternInterface.Scroll) is IScrollProvider scroller)
+                {
+                    double horiz = scroller.HorizontalScrollPercent;
+                    double vert = scroller.VerticalScrollPercent;
+
+                    if (@params is { } p && p.TryGetProperty("by", out var byEl) && byEl.ValueKind == JsonValueKind.Object)
+                    {
+                        if (byEl.TryGetProperty("horizontal", out var hx) && hx.ValueKind == JsonValueKind.Number)
+                            horiz = Math.Clamp(horiz + hx.GetDouble(), 0, 100);
+                        if (byEl.TryGetProperty("vertical", out var vy) && vy.ValueKind == JsonValueKind.Number)
+                            vert = Math.Clamp(vert + vy.GetDouble(), 0, 100);
+                        scroller.SetScrollPercent(horiz, vert);
+                    }
+
+                    return new
+                    {
+                        ok = true,
+                        scrollPosition = new { horizontal = scroller.HorizontalScrollPercent, vertical = scroller.VerticalScrollPercent },
+                    };
+                }
+
+                throw new McpToolException(
+                    "Container does not expose the Scroll pattern.",
+                    JsonRpcErrorCodes.ToolExecution,
+                    new { code = "no-pattern", pattern = "Scroll" });
+            }));
     }
 
     // -- screenshot --------------------------------------------------------------
