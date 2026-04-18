@@ -34,21 +34,29 @@ internal sealed class WindowRegistry
     /// Attaches to a window so it will appear in the registry on activation.
     /// Safe to call before or after Activated has fired — we also register the
     /// current state eagerly so tests don't need to pump the dispatcher.
+    /// <paramref name="stableId"/> forces a specific id (e.g. <c>"main"</c> for
+    /// the primary devtools window) so the handle stays the same even as the
+    /// window's title changes on <c>switchComponent</c>.
     /// </summary>
-    public void Attach(Window window, bool isMain = false)
+    public void Attach(Window window, bool isMain = false, string? stableId = null)
     {
-        RegisterCore(window, isMain);
-        window.Activated += (_, _) => RegisterCore(window, isMain);
+        RegisterCore(window, isMain, stableId);
+        window.Activated += (_, _) => RegisterCore(window, isMain, stableId);
         window.Closed += (_, _) => Forget(window);
     }
 
-    private void RegisterCore(Window window, bool isMain)
+    private void RegisterCore(Window window, bool isMain, string? stableId)
     {
         lock (_lock)
         {
             if (_entries.Any(e => ReferenceEquals(e.Window.Target, window))) return;
 
-            var id = _allocator.Allocate(window.Title);
+            // The devtools main window pins to "main" so the id survives
+            // switchComponent (which updates the window title). Secondary
+            // windows fall through to the title-based allocator.
+            var id = stableId is not null
+                ? _allocator.Reserve(stableId)
+                : _allocator.Allocate(window.Title);
             _entries.Add(new Entry(id, new WeakReference(window), isMain));
         }
     }

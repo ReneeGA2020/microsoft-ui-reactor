@@ -29,7 +29,11 @@ internal static class DevtoolsFireTool
                 // so anyone reading log lines can recognize the shortcut.
                 // Agents that surface tool descriptions show this verbatim.
                 Description:
-                    "Invokes a handler on a live component by name. " +
+                    "Invokes a NAMED METHOD on a live Component class by event name. " +
+                    "GOTCHA: inline-lambda handlers (the default in Reactor demos, e.g. " +
+                    "`Button(\"+\", () => setCount(...))`) are NOT reachable — fire resolves by reflection " +
+                    "against declared public/private methods on the Component class. To make a handler " +
+                    "reachable, give it a method: `void IncrementCount() { ... }` then `fire { event: \"IncrementCount\" }`. " +
                     "ESCAPE HATCH — prefer UIA patterns (click/invoke/toggle/type/select/scroll) first " +
                     "per spec §11 'Automation verbs'. Use fire only when no UIA peer reaches the behavior " +
                     "(custom gestures, awaited async paths, unit-of-work handlers). " +
@@ -91,13 +95,40 @@ internal static class DevtoolsFireTool
                 JsonRpcErrorCodes.ToolExecution,
                 new { code = "unknown-component", available = new[] { root.GetType().Name } });
 
-        var handler = FindHandler(instance, eventName)
-            ?? throw new McpToolException(
-                $"Component '{componentName}' has no handler named '{eventName}'.",
+        var handler = FindHandler(instance, eventName);
+        if (handler is null)
+        {
+            // List the reachable method names on the component type so the
+            // agent can spot typos AND explain why inline-lambda handlers
+            // don't show up here — the most common field-feedback confusion.
+            var reachable = ListReachableHandlers(instance);
+            throw new McpToolException(
+                $"Component '{componentName}' has no named handler '{eventName}'.",
                 JsonRpcErrorCodes.ToolExecution,
-                new { code = "unknown-event", component = componentName, @event = eventName });
+                new
+                {
+                    code = "unknown-event",
+                    component = componentName,
+                    @event = eventName,
+                    reachableMethods = reachable,
+                    hint = "fire resolves by reflection against declared methods on the Component class. " +
+                           "Inline-lambda handlers (the common pattern in demos) are NOT reachable — " +
+                           "turn the handler into a method to make it callable.",
+                });
+        }
 
         return (instance, handler);
+    }
+
+    internal static string[] ListReachableHandlers(Component instance)
+    {
+        const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+        return instance.GetType().GetMethods(flags)
+            .Where(m => !m.IsSpecialName && !ForbiddenMethods.Contains(m.Name))
+            .Select(m => m.Name)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToArray();
     }
 
     internal static Component? FindComponent(Component root, string name)

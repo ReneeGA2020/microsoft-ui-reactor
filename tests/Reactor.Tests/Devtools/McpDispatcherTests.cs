@@ -41,6 +41,24 @@ public class McpDispatcherTests
     }
 
     [Fact]
+    public void ToolsList_IncludesSelectorGrammarAndTreeSchemaVersion()
+    {
+        // Agents that read tools/list directly (no GET /mcp) still want the
+        // selector grammar without having to read the source. Embed it as an
+        // underscore-prefixed extension so strict MCP clients ignore it.
+        var d = BuildDispatcher(out _);
+        var resp = d.Dispatch("""{"jsonrpc":"2.0","id":1,"method":"tools/list"}""");
+        var json = JsonSerializer.Serialize(resp.Result, DevtoolsMcpServer.JsonOpts);
+
+        Assert.Contains("\"_selectorGrammar\"", json);
+        Assert.Contains("Node id", json);
+        Assert.Contains("AutomationName", json);
+        Assert.Contains("TypePath", json);
+        Assert.Contains("Reactor source", json);
+        Assert.Contains("\"_treeSchemaVersion\":\"reactor-tree/1\"", json);
+    }
+
+    [Fact]
     public void ToolsCall_RoutesToHandler()
     {
         var d = BuildDispatcher(out _);

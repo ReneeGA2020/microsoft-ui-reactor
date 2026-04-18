@@ -47,6 +47,13 @@ internal sealed class TreeNode
     public LayoutInfo? Layout { get; set; }
     public ContextInfo? Context { get; set; }
     public VisualInfo? Visual { get; set; }
+
+    /// <summary>
+    /// UIA patterns the element's automation peer exposes (full-view only).
+    /// Lets agents look up "what verbs can I call here?" instead of discovering
+    /// by trial-and-error. Sparse: omitted entirely when empty.
+    /// </summary>
+    public List<string>? SupportedPatterns { get; set; }
 }
 
 internal readonly record struct BoundsBox(double X, double Y, double Width, double Height);
@@ -243,6 +250,47 @@ internal sealed class TreeWalker
 
         node.Context = BuildContext(element, parentElement);
         node.Visual = BuildVisual(element);
+        node.SupportedPatterns = ProbeSupportedPatterns(element);
+    }
+
+    // Probes the element's UIA peer for each pattern an agent might reach for.
+    // Creating the peer is cheap in-process and already used above for the
+    // AutomationControlType probe, so the incremental cost is O(patterns).
+    private static readonly (PatternInterface Pattern, string Name)[] s_probedPatterns = new[]
+    {
+        (PatternInterface.Invoke, "Invoke"),
+        (PatternInterface.Toggle, "Toggle"),
+        (PatternInterface.SelectionItem, "SelectionItem"),
+        (PatternInterface.Selection, "Selection"),
+        (PatternInterface.Value, "Value"),
+        (PatternInterface.RangeValue, "RangeValue"),
+        (PatternInterface.ExpandCollapse, "ExpandCollapse"),
+        (PatternInterface.Scroll, "Scroll"),
+        (PatternInterface.ScrollItem, "ScrollItem"),
+        (PatternInterface.Text, "Text"),
+        (PatternInterface.Grid, "Grid"),
+        (PatternInterface.Table, "Table"),
+    };
+
+    private static List<string>? ProbeSupportedPatterns(UIElement element)
+    {
+        List<string>? supported = null;
+        try
+        {
+            var peer = FrameworkElementAutomationPeer.CreatePeerForElement(element);
+            if (peer is null) return null;
+            foreach (var (pattern, name) in s_probedPatterns)
+            {
+                try
+                {
+                    if (peer.GetPattern(pattern) is not null)
+                        (supported ??= new List<string>()).Add(name);
+                }
+                catch { /* individual pattern probes throw on templated parts */ }
+            }
+        }
+        catch { /* peer creation can throw for templated parts */ }
+        return supported;
     }
 
     private static string? ExtractTag(UIElement element)

@@ -97,6 +97,24 @@ internal sealed class DevtoolsMcpServer : IDisposable
     public void AnnounceReady()
     {
         BannerWriter.WriteLine($"[devtools] ready (build {_buildTag})");
+        // Machine-readable sibling: one JSON line an agent harness can regex
+        // or line-parse for without re-parsing the human banners. Fields are
+        // stable by contract; add new ones, never rename.
+        var transportStr = _transport == McpTransport.Http ? "http" : "stdio";
+        var endpoint = _transport == McpTransport.Http
+            ? $"http://127.0.0.1:{Port}/mcp"
+            : "stdio";
+        var pid = global::System.Diagnostics.Process.GetCurrentProcess().Id;
+        var readyJson = JsonSerializer.Serialize(new
+        {
+            @event = "devtools-ready",
+            endpoint,
+            transport = transportStr,
+            port = Port,
+            pid,
+            buildTag = _buildTag,
+        });
+        BannerWriter.WriteLine(readyJson);
         BannerWriter.Flush();
     }
 
@@ -148,6 +166,23 @@ internal sealed class DevtoolsMcpServer : IDisposable
         {
             response.StatusCode = 404;
             response.Close();
+            return;
+        }
+
+        // GET /mcp — self-describing schema endpoint. Returns the tool inventory,
+        // selector grammar, schema version, and protocol version in one payload so
+        // an agent can orient itself with a single curl / browser visit without
+        // crafting a JSON-RPC initialize + tools/list dance first.
+        if (ctx.Request.HttpMethod == "GET")
+        {
+            var schemaDoc = BuildSchemaDocument();
+            var schemaJson = JsonSerializer.Serialize(schemaDoc, JsonOpts);
+            var schemaBytes = Encoding.UTF8.GetBytes(schemaJson);
+            response.ContentType = "application/json";
+            response.ContentLength64 = schemaBytes.Length;
+            response.StatusCode = 200;
+            try { response.OutputStream.Write(schemaBytes, 0, schemaBytes.Length); } catch { }
+            finally { try { response.Close(); } catch { } }
             return;
         }
 
@@ -235,6 +270,52 @@ internal sealed class DevtoolsMcpServer : IDisposable
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = global::System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
     };
+
+    /// <summary>
+    /// Canonical selector grammar the resolver accepts. Emitted by GET /mcp so an
+    /// agent can read the five forms without reading our source, and quoted in
+    /// every tool's <c>selector</c> schema description for inline discoverability.
+    /// </summary>
+    internal static readonly string SelectorGrammarDoc =
+        "Selectors accept any of these forms:\n" +
+        "  1. Node id — `r:<window>/<local>` (e.g. r:main/DemoApp.SubmitButton). Stable handle from `tree`.\n" +
+        "  2. AutomationId — `#btn-inc`. Matches AutomationProperties.AutomationId exactly.\n" +
+        "  3. AutomationName — `[name='Increment']`. Matches AutomationProperties.Name OR the visible caption of Buttons / TextBlocks / TextBoxes / ContentControls (case-sensitive).\n" +
+        "  4. TypePath — `Button`, `Button[2]`, `StackPanel > Button`. Type names match on `element.GetType().Name`. Index disambiguates when multiple match.\n" +
+        "  5. Reactor source — `{component:'CounterDemo',line:42}`. Requires the Phase 3 source map; returns a structured `not-implemented` today.\n" +
+        "Windows: when multiple windows are active, pass `window: \"<id>\"` to scope resolution; a node-id from a different window is a hard error.";
+
+    /// <summary>
+    /// Builds the self-describing document emitted by GET /mcp — the tool
+    /// inventory, selector grammar, and protocol / schema versions in one
+    /// payload so an agent can orient itself without crafting a JSON-RPC
+    /// initialize + tools/list dance first.
+    /// </summary>
+    private object BuildSchemaDocument()
+    {
+        return new
+        {
+            schema = "reactor-devtools-mcp/1",
+            protocolVersion = "2024-11-05",
+            build = BuildTag,
+            transport = _transport == McpTransport.Http ? "http" : "stdio",
+            endpoint = _transport == McpTransport.Http
+                ? $"http://127.0.0.1:{Port}/mcp"
+                : "stdio",
+            selectorGrammar = SelectorGrammarDoc,
+            treeSchemaVersion = TreeWalker.SchemaVersion,
+            tools = _tools.List().Select(t => new
+            {
+                name = t.Name,
+                description = t.Description,
+                inputSchema = t.InputSchema,
+            }).ToArray(),
+            events = new[]
+            {
+                new { name = "devtools-ready", description = "One-line JSON sentinel emitted on stdout after first render. Fields: endpoint, transport, port, pid, buildTag." },
+            },
+        };
+    }
 
     private static int FindFreePort()
     {

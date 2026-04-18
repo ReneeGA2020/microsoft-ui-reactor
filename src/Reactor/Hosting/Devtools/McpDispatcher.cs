@@ -64,6 +64,12 @@ internal sealed class McpDispatcher
                         description = t.Description,
                         inputSchema = t.InputSchema,
                     }).ToArray(),
+                    // Extensions beyond the MCP spec: agents can read the
+                    // selector grammar without a separate GET /mcp hop. MCP
+                    // clients that strict-parse tools/list ignore unknown
+                    // fields.
+                    _selectorGrammar = DevtoolsMcpServer.SelectorGrammarDoc,
+                    _treeSchemaVersion = TreeWalker.SchemaVersion,
                 },
                 // MCP resource / prompt surfaces are not implemented yet; return
                 // the empty inventory so `initialize`-speaking clients don't fail

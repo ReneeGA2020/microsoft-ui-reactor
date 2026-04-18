@@ -68,6 +68,22 @@ public class FireResolutionTests
     }
 
     [Fact]
+    public void ResolveTarget_UnknownEvent_ListsReachableMethodsAndLambdaHint()
+    {
+        // feedback #9: agents using `fire` to call the handler wired to an
+        // inline lambda hit "unknown-event" with no idea why. The error now
+        // lists the declared methods on the component and explains inline
+        // lambdas aren't reachable so the agent can correct course.
+        var root = new CounterDemo();
+        var ex = Assert.Throws<McpToolException>(() =>
+            DevtoolsFireTool.ResolveTarget(root, "CounterDemo", "DoesNotExist"));
+        var payload = JsonSerializer.Serialize(ex.Payload, DevtoolsMcpServer.JsonOpts);
+        Assert.Contains("\"reachableMethods\"", payload);
+        Assert.Contains("OnIncrement", payload);
+        Assert.Contains("inline-lambda", payload, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void ResolveTarget_IsCaseInsensitiveOnComponentAndEvent()
     {
         var root = new CounterDemo();

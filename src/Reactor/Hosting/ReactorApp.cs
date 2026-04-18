@@ -376,11 +376,14 @@ public static class ReactorApp
 
                 var windows = new WindowRegistry(mcp.BuildTag);
                 var nodes = new NodeRegistry();
-                windows.Attach(host.Window, isMain: true);
+                // Pin the primary devtools window to "main" so the handle
+                // doesn't drift when switchComponent updates the title.
+                windows.Attach(host.Window, isMain: true, stableId: "main");
 
                 DevtoolsTools.RegisterCore(mcp, new DevtoolsTools.ToolHostContext
                 {
                     GetComponents = () => FindAllComponentNames().ToList(),
+                    GetComponentsDetailed = () => FindAllComponentsDetailed().ToList(),
                     GetCurrentComponent = () => initialComponentName,
                     SwitchComponent = SwitchComponentCore,
                     RequestReload = () => RequestDevtoolsReload(mcp, host),
@@ -450,6 +453,21 @@ public static class ReactorApp
             .Select(t => t!.Name)
             .Distinct()
             .OrderBy(n => n);
+    }
+
+    internal static IEnumerable<Hosting.Devtools.ComponentInfo> FindAllComponentsDetailed()
+    {
+        return AppDomain.CurrentDomain.GetAssemblies()
+            .SelectMany(a => { try { return a.GetTypes(); } catch (global::System.Reflection.ReflectionTypeLoadException ex) { return ex.Types.Where(t => t != null)!; } catch { return []; } })
+            .Where(t => typeof(Core.Component).IsAssignableFrom(t!) && !t!.IsAbstract && !t.FullName!.StartsWith("Microsoft.UI.Reactor."))
+            .Select(t => new Hosting.Devtools.ComponentInfo(
+                Name: t!.Name,
+                FullName: t.FullName ?? t.Name,
+                IsNested: t.IsNested,
+                IsPublic: t.IsPublic || t.IsNestedPublic,
+                Namespace: t.Namespace))
+            .GroupBy(c => c.Name)
+            .Select(g => g.First());
     }
 
     internal static void ResetDeprecationWarningForTests()

@@ -40,8 +40,25 @@ internal sealed class WindowIdAllocator
         }
     }
 
-    private string Reserve(string id)
+    // Exposed to callers (WindowRegistry) that want to pin an explicit id
+    // instead of going through the title-based allocator.
+    internal string Reserve(string id)
     {
+        if (_used.Contains(id))
+        {
+            // Collision on an explicit id — disambiguate the same way the
+            // title path does rather than silently returning the existing
+            // handle of a different window.
+            for (int n = 2; ; n++)
+            {
+                var candidate = $"{id}-{n}";
+                if (!_used.Contains(candidate))
+                {
+                    _used.Add(candidate);
+                    return candidate;
+                }
+            }
+        }
         _used.Add(id);
         return id;
     }

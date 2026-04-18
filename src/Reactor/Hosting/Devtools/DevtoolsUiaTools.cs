@@ -32,6 +32,7 @@ internal static class DevtoolsUiaTools
         Register_Toggle(server, resolver);
         Register_Select(server, resolver);
         Register_Scroll(server, resolver);
+        Register_Expand(server, resolver);
     }
 
     // -- invoke / toggle / select / scroll ---------------------------------------
@@ -105,7 +106,10 @@ internal static class DevtoolsUiaTools
         server.Tools.Register(
             new McpToolDescriptor(
                 Name: "select",
-                Description: "Calls ISelectionItemProvider.Select on the item matched by itemSelector.",
+                Description:
+                    "Calls ISelectionItemProvider.Select on the item matched by itemSelector. When the container is " +
+                    "a closed ComboBox (or other ExpandCollapse surface), it is expanded automatically before the " +
+                    "item is resolved so the popup's items materialize.",
                 InputSchema: new
                 {
                     type = "object",
@@ -121,7 +125,14 @@ internal static class DevtoolsUiaTools
             @params => server.OnDispatcher(() =>
             {
                 var windowId = DevtoolsTools.ReadString(@params, "window");
-                _ = resolver.Resolve(RequiredString(@params, "selector"), windowId); // validate container exists
+                var container = resolver.Resolve(RequiredString(@params, "selector"), windowId);
+
+                // Auto-expand closed ExpandCollapse containers (ComboBox is the
+                // common one). Items inside a closed ComboBox popup aren't in
+                // the live visual tree, so itemSelector resolution would miss
+                // them. Expand first, then resolve the item.
+                TryExpand(container);
+
                 var item = resolver.Resolve(RequiredString(@params, "itemSelector"), windowId);
 
                 // Selector resolution typically lands on the inner content
@@ -204,12 +215,104 @@ internal static class DevtoolsUiaTools
         return (null, null);
     }
 
+    // Best-effort expand — swallows failures because auto-expand is a
+    // convenience, not a contract. The dedicated `expand` tool surfaces
+    // structured errors when the caller needs them.
+    private static bool TryExpand(UIElement container)
+    {
+        try
+        {
+            var peer = FrameworkElementAutomationPeer.CreatePeerForElement(container);
+            if (peer?.GetPattern(PatternInterface.ExpandCollapse) is IExpandCollapseProvider ec
+                && ec.ExpandCollapseState == global::Microsoft.UI.Xaml.Automation.ExpandCollapseState.Collapsed)
+            {
+                ec.Expand();
+                return true;
+            }
+        }
+        catch { }
+        return false;
+    }
+
+    private static void Register_Expand(DevtoolsMcpServer server, SelectorResolver resolver)
+    {
+        server.Tools.Register(
+            new McpToolDescriptor(
+                Name: "expand",
+                Description:
+                    "Opens an ExpandCollapse-aware element (ComboBox popup, TreeViewItem, MenuFlyoutItem, Expander). " +
+                    "Errors with `no-pattern` when the element doesn't expose IExpandCollapseProvider. Returns the " +
+                    "new state.",
+                InputSchema: new
+                {
+                    type = "object",
+                    properties = new { selector = new { type = "string" }, window = new { type = "string" } },
+                    required = new[] { "selector" },
+                    additionalProperties = false,
+                }),
+            @params => server.OnDispatcher(() =>
+            {
+                var el = resolver.Resolve(RequiredString(@params, "selector"), DevtoolsTools.ReadString(@params, "window"));
+                var peer = FrameworkElementAutomationPeer.CreatePeerForElement(el);
+                if (peer?.GetPattern(PatternInterface.ExpandCollapse) is IExpandCollapseProvider ec)
+                {
+                    ec.Expand();
+                    return new { ok = true, state = FormatExpandState(ec.ExpandCollapseState) };
+                }
+                throw new McpToolException(
+                    "Element does not expose the ExpandCollapse pattern.",
+                    JsonRpcErrorCodes.ToolExecution,
+                    new { code = "no-pattern", pattern = "ExpandCollapse" });
+            }));
+
+        server.Tools.Register(
+            new McpToolDescriptor(
+                Name: "collapse",
+                Description:
+                    "Closes an ExpandCollapse-aware element (ComboBox popup, TreeViewItem, Expander). Errors with " +
+                    "`no-pattern` when the element doesn't expose IExpandCollapseProvider.",
+                InputSchema: new
+                {
+                    type = "object",
+                    properties = new { selector = new { type = "string" }, window = new { type = "string" } },
+                    required = new[] { "selector" },
+                    additionalProperties = false,
+                }),
+            @params => server.OnDispatcher(() =>
+            {
+                var el = resolver.Resolve(RequiredString(@params, "selector"), DevtoolsTools.ReadString(@params, "window"));
+                var peer = FrameworkElementAutomationPeer.CreatePeerForElement(el);
+                if (peer?.GetPattern(PatternInterface.ExpandCollapse) is IExpandCollapseProvider ec)
+                {
+                    ec.Collapse();
+                    return new { ok = true, state = FormatExpandState(ec.ExpandCollapseState) };
+                }
+                throw new McpToolException(
+                    "Element does not expose the ExpandCollapse pattern.",
+                    JsonRpcErrorCodes.ToolExecution,
+                    new { code = "no-pattern", pattern = "ExpandCollapse" });
+            }));
+    }
+
+    private static string FormatExpandState(global::Microsoft.UI.Xaml.Automation.ExpandCollapseState s) => s switch
+    {
+        global::Microsoft.UI.Xaml.Automation.ExpandCollapseState.Expanded => "expanded",
+        global::Microsoft.UI.Xaml.Automation.ExpandCollapseState.Collapsed => "collapsed",
+        global::Microsoft.UI.Xaml.Automation.ExpandCollapseState.PartiallyExpanded => "partial",
+        _ => "leaf",
+    };
+
     private static void Register_Scroll(DevtoolsMcpServer server, SelectorResolver resolver)
     {
         server.Tools.Register(
             new McpToolDescriptor(
                 Name: "scroll",
-                Description: "Scrolls a container by an offset pair or scrolls a descendant into view (to).",
+                Description:
+                    "Scrolls a container. `by.horizontal` / `by.vertical` are PERCENTAGE deltas (0–100) added to the " +
+                    "current scroll percent and clamped — NOT pixels. For virtualized lists prefer `to: <itemSelector>` " +
+                    "which uses IScrollItemProvider.ScrollIntoView. The response carries both `scrollPercent` and " +
+                    "`scrollOffsetPx` (resolved from the underlying ScrollViewer when available); an axis that isn't " +
+                    "scrollable reports null rather than the UIA -1 sentinel.",
                 InputSchema: new
                 {
                     type = "object",
@@ -219,13 +322,14 @@ internal static class DevtoolsUiaTools
                         by = new
                         {
                             type = "object",
+                            description = "Percentage deltas (0–100) added to the current scroll percent, clamped to [0, 100].",
                             properties = new
                             {
-                                horizontal = new { type = "number" },
-                                vertical = new { type = "number" },
+                                horizontal = new { type = "number", description = "Percent delta (0–100)." },
+                                vertical = new { type = "number", description = "Percent delta (0–100)." },
                             },
                         },
-                        to = new { type = "string", description = "Descendant selector to scroll into view." },
+                        to = new { type = "string", description = "Descendant selector to scroll into view (takes precedence over `by`)." },
                         window = new { type = "string" },
                     },
                     required = new[] { "selector" },
@@ -310,10 +414,36 @@ internal static class DevtoolsUiaTools
                             scroller.SetScrollPercent(horizTarget, vertTarget);
                     }
 
+                    // Report percent (UIA native) and pixel offsets (dug out of
+                    // the underlying ScrollViewer when we can reach it, so the
+                    // agent can verify "did I actually land where I expected?"
+                    // without a second round-trip). An axis that isn't
+                    // scrollable surfaces as null rather than the UIA -1
+                    // sentinel — agents were seeing horizontal: -1 leak
+                    // through and parsing it as a position.
+                    double? horizPctOut = scroller.HorizontalScrollPercent == NoScroll
+                        ? null
+                        : scroller.HorizontalScrollPercent;
+                    double? vertPctOut = scroller.VerticalScrollPercent == NoScroll
+                        ? null
+                        : scroller.VerticalScrollPercent;
+                    double? horizPxOut = null, vertPxOut = null;
+                    double? scrollableWidth = null, scrollableHeight = null;
+                    var sv = FindScrollViewer(container);
+                    if (sv is not null)
+                    {
+                        horizPxOut = sv.HorizontalOffset;
+                        vertPxOut = sv.VerticalOffset;
+                        scrollableWidth = sv.ScrollableWidth;
+                        scrollableHeight = sv.ScrollableHeight;
+                    }
+
                     return new
                     {
                         ok = true,
-                        scrollPosition = new { horizontal = scroller.HorizontalScrollPercent, vertical = scroller.VerticalScrollPercent },
+                        scrollPercent = new { horizontal = horizPctOut, vertical = vertPctOut },
+                        scrollOffsetPx = new { horizontal = horizPxOut, vertical = vertPxOut },
+                        scrollableSizePx = new { width = scrollableWidth, height = scrollableHeight },
                     };
                 }
 
@@ -395,7 +525,10 @@ internal static class DevtoolsUiaTools
         server.Tools.Register(
             new McpToolDescriptor(
                 Name: "tree",
-                Description: "Walks the visual tree and returns a flat array of nodes. view=full adds layout/context/visual fields for layout debugging.",
+                Description:
+                    "Walks the visual tree and returns a flat array of nodes. view=full adds layout/context/visual " +
+                    "fields for layout debugging. `includeReactorSource` is reserved for Phase 3 — setting it to " +
+                    "true currently returns a not-implemented error instead of silently no-opping.",
                 InputSchema: new
                 {
                     type = "object",
@@ -404,7 +537,7 @@ internal static class DevtoolsUiaTools
                         selector = new { type = "string", description = "Optional scope; if omitted, walks the whole window." },
                         window = new { type = "string" },
                         view = new { type = "string", @enum = new[] { "summary", "full" } },
-                        includeReactorSource = new { type = "boolean" },
+                        includeReactorSource = new { type = "boolean", description = "Reserved; lands with the Phase 3 source map. Setting true is a hard error today." },
                     },
                     additionalProperties = false,
                 }),
@@ -413,6 +546,12 @@ internal static class DevtoolsUiaTools
                 var selector = DevtoolsTools.ReadString(@params, "selector");
                 var windowId = DevtoolsTools.ReadString(@params, "window");
                 var viewStr = DevtoolsTools.ReadString(@params, "view");
+                var includeReactorSource = DevtoolsTools.ReadBool(@params, "includeReactorSource") ?? false;
+                if (includeReactorSource)
+                    throw new McpToolException(
+                        "includeReactorSource requires the Phase 3 source map.",
+                        JsonRpcErrorCodes.ToolExecution,
+                        new { code = "not-implemented", flag = "includeReactorSource", phase = 3 });
                 var view = string.Equals(viewStr, "full", StringComparison.OrdinalIgnoreCase)
                     ? TreeView.Full
                     : TreeView.Summary;
@@ -667,6 +806,25 @@ internal static class DevtoolsUiaTools
             if (windows.Resolve(snap.Id) == w) return snap.Id;
         }
         return "main";
+    }
+
+    // Walks the visual tree from `root` looking for the first ScrollViewer so
+    // the scroll tool can report pixel offsets alongside UIA scroll percents.
+    // Returns null for containers that aren't backed by a ScrollViewer
+    // (custom scrolling surfaces exposing IScrollProvider by hand).
+    private static ScrollViewer? FindScrollViewer(UIElement element)
+    {
+        if (element is ScrollViewer sv) return sv;
+        int n = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(element);
+        for (int i = 0; i < n; i++)
+        {
+            if (Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChild(element, i) is UIElement child)
+            {
+                var found = FindScrollViewer(child);
+                if (found is not null) return found;
+            }
+        }
+        return null;
     }
 }
 

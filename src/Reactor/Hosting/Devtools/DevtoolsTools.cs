@@ -10,6 +10,19 @@ namespace Microsoft.UI.Reactor.Hosting.Devtools;
 /// where required. The <c>reactor.*</c> names in spec prose are unprefixed on
 /// the wire — agents see the bare names.
 /// </summary>
+/// <summary>
+/// Enriched component descriptor returned by the <c>components</c> tool when the
+/// host provides <see cref="DevtoolsTools.ToolHostContext.GetComponentsDetailed"/>.
+/// Agents use <see cref="IsNested"/> to filter out inner helper components (e.g.
+/// <c>ContextDemo+AccentBadge</c>) when picking the "main" demo to mount.
+/// </summary>
+internal sealed record ComponentInfo(
+    string Name,
+    string FullName,
+    bool IsNested,
+    bool IsPublic,
+    string? Namespace);
+
 internal static class DevtoolsTools
 {
     /// <summary>Supplies data the tools need from the host: components, switch callback, reload request.</summary>
@@ -20,6 +33,14 @@ internal static class DevtoolsTools
         public required Func<string, bool> SwitchComponent { get; init; }
         public required Action RequestReload { get; init; }
         public required WindowRegistry Windows { get; init; }
+
+        /// <summary>
+        /// Optional enriched component descriptor lookup. When present, the
+        /// <c>components</c> tool returns structured entries ({ name, fullName,
+        /// isNested, isPublic, namespace }); otherwise it falls back to the
+        /// flat string list produced by <see cref="GetComponents"/>.
+        /// </summary>
+        public Func<IReadOnlyList<ComponentInfo>>? GetComponentsDetailed { get; init; }
 
         /// <summary>
         /// Optional node registry — set by the host bring-up so
@@ -63,12 +84,30 @@ internal static class DevtoolsTools
         server.Tools.Register(
             new McpToolDescriptor(
                 Name: "components",
-                Description: "Lists the Component class names in the loaded assembly.",
+                Description:
+                    "Lists the Component class names in the loaded assembly, top-level first. Each entry carries " +
+                    "`isNested` (true for inner helper components like `ContextDemo+AccentBadge`) so agents can pick " +
+                    "the user-facing demo without guessing. Use `current` to verify what's mounted now.",
                 InputSchema: new { type = "object", properties = new { }, additionalProperties = false }),
-            _ => new
+            _ =>
             {
-                components = ctx.GetComponents().ToArray(),
-                current = ctx.GetCurrentComponent(),
+                if (ctx.GetComponentsDetailed is { } detailed)
+                {
+                    var infos = detailed()
+                        .OrderBy(c => c.IsNested ? 1 : 0)
+                        .ThenBy(c => c.Name, StringComparer.Ordinal)
+                        .ToArray();
+                    return new
+                    {
+                        components = infos,
+                        current = ctx.GetCurrentComponent(),
+                    };
+                }
+                return new
+                {
+                    components = ctx.GetComponents().ToArray(),
+                    current = ctx.GetCurrentComponent(),
+                };
             });
     }
 
@@ -161,25 +200,37 @@ internal static class DevtoolsTools
         server.Tools.Register(
             new McpToolDescriptor(
                 Name: "windows",
-                Description: "Lists active windows with their ids, titles, bounds, and build tag.",
+                Description:
+                    "Lists active windows with their ids, titles, bounds, build tag, and the currently " +
+                    "mounted Reactor component (per-window). The id is a stable handle — it does NOT " +
+                    "reflect the window title, which changes on `switchComponent`. Scope selectors with " +
+                    "`window` when more than one is active.",
                 InputSchema: new { type = "object", properties = new { }, additionalProperties = false }),
-            _ => server.OnDispatcher(() => new
+            _ => server.OnDispatcher(() =>
             {
-                windows = ctx.Windows.Snapshot().Select(w => new
+                var current = ctx.GetCurrentComponent();
+                return new
                 {
-                    id = w.Id,
-                    title = w.Title,
-                    hwnd = w.Hwnd,
-                    bounds = new
+                    windows = ctx.Windows.Snapshot().Select(w => new
                     {
-                        x = w.Bounds.X,
-                        y = w.Bounds.Y,
-                        width = w.Bounds.Width,
-                        height = w.Bounds.Height,
-                    },
-                    isMain = w.IsMain,
-                    buildTag = w.BuildTag,
-                }).ToArray(),
+                        id = w.Id,
+                        title = w.Title,
+                        hwnd = w.Hwnd,
+                        bounds = new
+                        {
+                            x = w.Bounds.X,
+                            y = w.Bounds.Y,
+                            width = w.Bounds.Width,
+                            height = w.Bounds.Height,
+                        },
+                        isMain = w.IsMain,
+                        buildTag = w.BuildTag,
+                        // Only the main window reflects the component switch today;
+                        // secondary windows report null. Agents can cross-check
+                        // components.current against this value.
+                        currentComponent = w.IsMain ? current : null,
+                    }).ToArray(),
+                };
             }));
     }
 

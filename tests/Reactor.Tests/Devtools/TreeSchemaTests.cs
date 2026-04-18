@@ -41,6 +41,23 @@ public class TreeSchemaTests
         Assert.DoesNotContain("layout", json);
         Assert.DoesNotContain("visual", json);
         Assert.DoesNotContain("context", json);
+        Assert.DoesNotContain("supportedPatterns", json);
+    }
+
+    [Fact]
+    public void TreeNode_FullView_CarriesSupportedPatterns()
+    {
+        // Usability feedback: agents need a way to look up "what verbs can I
+        // call on this element?" without trial-and-error. Full view emits
+        // the UIA pattern names the automation peer exposes; summary omits it.
+        var node = new TreeNode
+        {
+            Id = "r:main/Button",
+            Type = "Button",
+            SupportedPatterns = new List<string> { "Invoke" },
+        };
+        var json = JsonSerializer.Serialize(node, DevtoolsMcpServer.JsonOpts);
+        Assert.Contains("\"supportedPatterns\":[\"Invoke\"]", json);
     }
 
     [Fact]

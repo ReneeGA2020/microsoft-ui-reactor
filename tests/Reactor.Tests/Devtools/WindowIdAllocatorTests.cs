@@ -66,4 +66,24 @@ public class WindowIdAllocatorTests
         Assert.Equal("Win1", a.Allocate(null));
         Assert.Equal("real-title-2", a.Allocate("Real Title"));
     }
+
+    [Fact]
+    public void Reserve_ForcesExplicitIdRegardlessOfTitle()
+    {
+        // feedback #2: devtools main window pins to "main" via Reserve so the
+        // handle survives switchComponent changing the window title.
+        var a = new WindowIdAllocator();
+        Assert.Equal("main", a.Reserve("main"));
+        // A later title-based allocation for "Main" slug collides with the
+        // reserved id and must get a disambiguating suffix.
+        Assert.Equal("main-2", a.Allocate("Main"));
+    }
+
+    [Fact]
+    public void Reserve_CollisionSuffixesTheExplicitId()
+    {
+        var a = new WindowIdAllocator();
+        Assert.Equal("main", a.Reserve("main"));
+        Assert.Equal("main-2", a.Reserve("main"));
+    }
 }
