@@ -35,4 +35,18 @@ public static class DataSourceResourceExtensions
             options: options,
             dispatcher: dispatcher);
     }
+
+    /// <summary>
+    /// Overload that reads the ambient <see cref="QueryCache"/> from
+    /// <see cref="AppContexts.QueryCache"/>. <see cref="Hosting.ReactorHost"/> installs a
+    /// process-wide default cache at startup; tests or subtrees may override it via
+    /// <c>.Provide(AppContexts.QueryCache, customCache)</c>.
+    /// </summary>
+    public static InfiniteResource<T> UseDataSource<T>(
+        this RenderContext ctx,
+        IDataSource<T> source,
+        DataRequest request,
+        InfiniteResourceOptions? options = null,
+        IHookDispatcher? dispatcher = null)
+        => UseDataSource(ctx, source, request, ctx.UseContext(AppContexts.QueryCache), options, dispatcher);
 }

@@ -1,5 +1,6 @@
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Data;
+using Microsoft.UI.Reactor.Hooks;
 using Microsoft.UI.Reactor.Layout;
 using Microsoft.UI.Reactor.Controls;
 using Microsoft.UI.Xaml;
@@ -30,6 +31,7 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
         var el = Props;
         var source = el.Source;
         var registry = el.Registry ?? UseMemo(() => new TypeRegistry());
+        var useHookPaging = ReactorFeatureFlags.UseHookBasedPaging;
 
         // Resolve columns: use explicit columns from props, or auto-generate from
         // reflection. Re-resolve when explicit columns change (e.g., external state
@@ -133,6 +135,35 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
         }
         var state = stateRef.Current!;
 
+        // ── Hook-based paging (Phase 3) ──────────────────────────
+        // Under ReactorFeatureFlags.UseHookBasedPaging, data loading flows through
+        // UseInfiniteResource / UseDataSource instead of DataGridState.LoadDataAsync.
+        // The hook owns fetch lifecycle, cache subscriptions, and deps-change restart.
+        if (useHookPaging)
+        {
+            // DataRequest is rebuilt each render so sort/filter/search changes flow into
+            // the hook's deps and restart pagination cleanly.
+            var rowH = el.RowHeight ?? el.EstimatedRowHeight;
+            var pageSize = Math.Max(50, (int)Math.Ceiling(2160.0 / rowH));
+
+            var request = new DataRequest
+            {
+                PageSize = pageSize,
+                Sort = state.Sorts.Count > 0 ? state.Sorts.ToList() : null,
+                Filters = state.Filters.Count > 0 ? state.Filters.ToList() : null,
+                SearchQuery = state.SearchQuery,
+            };
+
+            var resource = UseDataSource(
+                source,
+                request,
+                options: new InfiniteResourceOptions(PageSize: pageSize));
+
+            // Attach (or re-attach on deps-change) the latest resource reference. The
+            // state reads data from this resource in its accessors when set.
+            state.SetHookResource(resource);
+        }
+
         // Subscribe to observable data sources (e.g. ObservableListDataSource)
         // so the grid refreshes when items are added, removed, or modified via INPC.
         // Cancel any active edit first — the underlying data changed externally.
@@ -144,7 +175,10 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
                 {
                     if (state.IsEditing || state.IsRowEditing)
                         state.CancelEdit();
-                    _ = state.LoadDataAsync();
+                    if (useHookPaging)
+                        state.HookResource?.Refresh();
+                    else
+                        _ = state.LoadDataAsync();
                 }
                 observable.DataChanged += OnDataChanged;
                 return () => observable.DataChanged -= OnDataChanged;
@@ -152,12 +186,14 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
             return () => { };
         }, source);
 
-        // Load data on mount and when sort changes
+        // Load data on mount and when sort changes (legacy path only — hook path
+        // reacts to sort/filter changes through its own deps).
         var sortKey = string.Join(",", state.Sorts.Select(s => $"{s.Field}:{s.Direction}"));
 
         UseEffect(() =>
         {
-            _ = state.LoadDataAsync();
+            if (!useHookPaging)
+                _ = state.LoadDataAsync();
         }, sortKey);
 
         // Notify selection changes via effect (not during render)

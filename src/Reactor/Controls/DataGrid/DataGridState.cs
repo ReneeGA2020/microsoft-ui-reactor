@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Data;
 using Microsoft.UI.Reactor.Controls.Validation;
 
@@ -138,6 +139,38 @@ public class DataGridState<T>
     private readonly Dictionary<int, T> _mutations = new();
     private readonly Dictionary<int, string> _keyOverrides = new();
 
+    // ── Hook-based paging (Phase 3 migration, feature-flagged) ───
+    // When set, data accessors read from this resource instead of the legacy _cache /
+    // _loadedItems fields. Populated by DataGridComponent under ReactorFeatureFlags.UseHookBasedPaging.
+    // The resource is owned by the UseInfiniteResource hook slot — DataGridState neither
+    // disposes it nor drives its fetches directly.
+    private InfiniteResource<T>? _hookResource;
+
+    /// <summary>The hook-owned <see cref="InfiniteResource{T}"/> when running under
+    /// <c>ReactorFeatureFlags.UseHookBasedPaging</c>, or null in legacy mode.</summary>
+    public InfiniteResource<T>? HookResource => _hookResource;
+
+    /// <summary>
+    /// Attach (or replace) the hook-owned <see cref="InfiniteResource{T}"/> backing this
+    /// grid's data. When attached, the legacy <see cref="DataPageCache{T}"/> path is
+    /// bypassed — <see cref="ItemCount"/>, <see cref="GetItemAt"/>, <see cref="GetRowKeyAt"/>,
+    /// and <see cref="EnsureRangeLoaded"/> read from the resource.
+    /// </summary>
+    /// <remarks>
+    /// Pass <c>null</c> to detach. Deps-change in the hook creates a new resource; call
+    /// this each render so the latest reference is used. Re-attaching the same reference
+    /// is a no-op.
+    /// </remarks>
+    public void SetHookResource(InfiniteResource<T>? resource)
+    {
+        if (ReferenceEquals(_hookResource, resource)) return;
+        _hookResource = resource;
+        // Deps change invalidated the old resource and reset the mutation overlay — any
+        // carried-over row edits would now point at rows that no longer exist.
+        _mutations.Clear();
+        _keyOverrides.Clear();
+    }
+
     /// <summary>
     /// Currently loaded items. In paged mode, returns items from all loaded cache blocks
     /// plus any mutations overlay. Prefer GetItemAt for index-based access.
@@ -146,12 +179,30 @@ public class DataGridState<T>
     {
         get
         {
+            if (_hookResource is not null)
+            {
+                // Hook-based paging: flatten the resource's sparse Items into loaded rows.
+                var items = _hookResource.Items;
+                var result = new List<T>();
+                for (int i = 0; i < items.Count; i++)
+                {
+                    if (_mutations.TryGetValue(i, out var mutated))
+                    {
+                        result.Add(mutated);
+                        continue;
+                    }
+                    var it = items[i];
+                    if (it is not null) result.Add(it);
+                }
+                return result;
+            }
+
             if (_cache is null) return _loadedItems;
 
             // Materialize items from loaded cache blocks + mutations.
             var total = _cache.TotalCount ?? 0;
             var blockSize = _cache.BlockSize;
-            var result = new List<T>();
+            var cacheResult = new List<T>();
             var blockCount = (total + blockSize - 1) / blockSize;
             for (int b = 0; b < blockCount; b++)
             {
@@ -162,12 +213,12 @@ public class DataGridState<T>
                 {
                     var rowIndex = b * blockSize + i;
                     if (_mutations.TryGetValue(rowIndex, out var mutated))
-                        result.Add(mutated);
+                        cacheResult.Add(mutated);
                     else
-                        result.Add(block.Items[i]);
+                        cacheResult.Add(block.Items[i]);
                 }
             }
-            return result;
+            return cacheResult;
         }
     }
 
@@ -175,17 +226,29 @@ public class DataGridState<T>
     public string[] RowKeyCache => _rowKeyCache;
 
     /// <summary>Total item count from the data source.</summary>
-    public int? TotalCount => _totalCount;
+    public int? TotalCount => _hookResource is not null
+        ? (_hookResource.TotalCount ?? (_hookResource.Items.Count > 0 ? _hookResource.Items.Count : (int?)null))
+        : _totalCount;
 
     /// <summary>Whether data is currently being fetched.</summary>
-    public bool IsLoading => _isLoading;
+    public bool IsLoading => _hookResource is not null
+        ? _hookResource.LoadState is LoadState.Loading && _hookResource.Items.Count == 0
+        : _isLoading;
 
     /// <summary>
     /// Total number of items in the data set. In paged mode, this is the total count
     /// from the data source (even if not all pages are loaded yet). The VirtualList
     /// uses this for the full scrollbar extent. Unloaded items render as placeholders.
     /// </summary>
-    public int ItemCount => _cache?.TotalCount ?? _loadedItems.Count;
+    public int ItemCount
+    {
+        get
+        {
+            if (_hookResource is not null)
+                return _hookResource.TotalCount ?? _hookResource.Items.Count;
+            return _cache?.TotalCount ?? _loadedItems.Count;
+        }
+    }
 
     /// <summary>The underlying page cache, or null if using legacy eager loading.</summary>
     public DataPageCache<T>? PageCache => _cache;
@@ -197,16 +260,29 @@ public class DataGridState<T>
     /// </summary>
     public void EnsureRangeLoaded(int firstRow, int lastRow)
     {
+        if (_hookResource is not null)
+        {
+            // Resource tracks page size internally; it dedups already-loaded / in-flight pages.
+            // Mirror the legacy prefetch-one-block-each-direction behaviour by widening the range.
+            var total = _hookResource.TotalCount ?? _hookResource.Items.Count;
+            if (total == 0) return;
+            const int prefetch = 50; // conservative prefetch; resource coalesces per-page.
+            var startRow = Math.Max(0, firstRow - prefetch);
+            var endRow = Math.Min(lastRow + prefetch, total - 1);
+            _hookResource.EnsureRange(startRow, endRow);
+            return;
+        }
+
         if (_cache is null) return;
         var blockSize = _cache.BlockSize;
-        var total = _cache.TotalCount ?? 0;
-        if (total == 0) return;
+        var total2 = _cache.TotalCount ?? 0;
+        if (total2 == 0) return;
 
         // Expand range by one block in each direction for smooth scrolling
-        var startRow = Math.Max(0, firstRow - blockSize);
-        var endRow = Math.Min(lastRow + blockSize, total - 1);
+        var startRow2 = Math.Max(0, firstRow - blockSize);
+        var endRow2 = Math.Min(lastRow + blockSize, total2 - 1);
 
-        for (int b = startRow / blockSize; b <= endRow / blockSize; b++)
+        for (int b = startRow2 / blockSize; b <= endRow2 / blockSize; b++)
         {
             if (!_cache.IsLoaded(b * blockSize))
                 _cache.RequestBlock(b);
@@ -220,6 +296,13 @@ public class DataGridState<T>
     /// </summary>
     public T? GetItemAt(int index)
     {
+        if (_hookResource is not null)
+        {
+            if (_mutations.TryGetValue(index, out var mutated))
+                return mutated;
+            if (index < 0 || index >= _hookResource.Items.Count) return default;
+            return _hookResource.Items[index];
+        }
         if (_cache is not null)
         {
             if (_mutations.TryGetValue(index, out var mutated))
@@ -236,6 +319,15 @@ public class DataGridState<T>
     /// </summary>
     public string? GetRowKeyAt(int index)
     {
+        if (_hookResource is not null)
+        {
+            if (_keyOverrides.TryGetValue(index, out var overridden))
+                return overridden;
+            if (index < 0 || index >= _hookResource.Items.Count) return null;
+            var item = _hookResource.Items[index];
+            if (item is null) return null;
+            return _source.GetRowKey(item).Value;
+        }
         if (_cache is not null)
         {
             if (_keyOverrides.TryGetValue(index, out var overridden))
@@ -251,6 +343,12 @@ public class DataGridState<T>
     /// <summary>Whether the item at a specific row index is loaded.</summary>
     public bool IsItemLoaded(int index)
     {
+        if (_hookResource is not null)
+        {
+            if (_mutations.ContainsKey(index)) return true;
+            if (index < 0 || index >= _hookResource.Items.Count) return false;
+            return _hookResource.Items[index] is not null;
+        }
         if (_cache is not null)
             return _mutations.ContainsKey(index) || _cache.IsLoaded(index);
         return (uint)index < (uint)_loadedItems.Count;
@@ -715,6 +813,28 @@ public class DataGridState<T>
     {
         var keyStr = key.Value;
 
+        if (_hookResource is not null)
+        {
+            // Mutation overlay first.
+            foreach (var (idx, item) in _mutations)
+            {
+                if (_source.GetRowKey(item).Value == keyStr) return idx;
+            }
+            foreach (var (idx, k) in _keyOverrides)
+            {
+                if (k == keyStr) return idx;
+            }
+            var items = _hookResource.Items;
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (_mutations.ContainsKey(i)) continue;
+                var it = items[i];
+                if (it is null) continue;
+                if (_source.GetRowKey(it).Value == keyStr) return i;
+            }
+            return -1;
+        }
+
         if (_cache is not null)
         {
             // Check mutation overlay first
@@ -843,7 +963,7 @@ public class DataGridState<T>
         var newItem = (T)newOwner;
 
         // Update in-memory state
-        if (_cache is not null)
+        if (_cache is not null || _hookResource is not null)
         {
             _mutations[rowIndex] = newItem;
             _keyOverrides[rowIndex] = _source.GetRowKey(newItem).Value;
@@ -975,7 +1095,7 @@ public class DataGridState<T>
         }
 
         // Update in-memory state
-        if (_cache is not null)
+        if (_cache is not null || _hookResource is not null)
         {
             _mutations[rowIndex] = current;
             _keyOverrides[rowIndex] = _source.GetRowKey(current).Value;
@@ -1059,7 +1179,7 @@ public class DataGridState<T>
             var rowIndex = GetRowIndex(key);
             if (rowIndex >= 0)
             {
-                if (_cache is not null)
+                if (_cache is not null || _hookResource is not null)
                 {
                     _mutations[rowIndex] = original;
                     _keyOverrides[rowIndex] = _source.GetRowKey(original).Value;
@@ -1141,6 +1261,10 @@ public class DataGridState<T>
     /// <summary>Load data from the source using current sort/filter state.</summary>
     public async Task LoadDataAsync(CancellationToken cancellationToken = default)
     {
+        // Hook-based paging owns loading through UseInfiniteResource — the grid just
+        // passes sort/filter state into the hook's deps. This method becomes a no-op.
+        if (_hookResource is not null) return;
+
         _isLoading = true;
         StateChanged?.Invoke();
 
