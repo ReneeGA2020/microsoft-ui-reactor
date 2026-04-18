@@ -236,12 +236,12 @@ public class DataGridState<T>
 
     /// <summary>Total item count from the data source.</summary>
     public int? TotalCount => _hookResource is not null
-        ? (_hookResource.TotalCount ?? (_hookResource.Items.Count > 0 ? _hookResource.Items.Count : (int?)null))
+        ? _hookResource.TotalCount
         : _totalCount;
 
     /// <summary>Whether data is currently being fetched.</summary>
     public bool IsLoading => _hookResource is not null
-        ? _hookResource.LoadState is LoadState.Loading && _hookResource.Items.Count == 0
+        ? _hookResource.LoadState is LoadState.Loading && _hookResource.TotalCount is null
         : _isLoading;
 
     /// <summary>
@@ -254,7 +254,16 @@ public class DataGridState<T>
         get
         {
             if (_hookResource is not null)
-                return _hookResource.TotalCount ?? _hookResource.Items.Count;
+            {
+                // Stable count across load transitions. Before the first page completes,
+                // TotalCount is null — report 0 so the grid shows the loading template
+                // instead of a placeholder-only list whose count will jump on completion.
+                // ItemsRepeater doesn't reliably re-realize across a big expansion like
+                // 60 → 250 000, which otherwise leaves the data area blank.
+                if (_hookResource.TotalCount is { } total) return total;
+                if (_hookResource.LoadState is LoadState.Loading) return 0;
+                return _hookResource.Items.Count;
+            }
             return _cache?.TotalCount ?? _loadedItems.Count;
         }
     }
