@@ -19,6 +19,7 @@ internal static class DevtoolsTools
         public required Func<string?> GetCurrentComponent { get; init; }
         public required Func<string, bool> SwitchComponent { get; init; }
         public required Action RequestReload { get; init; }
+        public required WindowRegistry Windows { get; init; }
     }
 
     public static void RegisterCore(DevtoolsMcpServer server, ToolHostContext ctx)
@@ -27,6 +28,7 @@ internal static class DevtoolsTools
         Register_Components(server, ctx);
         Register_SwitchComponent(server, ctx);
         Register_Reload(server, ctx);
+        Register_Windows(server, ctx);
     }
 
     // -- version -----------------------------------------------------------------
@@ -122,6 +124,35 @@ internal static class DevtoolsTools
                 ctx.RequestReload();
                 return new { ok = true, exitingBuild };
             });
+    }
+
+    // -- windows -----------------------------------------------------------------
+
+    private static void Register_Windows(DevtoolsMcpServer server, ToolHostContext ctx)
+    {
+        server.Tools.Register(
+            new McpToolDescriptor(
+                Name: "windows",
+                Description: "Lists active windows with their ids, titles, bounds, and build tag.",
+                InputSchema: new { type = "object", properties = new { }, additionalProperties = false }),
+            _ => server.OnDispatcher(() => new
+            {
+                windows = ctx.Windows.Snapshot().Select(w => new
+                {
+                    id = w.Id,
+                    title = w.Title,
+                    hwnd = w.Hwnd,
+                    bounds = new
+                    {
+                        x = w.Bounds.X,
+                        y = w.Bounds.Y,
+                        width = w.Bounds.Width,
+                        height = w.Bounds.Height,
+                    },
+                    isMain = w.IsMain,
+                    buildTag = w.BuildTag,
+                }).ToArray(),
+            }));
     }
 
     // -- helpers -----------------------------------------------------------------

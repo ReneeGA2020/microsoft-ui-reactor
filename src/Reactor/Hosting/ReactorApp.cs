@@ -285,12 +285,16 @@ public static class ReactorApp
                     host.Window,
                     preferredPort: options.McpPort);
 
+                var windows = new WindowRegistry(mcp.BuildTag);
+                windows.Attach(host.Window, isMain: true);
+
                 DevtoolsTools.RegisterCore(mcp, new DevtoolsTools.ToolHostContext
                 {
                     GetComponents = () => FindAllComponentNames().ToList(),
                     GetCurrentComponent = () => initialComponentName,
                     SwitchComponent = SwitchComponentCore,
                     RequestReload = () => RequestDevtoolsReload(mcp, host),
+                    Windows = windows,
                 });
 
                 mcp.Start();
