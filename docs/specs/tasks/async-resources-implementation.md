@@ -331,8 +331,8 @@ Scope: new `Reactor/Core/Hooks/UseMutation.cs`; modifications to `Reactor/Contro
 
 ### 3.4 HeadTrax `EmployeeGrid` port
 
-- [ ] Enable `UseHookBasedPaging` by default on the HeadTrax sample
-- [ ] Keep a reversion path for one release cycle
+- [x] Enable `UseHookBasedPaging` by default on the HeadTrax sample — set in `Program.cs` before `ReactorApp.Run<App>` so the DataGrid renders through `UseDataSource` / `UseInfiniteResource` out of the box. Title-bar indicator shows `"hook paging"` vs. `"legacy paging"` so QA can confirm the active path.
+- [x] Keep a reversion path for one release cycle — pass `--legacy-paging` on the command line to flip back to the `DataPageCache<T>` path for side-by-side comparison (documented inline in `Program.cs`)
 - [ ] Dogfood in production for at least one release cycle before deletion below
 
 ### 3.5 Delete `DataPageCache`
