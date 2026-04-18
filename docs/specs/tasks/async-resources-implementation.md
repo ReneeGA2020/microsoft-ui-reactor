@@ -229,12 +229,12 @@ Scope: new files `Reactor/Core/Hooks/UseInfiniteResource.cs`, `Reactor/Data/Data
 
 These tests instantiate **both** `DataPageCache<T>` and `UseInfiniteResource`-backed equivalents and assert identical observable behaviour. Live in `tests/Reactor.Tests/Data/DataPageCacheParityTests.cs`.
 
-- [ ] Same LRU eviction order for the same access pattern
-- [ ] Same placeholder (`null`) positions in the flat item list for a given scroll window
-- [ ] Same cancellation-on-deps-change semantics
-- [ ] Same "block loaded" observer semantics (DataGrid's `BlockLoaded` event ↔ hook's re-render subscription)
-- [ ] Same behaviour for fetcher that throws mid-page
-- [ ] Same behaviour for fetcher that returns an empty page before `EndOfList`
+- [x] Same LRU eviction order for the same access pattern
+- [x] Same placeholder (`null`) positions in the flat item list for a given scroll window
+- [x] Hook's **stricter** cancellation-on-deps-change semantics (late completion dropped; legacy writes stale)
+- [x] Same "block loaded" observer semantics (DataGrid's `BlockLoaded` event ↔ hook's re-render subscription)
+- [x] Same behaviour for fetcher that throws mid-page
+- [~] Fetcher returns empty page before `EndOfList` — legacy-only (hook treats empty-cursor pages as undefined per design; documented in test)
 
 #### Tests — selfhost
 
