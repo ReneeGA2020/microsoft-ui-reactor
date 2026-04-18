@@ -411,6 +411,47 @@ internal static class SelfTestFixtureRegistry
         "DataGrid_ScrollPopulatesData",
         "DataGrid_ScrollBackPopulatesData",
         "DataGrid_ScrollPerfRelative",
+        // DataGrid parity — hook-based paging path (Phase 3)
+        "DataGrid_HookPagingMountAndLoad",
+        "DataGrid_HookPagingScrollPopulates",
+        "DataGrid_HookPagingScrollBack",
+        "DataGrid_HookPagingSmallDataset",
+        "DataGrid_HookPagingEditLifecycle",
+        "AsyncResource.Framerate.DataGridScroll",
+        // UseResource integration (real dispatcher)
+        "AsyncResource.BasicResolve",
+        "AsyncResource.SyncCompleteNoFlash",
+        "AsyncResource.StaleWhileRevalidate",
+        "AsyncResource.DepsChangeCancel",
+        "AsyncResource.UnmountDuringFetch",
+        "AsyncResource.FocusRevalidate",
+        // Pending bubble-up scope
+        "AsyncResource.PendingBubbleUp",
+        "AsyncResource.PendingWithOverride",
+        // UseMutation under real dispatcher
+        "AsyncResource.MutationOptimistic",
+        "AsyncResource.MutationRollback",
+        "AsyncResource.MutationInvalidates",
+        // UseInfiniteResource under real dispatcher
+        "AsyncResource.InfiniteBasic",
+        "AsyncResource.InfinitePlaceholder",
+        "AsyncResource.InfiniteRefresh",
+        "AsyncResource.InfiniteDepsChange",
+        // Framerate canaries — "works in isolation, breaks at 60Hz" regression net
+        "AsyncResource.Framerate.DepsThrashing",
+        "AsyncResource.Framerate.RenderShortCircuit",
+        "AsyncResource.Framerate.CacheChurn",
+        "AsyncResource.Framerate.FastRemount",
+        "AsyncResource.Framerate.DispatcherPressure",
+        "AsyncResource.Framerate.DataGridEditMutation",
+        // Infinite-resource framerate canaries
+        "AsyncResource.Framerate.ScrollFlood",
+        "AsyncResource.Framerate.RapidEnsureRange",
+        "AsyncResource.Framerate.RefreshMidScroll",
+        "AsyncResource.Framerate.LruChurn",
+        "AsyncResource.Framerate.ParallelPages",
+        // Pending scope framerate canary
+        "AsyncResource.Framerate.PendingChurn",
     ];
 
     public static SelfTestFixtureBase? Create(string name, Harness harness) => name switch
@@ -817,6 +858,48 @@ internal static class SelfTestFixtureRegistry
         "DataGrid_ScrollPopulatesData" => new DataGridScrollFixtures.ScrollPopulatesData(harness),
         "DataGrid_ScrollBackPopulatesData" => new DataGridScrollFixtures.ScrollBackPopulatesData(harness),
         "DataGrid_ScrollPerfRelative" => new DataGridScrollFixtures.ScrollPerfRelative(harness),
+        // DataGrid parity — hook-based paging path (Phase 3)
+        "DataGrid_HookPagingMountAndLoad" => new DataGridParityFixtures.HookPagingMountAndLoad(harness),
+        "DataGrid_HookPagingScrollPopulates" => new DataGridParityFixtures.HookPagingScrollPopulates(harness),
+        "DataGrid_HookPagingScrollBack" => new DataGridParityFixtures.HookPagingScrollBack(harness),
+        "DataGrid_HookPagingSmallDataset" => new DataGridParityFixtures.HookPagingSmallDataset(harness),
+        "DataGrid_HookPagingEditLifecycle" => new DataGridParityFixtures.HookPagingEditLifecycle(harness),
+        "AsyncResource.Framerate.DataGridScroll" => new DataGridParityFixtures.HookPagingFramerateScroll(harness),
+        // UseResource integration fixtures
+        "AsyncResource.BasicResolve" => new AsyncResourceFixtures.BasicResolve(harness),
+        "AsyncResource.SyncCompleteNoFlash" => new AsyncResourceFixtures.SyncCompleteNoFlash(harness),
+        "AsyncResource.StaleWhileRevalidate" => new AsyncResourceFixtures.StaleWhileRevalidate(harness),
+        "AsyncResource.DepsChangeCancel" => new AsyncResourceFixtures.DepsChangeCancel(harness),
+        "AsyncResource.UnmountDuringFetch" => new AsyncResourceFixtures.UnmountDuringFetch(harness),
+        "AsyncResource.FocusRevalidate" => new AsyncResourceFixtures.FocusRevalidate(harness),
+        // Pending bubble-up scope
+        "AsyncResource.PendingBubbleUp" => new PendingFixtures.BubbleUp(harness),
+        "AsyncResource.PendingWithOverride" => new PendingFixtures.WithOverride(harness),
+        // UseMutation under real dispatcher
+        "AsyncResource.MutationOptimistic" => new UseMutationFixtures.Optimistic(harness),
+        "AsyncResource.MutationRollback" => new UseMutationFixtures.Rollback(harness),
+        "AsyncResource.MutationInvalidates" => new UseMutationFixtures.Invalidates(harness),
+        // UseInfiniteResource under real dispatcher
+        "AsyncResource.InfiniteBasic" => new AsyncInfiniteResourceFixtures.InfiniteBasic(harness),
+        "AsyncResource.InfinitePlaceholder" => new AsyncInfiniteResourceFixtures.InfinitePlaceholder(harness),
+        "AsyncResource.InfiniteRefresh" => new AsyncInfiniteResourceFixtures.InfiniteRefresh(harness),
+        "AsyncResource.InfiniteDepsChange" => new AsyncInfiniteResourceFixtures.InfiniteDepsChange(harness),
+        // Framerate canaries (Phase 1)
+        "AsyncResource.Framerate.DepsThrashing" => new AsyncResourceFramerateFixtures.DepsThrashing(harness),
+        "AsyncResource.Framerate.RenderShortCircuit" => new AsyncResourceFramerateFixtures.RenderShortCircuit(harness),
+        "AsyncResource.Framerate.CacheChurn" => new AsyncResourceFramerateFixtures.CacheChurn(harness),
+        "AsyncResource.Framerate.FastRemount" => new AsyncResourceFramerateFixtures.FastRemount(harness),
+        "AsyncResource.Framerate.DispatcherPressure" => new AsyncResourceFramerateFixtures.DispatcherPressure(harness),
+        // Framerate canary (Phase 3 — UseMutation under DataGrid edit cadence)
+        "AsyncResource.Framerate.DataGridEditMutation" => new AsyncResourceFramerateFixtures.DataGridEditMutation(harness),
+        // Framerate canaries (Phase 2 — UseInfiniteResource)
+        "AsyncResource.Framerate.ScrollFlood" => new AsyncInfiniteResourceFramerateFixtures.ScrollFlood(harness),
+        "AsyncResource.Framerate.RapidEnsureRange" => new AsyncInfiniteResourceFramerateFixtures.RapidEnsureRange(harness),
+        "AsyncResource.Framerate.RefreshMidScroll" => new AsyncInfiniteResourceFramerateFixtures.RefreshMidScroll(harness),
+        "AsyncResource.Framerate.LruChurn" => new AsyncInfiniteResourceFramerateFixtures.LruChurn(harness),
+        "AsyncResource.Framerate.ParallelPages" => new AsyncInfiniteResourceFramerateFixtures.ParallelPages(harness),
+        // Pending scope framerate canary (Phase 4)
+        "AsyncResource.Framerate.PendingChurn" => new PendingFixtures.FramerateChurn(harness),
         _ => null,
     };
 }

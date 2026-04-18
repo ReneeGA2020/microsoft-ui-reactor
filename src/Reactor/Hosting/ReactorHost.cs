@@ -94,6 +94,38 @@ public sealed class ReactorHost : IDisposable
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         ReactorApp.ActiveHost = this;
 
+        // Route QueryCache.EntryChanged notifications through our dispatcher so subscribers
+        // observe cache changes on the UI thread even when Set/Invalidate were called from
+        // a background thread (fetch continuation). First host on the process wins — all
+        // hosts share the same process-wide default cache.
+        var dq = _dispatcherQueue;
+        var defaultCache = AppContexts.QueryCache.DefaultValue;
+        defaultCache.DispatcherPost ??= action =>
+        {
+            if (!dq.TryEnqueue(() => action()))
+                action(); // dispatcher shut down — fall back to inline
+        };
+
+        // Hook the window's Activated event into the focus-revalidation service.
+        // The service itself lives in <see cref="AppContexts.FocusRevalidation"/> and is
+        // always live; enrollment is a no-op when nothing has opted in. Only fire the
+        // sweep when the feature flag is on — apps that don't want window-focus
+        // revalidation pay zero cost.
+        var focusService = AppContexts.FocusRevalidation.DefaultValue;
+        if (focusService is not null)
+        {
+            try
+            {
+                _window.Activated += (_, args) =>
+                {
+                    if (!ReactorFeatureFlags.FocusRevalidation) return;
+                    if (args.WindowActivationState != WindowActivationState.Deactivated)
+                        focusService.RevalidateNow();
+                };
+            }
+            catch { /* windowless / headless host — no activation hook */ }
+        }
+
         // Register built-in custom element types
         Controls.ResizeGripRegistration.Register(_reconciler);
 

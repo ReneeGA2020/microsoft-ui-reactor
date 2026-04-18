@@ -7,8 +7,6 @@ using Microsoft.UI.Reactor.Data;
 using Microsoft.UI.Reactor.Data.Providers;
 using Microsoft.UI.Reactor.Controls;
 using Microsoft.UI.Reactor.Layout;
-using Microsoft.UI.Reactor.Controls;
-using Microsoft.UI.Reactor.Controls.Validation;
 using Microsoft.UI.Reactor.Controls.Validation;
 using Microsoft.UI.Xaml;
 using static Microsoft.UI.Reactor.Factories;
@@ -112,7 +110,7 @@ class IntegratedDataDemo : Microsoft.UI.Reactor.Core.Component
             void Handler(object? s, PropertyChangedEventArgs e) => forceRender(v => v + 1);
             selectedItem.PropertyChanged += Handler;
             return () => selectedItem.PropertyChanged -= Handler;
-        }, selectedItem);
+        }, selectedItem!);
 
         // ── TypeRegistry for PropertyGrid ─────────────────────────
         var registry = UseMemo(() =>

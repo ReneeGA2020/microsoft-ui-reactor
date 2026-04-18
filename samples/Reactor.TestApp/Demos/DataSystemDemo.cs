@@ -6,8 +6,6 @@ using Microsoft.UI.Reactor.Data.Providers;
 using Microsoft.UI.Reactor.Layout;
 using Microsoft.UI.Reactor.Controls;
 using Microsoft.UI.Reactor.Controls.Validation;
-using Microsoft.UI.Reactor.Controls.Validation;
-using Microsoft.UI.Reactor.Controls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using static Microsoft.UI.Reactor.Factories;
@@ -360,7 +358,7 @@ class DataSourceDemo : Microsoft.UI.Reactor.Core.Component
                 setPage(result);
                 setLoading(false);
             }
-        }, token, sortField, sortDir, filterDept, searchQuery, pageSize);
+        }, token!, sortField, sortDir, filterDept, searchQuery, pageSize);
 
         var departments = new[] { "", "Engineering", "Marketing", "Sales", "HR", "Finance" };
         var sortFields = new[] { "Name", "Department", "Age", "Salary" };

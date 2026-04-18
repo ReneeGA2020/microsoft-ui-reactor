@@ -7,8 +7,6 @@ using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Hooks;
 using Microsoft.UI.Reactor.Controls.Validation;
-using Microsoft.UI.Reactor.Controls.Validation;
-using Microsoft.UI.Reactor.Controls;
 using Microsoft.UI.Reactor.Controls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;

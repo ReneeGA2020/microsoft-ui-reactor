@@ -1,6 +1,5 @@
 using Microsoft.UI.Reactor.Data;
 using Microsoft.UI.Reactor.Controls;
-using Microsoft.UI.Reactor.Controls;
 using Microsoft.UI.Reactor.Controls.Validation;
 using Xunit;
 

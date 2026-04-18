@@ -3,7 +3,6 @@ using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Data;
 using Microsoft.UI.Reactor.Data.Providers;
 using Microsoft.UI.Reactor.Controls;
-using Microsoft.UI.Reactor.Controls;
 using Microsoft.UI.Reactor.AppTests.Host.SelfTest;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;

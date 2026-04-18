@@ -112,6 +112,7 @@ to wire up, no dispatcher threading to worry about.
 - **[Navigation](navigation.md)** — NavigationView, TabView, multi-page apps, routing
 - **[Styling and Theming](styling.md)** — Colors, typography, dark/light themes, custom styles
 - **[Effects and Lifecycle](effects.md)** — UseEffect patterns, cleanup, async work, timers
+- **[Async Resources Cookbook](async-resources-cookbook.md)** — UseResource, UseInfiniteResource, UseMutation, Pending
 - **[Commanding](commanding.md)** — Commands, keyboard shortcuts, button actions
 
 ### Advanced

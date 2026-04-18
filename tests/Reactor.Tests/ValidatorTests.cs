@@ -1,5 +1,4 @@
 using Microsoft.UI.Reactor.Controls.Validation;
-using Microsoft.UI.Reactor.Controls.Validation;
 using Xunit;
 
 namespace Microsoft.UI.Reactor.Tests;

@@ -1,5 +1,6 @@
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Data;
+using Microsoft.UI.Reactor.Hooks;
 using Microsoft.UI.Reactor.Layout;
 using Microsoft.UI.Reactor.Controls;
 using Microsoft.UI.Xaml;
@@ -25,11 +26,19 @@ namespace Microsoft.UI.Reactor.Controls;
 /// </summary>
 public class DataGridComponent<T> : Component<DataGridElement<T>>
 {
+    /// <summary>
+    /// Input to the row-commit mutation. Bundles the row key, the post-edit item
+    /// (already applied in the state's mutation overlay), and the pre-edit snapshot
+    /// for revert on failure.
+    /// </summary>
+    private readonly record struct CommitMutationInput(RowKey Key, T NewItem, T? OriginalItem);
+
     public override Element Render()
     {
         var el = Props;
         var source = el.Source;
         var registry = el.Registry ?? UseMemo(() => new TypeRegistry());
+        var useHookPaging = ReactorFeatureFlags.UseHookBasedPaging;
 
         // Resolve columns: use explicit columns from props, or auto-generate from
         // reflection. Re-resolve when explicit columns change (e.g., external state
@@ -133,6 +142,60 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
         }
         var state = stateRef.Current!;
 
+        // ── Row-commit mutation (Phase 3) ────────────────────────
+        // UseMutation drives the async commit lifecycle: OnOptimistic snapshots the
+        // pre-edit item (so FailAsyncCommit can revert the overlay), OnSuccess clears
+        // the committing flag, OnError records the error message for the row banner.
+        // This replaces the ad-hoc Task.Run + TryEnqueue path previously in HandleAsyncCommit.
+        var rowChanged = el.OnRowChanged;
+        var commitMutation = Context.UseMutation<CommitMutationInput, bool>(
+            mutator: async (input, ct) =>
+            {
+                if (rowChanged is null) return true;
+                await rowChanged(input.Key, input.NewItem).ConfigureAwait(false);
+                return true;
+            },
+            options: new MutationOptions<CommitMutationInput, bool>(
+                OnOptimistic: input => state.BeginAsyncCommit(input.Key, input.OriginalItem!),
+                OnSuccess: (_, input) => state.CompleteAsyncCommit(input.Key),
+                OnError: (ex, input) => state.FailAsyncCommit(input.Key, ex.Message)));
+
+        // Route HandleAsyncCommit through the UseMutation handle. The mutation state
+        // persists across renders so overlapping RunAsync calls from rapid commits
+        // all land on the same pending-count / LastResult machinery.
+        state.CommitDispatcher = rowChanged is null
+            ? null
+            : (key, newItem, origItem) => _ = commitMutation.RunAsync(new CommitMutationInput(key, newItem, origItem));
+
+        // ── Hook-based paging (Phase 3) ──────────────────────────
+        // Under ReactorFeatureFlags.UseHookBasedPaging, data loading flows through
+        // UseInfiniteResource / UseDataSource instead of DataGridState.LoadDataAsync.
+        // The hook owns fetch lifecycle, cache subscriptions, and deps-change restart.
+        if (useHookPaging)
+        {
+            // DataRequest is rebuilt each render so sort/filter/search changes flow into
+            // the hook's deps and restart pagination cleanly.
+            var rowH = el.RowHeight ?? el.EstimatedRowHeight;
+            var pageSize = Math.Max(50, (int)Math.Ceiling(2160.0 / rowH));
+
+            var request = new DataRequest
+            {
+                PageSize = pageSize,
+                Sort = state.Sorts.Count > 0 ? state.Sorts.ToList() : null,
+                Filters = state.Filters.Count > 0 ? state.Filters.ToList() : null,
+                SearchQuery = state.SearchQuery,
+            };
+
+            var resource = UseDataSource(
+                source,
+                request,
+                options: new InfiniteResourceOptions(PageSize: pageSize));
+
+            // Attach (or re-attach on deps-change) the latest resource reference. The
+            // state reads data from this resource in its accessors when set.
+            state.SetHookResource(resource);
+        }
+
         // Subscribe to observable data sources (e.g. ObservableListDataSource)
         // so the grid refreshes when items are added, removed, or modified via INPC.
         // Cancel any active edit first — the underlying data changed externally.
@@ -144,7 +207,10 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
                 {
                     if (state.IsEditing || state.IsRowEditing)
                         state.CancelEdit();
-                    _ = state.LoadDataAsync();
+                    if (useHookPaging)
+                        state.HookResource?.Refresh();
+                    else
+                        _ = state.LoadDataAsync();
                 }
                 observable.DataChanged += OnDataChanged;
                 return () => observable.DataChanged -= OnDataChanged;
@@ -152,12 +218,14 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
             return () => { };
         }, source);
 
-        // Load data on mount and when sort changes
+        // Load data on mount and when sort changes (legacy path only — hook path
+        // reacts to sort/filter changes through its own deps).
         var sortKey = string.Join(",", state.Sorts.Select(s => $"{s.Field}:{s.Direction}"));
 
         UseEffect(() =>
         {
-            _ = state.LoadDataAsync();
+            if (!useHookPaging)
+                _ = state.LoadDataAsync();
         }, sortKey);
 
         // Notify selection changes via effect (not during render)
@@ -213,8 +281,20 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
             gridRow++;
         }
 
+        // Surface hook-path fetch errors directly — otherwise a failed page 0 just
+        // collapses into the empty template and users have no idea why their grid is
+        // blank. Legacy path never had this affordance because LoadDataAsync swallowed
+        // exceptions too; this fills both gaps.
+        Exception? loadError = null;
+        if (useHookPaging && state.HookResource?.LoadState is LoadState.Error err)
+            loadError = err.Exception;
+
         Element dataContent;
-        if (state.IsLoading && itemCount == 0)
+        if (loadError is not null && itemCount == 0)
+        {
+            dataContent = RenderDefaultError(loadError);
+        }
+        else if (state.IsLoading && itemCount == 0)
         {
             dataContent = el.LoadingTemplate ?? RenderDefaultLoading();
         }
@@ -1194,10 +1274,22 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
         => Factories.Text("No data to display").Opacity(0.5).Padding(16)
             .HAlign(HorizontalAlignment.Center);
 
+    private static Element RenderDefaultError(Exception ex)
+    {
+        return FlexColumn(
+            Factories.Text("Failed to load data").FontSize(14).Bold().Foreground("#c62828"),
+            Factories.Text(ex.GetType().Name).FontSize(11).Opacity(0.6),
+            Factories.Text(ex.Message).FontSize(12).Opacity(0.8)
+        ).Padding(16);
+    }
+
     /// <summary>
-    /// Handles the async commit flow with optimistic updates.
-    /// The item is already updated in-memory by CommitEdit/CommitRowEdit.
-    /// This method calls OnRowChanged and handles success/failure.
+    /// Routes the post-edit commit through the DataGrid's <c>UseMutation</c> handle.
+    /// The handle's OnOptimistic snapshots the pre-edit item into <see cref="DataGridState{T}"/>,
+    /// OnSuccess clears the committing flag, OnError writes the error into the row's
+    /// banner. When no dispatcher is installed (e.g. headless tests), this method
+    /// falls back to invoking <c>OnRowChanged</c> inline so the legacy tests that
+    /// never go through <c>UseMutation</c> continue to pass.
     /// </summary>
     private static void HandleAsyncCommit(
         DataGridState<T> state,
@@ -1208,8 +1300,14 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
     {
         if (el.OnRowChanged is null) return;
 
-        // Capture the UI-thread dispatcher BEFORE entering Task.Run.
-        // GetForCurrentThread() returns null on threadpool threads.
+        if (state.CommitDispatcher is { } dispatch)
+        {
+            dispatch(key, newItem, originalItem);
+            return;
+        }
+
+        // Fallback — no UseMutation dispatcher installed. Mirror the pre-Phase-3
+        // Task.Run pattern so headless / non-hook consumers keep working.
         var dq = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         state.BeginAsyncCommit(key, originalItem);
         _ = Task.Run(async () =>

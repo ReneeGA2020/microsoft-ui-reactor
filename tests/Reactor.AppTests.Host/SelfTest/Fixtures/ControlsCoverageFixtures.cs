@@ -1,6 +1,4 @@
 using Microsoft.UI.Reactor.Controls;
-using Microsoft.UI.Reactor.Controls;
-using Microsoft.UI.Reactor.Controls;
 
 namespace Microsoft.UI.Reactor.AppTests.Host.SelfTest.Fixtures;
 

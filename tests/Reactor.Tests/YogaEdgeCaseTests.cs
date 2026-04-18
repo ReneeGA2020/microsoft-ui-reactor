@@ -1,5 +1,4 @@
 using Microsoft.UI.Reactor.Layout;
-using Microsoft.UI.Reactor.Layout;
 using Xunit;
 
 namespace Microsoft.UI.Reactor.Tests;

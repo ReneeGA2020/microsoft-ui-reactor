@@ -1248,3 +1248,32 @@ Pending(fallback: Skeleton(), child: complexSubtree);
 
 - `Reactor/Data/IDataSource.cs` — contract stays identical
 - `Reactor/Data/DataRequest.cs`, `DataPage.cs`, `RowKey.cs`
+
+---
+
+## Appendix D — Deferred: `UseStream<T>` (and why)
+
+A fourth hook — `UseStream<T>(IAsyncEnumerable<T>)` surfacing each yielded value
+through `AsyncValue<T>` — was sketched in an early draft. We **did not ship it**
+in Phase 4 and do not plan to until a concrete consumer exists. The reasoning:
+
+1. **Zero in-repo callers.** A survey of `samples/apps/*`, the HeadTrax demos,
+   the regedit sample, the `A11yShowcase`, and the TestApp demos found no
+   `IAsyncEnumerable`, no SignalR hub handler, and no SSE consumer. Shipping a
+   hook for a use case that has zero concrete callers widens the hook surface
+   area without paying rent.
+2. **`UseResource` + `UseEffect` already handles one-offs.** A component that
+   needs to consume a stream once can open it from `UseEffect`, pipe each
+   value into `UseState`, and read through whichever hook is the display
+   primitive. It's five lines of glue. When a second consumer appears and the
+   glue starts to repeat, that's the signal to generalize.
+3. **Stream semantics are richer than what the ADT encodes.** Real stream
+   consumers need backpressure control, retry-on-disconnect policy, and
+   replay-on-mount semantics — none of which fit cleanly into the existing
+   `AsyncValue` four-state shape. A `UseStream<T>` that ignores those concerns
+   would ship a deceiving name. If we revisit, the spec should be its own
+   paper, not an appendix to this one.
+
+If a pattern emerges (two or more real consumers repeat the same glue), file a
+follow-up spec. Until then this appendix is the canonical record of the
+decision.
