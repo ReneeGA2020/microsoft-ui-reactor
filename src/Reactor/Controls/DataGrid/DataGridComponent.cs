@@ -274,25 +274,8 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
 
         if (state.TotalCount is not null)
         {
-            // When running under the hook path, surface loaded-vs-total plus a peek at
-            // row-0's type / key so "grid is blank" reproduces can tell why: no items,
-            // items-but-wrong-type, items-but-null-key, etc.
-            string banner;
-            if (useHookPaging && state.HookResource is { } hr)
-            {
-                var first = hr.Items.Count > 0 ? hr.Items[0] : default;
-                string firstDesc = first is null
-                    ? "null"
-                    : $"{first.GetType().Name} key={state.GetRowKeyAt(0) ?? "(null)"}";
-                banner = $"{state.TotalCount:N0} items · {hr.Items.Count(i => i is not null):N0} loaded · {hr.LoadState.GetType().Name} · row[0]={firstDesc}";
-            }
-            else
-            {
-                banner = $"{state.TotalCount:N0} items";
-            }
-
             gridChildren.Add(
-                Factories.Text(banner).Opacity(0.5).FontSize(12)
+                Factories.Text($"{state.TotalCount:N0} items").Opacity(0.5).FontSize(12)
                     .Padding(8, 2, 8, 2).Grid(row: gridRow, column: 0)
             );
             gridRow++;
