@@ -416,6 +416,7 @@ internal static class SelfTestFixtureRegistry
         "DataGrid_HookPagingScrollPopulates",
         "DataGrid_HookPagingScrollBack",
         "DataGrid_HookPagingSmallDataset",
+        "DataGrid_HookPagingEditLifecycle",
         "AsyncResource.Framerate.DataGridScroll",
         // UseResource integration (real dispatcher)
         "AsyncResource.BasicResolve",
@@ -862,6 +863,7 @@ internal static class SelfTestFixtureRegistry
         "DataGrid_HookPagingScrollPopulates" => new DataGridParityFixtures.HookPagingScrollPopulates(harness),
         "DataGrid_HookPagingScrollBack" => new DataGridParityFixtures.HookPagingScrollBack(harness),
         "DataGrid_HookPagingSmallDataset" => new DataGridParityFixtures.HookPagingSmallDataset(harness),
+        "DataGrid_HookPagingEditLifecycle" => new DataGridParityFixtures.HookPagingEditLifecycle(harness),
         "AsyncResource.Framerate.DataGridScroll" => new DataGridParityFixtures.HookPagingFramerateScroll(harness),
         // UseResource integration fixtures
         "AsyncResource.BasicResolve" => new AsyncResourceFixtures.BasicResolve(harness),

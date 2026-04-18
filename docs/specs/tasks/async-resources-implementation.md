@@ -321,7 +321,7 @@ Scope: new `Reactor/Core/Hooks/UseMutation.cs`; modifications to `Reactor/Contro
 
 - [~] Every existing `DataGridPagingFixtures` test passes on both paths (hook-path covered by new `DataGrid_HookPaging*` fixtures — legacy fixtures still run the old `DataPageCache` path)
 - [~] Every existing `DataGridScrollFixtures` test passes on both paths (hook-path covered by `DataGrid_HookPagingScrollPopulates` / `ScrollBack`)
-- [ ] Every existing `DataGridEditFixtures` test passes on both paths (covers the `UseMutation` port) — hook-path edit fixture deferred; `EditLifecycle` / `EditCommitCycle` still exercise the legacy path
+- [~] Every existing `DataGridEditFixtures` test passes on both paths (covers the `UseMutation` port) — hook-path edit-lifecycle parity shipped (`DataGrid_HookPagingEditLifecycle`: renders editable cells under `UseHookBasedPaging`, asserts no spurious commit and no editor leak). Full tap-driven commit-cycle on the hook path still requires pointer automation and remains deferred; `EditLifecycle` / `EditCommitCycle` continue to cover the legacy path and `AsyncResource.Framerate.DataGridEditMutation` covers the UseMutation mechanics at framerate.
 - [~] Add `DataGridParityFixtures.cs` — shipped with observable behavioral parity assertions (mount, incremental fetch, scroll, scroll-back, small dataset); tree-equality via `TreeSerializer` deferred (no public serializer exists yet)
 
 #### Tests — selfhost (framerate regression for DataGrid)
