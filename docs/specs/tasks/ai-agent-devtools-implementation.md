@@ -313,9 +313,9 @@ Tests for this feature are classified by the infrastructure they require. Every 
 
 ### 3.1 Tree `view: "full"`
 
-- [ ] Add `desiredSize`, `actualSize`, `layout { margin, padding, horizontalAlignment, verticalAlignment, horizontalContentAlignment, verticalContentAlignment }`, `context { parentType, stackOrientation|gridRow|gridColumn|gridRowSpan|gridColumnSpan|canvasLeft|canvasTop|dockPanelDock }`, `visual { opacity, clip, zIndex, renderTransform }` to the node schema.
-- [ ] Flatten text content into `text` for text-bearing controls (`TextBlock`, `Button`, `TextBox`, etc.).
-- [ ] Skip serializing identity-matrix transforms and null clips.
+- [x] Add `desiredSize`, `actualSize`, `layout { margin, padding, horizontalAlignment, verticalAlignment, horizontalContentAlignment, verticalContentAlignment }`, `context { parentType, stackOrientation|gridRow|gridColumn|gridRowSpan|gridColumnSpan|canvasLeft|canvasTop|dockPanelDock }`, `visual { opacity, clip, zIndex, renderTransform }` to the node schema. *(DockPanel attached prop omitted — WinUI 3 has no built-in DockPanel type; will add when we ship one.)*
+- [x] Flatten text content into `text` for text-bearing controls (`TextBlock`, `Button`, `TextBox`, etc.). *(Already done in summary view; full view preserves it.)*
+- [x] Skip serializing identity-matrix transforms and null clips. *(VisualInfo is emitted as null when every field is default.)*
 
 ### 3.2 Source-mapping integration (depends on spec 010)
 
@@ -374,9 +374,9 @@ Tests for this feature are classified by the infrastructure they require. Every 
 
 ### 3.10 Phase 3 tests — Unit
 
-- [ ] `tests/Reactor.Tests/Devtools/TreeFullViewTests.cs`:
-  - [ ] Full view includes all §9 fields; summary view still doesn't.
-  - [ ] Identity transforms and null clips are omitted.
+- [x] `tests/Reactor.Tests/Devtools/TreeFullViewTests.cs`:
+  - [x] Full view includes all §9 fields; summary view still doesn't.
+  - [x] Identity transforms and null clips are omitted.
 - [ ] `tests/Reactor.Tests/Devtools/SourceMapReactorBackrefTests.cs`:
   - [ ] `reactor` block appears when the source map resolves; absent otherwise.
   - [ ] Templated-part nodes never get a synthesized `reactor` block.

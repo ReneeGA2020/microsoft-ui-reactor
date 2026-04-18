@@ -286,7 +286,7 @@ internal static class DevtoolsUiaTools
         server.Tools.Register(
             new McpToolDescriptor(
                 Name: "tree",
-                Description: "Walks the visual tree and returns a flat summary-view array of nodes.",
+                Description: "Walks the visual tree and returns a flat array of nodes. view=full adds layout/context/visual fields for layout debugging.",
                 InputSchema: new
                 {
                     type = "object",
@@ -294,7 +294,7 @@ internal static class DevtoolsUiaTools
                     {
                         selector = new { type = "string", description = "Optional scope; if omitted, walks the whole window." },
                         window = new { type = "string" },
-                        view = new { type = "string", @enum = new[] { "summary" } },
+                        view = new { type = "string", @enum = new[] { "summary", "full" } },
                         includeReactorSource = new { type = "boolean" },
                     },
                     additionalProperties = false,
@@ -303,8 +303,12 @@ internal static class DevtoolsUiaTools
             {
                 var selector = DevtoolsTools.ReadString(@params, "selector");
                 var windowId = DevtoolsTools.ReadString(@params, "window");
+                var viewStr = DevtoolsTools.ReadString(@params, "view");
+                var view = string.Equals(viewStr, "full", StringComparison.OrdinalIgnoreCase)
+                    ? TreeView.Full
+                    : TreeView.Summary;
                 var w = ResolveWindowForTools(windows, windowId);
-                var walker = new TreeWalker(WindowIdFor(windows, w), nodes);
+                var walker = new TreeWalker(WindowIdFor(windows, w), nodes, view);
 
                 UIElement? root = w.Content;
                 if (!string.IsNullOrEmpty(selector))
