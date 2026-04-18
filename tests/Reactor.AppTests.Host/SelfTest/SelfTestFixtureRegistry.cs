@@ -441,6 +441,8 @@ internal static class SelfTestFixtureRegistry
         "AsyncResource.Framerate.RefreshMidScroll",
         "AsyncResource.Framerate.LruChurn",
         "AsyncResource.Framerate.ParallelPages",
+        // Pending scope framerate canary
+        "AsyncResource.Framerate.PendingChurn",
     ];
 
     public static SelfTestFixtureBase? Create(string name, Harness harness) => name switch
@@ -877,6 +879,8 @@ internal static class SelfTestFixtureRegistry
         "AsyncResource.Framerate.RefreshMidScroll" => new AsyncInfiniteResourceFramerateFixtures.RefreshMidScroll(harness),
         "AsyncResource.Framerate.LruChurn" => new AsyncInfiniteResourceFramerateFixtures.LruChurn(harness),
         "AsyncResource.Framerate.ParallelPages" => new AsyncInfiniteResourceFramerateFixtures.ParallelPages(harness),
+        // Pending scope framerate canary (Phase 4)
+        "AsyncResource.Framerate.PendingChurn" => new PendingFixtures.FramerateChurn(harness),
         _ => null,
     };
 }

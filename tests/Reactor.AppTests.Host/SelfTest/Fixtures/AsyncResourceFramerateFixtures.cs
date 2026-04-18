@@ -28,6 +28,13 @@ internal static class AsyncResourceFramerateFixtures
     {
         public override async Task RunAsync()
         {
+            // Drain any unobserved tasks that earlier fixtures finalized but whose
+            // events haven't fired yet — otherwise the test "inherits" unrelated
+            // noise and flakes.
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
             int unobserved = 0;
             EventHandler<UnobservedTaskExceptionEventArgs> handler = (_, e) =>
             { Interlocked.Increment(ref unobserved); e.SetObserved(); };
@@ -289,6 +296,10 @@ internal static class AsyncResourceFramerateFixtures
     {
         public override async Task RunAsync()
         {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
             int unobserved = 0;
             EventHandler<UnobservedTaskExceptionEventArgs> handler = (_, e) =>
             { Interlocked.Increment(ref unobserved); e.SetObserved(); };

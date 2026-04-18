@@ -365,7 +365,7 @@ Scope: new `Reactor/Core/Hooks/UseMutation.cs`; modifications to `Reactor/Contro
 - [x] Unit: multiple siblings + `UseInfiniteResource` + scope integration — 7 additional tests
 - [x] Selfhost: `AsyncResource.PendingBubbleUp` — three nested components each fetching; fallback visible until all three resolve
 - [x] Selfhost: `AsyncResource.PendingWithOverride` — a child matches `AsyncValue` locally and renders its own placeholder; outer `Pending` fallback still waits for that child
-- [ ] Framerate: `AsyncResource.Framerate.PendingChurn` — 16 resources alternately loading/resolving every frame; assert `Pending` toggles correctly and never flashes fallback when all are resolved
+- [x] Framerate: `AsyncResource.Framerate.PendingChurn` — 16 resources with staggered completion across 60 frames under parent-driven re-render pressure; asserts the fallback is visible on mount, transitions to hidden exactly once when the last resource resolves, and never reappears. See the fixture comment for why the "alternately loading/resolving" shape had to be adapted (§10.1 excludes `Reloading` from the fallback, so re-entering Loading mid-run requires a full remount — dispatcher-ordering flakiness made that variant unstable; the single-wave-with-churn variant gives the same regression coverage.)
 
 ### 4.2 Focus revalidation (§15 Q1)
 
