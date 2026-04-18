@@ -274,15 +274,44 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
 
         if (state.TotalCount is not null)
         {
+            // When running under the hook path, surface loaded-vs-total plus a peek at
+            // row-0's type / key so "grid is blank" reproduces can tell why: no items,
+            // items-but-wrong-type, items-but-null-key, etc.
+            string banner;
+            if (useHookPaging && state.HookResource is { } hr)
+            {
+                var first = hr.Items.Count > 0 ? hr.Items[0] : default;
+                string firstDesc = first is null
+                    ? "null"
+                    : $"{first.GetType().Name} key={state.GetRowKeyAt(0) ?? "(null)"}";
+                banner = $"{state.TotalCount:N0} items · {hr.Items.Count(i => i is not null):N0} loaded · {hr.LoadState.GetType().Name} · row[0]={firstDesc}";
+            }
+            else
+            {
+                banner = $"{state.TotalCount:N0} items";
+            }
+
             gridChildren.Add(
-                Factories.Text($"{state.TotalCount:N0} items").Opacity(0.5).FontSize(12)
+                Factories.Text(banner).Opacity(0.5).FontSize(12)
                     .Padding(8, 2, 8, 2).Grid(row: gridRow, column: 0)
             );
             gridRow++;
         }
 
+        // Surface hook-path fetch errors directly — otherwise a failed page 0 just
+        // collapses into the empty template and users have no idea why their grid is
+        // blank. Legacy path never had this affordance because LoadDataAsync swallowed
+        // exceptions too; this fills both gaps.
+        Exception? loadError = null;
+        if (useHookPaging && state.HookResource?.LoadState is LoadState.Error err)
+            loadError = err.Exception;
+
         Element dataContent;
-        if (state.IsLoading && itemCount == 0)
+        if (loadError is not null && itemCount == 0)
+        {
+            dataContent = RenderDefaultError(loadError);
+        }
+        else if (state.IsLoading && itemCount == 0)
         {
             dataContent = el.LoadingTemplate ?? RenderDefaultLoading();
         }
@@ -1261,6 +1290,15 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
     private static Element RenderDefaultEmpty()
         => Factories.Text("No data to display").Opacity(0.5).Padding(16)
             .HAlign(HorizontalAlignment.Center);
+
+    private static Element RenderDefaultError(Exception ex)
+    {
+        return FlexColumn(
+            Factories.Text("Failed to load data").FontSize(14).Bold().Foreground("#c62828"),
+            Factories.Text(ex.GetType().Name).FontSize(11).Opacity(0.6),
+            Factories.Text(ex.Message).FontSize(12).Opacity(0.8)
+        ).Padding(16);
+    }
 
     /// <summary>
     /// Routes the post-edit commit through the DataGrid's <c>UseMutation</c> handle.

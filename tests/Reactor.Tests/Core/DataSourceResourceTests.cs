@@ -84,14 +84,16 @@ public class DataSourceResourceTests
     }
 
     /// <summary>
-    /// Regression: deep scroll against a cursor-paginated source used to hang because
-    /// <c>EnsureRange</c> claimed in-flight slots for unreachable pages and
-    /// <c>RequestPage</c> bailed without clearing the claim or chaining forward.
-    /// With the fix, completion of each page advances the chain by one and the final
-    /// page lands without user intervention.
+    /// Regression: deep scroll against an offset-paginated <c>IDataSource&lt;T&gt;</c> used
+    /// to hang because <c>EnsureRange</c> claimed in-flight slots for unreachable
+    /// pages and <c>RequestPage</c> bailed without clearing the claim or chaining
+    /// forward. With the <c>CursorFromPageIndex</c> short-circuit baked into
+    /// <c>UseDataSource</c>, the cursor for any page is computed directly from
+    /// its index, so only the pages that actually cover the requested range get
+    /// fetched — no sequential walk through intermediate pages.
     /// </summary>
     [Fact]
-    public void EnsureRange_Deep_Scroll_Chains_Through_Cursor_Dependencies()
+    public void EnsureRange_Deep_Scroll_Skips_Intermediate_Pages()
     {
         var cache = new QueryCache();
         var source = new InMemorySource(total: 1000, pageSize: 10);
@@ -108,15 +110,12 @@ public class DataSourceResourceTests
         // Page 0 is fetched eagerly.
         Assert.Equal(1, source.CallCount);
 
-        // Scroll to row 200 — pages 20..22 cover the visible range. Under the old
-        // semantics this would claim page 20 as in-flight, fire page 1, and hang
-        // because subsequent EnsureRange calls skipped page 20 forever.
+        // Scroll to row 200 — pages 20..22 cover the visible range. With the
+        // offset-based cursor short-circuit, only pages 20, 21, 22 get fetched.
         resource.EnsureRange(200, 220);
 
-        // With InlineDispatcher all continuations run synchronously, so the chain
-        // should have walked from page 1 through page 22 already.
-        Assert.True(source.CallCount >= 23,
-            $"Expected at least 23 fetches to cover pages 0..22; saw {source.CallCount}");
+        // 1 (page 0) + 3 (pages 20-22) = 4.
+        Assert.Equal(4, source.CallCount);
 
         // The tail of the requested range should be populated.
         Assert.Equal(200, resource.Items[200]);

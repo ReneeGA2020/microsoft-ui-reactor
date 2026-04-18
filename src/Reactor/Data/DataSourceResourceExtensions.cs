@@ -23,6 +23,13 @@ public static class DataSourceResourceExtensions
         InfiniteResourceOptions? options = null,
         IHookDispatcher? dispatcher = null)
     {
+        // IDataSource<T>'s ContinuationToken is offset-as-string by convention (see
+        // ListDataSource / SqliteDataSource / GraphQLDataSource). Telling the hook how
+        // to compute the cursor for an arbitrary page index bypasses the serial
+        // "wait for page N-1" constraint baked into generic cursor paging — deep
+        // scrolls can fetch pages in parallel this way, which matters for DataGrid
+        // workflows that jump from row 0 to row 50 000 in a single scroll gesture.
+        int pageSize = Math.Max(1, options?.PageSize ?? request.PageSize);
         return ctx.UseInfiniteResource<T, string>(
             fetchPage: async (cursor, ct) =>
             {
@@ -33,7 +40,8 @@ public static class DataSourceResourceExtensions
             cache: cache,
             deps: new object[] { source, request.Sort ?? (object)"", request.Filters ?? (object)"", request.SearchQuery ?? "" },
             options: options,
-            dispatcher: dispatcher);
+            dispatcher: dispatcher,
+            cursorFromPageIndex: pageIndex => pageIndex == 0 ? null : (pageIndex * pageSize).ToString(global::System.Globalization.CultureInfo.InvariantCulture));
     }
 
     /// <summary>

@@ -23,8 +23,9 @@ public static class UseInfiniteResourceExtensions
         QueryCache cache,
         object[] deps,
         InfiniteResourceOptions? options = null,
-        IHookDispatcher? dispatcher = null)
-        => UseInfiniteResourceCore(ctx, fetchPage, cache, deps, options, dispatcher);
+        IHookDispatcher? dispatcher = null,
+        Func<int, TCursor?>? cursorFromPageIndex = null)
+        => UseInfiniteResourceCore(ctx, fetchPage, cache, deps, options, dispatcher, cursorFromPageIndex);
 
     /// <summary>
     /// Overload that reads the ambient <see cref="QueryCache"/> from
@@ -37,8 +38,9 @@ public static class UseInfiniteResourceExtensions
         Func<TCursor?, CancellationToken, Task<Page<TItem, TCursor>>> fetchPage,
         object[] deps,
         InfiniteResourceOptions? options = null,
-        IHookDispatcher? dispatcher = null)
-        => UseInfiniteResourceCore(ctx, fetchPage, ctx.UseContext(AppContexts.QueryCache), deps, options, dispatcher);
+        IHookDispatcher? dispatcher = null,
+        Func<int, TCursor?>? cursorFromPageIndex = null)
+        => UseInfiniteResourceCore(ctx, fetchPage, ctx.UseContext(AppContexts.QueryCache), deps, options, dispatcher, cursorFromPageIndex);
 
     private static InfiniteResource<TItem> UseInfiniteResourceCore<TItem, TCursor>(
         RenderContext ctx,
@@ -46,7 +48,8 @@ public static class UseInfiniteResourceExtensions
         QueryCache cache,
         object[] deps,
         InfiniteResourceOptions? options,
-        IHookDispatcher? dispatcher)
+        IHookDispatcher? dispatcher,
+        Func<int, TCursor?>? cursorFromPageIndex)
     {
         options ??= InfiniteResourceOptions.Default;
 
@@ -65,6 +68,7 @@ public static class UseInfiniteResourceExtensions
             dispatcher: dispatcher,
             pendingScope: pendingScope);
         state.SetFetcher(fetchPage);
+        state.CursorFromPageIndex = cursorFromPageIndex;
 
         ctx.UseEffect(() => () => state.Dispose());
 
@@ -139,6 +143,14 @@ internal sealed class InfiniteHookState<TItem, TCursor> : IDisposable
     // is inherently serial, so deep-scroll requests must chain forward one page at a
     // time rather than all-at-once.
     private readonly SortedSet<int> _deferredRequests = new();
+
+    /// <summary>
+    /// Optional: computes the cursor for an arbitrary page index directly, bypassing the
+    /// "wait for page N-1" constraint. Used by <c>UseDataSource</c> to expose the offset
+    /// semantics of <see cref="Data.IDataSource{T}"/>'s <c>ContinuationToken</c>, so deep
+    /// scrolls fetch pages in parallel instead of walking the chain one round-trip at a time.
+    /// </summary>
+    public Func<int, TCursor?>? CursorFromPageIndex { get; set; }
     public string KeyPrefix = "";
     public object[]? LastDeps;
     public InfiniteResource<TItem> Resource { get; private set; } = default!;
@@ -233,13 +245,27 @@ internal sealed class InfiniteHookState<TItem, TCursor> : IDisposable
             return;
         }
 
-        // Need the cursor for this page. For page 0, cursor is always null; for later pages,
-        // we need the cursor from the previous page. The pull-model API allows calling for an
-        // arbitrary page, but cursor paging is inherently sequential.
+        // Need the cursor for this page. Two strategies:
+        //
+        // 1. If CursorFromPageIndex is set (e.g. offset-based data sources via UseDataSource),
+        //    compute the cursor directly and skip the serial chain. Deep scrolls then fetch
+        //    pages in parallel.
+        // 2. Otherwise fall back to cursor paging: page N's cursor comes from page N-1's
+        //    payload, so fetches must chain. Deferred requests park here until the chain
+        //    advances (see CommitSuccess).
         TCursor? cursor;
         if (pageIndex == 0)
         {
             cursor = default;
+        }
+        else if (CursorFromPageIndex is { } compute)
+        {
+            cursor = compute(pageIndex);
+            if (cursor is null)
+            {
+                Resource.ClearInflightSlot(pageIndex);
+                return;
+            }
         }
         else
         {
