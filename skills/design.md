@@ -1,3 +1,12 @@
+---
+name: reactor-design
+description: >
+  Windows 11 design system rules for Reactor UI — theming (Theme tokens,
+  High Contrast), typography, 4px grid, acrylic surfaces, accessibility,
+  animation, and a code-review checklist. Load this when authoring,
+  reviewing, or fixing visual styling on a Reactor app.
+---
+
 # Windows 11 Design for Reactor
 
 Author, review, and fix Reactor UI code following Windows 11 design system rules.
@@ -83,7 +92,7 @@ Force a subtree to a specific theme variant:
 VStack(sidebarContent).RequestedTheme(ElementTheme.Dark)
 ```
 
-See [theme-aware-resources.md](docs/theme-aware-resources.md) for full token list and pairing rules.
+See [theme-aware-resources.md](design-docs/theme-aware-resources.md) for full token list and pairing rules.
 
 ### 2. Lightweight Styling (Per-Control Resource Overrides)
 
@@ -215,7 +224,7 @@ Text("Title").FontSize(28).FontWeight(new FontWeight(700))
       .ToolTip(longText)
   ```
 
-See [typography-and-colors.md](docs/typography-and-colors.md) for the full type ramp and color token list.
+See [typography-and-colors.md](design-docs/typography-and-colors.md) for the full type ramp and color token list.
 
 ### 5. Layout and Scaling
 
@@ -346,7 +355,7 @@ Border(
  })
 ```
 
-See [layout-and-scaling.md](docs/layout-and-scaling.md) for full layout rules.
+See [layout-and-scaling.md](design-docs/layout-and-scaling.md) for full layout rules.
 
 ### 6. Data Flow and State
 
@@ -449,7 +458,7 @@ Text(statusMessage)
 - Hit-test targets for light-dismiss must be visible: `Background("#00000000")`.
 - Use `DividerStrokeColorDefaultBrush` for dividers — custom brushes with opacity break in HC.
 
-See [code-review-checklist.md](docs/code-review-checklist.md) for the full accessibility checklist.
+See [code-review-checklist.md](design-docs/code-review-checklist.md) for the full accessibility checklist.
 
 ### 8. Acrylic Surface Pairings
 
@@ -750,11 +759,11 @@ When reviewing Reactor UI code, verify:
 ## References
 
 Consult these for detailed guidance:
-- [Theme-aware resources](docs/theme-aware-resources.md)
-- [Typography and colors](docs/typography-and-colors.md)
-- [Layout and scaling](docs/layout-and-scaling.md)
-- [Control styles](docs/control-styles.md)
-- [Code review checklist](docs/code-review-checklist.md)
+- [Theme-aware resources](design-docs/theme-aware-resources.md)
+- [Typography and colors](design-docs/typography-and-colors.md)
+- [Layout and scaling](design-docs/layout-and-scaling.md)
+- [Control styles](design-docs/control-styles.md)
+- [Code review checklist](design-docs/code-review-checklist.md)
 
 ## External References
 
