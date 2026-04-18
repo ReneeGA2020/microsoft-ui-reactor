@@ -21,7 +21,7 @@ ReactorApp.Run<DemoApp>("Reactor Demo", width: 1200, height: 800
 
 // ─── Root application component ────────────────────────────────────────────────
 
-enum Tab { Counter, TodoList, ConditionalUI, Form, DynamicList, PerfStress, Virtualization, Flyout, DataTemplate, FlexPanel, Transitions, PropertyGrid, DataSystem, DataGrid, IntegratedData, Context, Memo, Persisted, Slots, Navigation, Commanding }
+enum Tab { Counter, TodoList, ConditionalUI, Form, DynamicList, PerfStress, Virtualization, Flyout, DataTemplate, FlexPanel, Transitions, PropertyGrid, DataSystem, DataGrid, IntegratedData, AsyncValueSamples, Context, Memo, Persisted, Slots, Navigation, Commanding }
 
 class DemoApp : Component
 {
@@ -48,6 +48,7 @@ class DemoApp : Component
             Tab.DataSystem => ("Data System", "datasystem"),
             Tab.DataGrid => ("DataGrid", "datagrid"),
             Tab.IntegratedData => ("Integrated Data", "integrateddata"),
+            Tab.AsyncValueSamples => ("AsyncValue", "datasystem"),
             Tab.Context => ("Context", "context"),
             Tab.Memo => ("Memo", "memo"),
             Tab.Persisted => ("Persisted", "persisted"),
@@ -97,6 +98,7 @@ class DemoApp : Component
                     Tab.DataSystem => Component<DataSystemDemo>(),
                     Tab.DataGrid => Component<DataGridDemo>(),
                     Tab.IntegratedData => Component<IntegratedDataDemo>(),
+                    Tab.AsyncValueSamples => Component<AsyncValueSamplesDemo>(),
                     Tab.Context => Component<ContextDemo>(),
                     Tab.Memo => Component<MemoDemo>(),
                     Tab.Persisted => Component<PersistedDemo>(),

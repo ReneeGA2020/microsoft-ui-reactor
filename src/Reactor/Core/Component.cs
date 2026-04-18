@@ -120,6 +120,25 @@ public abstract class Component
 
     protected string? UseHighContrastScheme()
         => Context.UseHighContrastScheme();
+
+    protected AsyncValue<T> UseResource<T>(
+        Func<CancellationToken, Task<T>> fetcher,
+        object[] deps,
+        Hooks.ResourceOptions? options = null)
+        => Context.UseResource(fetcher, deps, options);
+
+    protected AsyncValue<T> UseResource<T>(
+        Func<CancellationToken, Task<T>> fetcher,
+        QueryCache cache,
+        object[] deps,
+        Hooks.ResourceOptions? options = null)
+        => Context.UseResource(fetcher, cache, deps, options);
+
+    protected InfiniteResource<TItem> UseInfiniteResource<TItem, TCursor>(
+        Func<TCursor?, CancellationToken, Task<Page<TItem, TCursor>>> fetchPage,
+        object[] deps,
+        InfiniteResourceOptions? options = null)
+        => Context.UseInfiniteResource(fetchPage, deps, options);
 }
 
 /// <summary>

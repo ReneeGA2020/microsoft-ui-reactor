@@ -148,13 +148,13 @@ Location: same file, fixture names `AsyncResource.Framerate.*`. These drive 60 f
 
 ### 1.4 Dogfood: `AsyncValueSamples` page (§16 Phase 1)
 
-- [ ] Add `samples/Reactor.TestApp/Pages/AsyncValueSamples.cs`
-- [ ] **1a. Deterministic fake fetcher** — `Task.Delay(ms)` + succeed / fail / cancel buttons
-- [ ] **1b. Sync-complete fetcher** — `Task.FromResult`
-- [ ] **1c. Deps-change cancellation** — text input drives deps
-- [ ] **1d. Two siblings, one cache key** — explicit `CacheKey`
-- [ ] **1e. Cache hit across remount** — toggle between two routes within `CacheTime`
-- [ ] Wire each scenario to the TestApp snapshot suite so they run in CI
+- [x] Add `samples/Reactor.TestApp/Demos/AsyncValueSamplesDemo.cs` (wired into App.cs tab list)
+- [x] **1a. Deterministic fake fetcher** — succeed / fail / slow buttons
+- [x] **1b. Sync-complete fetcher** — `Task.FromResult`
+- [x] **1c. Deps-change cancellation** — text input drives deps
+- [x] **1d. Two siblings, one cache key** — explicit `CacheKey: "demo/shared"`
+- [x] **1e. Cache hit across remount** — Hide/Show toggle within `StaleTime`
+- [ ] Wire each scenario to the TestApp snapshot suite (selfhost fixtures — see §1.3 selfhost tests)
 
 **Phase 1 exit criteria:** Every phase-1 unit, threading, and selfhost test green; all five `AsyncValueSamples` scenarios pass in the TestApp snapshot suite; no unobserved task exceptions across the full suite.
 
