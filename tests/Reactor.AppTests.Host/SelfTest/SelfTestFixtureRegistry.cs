@@ -435,6 +435,12 @@ internal static class SelfTestFixtureRegistry
         "AsyncResource.Framerate.CacheChurn",
         "AsyncResource.Framerate.FastRemount",
         "AsyncResource.Framerate.DispatcherPressure",
+        // Infinite-resource framerate canaries
+        "AsyncResource.Framerate.ScrollFlood",
+        "AsyncResource.Framerate.RapidEnsureRange",
+        "AsyncResource.Framerate.RefreshMidScroll",
+        "AsyncResource.Framerate.LruChurn",
+        "AsyncResource.Framerate.ParallelPages",
     ];
 
     public static SelfTestFixtureBase? Create(string name, Harness harness) => name switch
@@ -865,6 +871,12 @@ internal static class SelfTestFixtureRegistry
         "AsyncResource.Framerate.CacheChurn" => new AsyncResourceFramerateFixtures.CacheChurn(harness),
         "AsyncResource.Framerate.FastRemount" => new AsyncResourceFramerateFixtures.FastRemount(harness),
         "AsyncResource.Framerate.DispatcherPressure" => new AsyncResourceFramerateFixtures.DispatcherPressure(harness),
+        // Framerate canaries (Phase 2 — UseInfiniteResource)
+        "AsyncResource.Framerate.ScrollFlood" => new AsyncInfiniteResourceFramerateFixtures.ScrollFlood(harness),
+        "AsyncResource.Framerate.RapidEnsureRange" => new AsyncInfiniteResourceFramerateFixtures.RapidEnsureRange(harness),
+        "AsyncResource.Framerate.RefreshMidScroll" => new AsyncInfiniteResourceFramerateFixtures.RefreshMidScroll(harness),
+        "AsyncResource.Framerate.LruChurn" => new AsyncInfiniteResourceFramerateFixtures.LruChurn(harness),
+        "AsyncResource.Framerate.ParallelPages" => new AsyncInfiniteResourceFramerateFixtures.ParallelPages(harness),
         _ => null,
     };
 }

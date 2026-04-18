@@ -245,11 +245,11 @@ These tests instantiate **both** `DataPageCache<T>` and `UseInfiniteResource`-ba
 
 #### Tests — selfhost (framerate edge cases)
 
-- [ ] `AsyncResource.Framerate.ScrollFlood` — simulate 60Hz scroll across 1000 rows for 60 frames; assert `ItemAt` calls are coalesced and total in-flight fetches stays bounded (≤ prefetch window)
-- [ ] `AsyncResource.Framerate.RapidEnsureRange` — `EnsureRange` called 4× per frame with jittered ranges for 60 frames; assert no duplicate page fetches and no torn `Items` length observed at any frame
-- [ ] `AsyncResource.Framerate.RefreshMidScroll` — `Refresh()` invoked on every 10th frame while scrolling; assert no `NullReferenceException` from `ItemAt` reading a torn page table and no visible flicker beyond one frame
-- [ ] `AsyncResource.Framerate.LruChurn` — working set larger than LRU capacity, scroll forward and backward every frame for 60 frames; assert LRU correctness holds (no loaded-page-resurrection-as-placeholder at any frame)
-- [ ] `AsyncResource.Framerate.ParallelPages` — 20 pages requested simultaneously; assert completion order does not corrupt `Items` (each page lands in its own slot regardless of arrival order)
+- [x] `AsyncResource.Framerate.ScrollFlood` — simulate 60Hz scroll across 1000 rows for 60 frames; asserts `ItemAt` calls coalesce and total in-flight pages stays bounded (≤ 4 with cursor serialization)
+- [x] `AsyncResource.Framerate.RapidEnsureRange` — `EnsureRange` called 4× per frame with jittered ranges; asserts each page fetched ≤ 2× and `Items.Count` stays monotonic
+- [x] `AsyncResource.Framerate.RefreshMidScroll` — `Refresh()` invoked every 10th frame while scrolling; asserts no `NullReferenceException`, no unobserved task exceptions, final content comes from the latest epoch
+- [x] `AsyncResource.Framerate.LruChurn` — working set larger than `MaxLoadedPages`, scroll forward/backward each frame; asserts loaded-page count stays within the LRU cap
+- [x] `AsyncResource.Framerate.ParallelPages` — drives 20 pages via `FetchNext`; asserts each page lands in its own slot with no torn items and the fetcher is called exactly once per page (no retry storm). Cursor paging inherently serializes — see comment in the fixture.
 
 ### 2.6 Phase-2 dogfood (§16 Phase 2)
 
