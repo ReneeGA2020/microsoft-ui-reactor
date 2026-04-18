@@ -23,11 +23,17 @@ namespace Microsoft.UI.Reactor.Analyzers;
 ///   <c>Component.Render</c> override or a custom-hook method (by convention, a method
 ///   whose name starts with <c>Use</c>). Hooks read and write slot state that only
 ///   exists during a render pass.</description></item>
+/// <item><description><c>REACTOR_HOOKS_006</c> — <c>UseResource</c>/<c>UseInfiniteResource</c>
+///   is called with a fetcher that names a non-idempotent operation
+///   (<c>Post</c>, <c>Create</c>, <c>Delete</c>, <c>GenerateRandom</c>, …). Resources
+///   re-run on deps change, retry, and focus revalidation — use <c>UseMutation</c> for
+///   writes. This is a name-based heuristic and is <see cref="DiagnosticSeverity.Info"/>.
+///   </description></item>
 /// </list>
 ///
 /// See <c>docs/specs/tasks/async-resources-implementation.md</c> §4.3 for the full
-/// rule catalog. <c>REACTOR_HOOKS_002</c>, <c>003</c>, and <c>006</c> require data-flow
-/// analysis or name-matching heuristics and are tracked as follow-ups.
+/// rule catalog. <c>REACTOR_HOOKS_002</c> and <c>003</c> require control-flow /
+/// data-flow analysis and are tracked as follow-ups.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class HookRulesAnalyzer : DiagnosticAnalyzer
@@ -35,6 +41,7 @@ public sealed class HookRulesAnalyzer : DiagnosticAnalyzer
     public const string ConditionalHookId = "REACTOR_HOOKS_001";
     public const string UnstableDepsId = "REACTOR_HOOKS_004";
     public const string HookOutsideRenderId = "REACTOR_HOOKS_005";
+    public const string NonIdempotentFetcherId = "REACTOR_HOOKS_006";
 
     private static readonly DiagnosticDescriptor ConditionalHookRule = new(
         ConditionalHookId,
@@ -63,8 +70,17 @@ public sealed class HookRulesAnalyzer : DiagnosticAnalyzer
         isEnabledByDefault: true,
         description: "Hooks read and write slot state that only exists during a render pass. Calling one from an event handler, a constructor, or a non-hook helper throws at runtime.");
 
+    private static readonly DiagnosticDescriptor NonIdempotentFetcherRule = new(
+        NonIdempotentFetcherId,
+        "Resource fetcher looks non-idempotent",
+        "Hook '{0}' fetcher references '{1}', which looks like a write. Resources re-run on deps change, retry, and focus revalidation — use UseMutation for writes.",
+        "Reactor.Hooks",
+        DiagnosticSeverity.Info,
+        isEnabledByDefault: true,
+        description: "UseResource / UseInfiniteResource fetchers must be idempotent reads. A fetcher named Post/Create/Delete/Generate/... can execute multiple times per user action as the cache restarts on deps change or stale revalidation.");
+
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(ConditionalHookRule, UnstableDepsRule, HookOutsideRenderRule);
+        ImmutableArray.Create(ConditionalHookRule, UnstableDepsRule, HookOutsideRenderRule, NonIdempotentFetcherRule);
 
     // Hooks that take a `deps` params-array. Only these are candidates for
     // REACTOR_HOOKS_004. For params-arrays, we skip the check if the caller
@@ -77,6 +93,36 @@ public sealed class HookRulesAnalyzer : DiagnosticAnalyzer
             "UseResource",
             "UseInfiniteResource",
             "UseDataSource");
+
+    // Hooks that take a read-only fetcher. REACTOR_HOOKS_006 walks the fetcher
+    // argument and flags invocations whose names look non-idempotent.
+    // UseMutation is intentionally excluded — mutations are allowed to write.
+    private static readonly ImmutableHashSet<string> FetcherHooks =
+        ImmutableHashSet.Create(
+            "UseResource",
+            "UseInfiniteResource",
+            "UseDataSource");
+
+    // Name prefixes that suggest a write or non-deterministic operation. Anchored
+    // at word start: a fetcher named `GetPosts` is fine; `PostMessage` is not.
+    // Match is case-sensitive on the first letter to respect the usual .NET
+    // PascalCase convention (so `postalCode` locals don't collide).
+    private static readonly ImmutableArray<string> NonIdempotentPrefixes =
+        ImmutableArray.Create(
+            "Post",
+            "Put",
+            "Patch",
+            "Delete",
+            "Remove",
+            "Create",
+            "Insert",
+            "Update",
+            "Save",
+            "Send",
+            "Publish",
+            "Generate",
+            "Register",
+            "Upsert");
 
     public override void Initialize(AnalysisContext context)
     {
@@ -120,6 +166,12 @@ public sealed class HookRulesAnalyzer : DiagnosticAnalyzer
         if (DepsHooks.Contains(methodName))
         {
             CheckDepsArguments(context, invocation, methodName);
+        }
+
+        // REACTOR_HOOKS_006: non-idempotent fetcher name.
+        if (FetcherHooks.Contains(methodName))
+        {
+            CheckFetcherArgument(context, invocation, methodName);
         }
     }
 
@@ -382,4 +434,138 @@ public sealed class HookRulesAnalyzer : DiagnosticAnalyzer
             }
         }
     }
+
+    // ────────────────────────────────────────────────────────────
+    // REACTOR_HOOKS_006 helpers
+    // ────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Locates the fetcher argument for a UseResource-family call and scans it for
+    /// invocation names that match the non-idempotent-prefix list. Lambdas have their
+    /// body walked; method references are checked by name.
+    /// </summary>
+    private static void CheckFetcherArgument(SyntaxNodeAnalysisContext context, InvocationExpressionSyntax invocation, string methodName)
+    {
+        var model = context.SemanticModel;
+        var symbol = model.GetSymbolInfo(invocation).Symbol as IMethodSymbol;
+        var args = invocation.ArgumentList.Arguments;
+        if (args.Count == 0) return;
+
+        // Find the fetcher arg. By convention the first positional arg is the fetcher
+        // (`fetcher` for UseResource, `fetchPage` for UseInfiniteResource, `request`
+        // for UseDataSource takes the Request as second). Prefer binding to a parameter
+        // with a matching name; fall back to position 0 when the symbol is unresolved
+        // (mid-compile scenarios).
+        ExpressionSyntax? fetcherExpr = null;
+        if (symbol is not null)
+        {
+            var parameters = symbol.Parameters;
+            for (int i = 0; i < args.Count; i++)
+            {
+                var arg = args[i];
+                IParameterSymbol? param = null;
+                if (arg.NameColon is not null)
+                {
+                    var named = arg.NameColon.Name.Identifier.Text;
+                    param = parameters.FirstOrDefault(p => p.Name == named);
+                }
+                else if (i < parameters.Length)
+                {
+                    param = parameters[i];
+                }
+                if (param is null) continue;
+                if (param.Name is "fetcher" or "fetchPage" or "fetch")
+                {
+                    fetcherExpr = arg.Expression;
+                    break;
+                }
+            }
+        }
+        // Heuristic fallback: first arg that's a lambda or method reference.
+        if (fetcherExpr is null)
+        {
+            foreach (var arg in args)
+            {
+                var ex = UnwrapCasts(arg.Expression);
+                if (ex is SimpleLambdaExpressionSyntax or ParenthesizedLambdaExpressionSyntax or AnonymousMethodExpressionSyntax or IdentifierNameSyntax or MemberAccessExpressionSyntax)
+                {
+                    fetcherExpr = ex;
+                    break;
+                }
+            }
+        }
+        if (fetcherExpr is null) return;
+
+        fetcherExpr = UnwrapCasts(fetcherExpr);
+
+        // Case 1: bare method reference — `UseResource(FetchFoo, ...)` or
+        // `UseResource(service.PostMessageAsync, ...)`.
+        if (fetcherExpr is IdentifierNameSyntax bareId)
+        {
+            ReportIfNonIdempotent(context, bareId, bareId.Identifier.Text, methodName);
+            return;
+        }
+        if (fetcherExpr is MemberAccessExpressionSyntax ma)
+        {
+            ReportIfNonIdempotent(context, ma.Name, ma.Name.Identifier.Text, methodName);
+            return;
+        }
+
+        // Case 2: lambda body — walk invocations and flag the first offender.
+        SyntaxNode? body = fetcherExpr switch
+        {
+            SimpleLambdaExpressionSyntax sl => sl.Body,
+            ParenthesizedLambdaExpressionSyntax pl => pl.Body,
+            AnonymousMethodExpressionSyntax am => am.Block,
+            _ => null,
+        };
+        if (body is null) return;
+
+        foreach (var call in body.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>())
+        {
+            var callName = GetInvokedMethodName(call);
+            if (callName is null) continue;
+            if (LooksNonIdempotent(callName))
+            {
+                ExpressionSyntax nameNode = call.Expression switch
+                {
+                    MemberAccessExpressionSyntax m => m.Name,
+                    _ => call.Expression,
+                };
+                ReportIfNonIdempotent(context, nameNode, callName, methodName);
+                return; // one diagnostic per hook call is enough
+            }
+        }
+    }
+
+    private static void ReportIfNonIdempotent(SyntaxNodeAnalysisContext context, SyntaxNode location, string calleeName, string hookName)
+    {
+        if (!LooksNonIdempotent(calleeName)) return;
+        context.ReportDiagnostic(Diagnostic.Create(
+            NonIdempotentFetcherRule,
+            location.GetLocation(),
+            hookName,
+            StripAsyncSuffix(calleeName)));
+    }
+
+    private static bool LooksNonIdempotent(string name)
+    {
+        // Strip the `Async` suffix for matching — `PostAsync` should match the `Post`
+        // prefix without that trailing noise.
+        var stem = StripAsyncSuffix(name);
+        foreach (var prefix in NonIdempotentPrefixes)
+        {
+            if (!stem.StartsWith(prefix)) continue;
+            // Require a word boundary after the prefix so `PostalCode` doesn't
+            // match `Post` and `Created` doesn't match `Create`. The next char
+            // must be end-of-string or an upper-case letter (PascalCase word).
+            if (stem.Length == prefix.Length) return true;
+            var next = stem[prefix.Length];
+            if (char.IsUpper(next)) return true;
+        }
+        return false;
+    }
+
+    private static string StripAsyncSuffix(string name)
+        => name.EndsWith("Async") && name.Length > "Async".Length ? name.Substring(0, name.Length - "Async".Length) : name;
 }

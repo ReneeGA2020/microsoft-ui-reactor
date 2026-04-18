@@ -393,7 +393,7 @@ Note: the first three rules below are pre-existing gaps for **all** hooks; file 
 - [ ] `REACTOR_HOOKS_003` — missing deps (value captured in `fetcher` / `UseEffect` / `UseMemo` lambda not in `deps`) (requires data-flow analysis — deferred)
 - [x] `REACTOR_HOOKS_004` — non-stable deps (new object/array/lambda each render) — shipped in `HookRulesAnalyzer`
 - [x] `REACTOR_HOOKS_005` — hook called outside `Render()` or a custom-hook method — shipped in `HookRulesAnalyzer`
-- [ ] `REACTOR_HOOKS_006` — heuristic: `UseResource` with fetcher name matching `Create`/`Post`/`GenerateRandom`/… (non-idempotent) (follow-up)
+- [x] `REACTOR_HOOKS_006` — heuristic: `UseResource` / `UseInfiniteResource` / `UseDataSource` with fetcher name matching `Create`/`Post`/`Delete`/`Generate`/… (non-idempotent) — shipped in `HookRulesAnalyzer` at `Info` severity, word-boundary gated (`PostalCode` does not match `Post`), `Async` suffix stripped for matching
 - [x] Unit tests per rule: positive cases (diagnostic fires), negative cases (diagnostic quiet) — `HookRulesAnalyzerTests` (10 cases)
 - [ ] Suppression attribute `[SuppressResourceDiagnostic(...)]` for intentional violations (follow-up — stdlib `[SuppressMessage]` works today)
 

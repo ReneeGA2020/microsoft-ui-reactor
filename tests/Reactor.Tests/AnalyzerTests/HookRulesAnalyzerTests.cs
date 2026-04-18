@@ -37,6 +37,35 @@ namespace Microsoft.UI.Reactor.Hooks
 }
 ";
 
+    // Stubs for REACTOR_HOOKS_006. Separate constant so adding signatures here doesn't
+    // shift line numbers baked into the other rules' WithSpan assertions.
+    private const string ResourceStubs = @"
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Microsoft.UI.Reactor.Core
+{
+    public class RenderContext { }
+
+    public abstract class Component
+    {
+        protected internal RenderContext Context { get; } = new RenderContext();
+        public abstract string Render();
+        protected T UseResource<T>(System.Func<CancellationToken, Task<T>> fetcher, object[] deps) => default(T);
+    }
+
+    public static class Fakes
+    {
+        public static Task<int> GetUserAsync(CancellationToken ct) => Task.FromResult(0);
+        public static Task<int> PostMessageAsync(CancellationToken ct) => Task.FromResult(0);
+        public static Task<int> CreateOrderAsync(CancellationToken ct) => Task.FromResult(0);
+        public static Task<int> DeleteItemAsync(int id, CancellationToken ct) => Task.FromResult(0);
+        public static Task<int> GeneratePostalCodeAsync(CancellationToken ct) => Task.FromResult(0);
+        public static Task<int> PostalLookupAsync(CancellationToken ct) => Task.FromResult(0);
+    }
+}
+";
+
     private static DiagnosticResult Diagnostic(string id) =>
         CSharpAnalyzerVerifier<HookRulesAnalyzer, DefaultVerifier>.Diagnostic(id);
 
@@ -265,6 +294,123 @@ class C : Microsoft.UI.Reactor.Core.Component
     }
 
     // ── Non-hook lookalike ────────────────────────────────────────────
+
+    // ── REACTOR_HOOKS_006 — non-idempotent fetcher ────────────────────
+
+    [Fact]
+    public async Task UseResource_With_Post_Method_Reference_Flags()
+    {
+        var test = ResourceStubs + @"
+class C : Microsoft.UI.Reactor.Core.Component
+{
+    public override string Render()
+    {
+        var x = UseResource<int>(Microsoft.UI.Reactor.Core.Fakes.PostMessageAsync, new object[] { 1 });
+        return """";
+    }
+}";
+        // WithSpan points at the method-name identifier in the member-access expression.
+        var expected = Diagnostic(HookRulesAnalyzer.NonIdempotentFetcherId)
+            .WithSpan(31, 66, 31, 82)
+            .WithArguments("UseResource", "PostMessage");
+
+        var analyzerTest = new CSharpAnalyzerTest<HookRulesAnalyzer, DefaultVerifier>
+        {
+            TestCode = test,
+            ExpectedDiagnostics = { expected },
+        };
+        await analyzerTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task UseResource_With_Lambda_Calling_DeleteAsync_Flags()
+    {
+        var test = ResourceStubs + @"
+class C : Microsoft.UI.Reactor.Core.Component
+{
+    public override string Render()
+    {
+        var x = UseResource<int>(ct => Microsoft.UI.Reactor.Core.Fakes.DeleteItemAsync(1, ct), new object[] { 1 });
+        return """";
+    }
+}";
+        var expected = Diagnostic(HookRulesAnalyzer.NonIdempotentFetcherId)
+            .WithSpan(31, 72, 31, 87)
+            .WithArguments("UseResource", "DeleteItem");
+
+        var analyzerTest = new CSharpAnalyzerTest<HookRulesAnalyzer, DefaultVerifier>
+        {
+            TestCode = test,
+            ExpectedDiagnostics = { expected },
+        };
+        await analyzerTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task UseResource_With_Lambda_Calling_GenerateAsync_Flags()
+    {
+        var test = ResourceStubs + @"
+class C : Microsoft.UI.Reactor.Core.Component
+{
+    public override string Render()
+    {
+        var x = UseResource<int>(ct => Microsoft.UI.Reactor.Core.Fakes.GeneratePostalCodeAsync(ct), new object[] { 1 });
+        return """";
+    }
+}";
+        var expected = Diagnostic(HookRulesAnalyzer.NonIdempotentFetcherId)
+            .WithSpan(31, 72, 31, 95)
+            .WithArguments("UseResource", "GeneratePostalCode");
+
+        var analyzerTest = new CSharpAnalyzerTest<HookRulesAnalyzer, DefaultVerifier>
+        {
+            TestCode = test,
+            ExpectedDiagnostics = { expected },
+        };
+        await analyzerTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task UseResource_With_Get_Method_No_Diagnostic()
+    {
+        var test = ResourceStubs + @"
+class C : Microsoft.UI.Reactor.Core.Component
+{
+    public override string Render()
+    {
+        var x = UseResource<int>(ct => Microsoft.UI.Reactor.Core.Fakes.GetUserAsync(ct), new object[] { 1 });
+        return """";
+    }
+}";
+        var analyzerTest = new CSharpAnalyzerTest<HookRulesAnalyzer, DefaultVerifier>
+        {
+            TestCode = test,
+        };
+        await analyzerTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task UseResource_With_PostalLookup_Does_Not_Match_Post_Word_Boundary()
+    {
+        // Word-boundary guard: `PostalLookup` shares the `Post` prefix but the next
+        // letter is lower-case, so it's not treated as a `Post<Word>` match.
+        var test = ResourceStubs + @"
+class C : Microsoft.UI.Reactor.Core.Component
+{
+    public override string Render()
+    {
+        var x = UseResource<int>(ct => Microsoft.UI.Reactor.Core.Fakes.PostalLookupAsync(ct), new object[] { 1 });
+        return """";
+    }
+}";
+        var analyzerTest = new CSharpAnalyzerTest<HookRulesAnalyzer, DefaultVerifier>
+        {
+            TestCode = test,
+        };
+        await analyzerTest.RunAsync();
+    }
+
+    // ── Non-Reactor lookalike ────────────────────────────────────────
 
     [Fact]
     public async Task Non_Reactor_Use_Method_Not_Flagged()
