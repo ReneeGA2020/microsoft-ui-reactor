@@ -269,36 +269,36 @@ Scope: new `Reactor/Core/Hooks/UseMutation.cs`; modifications to `Reactor/Contro
 
 ### 3.1 `UseMutation<TInput, TResult>` hook (§8)
 
-- [ ] Create `Reactor/Core/Hooks/UseMutation.cs`
-- [ ] Define `sealed class Mutation<TInput, TResult>` with `IsPending`, `Error`, `LastResult`, `Task<TResult> RunAsync(TInput)`, `Reset()`
-- [ ] Define `sealed record MutationOptions<TInput, TResult>(Action<TInput>? OnOptimistic, Action<TResult, TInput>? OnSuccess, Action<Exception, TInput>? OnError, string[]? InvalidateKeys)`
-- [ ] `RunAsync`:
+- [x] Create `Reactor/Hooks/UseMutation.cs`
+- [x] Define `sealed class Mutation<TInput, TResult>` with `IsPending`, `Error`, `LastResult`, `Task<TResult> RunAsync(TInput)`, `Reset()`
+- [x] Define `sealed record MutationOptions<TInput, TResult>(Action<TInput>? OnOptimistic, Action<TResult, TInput>? OnSuccess, Action<Exception, TInput>? OnError, string[]? InvalidateKeys)`
+- [x] `RunAsync`:
   - Fire `OnOptimistic(input)` synchronously (no dispatcher hop)
   - Kick off `mutator(input, ct)` on thread pool
   - On success: marshal back to UI dispatcher, fire `OnSuccess`, `cache.Invalidate(key)` for each `InvalidateKeys`, update `LastResult`
   - On failure: marshal back, fire `OnError`, store `Error`
   - Overlapping calls: concurrent `RunAsync` calls each get their own token; latest `LastResult` wins (document: callers who want serialization wrap `RunAsync` with their own gate)
-- [ ] `Reset()` clears `Error`, `LastResult`, `IsPending` (does not cancel in-flight — explicit choice; document)
-- [ ] Hook-owned `CancellationToken` cancels on unmount
+- [x] `Reset()` clears `Error`, `LastResult`, `IsPending` (does not cancel in-flight — explicit choice; document)
+- [x] Hook-owned `CancellationToken` cancels on unmount
 
 ### 3.2 `UseMutation` tests
 
 #### Unit (RenderContext)
 
-- [ ] `IsPending` true during fetch, false after completion
-- [ ] `OnOptimistic` fires before the task starts (synchronous)
-- [ ] `OnSuccess` fires on UI thread, after `OnOptimistic`, before `IsPending` drops
-- [ ] `OnError` fires on UI thread; `Error` populated; `LastResult` unchanged
-- [ ] `InvalidateKeys` trigger `cache.Invalidate` on each key on success (not on error)
-- [ ] `Reset()` clears fields
-- [ ] Unmount during pending → token cancelled; `OnSuccess` / `OnError` do **not** fire after unmount
+- [x] `IsPending` true during fetch, false after completion
+- [x] `OnOptimistic` fires before the task starts (synchronous)
+- [x] `OnSuccess` fires on UI thread, after `OnOptimistic`, before `IsPending` drops
+- [x] `OnError` fires on UI thread; `Error` populated; `LastResult` unchanged
+- [x] `InvalidateKeys` trigger `cache.Invalidate` on each key on success (not on error)
+- [x] `Reset()` clears fields
+- [x] Unmount during pending → token cancelled; `OnSuccess` / `OnError` do **not** fire after unmount
 
 #### Unit (threading — race conditions)
 
-- [ ] **Overlapping `RunAsync`.** Call `RunAsync(a)` then `RunAsync(b)` before `a` resolves. Both complete; `LastResult` is the later-completing one; both callbacks fire in completion order. No torn `IsPending` (should be true until both resolve).
-- [ ] **`OnOptimistic` crashes.** If `OnOptimistic` throws, mutation aborts: `RunAsync` returns a faulted task; `mutator` never invoked. Document this — prevents half-applied state.
-- [ ] **`InvalidateKeys` while mutation pending.** Manual `cache.Invalidate` call for the same key during pending; assert the post-success invalidate still fires (idempotent).
-- [ ] **Cancellation of pending mutation via unmount.** Assert `OnError` **does not** fire on `OperationCanceledException` from unmount (consistent with `UseResource` — cancellation is silent).
+- [x] **Overlapping `RunAsync`.** Call `RunAsync(a)` then `RunAsync(b)` before `a` resolves. Both complete; `LastResult` is the later-completing one; both callbacks fire in completion order. No torn `IsPending` (should be true until both resolve).
+- [x] **`OnOptimistic` crashes.** If `OnOptimistic` throws, mutation aborts: `RunAsync` returns a faulted task; `mutator` never invoked. Document this — prevents half-applied state.
+- [x] **`InvalidateKeys` while mutation pending.** Manual `cache.Invalidate` call for the same key during pending; assert the post-success invalidate still fires (idempotent).
+- [x] **Cancellation of pending mutation via unmount.** Assert `OnError` **does not** fire on `OperationCanceledException` from unmount (consistent with `UseResource` — cancellation is silent).
 
 #### Selfhost
 
