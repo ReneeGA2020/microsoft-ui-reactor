@@ -294,6 +294,15 @@ public sealed partial class Reconciler
         if ((modifiers is not null || oldModifiers is not null) && target is FrameworkElement fe)
             ApplyModifiers(fe, oldModifiers, modifiers ?? new ElementModifiers(), requestRerender);
 
+        // Re-apply the caption-derived default after modifiers have run so a
+        // label change ("+ 1" → "+ 2") updates UIA Name when the author never
+        // set an explicit name. No-ops when the author did.
+        if (target is FrameworkElement captionFe)
+            UpdateDefaultAutomationName(
+                captionFe,
+                ResolveCaptionForElement(oldEl),
+                ResolveCaptionForElement(newEl));
+
         // Apply theme-resource bindings (ThemeRef → resolved Brush from WinUI resources)
         if (newEl.ThemeBindings is not null && target is FrameworkElement thFe)
             ApplyThemeBindings(thFe, newEl.ThemeBindings);

@@ -51,6 +51,7 @@ let currentComponents = [];
 let currentComponentName;
 let currentFilePath;
 let isLaunching = false;
+let legacyPreviewArgs = false;
 let extensionContext;
 function activate(context) {
     extensionContext = context;
@@ -156,30 +157,41 @@ async function launchPreviewProcess(context, csprojPath) {
     capturePort = undefined;
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ??
         path.dirname(csprojPath);
-    // Launch with --preview (no component name = default to first) and --vscode for capture server
-    const args = [
-        "watch",
-        "run",
-        "--project",
-        csprojPath,
-        "--",
-        "--preview",
-        "--vscode",
-    ];
+    // Launch with --devtools run (no component name = default to first) and --vscode.
+    // Reactor packages older than the devtools rename only expose --preview. We probe
+    // stdout: a `[preview]` prefix means the target Reactor is pre-rename, so we kill
+    // and relaunch with the legacy args. telemetry_event_name is kept for one release.
+    const args = buildDevtoolsArgs(csprojPath, legacyPreviewArgs);
     outputChannel.appendLine(`[reactor] Launching: dotnet ${args.join(" ")}`);
+    logTelemetry(legacyPreviewArgs ? "reactor_preview_launch" : "reactor_devtools_launch");
     previewProcess = cp.spawn("dotnet", args, {
         cwd: workspaceRoot,
         stdio: ["ignore", "pipe", "pipe"],
     });
-    isLaunching = false;
     statusBarItem.text = `$(loading~spin) Reactor: Starting...`;
     statusBarItem.show();
+    let sniffedPrefix = false;
     previewProcess.stdout?.on("data", (data) => {
         const text = data.toString();
         outputChannel.append(text);
+        if (!sniffedPrefix && !legacyPreviewArgs && !capturePort) {
+            if (/^\s*\[preview\]/m.test(text) && !/\[devtools\]/.test(text)) {
+                sniffedPrefix = true;
+                outputChannel.appendLine(`[reactor] Target Reactor is pre-devtools — falling back to --preview --vscode`);
+                legacyPreviewArgs = true;
+                killPreviewProcess().then(() => {
+                    isLaunching = false;
+                    launchPreviewProcess(context, csprojPath);
+                });
+                return;
+            }
+            if (/\[devtools\]/.test(text))
+                sniffedPrefix = true;
+        }
         const match = text.match(/CAPTURE_PORT=(\d+)/);
         if (match) {
             capturePort = parseInt(match[1], 10);
+            isLaunching = false;
             outputChannel.appendLine(`[reactor] Capture server on port ${capturePort}`);
             // Fetch the component list from the running process
             fetchComponentsAndShow(context);
@@ -189,6 +201,7 @@ async function launchPreviewProcess(context, csprojPath) {
         outputChannel.append(data.toString());
     });
     previewProcess.on("exit", (code) => {
+        isLaunching = false;
         outputChannel.appendLine(`[reactor] Preview process exited with code ${code}`);
         statusBarItem.text = "$(circle-slash) Reactor Preview: Stopped";
         setTimeout(() => {
@@ -198,6 +211,16 @@ async function launchPreviewProcess(context, csprojPath) {
         previewProcess = undefined;
         capturePort = undefined;
     });
+}
+function buildDevtoolsArgs(csprojPath, legacy) {
+    const tail = legacy ? ["--preview", "--vscode"] : ["--devtools", "run", "--vscode"];
+    return ["watch", "run", "--project", csprojPath, "--", ...tail];
+}
+function logTelemetry(eventName) {
+    // Telemetry transport not wired here; the extension's upstream harness reads the
+    // output channel in dev. The duplicated event name keeps legacy aggregators working
+    // for one release while the devtools name becomes primary.
+    outputChannel.appendLine(`[reactor] telemetry: ${eventName}`);
 }
 /**
  * After the capture server is up, GET /components to populate the dropdown,
@@ -258,7 +281,7 @@ async function killPreviewProcess() {
         capturePort = undefined;
         if (pid) {
             try {
-                cp.execSync(`taskkill /T /F /PID ${pid}`, { stdio: "ignore" });
+                cp.execFileSync("taskkill", ["/T", "/F", "/PID", pid.toString()], { stdio: "ignore" });
             }
             catch {
                 proc.kill();
@@ -337,11 +360,11 @@ function updatePanelHtml() {
 }
 function getWebviewHtml(port, components, selectedComponent) {
     const optionsHtml = components
-        .map((c) => `<option value="${c}"${c === selectedComponent ? " selected" : ""}>${c}</option>`)
+        .map((c) => `<option value="${escapeHtml(c)}"${c === selectedComponent ? " selected" : ""}>${escapeHtml(c)}</option>`)
         .join("\n");
     const selectorHtml = components.length > 1
         ? `<select id="componentSelect" title="Select component to preview">${optionsHtml}</select>`
-        : `<span class="component-name">${selectedComponent}</span>`;
+        : `<span class="component-name">${escapeHtml(selectedComponent)}</span>`;
     return /*html*/ `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -578,10 +601,23 @@ async function focusPreviewWindow() {
         vscode.window.showWarningMessage("Could not focus preview window.");
     }
 }
+// -- HTML Helpers ------------------------------------------------------------
+function escapeHtml(s) {
+    return s
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
 // -- HTTP Helpers ------------------------------------------------------------
 function httpGetJson(url) {
     return new Promise((resolve, reject) => {
         const req = http.get(url, (res) => {
+            if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
+                res.resume();
+                reject(new Error(`HTTP ${res.statusCode}`));
+                return;
+            }
             let body = "";
             res.on("data", (chunk) => (body += chunk));
             res.on("end", () => {

@@ -80,6 +80,12 @@ public sealed class ReactorHost : IDisposable
     public Window Window => _window;
 
     /// <summary>
+    /// The currently mounted root Component, if any. Used by MCP devtools to
+    /// resolve event handlers on the root for the <c>fire</c> escape-hatch tool.
+    /// </summary>
+    internal Component? RootComponent => _rootComponent;
+
+    /// <summary>
     /// Optional: when set, Reactor renders into this Border instead of Window.Content.
     /// Useful for embedding Reactor content in a pre-existing layout (e.g., a test harness
     /// with a persistent TitleBar).

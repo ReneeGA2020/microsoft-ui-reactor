@@ -18,7 +18,7 @@ using Microsoft.UI.Reactor.Animation;
 
 ReactorApp.Run<ShowcaseApp>("Validation Showcase", width: 720, height: 900
 #if DEBUG
-    , preview: true
+    , devtools: true
 #endif
 );
 

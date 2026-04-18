@@ -787,6 +787,74 @@ public sealed partial class Reconciler : IDisposable
         foreach (var setter in setters) setter(control);
     }
 
+    // WPF/WinUI auto-populate UIA Name from a control's string Content through the
+    // automation peer, but AutomationProperties.GetName on the raw element only
+    // returns an explicitly-set attached property. UIA clients that read the attached
+    // property directly (our own tree walker, Appium's AutomationName getter, some
+    // screen readers that probe before invoking the peer) see an empty string when
+    // the author never set .AutomationName(). Mirroring the caption into the
+    // attached property at mount makes both lookup paths agree, so
+    // click { selector: "[name='+ 1']" } and a screen reader saying "+ 1" both work
+    // without the author having to say so twice. Skips when the author already set
+    // an AutomationName via modifier or setter — explicit always wins.
+    internal static void ApplyDefaultAutomationName(FrameworkElement fe, string? caption)
+    {
+        if (fe is null) return;
+        if (string.IsNullOrWhiteSpace(caption)) return;
+        var existing = Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(fe);
+        if (!string.IsNullOrEmpty(existing)) return;
+        var trimmed = caption.Length > 100 ? caption.Substring(0, 100) : caption;
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(fe, trimmed);
+    }
+
+    // Update variant: a label change ("+ 1" → "+ 2") should update UIA Name as
+    // long as the author didn't override it. We can't distinguish "author set
+    // it to the previous caption" from "our default set it" without tracking
+    // provenance, so the rule is: overwrite when the current value is empty or
+    // equals the previous caption — any other value means the author intervened
+    // (via modifier or setter) and we leave it alone.
+    internal static void UpdateDefaultAutomationName(FrameworkElement fe, string? oldCaption, string? newCaption)
+    {
+        if (fe is null) return;
+        if (string.IsNullOrWhiteSpace(newCaption)) return;
+        var current = Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(fe);
+        bool authorOverride =
+            !string.IsNullOrEmpty(current) &&
+            (oldCaption is null || !string.Equals(current, oldCaption, StringComparison.Ordinal));
+        if (authorOverride) return;
+        var trimmed = newCaption.Length > 100 ? newCaption.Substring(0, 100) : newCaption;
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(fe, trimmed);
+    }
+
+    internal static string? ExtractElementCaption(Element? element) => element switch
+    {
+        TextElement te => te.Content,
+        null => null,
+        _ => null,
+    };
+
+    // Resolves the caption-bearing string for controls whose visible text is
+    // implicit (Button's Label, CheckBox's Label, TextBlock's Content, …). Returns
+    // null for elements without a natural caption so ApplyDefaultAutomationName
+    // leaves them alone. Kept alongside the helper so adding new caption-bearing
+    // controls is one place to change.
+    internal static string? ResolveCaptionForElement(Element element) => element switch
+    {
+        TextElement te => te.Content,
+        ButtonElement be => be.Label ?? ExtractElementCaption(be.ContentElement),
+        HyperlinkButtonElement hle => hle.Content,
+        RepeatButtonElement rbe => rbe.Label,
+        ToggleButtonElement tbe => tbe.Label,
+        DropDownButtonElement dde => dde.Label,
+        SplitButtonElement sbe => sbe.Label,
+        ToggleSplitButtonElement tsbe => tsbe.Label,
+        CheckBoxElement cbe => cbe.Label,
+        RadioButtonElement rbe => rbe.Label,
+        ToggleSwitchElement tse => tse.Header as string ?? tse.OnContent ?? tse.OffContent,
+        TextFieldElement tfe => tfe.Header as string ?? tfe.Placeholder,
+        _ => null,
+    };
+
     internal static void ApplyTransitions(UIElement uie, ImplicitTransitions? implicitT, ThemeTransitions? themeT)
     {
         if (implicitT is not null)

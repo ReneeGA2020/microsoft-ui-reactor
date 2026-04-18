@@ -171,6 +171,13 @@ public sealed partial class Reconciler
         if (modifiers is not null && control is FrameworkElement fe)
             ApplyModifiers(fe, modifiers, requestRerender);
 
+        // After modifiers + setters have had a chance to set an explicit
+        // AutomationName, fall back to the control's visible caption so UIA
+        // clients that read AutomationProperties.Name directly don't see an
+        // empty string on a Button("Save", …). Author-supplied names win.
+        if (control is FrameworkElement captionFe)
+            ApplyDefaultAutomationName(captionFe, ResolveCaptionForElement(element));
+
         // Apply theme-resource bindings (ThemeRef → resolved Brush from WinUI resources)
         if (element.ThemeBindings is not null && control is FrameworkElement thFe)
             ApplyThemeBindings(thFe, element.ThemeBindings);

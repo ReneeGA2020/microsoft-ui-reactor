@@ -15,7 +15,7 @@ using static Microsoft.UI.Reactor.Core.Theme;
 
 ReactorApp.Run<DemoApp>("Reactor Demo", width: 1200, height: 800
 #if DEBUG
-    , preview: true
+    , devtools: true
 #endif
 );
 

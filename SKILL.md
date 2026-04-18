@@ -21,6 +21,7 @@ re-renders automatically. No XAML. No data binding. No ViewModels.
 | [`skills/async.md`](skills/async.md) | Fetching data, caching, pagination, optimistic writes. `UseResource`, `UseMutation`, `UseInfiniteResource`, `Pending`. |
 | [`skills/design.md`](skills/design.md) | Any visual-styling work. Windows 11 design rules — theme tokens, High Contrast, typography, 4px grid, acrylic surfaces, accessibility. |
 | [`skills/commanding.md`](skills/commanding.md) | Actions that appear in multiple surfaces (menu + toolbar), need keyboard shortcuts, or need `CanExecute`. `Command`, `StandardCommand`, `UseCommand`, `CommandHost`. |
+| [`skills/devtools.md`](skills/devtools.md) | Drive a running app from code — screenshot, inspect visual tree, click/type/scroll, read hook state. Load when diagnosing visible bugs (layout, contrast) or verifying a change landed. |
 | [`skills/dsl-reference.md`](skills/dsl-reference.md) | Look up signatures — every factory, modifier, and enum in the DSL. |
 
 ## Project Setup

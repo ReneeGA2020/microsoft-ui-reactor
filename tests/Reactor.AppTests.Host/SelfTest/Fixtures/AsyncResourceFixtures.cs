@@ -403,7 +403,7 @@ internal static class AsyncResourceFixtures
             });
         }
 
-        protected override bool ShouldUpdate(FocusChildProps? oldProps, FocusChildProps? newProps) => true;
+        protected internal override bool ShouldUpdate(FocusChildProps? oldProps, FocusChildProps? newProps) => true;
     }
 
     // ════════════════════════════════════════════════════════════════════

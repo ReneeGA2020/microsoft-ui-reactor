@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Reactor.Tests" />
+    <InternalsVisibleTo Include="Reactor.AppTests.Host" />
   </ItemGroup>
 
   <ItemGroup>

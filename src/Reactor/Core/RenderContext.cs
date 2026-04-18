@@ -959,6 +959,76 @@ public sealed class RenderContext
         return true;
     }
 
+    /// <summary>
+    /// Devtools-only: returns a snapshot of this context's hook table for
+    /// <c>reactor.state</c>. Private hook-cell types are unpacked here where
+    /// we have access; devtools code consumes the boxed values and does the
+    /// JSON shaping. Must be called on the UI dispatcher.
+    /// </summary>
+    internal IReadOnlyList<HookSnapshot> SnapshotHooks()
+    {
+        var list = new List<HookSnapshot>(_hooks.Count);
+        for (int i = 0; i < _hooks.Count; i++)
+        {
+            var h = _hooks[i];
+            var t = h.GetType();
+            string hookName;
+            Type? valueType = null;
+            object? value = null;
+
+            if (t.IsGenericType)
+            {
+                var def = t.GetGenericTypeDefinition();
+                if (def == typeof(ValueHookState<>))
+                {
+                    valueType = t.GetGenericArguments()[0];
+                    value = t.GetField("Value")!.GetValue(h);
+                    // UseRef uses the same cell, but its value is a Ref<T>.
+                    hookName = valueType.IsGenericType && valueType.GetGenericTypeDefinition() == typeof(Ref<>)
+                        ? "useRef"
+                        : "useState";
+                }
+                else if (def == typeof(MemoHookState<>))
+                {
+                    valueType = t.GetGenericArguments()[0];
+                    value = t.GetField("Value")!.GetValue(h);
+                    hookName = "useMemo";
+                }
+                else if (def == typeof(PersistedHookState<>))
+                {
+                    valueType = t.GetGenericArguments()[0];
+                    value = t.GetField("Value")!.GetValue(h);
+                    hookName = "usePersisted";
+                }
+                else
+                {
+                    hookName = t.Name;
+                }
+            }
+            else if (h is EffectHookState)
+            {
+                hookName = "useEffect";
+            }
+            else if (h is ContextHookState ch)
+            {
+                hookName = "useContext";
+                value = ch.LastValue;
+                valueType = value?.GetType();
+            }
+            else if (h is NavigationLifecycleHookState)
+            {
+                hookName = "useNavigationLifecycle";
+            }
+            else
+            {
+                hookName = t.Name;
+            }
+
+            list.Add(new HookSnapshot(i, hookName, valueType, value));
+        }
+        return list;
+    }
+
     internal abstract class HookState { }
 
     private class ValueHookState<T> : HookState
@@ -1016,6 +1086,14 @@ public sealed class RenderContext
         public override void SaveToCache() => PersistedStateCache.Set(PersistKey, Value);
     }
 }
+
+/// <summary>
+/// Per-slot snapshot of a <see cref="RenderContext"/>'s hook table, produced by
+/// <see cref="RenderContext.SnapshotHooks"/> for devtools inspection. The
+/// <c>Value</c> is the live boxed hook value; serialization shaping happens in
+/// the devtools state tool.
+/// </summary>
+internal readonly record struct HookSnapshot(int Index, string Hook, Type? ValueType, object? Value);
 
 /// <summary>
 /// A mutable reference that persists across renders (like React's useRef).

@@ -216,6 +216,6 @@ internal static class UseMutationFixtures
 
         // A mutation-triggered cache invalidation should still cause a refetch even
         // when Props are reference-equal — force the reconciler to rerun Render().
-        protected override bool ShouldUpdate(QueryCache? oldProps, QueryCache? newProps) => true;
+        protected internal override bool ShouldUpdate(QueryCache? oldProps, QueryCache? newProps) => true;
     }
 }

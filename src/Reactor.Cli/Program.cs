@@ -54,6 +54,11 @@ if (arg == "docs")
     return Microsoft.UI.Reactor.Cli.Docs.DocsCommand.Run(args.Skip(1).ToArray());
 }
 
+if (arg == "devtools")
+{
+    return Microsoft.UI.Reactor.Cli.Devtools.DevtoolsSupervisor.Run(args.Skip(1).ToArray());
+}
+
 Console.Error.WriteLine($"Unknown option: {args[0]}");
 Console.Error.WriteLine();
 ShowHelp();
@@ -82,6 +87,7 @@ void ShowHelp()
     Console.WriteLine("  loc status       Show translation coverage per locale");
     Console.WriteLine("  loc prune        Find unused localization keys");
     Console.WriteLine("  docs compile     Compile documentation from templates and doc apps");
+    Console.WriteLine("  devtools         Launch project with --devtools run and supervise reloads");
 }
 
 int ShowSkill()
@@ -138,6 +144,11 @@ int CreateProject(string name)
     Console.WriteLine($"    cd {name}");
     Console.WriteLine($"    dotnet build {name}.sln");
     Console.WriteLine($"    dotnet run");
+    Console.WriteLine();
+    Console.WriteLine("To develop with an AI agent (MCP) and a VS Code preview panel:");
+    Console.WriteLine($"    mur devtools                 # prints MCP_ENDPOINT to stdout");
+    Console.WriteLine($"    mur devtools --mcp-port 9000 # pin the port across reloads");
+    Console.WriteLine($"    mur devtools --print-config  # emit MCP config for Claude Code / VS Code / Copilot");
 
     return 0;
 }
@@ -155,7 +166,10 @@ string GenerateProgram(string name) =>
 
     ReactorApp.Run<App>("{{name}}", width: 800, height: 600
     #if DEBUG
-        , preview: true  // enables: dotnet watch run -- --preview ComponentName
+        // Enables `mur devtools` (agent tools over MCP + VS Code preview panel).
+        // Run `mur devtools` to launch with component switching, hot reload, and
+        // an MCP endpoint printed to stdout (MCP_ENDPOINT=http://127.0.0.1:NNNN/mcp).
+        , devtools: true
     #endif
     );
 
