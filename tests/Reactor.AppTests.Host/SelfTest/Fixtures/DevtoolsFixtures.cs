@@ -647,7 +647,11 @@ internal static class DevtoolsFixtures
             using var logger = new DevtoolsLogger(tempDir, pid: Environment.ProcessId, DevtoolsLogLevel.Call);
             using var mcp = new McpHarness(H.Window, () => root, nameof(DevtoolsFixtureRoot), logger: logger);
 
-            const int Calls = 25;
+            // Spec §4.7: 100 tool calls produce 100 log lines with monotonic
+            // timestamps and non-negative latencies. `version` is the cheapest
+            // tool (no dispatcher hop) so the fixture finishes quickly even at
+            // this count on slow CI hosts.
+            const int Calls = 100;
             for (int i = 0; i < Calls; i++)
                 _ = await mcp.CallAsync("version");
 

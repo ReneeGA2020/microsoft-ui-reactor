@@ -365,7 +365,7 @@ Tests for this feature are classified by the infrastructure they require. Every 
 - [x] Resolves to the live `Component` instance by `component` name; finds the handler by event name (case-insensitive, public or private).
 - [x] Calls the handler on the UI dispatcher.
 - [x] Response carries `{ ok, via: "reactor-event-injection" }` so logs make the shortcut visible.
-- [ ] Inappropriate-use docs: link from the tool description back to §11. *(Description notes "escape hatch — prefer UIA patterns first"; a deeper back-link doc lands with the Phase 3 full pass.)*
+- [x] Inappropriate-use docs: link from the tool description back to §11. *(Tool `description` field now says "ESCAPE HATCH — prefer UIA patterns … per spec §11 'Automation verbs'" and lists the recommended alternatives by name; agents that surface descriptions show the guidance verbatim before a user reaches for fire.)*
 - [ ] Child-component traversal: v1 resolves only the root component. Full tree traversal depends on reconciler-level component registration, deferred to a follow-up.
 
 ### 3.9 Snapshot / diff — deferred
@@ -468,7 +468,7 @@ Fixtures live in `tests/Reactor.AppTests.Host/SelfTest/Fixtures/DevtoolsFixtures
 ### 4.7 Phase 4 tests — Self-host MCP
 
 - [ ] Run the Phase 2 + 3 self-host suite under stdio transport; assert parity with HTTP.
-- [ ] Logging self-host test: 100 tool calls produce 100 log lines with monotonic timestamps and non-negative latencies.
+- [x] Logging self-host test: 100 tool calls produce 100 log lines with monotonic timestamps and non-negative latencies. *(`Devtools_LoggerWritesOneLinePerCall` now runs 100 `version` calls against a `DevtoolsLogger` pointed at a temp dir, then asserts: file exists, line count matches, every line is TSV-shaped with tool/latency/status columns, timestamps parse and are non-decreasing, latencies are non-negative integers.)*
 
 ### 4.8 Phase 4 tests — E2E Appium
 

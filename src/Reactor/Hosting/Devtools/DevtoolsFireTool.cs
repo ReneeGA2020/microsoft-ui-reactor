@@ -23,7 +23,17 @@ internal static class DevtoolsFireTool
         server.Tools.Register(
             new McpToolDescriptor(
                 Name: "fire",
-                Description: "Invokes a handler on a live component by name. Escape hatch — prefer UIA patterns first.",
+                // Description doubles as the back-link the spec §3.8 open item
+                // asked for: it names the tool as an escape hatch, points at
+                // the UIA-first rule from spec §11, and documents the via tag
+                // so anyone reading log lines can recognize the shortcut.
+                // Agents that surface tool descriptions show this verbatim.
+                Description:
+                    "Invokes a handler on a live component by name. " +
+                    "ESCAPE HATCH — prefer UIA patterns (click/invoke/toggle/type/select/scroll) first " +
+                    "per spec §11 'Automation verbs'. Use fire only when no UIA peer reaches the behavior " +
+                    "(custom gestures, awaited async paths, unit-of-work handlers). " +
+                    "Responses carry `via: \"reactor-event-injection\"` so traces make the shortcut visible.",
                 InputSchema: new
                 {
                     type = "object",
