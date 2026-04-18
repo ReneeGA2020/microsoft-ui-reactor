@@ -61,10 +61,10 @@ internal sealed class PreviewCaptureServer : IDisposable
         _listener.Start();
         _captureTimer.Start();
         _ = ListenAsync().ContinueWith(
-            t => Console.Error.WriteLine($"[preview:capture] Listener loop failed: {t.Exception!.GetBaseException()}"),
+            t => Console.Error.WriteLine($"[devtools:capture] Listener loop failed: {t.Exception!.GetBaseException()}"),
             TaskContinuationOptions.OnlyOnFaulted);
 
-        Console.WriteLine($"[preview:capture] Serving on http://localhost:{Port}");
+        Console.WriteLine($"[devtools:capture] Serving on http://localhost:{Port}");
         Console.WriteLine($"CAPTURE_PORT={Port}");
         Console.Out.Flush();
     }
@@ -127,7 +127,7 @@ internal sealed class PreviewCaptureServer : IDisposable
         {
             var count = Interlocked.Increment(ref _captureErrorCount);
             if (count == 1 || (count % 100 == 0))
-                Console.Error.WriteLine($"[preview:capture] Frame capture error (count={count}): {ex.GetType().Name}: {ex.Message}");
+                Console.Error.WriteLine($"[devtools:capture] Frame capture error (count={count}): {ex.GetType().Name}: {ex.Message}");
         }
     }
 

@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Hosting;
+using Microsoft.UI.Reactor.Hosting.Devtools;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.UI.Dispatching;
@@ -40,6 +41,8 @@ public static class ReactorApp
         internal set => Volatile.Write(ref _activeHost, value);
     }
 
+    private static int _previewParamDeprecationWarned;
+
     // Unpackaged WinUI apps (WindowsPackageType=None) don't inherit DPI awareness from an
     // MSIX manifest, so the process defaults to DPI-unaware and Windows applies blurry bitmap
     // scaling. Setting PerMonitorV2 awareness before any window is created tells the OS the
@@ -49,10 +52,29 @@ public static class ReactorApp
 
     private static readonly nint DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4;
 
-    public static void Run<TRoot>(string title = "Reactor App", int width = 1024, int height = 768, bool fullScreen = false, bool preview = false, Action<ReactorHost>? configure = null)
+    /// <summary>
+    /// Launches the app. Set <c>devtools: true</c> in DEBUG builds to enable the
+    /// <c>mur devtools</c> / <c>--devtools</c> surface: component switching via VS Code,
+    /// MCP agent tools (Phase 2+), and component listing.
+    /// </summary>
+    /// <remarks>
+    /// The <c>preview</c> parameter is deprecated and is kept for one release. When both are
+    /// passed, <c>devtools</c> wins.
+    /// </remarks>
+    public static void Run<TRoot>(
+        string title = "Reactor App",
+        int width = 1024,
+        int height = 768,
+        bool fullScreen = false,
+        bool devtools = false,
+        // DEPRECATED: use 'devtools:'. Kept for one release. The runtime emits a
+        // one-shot stderr warning when this is set without 'devtools:'.
+        bool preview = false,
+        Action<ReactorHost>? configure = null)
         where TRoot : Component, new()
     {
-        if (preview && TryRunPreview(title, width, height, configure)) return;
+        var effectiveDevtools = ResolveDevtoolsParam(devtools, preview);
+        if (effectiveDevtools && TryRunDevtools(title, width, height, configure)) return;
 
         RunOnSta(() =>
         {
@@ -74,9 +96,24 @@ public static class ReactorApp
         });
     }
 
-    public static void Run(string title, Func<RenderContext, Element> rootRender, int width = 1024, int height = 768, bool fullScreen = false, bool preview = false, Action<ReactorHost>? configure = null)
+    /// <summary>
+    /// Launches the app with a render function instead of a Component subclass.
+    /// See the generic overload for <c>devtools</c> semantics.
+    /// </summary>
+    public static void Run(
+        string title,
+        Func<RenderContext, Element> rootRender,
+        int width = 1024,
+        int height = 768,
+        bool fullScreen = false,
+        bool devtools = false,
+        // DEPRECATED: use 'devtools:'. Kept for one release. The runtime emits a
+        // one-shot stderr warning when this is set without 'devtools:'.
+        bool preview = false,
+        Action<ReactorHost>? configure = null)
     {
-        if (preview && TryRunPreview(title, width, height, configure)) return;
+        var effectiveDevtools = ResolveDevtoolsParam(devtools, preview);
+        if (effectiveDevtools && TryRunDevtools(title, width, height, configure)) return;
 
         RunOnSta(() =>
         {
@@ -99,77 +136,104 @@ public static class ReactorApp
     }
 
     /// <summary>
-    /// Checks for <c>--preview</c> in the process command-line args.
-    /// If found, launches a minimal preview window showing the specified (or first) component.
-    /// Works with <c>dotnet watch run -- --preview CounterDemo</c> for hot reload.
-    /// With <c>--vscode</c>, starts a capture server with <c>/components</c> and
-    /// <c>POST /preview</c> endpoints for live component switching without restart.
-    /// Only active when the caller passes <c>preview: true</c>.
+    /// Reconciles the deprecated <c>preview:</c> parameter with the new <c>devtools:</c>.
+    /// If only <c>preview</c> is set, emit a one-time deprecation warning to stderr.
     /// </summary>
-    private static bool TryRunPreview(string title, int width, int height, Action<ReactorHost>? configure)
+    internal static bool ResolveDevtoolsParam(bool devtools, bool preview)
+    {
+        if (preview && !devtools && Interlocked.Exchange(ref _previewParamDeprecationWarned, 1) == 0)
+        {
+            Console.Error.WriteLine("[reactor] 'preview:' is deprecated; use 'devtools:'.");
+        }
+        return devtools || preview;
+    }
+
+    /// <summary>
+    /// Checks the process command-line for <c>--devtools</c> or the deprecated <c>--preview</c>.
+    /// If a devtools subverb is selected, launches the corresponding flow (list, run, etc.).
+    /// With <c>--vscode</c>, starts the capture server for the VS Code preview panel. Only
+    /// active when the caller passes <c>devtools: true</c>.
+    /// </summary>
+    private static bool TryRunDevtools(string title, int width, int height, Action<ReactorHost>? configure)
     {
         var args = Environment.GetCommandLineArgs();
+        var options = DevtoolsCliParser.Parse(args);
 
-        // --preview-list: output all available component names (one per line) and exit.
-        // Supports optional file path for tools: --preview-list C:\temp\components.txt
-        var listIdx = Array.IndexOf(args, "--preview-list");
-        if (listIdx >= 0)
+        if (options.PreviewAndDevtoolsConflict)
         {
-            var names = FindAllComponentNames().ToList();
-            foreach (var name in names)
-                Console.WriteLine(name);
-            Console.Out.Flush();
-            if (listIdx + 1 < args.Length && !args[listIdx + 1].StartsWith("-"))
-                File.WriteAllLines(args[listIdx + 1], names);
+            Console.Error.WriteLine("[devtools] Error: pass either --devtools or --preview, not both.");
             return true;
         }
 
-        var idx = Array.IndexOf(args, "--preview");
-        if (idx < 0) return false;
+        if (options.Subverb is null) return false;
 
-        // Component name is optional — if next arg looks like a flag (or is missing), use first found
-        string? componentName = null;
-        if (idx + 1 < args.Length && !args[idx + 1].StartsWith("-"))
-            componentName = args[idx + 1];
+        if (options.UsedDeprecatedPreview)
+            Console.Error.WriteLine("[reactor] '--preview' is deprecated; use '--devtools run'.");
+
+        switch (options.Subverb)
+        {
+            case DevtoolsSubverb.List:
+                return RunListSubverb(options);
+            case DevtoolsSubverb.Run:
+                return RunRunSubverb(options, title, width, height, configure);
+            case DevtoolsSubverb.Screenshot:
+            case DevtoolsSubverb.Tree:
+                Console.Error.WriteLine($"[devtools] '--devtools {options.Subverb!.ToString()!.ToLowerInvariant()}' is not implemented in phase 1.");
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private static bool RunListSubverb(DevtoolsCliOptions options)
+    {
+        var names = FindAllComponentNames().ToList();
+        foreach (var name in names)
+            Console.WriteLine(name);
+        Console.Out.Flush();
+        if (!string.IsNullOrEmpty(options.ListOutputPath))
+            File.WriteAllLines(options.ListOutputPath, names);
+        return true;
+    }
+
+    private static bool RunRunSubverb(DevtoolsCliOptions options, string title, int width, int height, Action<ReactorHost>? configure)
+    {
+        _ = title;
 
         // Resolve the initial component type
+        string? componentName = options.ComponentName;
         Type? componentType = null;
         if (componentName != null)
         {
             componentType = FindComponentType(componentName);
             if (componentType == null)
             {
-                Console.Error.WriteLine($"[preview] Component '{componentName}' not found.");
-                Console.Error.WriteLine($"[preview] Available components: {string.Join(", ", FindAllComponentNames())}");
+                Console.Error.WriteLine($"[devtools] Component '{componentName}' not found.");
+                Console.Error.WriteLine($"[devtools] Available components: {string.Join(", ", FindAllComponentNames())}");
                 return true;
             }
         }
         else
         {
-            // Default to first available component
             var firstName = FindAllComponentNames().FirstOrDefault();
             if (firstName == null)
             {
-                Console.Error.WriteLine("[preview] No Component subclasses found.");
+                Console.Error.WriteLine("[devtools] No Component subclasses found.");
                 return true;
             }
             componentType = FindComponentType(firstName)!;
             componentName = firstName;
         }
 
-        bool vscodeMode = args.Contains("--vscode");
-        int fps = 10;
-        var fpsIdx = Array.IndexOf(args, "--fps");
-        if (fpsIdx >= 0 && fpsIdx + 1 < args.Length && int.TryParse(args[fpsIdx + 1], out var parsedFps))
-            fps = Math.Clamp(parsedFps, 1, 30);
+        bool vscodeMode = options.VsCodeMode;
+        int captureFps = options.Fps;
 
-        Console.WriteLine($"[preview] Previewing {componentType.FullName}");
-        Console.WriteLine($"[preview] Hot reload active — edit and save to see changes instantly");
-        if (vscodeMode) Console.WriteLine($"[preview] VS Code mode enabled (capture @ {fps} fps)");
+        Console.WriteLine($"[devtools] Previewing {componentType.FullName}");
+        Console.WriteLine($"[devtools] Hot reload active — edit and save to see changes instantly");
+        if (vscodeMode) Console.WriteLine($"[devtools] VS Code mode enabled (capture @ {captureFps} fps)");
 
         var initialComponentType = componentType;
         var initialComponentName = componentName;
-        var captureFps = fps;
 
         RunOnSta(() =>
         {
@@ -200,9 +264,8 @@ public static class ReactorApp
                             host.Window.Title = $"Preview — {name}";
                         });
 
-                        // Update the closure so GetCurrentComponent stays correct
                         initialComponentName = name;
-                        Console.WriteLine($"[preview] Switched to {type.FullName}");
+                        Console.WriteLine($"[devtools] Switched to {type.FullName}");
                         return true;
                     };
 
@@ -250,7 +313,7 @@ public static class ReactorApp
         return null;
     }
 
-    private static IEnumerable<string> FindAllComponentNames()
+    internal static IEnumerable<string> FindAllComponentNames()
     {
         return AppDomain.CurrentDomain.GetAssemblies()
             .SelectMany(a => { try { return a.GetTypes(); } catch (global::System.Reflection.ReflectionTypeLoadException ex) { return ex.Types.Where(t => t != null)!; } catch { return []; } })
@@ -258,6 +321,11 @@ public static class ReactorApp
             .Select(t => t!.Name)
             .Distinct()
             .OrderBy(n => n);
+    }
+
+    internal static void ResetDeprecationWarningForTests()
+    {
+        Interlocked.Exchange(ref _previewParamDeprecationWarned, 0);
     }
 
     private static void InitProcess()
@@ -353,7 +421,7 @@ public partial class ReactorApplication : Application, IXamlMetadataProvider
         if (opts.FullScreen)
             window.AppWindow.SetPresenter(Microsoft.UI.Windowing.AppWindowPresenterKind.FullScreen);
         else
-            window.AppWindow.Resize(new global::Windows.Graphics.SizeInt32(opts.WindowWidth, opts.WindowHeight)); 
+            window.AppWindow.Resize(new global::Windows.Graphics.SizeInt32(opts.WindowWidth, opts.WindowHeight));
 
         var host = new ReactorHost(window);
 

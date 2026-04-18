@@ -155,7 +155,10 @@ string GenerateProgram(string name) =>
 
     ReactorApp.Run<App>("{{name}}", width: 800, height: 600
     #if DEBUG
-        , preview: true  // enables: dotnet watch run -- --preview ComponentName
+        // Enables `mur devtools` (agent tools over MCP + VS Code preview panel).
+        // Run `mur devtools` to launch with component switching, hot reload, and
+        // an MCP endpoint printed to stdout (MCP_ENDPOINT=http://127.0.0.1:NNNN/mcp).
+        , devtools: true
     #endif
     );
 
