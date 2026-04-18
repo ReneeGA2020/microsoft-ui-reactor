@@ -55,6 +55,20 @@ internal sealed class NodeRegistry
         }
     }
 
+    /// <summary>
+    /// Reverse lookup: returns the stable node id assigned to <paramref name="element"/>
+    /// if the walker has ever seen it, otherwise null. Used by the resolver
+    /// when reporting ambiguity so agents get a deterministic handle to
+    /// feed back into the next call instead of a human-readable descriptor.
+    /// </summary>
+    public string? TryGetId(UIElement element)
+    {
+        lock (_lock)
+        {
+            return _byElement.TryGetValue(element, out var id) ? id : null;
+        }
+    }
+
     /// <summary>Resolves an id to a live element. Returns Gone if the target was collected.</summary>
     public NodeLookup Resolve(string id)
     {

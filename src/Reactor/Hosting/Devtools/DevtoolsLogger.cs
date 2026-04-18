@@ -92,12 +92,19 @@ internal sealed class DevtoolsLogger : IDisposable
         WriteLine(line);
     }
 
-    /// <summary>Free-form error line. Respects Off/Error floors.</summary>
+    /// <summary>
+    /// Free-form error line. Respects Off/Error floors. Emits the same 6-TSV-column
+    /// shape as <see cref="LogCall"/> so downstream parsers can treat every log
+    /// line uniformly — the human message rides in the selector column (which is
+    /// always a free-form string for structured calls) rather than a trailing
+    /// 7th column that would break fixed-width parsing.
+    /// </summary>
     public void LogError(string message)
     {
         if (_level == DevtoolsLogLevel.Off) return;
         var ts = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture);
-        WriteLine($"{ts}\t!error\t-\t-\terr\t-\t{Truncate(message, 500)}");
+        var messagePart = string.IsNullOrEmpty(message) ? "-" : Truncate(message, 500);
+        WriteLine($"{ts}\t!error\t{messagePart}\t-\terr\t-");
     }
 
     public void Dispose()

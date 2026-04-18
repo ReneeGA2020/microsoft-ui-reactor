@@ -98,19 +98,26 @@ internal static class DevtoolsStateTool
         // Enums present as their string form — easier to read than the raw int.
         if (value.GetType().IsEnum) return value.ToString();
 
-        // Collections: emit the count only. A full dump is a privacy/serialization pit per §12.
+        // Collections: emit the count only. A full dump is a privacy/serialization
+        // pit per §12. Enumerating an arbitrary IEnumerable to count items is
+        // unsafe — lazy sequences can be expensive, infinite, or have
+        // observable side effects. We only report count when the source
+        // advertises it via ICollection / IReadOnlyCollection / ICollection<T>;
+        // otherwise we ship `count: null` so agents know the shape without us
+        // forcing enumeration.
         if (value is IEnumerable enumerable and not string)
         {
-            int count = 0;
-            foreach (var _ in enumerable) count++;
+            int? count = TryReadCollectionCount(value);
+            var collectionShape = new Dictionary<string, object?>
+            {
+                ["kind"] = "collection",
+                ["count"] = count,
+            };
+            _ = enumerable; // keep the pattern-match binding live for readability
             return new Dictionary<string, object?>
             {
                 ["$type"] = value.GetType().FullName ?? value.GetType().Name,
-                ["$shape"] = new Dictionary<string, object?>
-                {
-                    ["kind"] = "collection",
-                    ["count"] = count,
-                },
+                ["$shape"] = collectionShape,
             };
         }
 
@@ -131,5 +138,24 @@ internal static class DevtoolsStateTool
             ["$type"] = type.FullName ?? type.Name,
             ["$shape"] = shape,
         };
+    }
+
+    // Non-enumerating count probe. Checks the non-generic ICollection first
+    // (array, List<T>, ArrayList, most BCL collections), then falls back to
+    // reflecting a generic `Count` property for ICollection<T> /
+    // IReadOnlyCollection<T>. Returns null when the source doesn't advertise
+    // its size — we refuse to force enumeration to find out.
+    private static int? TryReadCollectionCount(object value)
+    {
+        if (value is global::System.Collections.ICollection coll) return coll.Count;
+        var countProp = value.GetType().GetProperty(
+            "Count",
+            global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.Public);
+        if (countProp is not null && countProp.PropertyType == typeof(int))
+        {
+            try { return (int?)countProp.GetValue(value); }
+            catch { return null; }
+        }
+        return null;
     }
 }

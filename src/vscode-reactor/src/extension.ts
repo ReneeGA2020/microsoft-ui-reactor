@@ -17,7 +17,6 @@ let currentComponentName: string | undefined;
 let currentFilePath: string | undefined;
 let isLaunching = false;
 let legacyPreviewArgs = false;
-let awaitingLegacyFallback: NodeJS.Timeout | undefined;
 
 let extensionContext: vscode.ExtensionContext | undefined;
 
@@ -234,10 +233,6 @@ async function launchPreviewProcess(
 
   previewProcess.on("exit", (code) => {
     isLaunching = false;
-    if (awaitingLegacyFallback) {
-      clearTimeout(awaitingLegacyFallback);
-      awaitingLegacyFallback = undefined;
-    }
     outputChannel.appendLine(
       `[reactor] Preview process exited with code ${code}`
     );

@@ -52,7 +52,6 @@ let currentComponentName;
 let currentFilePath;
 let isLaunching = false;
 let legacyPreviewArgs = false;
-let awaitingLegacyFallback;
 let extensionContext;
 function activate(context) {
     extensionContext = context;
@@ -203,10 +202,6 @@ async function launchPreviewProcess(context, csprojPath) {
     });
     previewProcess.on("exit", (code) => {
         isLaunching = false;
-        if (awaitingLegacyFallback) {
-            clearTimeout(awaitingLegacyFallback);
-            awaitingLegacyFallback = undefined;
-        }
         outputChannel.appendLine(`[reactor] Preview process exited with code ${code}`);
         statusBarItem.text = "$(circle-slash) Reactor Preview: Stopped";
         setTimeout(() => {

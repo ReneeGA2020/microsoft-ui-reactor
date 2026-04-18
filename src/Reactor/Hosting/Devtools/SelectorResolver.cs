@@ -11,7 +11,12 @@ namespace Microsoft.UI.Reactor.Hosting.Devtools;
 ///
 /// Ambiguity: the first matching type path wins; for AutomationName and
 /// AutomationId matches, more than one candidate is an <c>ambiguous-selector</c>
-/// error carrying the full candidate id list.
+/// error carrying a candidate list. Each candidate is the element's stable
+/// <c>r:&lt;window&gt;/&lt;local&gt;</c> node id when the registry has seen it
+/// (always true after a <c>tree</c> walk of the window); otherwise it falls
+/// back to a selector-like descriptor (<c>#automationId</c>, <c>[name='…']</c>,
+/// or the element's type name) so the payload always round-trips to a
+/// selector the agent can reuse.
 /// </summary>
 internal sealed class SelectorResolver
 {
@@ -122,7 +127,7 @@ internal sealed class SelectorResolver
 
         if (matches.Count > 1)
         {
-            var candidateIds = matches.Take(10).Select(el => DescribeCandidate(el)).ToArray();
+            var candidateIds = matches.Take(10).Select(DescribeCandidateWithId).ToArray();
             throw new McpToolException(
                 "Selector matched multiple elements.",
                 JsonRpcErrorCodes.ToolExecution,
@@ -170,7 +175,7 @@ internal sealed class SelectorResolver
         if (frontier.Count == 1) return frontier[0];
 
         // Last step yielded multiple candidates without an index — ambiguous.
-        var candidateIds = frontier.Take(10).Select(DescribeCandidate).ToArray();
+        var candidateIds = frontier.Take(10).Select(DescribeCandidateWithId).ToArray();
         throw new McpToolException(
             "Selector matched multiple elements.",
             JsonRpcErrorCodes.ToolExecution,
@@ -216,6 +221,13 @@ internal sealed class SelectorResolver
         var window = nodeId.Substring(2, slash - 2);
         return string.IsNullOrEmpty(window) ? null : window;
     }
+
+    // Ambiguity payload entry. Prefer the registry's stable node id — agents
+    // can feed it straight back into the next call without guessing — and only
+    // fall back to a selector-like descriptor when the element hasn't been
+    // walked yet (or when the registry was built up without this one).
+    private string DescribeCandidateWithId(UIElement el) =>
+        _nodeRegistry.TryGetId(el) ?? DescribeCandidate(el);
 
     private static string DescribeCandidate(UIElement el)
     {
