@@ -649,7 +649,7 @@ internal static class CoreCoverageFixtures2
     private class AlwaysUpdateComponent : Microsoft.UI.Reactor.Core.Component
     {
         internal static int RenderCount;
-        protected override bool ShouldUpdate() => true;
+        protected internal override bool ShouldUpdate() => true;
         public override Element Render()
         {
             RenderCount++;

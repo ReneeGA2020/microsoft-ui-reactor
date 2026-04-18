@@ -452,6 +452,23 @@ internal static class SelfTestFixtureRegistry
         "AsyncResource.Framerate.ParallelPages",
         // Pending scope framerate canary
         "AsyncResource.Framerate.PendingChurn",
+        // AI agent devtools — MCP server exercised in-process with real WinUI
+        "Devtools_VersionTool",
+        "Devtools_ComponentsTool",
+        "Devtools_WindowsTool",
+        "Devtools_TreeSummary",
+        "Devtools_TreeFullView",
+        "Devtools_TreeSelectorScope",
+        "Devtools_ClickInvokesButton",
+        "Devtools_TypeSetsTextBox",
+        "Devtools_FocusElement",
+        "Devtools_WaitForTextChange",
+        "Devtools_WaitForTimeout",
+        "Devtools_ToggleFlipsCheckBox",
+        "Devtools_InvokeDirectPattern",
+        "Devtools_StateReadsHooks",
+        "Devtools_ScreenshotReturnsPng",
+        "Devtools_UnknownSelectorStructuredError",
     ];
 
     public static SelfTestFixtureBase? Create(string name, Harness harness) => name switch
@@ -900,6 +917,23 @@ internal static class SelfTestFixtureRegistry
         "AsyncResource.Framerate.ParallelPages" => new AsyncInfiniteResourceFramerateFixtures.ParallelPages(harness),
         // Pending scope framerate canary (Phase 4)
         "AsyncResource.Framerate.PendingChurn" => new PendingFixtures.FramerateChurn(harness),
+        // AI agent devtools — MCP server exercised in-process
+        "Devtools_VersionTool" => new DevtoolsFixtures.VersionTool(harness),
+        "Devtools_ComponentsTool" => new DevtoolsFixtures.ComponentsTool(harness),
+        "Devtools_WindowsTool" => new DevtoolsFixtures.WindowsTool(harness),
+        "Devtools_TreeSummary" => new DevtoolsFixtures.TreeSummary(harness),
+        "Devtools_TreeFullView" => new DevtoolsFixtures.TreeFullView(harness),
+        "Devtools_TreeSelectorScope" => new DevtoolsFixtures.TreeSelectorScope(harness),
+        "Devtools_ClickInvokesButton" => new DevtoolsFixtures.ClickInvokesButton(harness),
+        "Devtools_TypeSetsTextBox" => new DevtoolsFixtures.TypeSetsTextBox(harness),
+        "Devtools_FocusElement" => new DevtoolsFixtures.FocusElement(harness),
+        "Devtools_WaitForTextChange" => new DevtoolsFixtures.WaitForTextChange(harness),
+        "Devtools_WaitForTimeout" => new DevtoolsFixtures.WaitForTimeout(harness),
+        "Devtools_ToggleFlipsCheckBox" => new DevtoolsFixtures.ToggleFlipsCheckBox(harness),
+        "Devtools_InvokeDirectPattern" => new DevtoolsFixtures.InvokeDirectPattern(harness),
+        "Devtools_StateReadsHooks" => new DevtoolsFixtures.StateReadsHooks(harness),
+        "Devtools_ScreenshotReturnsPng" => new DevtoolsFixtures.ScreenshotReturnsPng(harness),
+        "Devtools_UnknownSelectorStructuredError" => new DevtoolsFixtures.UnknownSelectorStructuredError(harness),
         _ => null,
     };
 }

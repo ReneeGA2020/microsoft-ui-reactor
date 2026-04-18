@@ -243,39 +243,40 @@ Tests for this feature are classified by the infrastructure they require. Every 
 
 ### 2.17 Phase 2 tests — Self-host MCP
 
-- [ ] `tests/Reactor.Tests/Devtools/Infrastructure/SelfHostMcpFixture.cs`: bootstraps `DevtoolsMcpServer` against a hidden WinUI window hosting a fixture component. Exposes an in-test JSON-RPC client.
-- [ ] `DevtoolsMcpFixture` tears down cleanly and frees the port between tests.
-- [ ] `tests/Reactor.Tests/Devtools/McpVersionTests.cs`: `version` returns a `build` tag, pid, mcpPort.
-- [ ] `tests/Reactor.Tests/Devtools/McpComponentsTests.cs`: `components` lists fixture components.
-- [ ] `tests/Reactor.Tests/Devtools/McpSwitchComponentTests.cs`: switching components invalidates all tree ids; subsequent tree walk returns new ids.
-- [ ] `tests/Reactor.Tests/Devtools/McpTreeTests.cs`:
-  - [ ] Full-window walk returns all visible elements.
-  - [ ] `selector` scopes the walk.
-  - [ ] `reactor` backref is present only when source mapping resolves (use a fixture with a known authored button).
-  - [ ] Multi-window fixture: each window's nodes carry its window id; cross-window ids do not leak.
-- [ ] `tests/Reactor.Tests/Devtools/McpScreenshotTests.cs`:
-  - [ ] Returns non-empty base64 PNG.
-  - [ ] Selector-scoped screenshot has bounds matching the selected element (within 1 px tolerance for DPI).
-  - [ ] `waitIdle: true` produces a stable frame on a fixture with pending layout.
-- [ ] `tests/Reactor.Tests/Devtools/McpClickTests.cs`:
-  - [ ] Click on a `Button` fires its `Click` handler via `IInvokeProvider.Invoke`; response `via: "invoke"`.
-  - [ ] Click on a `ToggleButton` toggles state; response `via: "toggle"`.
-  - [ ] Click on a custom-drawn fixture element with no UIA pattern falls through to pointer synthesis; response `via: "pointer"`.
-- [ ] `tests/Reactor.Tests/Devtools/McpTypeTests.cs`:
-  - [ ] `type` sets a `TextBox`'s text via `SetValue`.
-  - [ ] `clear: true` clears first.
-- [ ] `tests/Reactor.Tests/Devtools/McpFocusTests.cs`: `focus` moves keyboard focus; observable via a subsequent tree walk (`isKeyboardFocusable` → actual focus state).
-- [ ] `tests/Reactor.Tests/Devtools/McpWaitForTests.cs`:
-  - [ ] Succeeds when a predicate becomes true within the timeout (fire a delayed handler from the fixture).
-  - [ ] Times out with `{ ok: false, reason: "timeout" }` otherwise.
-  - [ ] `count: 0` waits for an element to disappear.
-- [ ] `tests/Reactor.Tests/Devtools/McpReloadTests.cs`:
-  - [ ] Calling `reload` flushes the JSON-RPC response before shutdown (test asserts it reads a complete response, then sees the port close).
-  - [ ] Process exits with code 42.
-- [ ] `tests/Reactor.Tests/Devtools/McpWindowsTests.cs`:
-  - [ ] With one window, `window` arg defaults work.
-  - [ ] With two windows, omitting `window` on ambiguous calls returns an error listing both ids.
-  - [ ] Mismatched id/`window` pair errors with `window-mismatch`.
+**Location deviation:** The original plan put self-host MCP tests in `tests/Reactor.Tests/` (xUnit), but that project has no WinUI window — pure unit. Per `contributing.md`, tests that need in-process WinUI controls live in `tests/Reactor.AppTests.Host/SelfTest/Fixtures/` and run through the TAP harness. The MCP self-host fixtures are registered in `SelfTestFixtureRegistry` under the `Devtools_*` names and bootstrap a `DevtoolsMcpServer` against the shared harness window via the `DevtoolsFixtures.McpHarness` helper. Individual xUnit "unit" test filenames referenced below are mapped to their TAP-fixture equivalents.
+
+- [x] `DevtoolsFixtures.McpHarness` (in `tests/Reactor.AppTests.Host/SelfTest/Fixtures/DevtoolsFixtures.cs`): bootstraps `DevtoolsMcpServer` against the harness WinUI window hosting a fixture component. Exposes an in-test JSON-RPC client (`CallAsync`).
+- [x] `McpHarness` disposes cleanly per fixture; the HttpListener port is released before the next fixture runs.
+- [x] `Devtools_VersionTool`: `version` returns a `build` tag, pid, mcpPort.
+- [x] `Devtools_ComponentsTool`: `components` lists fixture components and marks the current one.
+- [ ] `Devtools_SwitchComponent`: switching components invalidates all tree ids; subsequent tree walk returns new ids. *(Deferred — requires a multi-component host wiring; the fixture helper accepts the list but the switch callback is stubbed.)*
+- [x] `Devtools_TreeSummary` + `Devtools_TreeSelectorScope`:
+  - [x] Full-window walk returns all visible elements + schema pin + prefixed ids.
+  - [x] `selector` scopes the walk (rooted at a specific button).
+  - [ ] `reactor` backref presence / templated-part handling — deferred with §3.2 source-map wiring.
+  - [ ] Multi-window cross-scoping — deferred; the harness hosts one window.
+- [x] `Devtools_ScreenshotReturnsPng`:
+  - [x] Returns non-empty base64 PNG with a valid PNG magic prefix.
+  - [ ] Selector-scoped screenshot bounds within ±1 px — deferred to a dedicated layout-DPI fixture.
+  - [ ] `waitIdle: true` with a pending-layout fixture — deferred.
+- [x] `Devtools_ClickInvokesButton`:
+  - [x] Click on a `Button` fires its `Click` handler via `IInvokeProvider.Invoke`; response `via: "invoke"`.
+  - [ ] Click on a `ToggleButton` / custom no-pattern element — deferred; `Devtools_ToggleFlipsCheckBox` covers the toggle-pattern path directly via the `toggle` tool.
+- [x] `Devtools_TypeSetsTextBox`:
+  - [x] `type` sets a `TextBox`'s text via the value path.
+  - [x] Append (`clear: false`) concatenates; `clear: true` replaces.
+- [x] `Devtools_FocusElement`: `focus` returns an `ok` shape; focus state is observable through the live tree.
+- [x] `Devtools_WaitForTextChange` + `Devtools_WaitForTimeout`:
+  - [x] Succeeds when a predicate becomes true within the timeout (delayed handler in the fixture).
+  - [x] Times out with `{ ok: false, reason: "timeout" }` otherwise.
+  - [ ] `count: 0` disappear path — not exercised yet; fixture doesn't unmount on demand.
+- [ ] `Devtools_Reload`: reload selftest — not applicable: reload relies on the `mur devtools` supervisor and the sentinel-42 exit. Covered by the E2E Appium path.
+- [x] `Devtools_WindowsTool`: with one window, `window` defaults work and the entry shape is validated.
+  - [ ] Two-window ambiguity + `window-mismatch` — deferred; harness is single-window.
+- [x] `Devtools_InvokeDirectPattern` + `Devtools_ToggleFlipsCheckBox`: cover the §3.4–§3.5 Phase-3 tool surface from the self-host side.
+- [x] `Devtools_StateReadsHooks`: covers §3.3 state tool end-to-end (initial read → mutate via click → re-read).
+- [x] `Devtools_TreeFullView`: covers §3.1 full-view fields (layout + desiredSize presence).
+- [x] `Devtools_UnknownSelectorStructuredError`: structured error round-trip — exposed a `DevtoolsMcpServer.OnDispatcher` bug where AggregateException was swallowing the `{ code: "unknown-selector" }` payload; fixed here.
 
 ### 2.18 Phase 2 tests — E2E Appium
 
@@ -389,17 +390,12 @@ Tests for this feature are classified by the infrastructure they require. Every 
 
 ### 3.11 Phase 3 tests — Self-host MCP
 
-- [ ] `tests/Reactor.Tests/Devtools/McpFullTreeTests.cs`: fixture with mis-aligned `StackPanel` child has full-view fields that let a test assert the clipping.
-- [ ] `tests/Reactor.Tests/Devtools/McpStateTests.cs`: counter fixture; `state` returns `useState` index 0 value; fires click; second `state` call reflects the incremented value.
-- [ ] `tests/Reactor.Tests/Devtools/McpInvokeToggleSelectScrollTests.cs`:
-  - [ ] `invoke` on a button.
-  - [ ] `toggle` on a checkbox; `{ state: "on" }` / `{ state: "off" }`.
-  - [ ] `select` on a `ListView`; subsequent `tree` shows the selected item.
-  - [ ] `scroll by` moves position; `scroll to` a descendant brings it into view.
-- [ ] `tests/Reactor.Tests/Devtools/McpFireTests.cs`:
-  - [ ] Fires a handler on a custom-drawn fixture element with no UIA peer.
-  - [ ] Response carries `via: "reactor-event-injection"`.
-  - [ ] Unknown event name returns a structured error, not an exception.
+Fixtures live in `tests/Reactor.AppTests.Host/SelfTest/Fixtures/DevtoolsFixtures.cs` (see §2.17 location note).
+
+- [x] `Devtools_TreeFullView`: full-view fields (`layout`, `desiredSize`) appear on the walk; the mis-aligned-StackPanel clipping assertion is deferred to a dedicated layout-bug fixture when we seed one.
+- [x] `Devtools_StateReadsHooks`: counter fixture; `state` returns the first `UseState` value; click via MCP; re-read reflects the bump.
+- [x] `Devtools_InvokeDirectPattern` + `Devtools_ToggleFlipsCheckBox`: cover invoke + toggle tools directly; `select` + `scroll` self-host fixtures deferred until we add `ListView`/`ScrollViewer` fixtures.
+- [ ] `Devtools_Fire`: self-host coverage deferred — the `fire` tool is exercised through the root-component path in `FireResolutionTests` (unit) and is Appium-oriented for the "no UIA peer" case.
 
 ### 3.12 Phase 3 tests — E2E Appium
 

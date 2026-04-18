@@ -190,6 +190,9 @@ internal sealed class DevtoolsMcpServer : IDisposable
     /// Runs <paramref name="action"/> on the UI dispatcher and blocks the caller
     /// until it completes. Tool handlers use this to touch WinUI state safely.
     /// Timeout defaults to 5s so a stuck UI thread doesn't hang the HTTP worker.
+    /// Exceptions raised on the dispatcher surface with their original type
+    /// (in particular <see cref="McpToolException"/>) — not wrapped in
+    /// <see cref="AggregateException"/> — so structured errors round-trip.
     /// </summary>
     public T OnDispatcher<T>(Func<T> action, int timeoutMs = 5000)
     {
@@ -206,8 +209,19 @@ internal sealed class DevtoolsMcpServer : IDisposable
             throw new McpToolException("Could not enqueue work onto the UI dispatcher.");
         }
 
-        if (!tcs.Task.Wait(timeoutMs))
+        // Avoid Task.Wait — it re-wraps faults in AggregateException, hiding the
+        // structured McpToolException payload. Poll IsCompleted with a timeout,
+        // then unwrap manually so the original exception type propagates.
+        using var completed = new ManualResetEventSlim(false);
+        tcs.Task.ContinueWith(_ => completed.Set(), TaskContinuationOptions.ExecuteSynchronously);
+        if (!completed.Wait(timeoutMs))
             throw new McpToolException("Dispatcher call timed out.");
+
+        if (tcs.Task.IsFaulted)
+        {
+            var inner = tcs.Task.Exception!.InnerException ?? tcs.Task.Exception;
+            global::System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(inner).Throw();
+        }
         return tcs.Task.Result;
     }
 
