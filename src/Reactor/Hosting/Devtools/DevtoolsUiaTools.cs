@@ -123,17 +123,85 @@ internal static class DevtoolsUiaTools
                 var windowId = DevtoolsTools.ReadString(@params, "window");
                 _ = resolver.Resolve(RequiredString(@params, "selector"), windowId); // validate container exists
                 var item = resolver.Resolve(RequiredString(@params, "itemSelector"), windowId);
-                var peer = FrameworkElementAutomationPeer.CreatePeerForElement(item);
+
+                // Selector resolution typically lands on the inner content
+                // (TextBlock, Image, etc.). The *selectable container* is one
+                // of its visual-tree ancestors: ListViewItem, ComboBoxItem,
+                // ListBoxItem, GridViewItem — all inherit from SelectorItem
+                // and expose an `IsSelected` property. WinUI's own
+                // SelectorItemAutomationPeer routes `ISelectionItemProvider`
+                // back through that property, but only when the peer is
+                // rooted by its parent Selector's peer — a bare
+                // `CreatePeerForElement(listViewItem)` returns a peer whose
+                // `GetPattern(SelectionItem)` answers null. Walk up, find the
+                // first SelectorItem ancestor, and flip `IsSelected` directly.
+                // That fires the Selector's SelectionChanged like a real
+                // click would.
+                var selectorItem = FindSelectorItemAncestor(item);
+                if (selectorItem is not null)
+                {
+                    selectorItem.IsSelected = true;
+                    return new { ok = true, selected = selectorItem.IsSelected };
+                }
+
+                // Non-Selector containers (custom selectables) may still route
+                // through UIA's SelectionItem pattern on some ancestor — fall
+                // back to walking for the pattern directly.
+                var (peer, _) = FindAncestorWithPattern(item, PatternInterface.SelectionItem);
                 if (peer?.GetPattern(PatternInterface.SelectionItem) is ISelectionItemProvider sel)
                 {
                     sel.Select();
-                    return new { ok = true, selected = true };
+                    return new { ok = true, selected = sel.IsSelected };
                 }
+
                 throw new McpToolException(
-                    "Item does not expose the SelectionItem pattern.",
+                    "No SelectorItem ancestor and no element exposing the SelectionItem UIA pattern (walked up from resolved element to window root).",
                     JsonRpcErrorCodes.ToolExecution,
                     new { code = "no-pattern", pattern = "SelectionItem" });
             }));
+    }
+
+    /// <summary>
+    /// Walks the visual tree upward from <paramref name="start"/> looking for
+    /// the first <see cref="global::Microsoft.UI.Xaml.Controls.Primitives.SelectorItem"/>
+    /// ancestor — that's the common base class for ListViewItem, ComboBoxItem,
+    /// ListBoxItem, GridViewItem, TabViewItem, etc.
+    /// </summary>
+    private static global::Microsoft.UI.Xaml.Controls.Primitives.SelectorItem? FindSelectorItemAncestor(UIElement start)
+    {
+        DependencyObject? current = start;
+        while (current is not null)
+        {
+            if (current is global::Microsoft.UI.Xaml.Controls.Primitives.SelectorItem si)
+                return si;
+            current = global::Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(current);
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Walks the visual tree upward from <paramref name="start"/> looking for
+    /// an element whose automation peer exposes <paramref name="pattern"/>.
+    /// Returns the peer + the element the peer was built for. Used by tools
+    /// like <c>select</c> where the selector lands on the item's inner content
+    /// but the target pattern lives on the wrapping container (ListViewItem,
+    /// ComboBoxItem, etc.).
+    /// </summary>
+    private static (AutomationPeer? Peer, UIElement? Host) FindAncestorWithPattern(
+        UIElement start, PatternInterface pattern)
+    {
+        DependencyObject? current = start;
+        while (current is not null)
+        {
+            if (current is UIElement ui)
+            {
+                var peer = FrameworkElementAutomationPeer.CreatePeerForElement(ui);
+                if (peer?.GetPattern(pattern) is not null)
+                    return (peer, ui);
+            }
+            current = global::Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(current);
+        }
+        return (null, null);
     }
 
     private static void Register_Scroll(DevtoolsMcpServer server, SelectorResolver resolver)
@@ -189,16 +257,57 @@ internal static class DevtoolsUiaTools
                 var containerPeer = FrameworkElementAutomationPeer.CreatePeerForElement(container);
                 if (containerPeer?.GetPattern(PatternInterface.Scroll) is IScrollProvider scroller)
                 {
-                    double horiz = scroller.HorizontalScrollPercent;
-                    double vert = scroller.VerticalScrollPercent;
+                    // UIA sentinel: -1 means "this axis is unavailable" (content
+                    // fits inside the viewport, scrollbar hidden, etc.). Calling
+                    // SetScrollPercent with a non-NoScroll value on a NoScroll
+                    // axis throws a bare COM exception ("Cannot perform the
+                    // operation") — translate those into structured errors the
+                    // tool surface can reason about.
+                    const double NoScroll = -1.0;
+                    double horizCur = scroller.HorizontalScrollPercent;
+                    double vertCur = scroller.VerticalScrollPercent;
+
+                    double horizTarget = horizCur;
+                    double vertTarget = vertCur;
+                    bool horizRequested = false;
+                    bool vertRequested = false;
 
                     if (@params is { } p && p.TryGetProperty("by", out var byEl) && byEl.ValueKind == JsonValueKind.Object)
                     {
                         if (byEl.TryGetProperty("horizontal", out var hx) && hx.ValueKind == JsonValueKind.Number)
-                            horiz = Math.Clamp(horiz + hx.GetDouble(), 0, 100);
+                        {
+                            horizRequested = hx.GetDouble() != 0;
+                            horizTarget = horizRequested
+                                ? Math.Clamp((horizCur < 0 ? 0 : horizCur) + hx.GetDouble(), 0, 100)
+                                : horizCur;
+                        }
                         if (byEl.TryGetProperty("vertical", out var vy) && vy.ValueKind == JsonValueKind.Number)
-                            vert = Math.Clamp(vert + vy.GetDouble(), 0, 100);
-                        scroller.SetScrollPercent(horiz, vert);
+                        {
+                            vertRequested = vy.GetDouble() != 0;
+                            vertTarget = vertRequested
+                                ? Math.Clamp((vertCur < 0 ? 0 : vertCur) + vy.GetDouble(), 0, 100)
+                                : vertCur;
+                        }
+
+                        if (horizRequested && horizCur == NoScroll)
+                            throw new McpToolException(
+                                "Container's horizontal axis is not scrollable (HorizontallyScrollable=false).",
+                                JsonRpcErrorCodes.ToolExecution,
+                                new { code = "not-scrollable", axis = "horizontal" });
+                        if (vertRequested && vertCur == NoScroll)
+                            throw new McpToolException(
+                                "Container's vertical axis is not scrollable (VerticallyScrollable=false).",
+                                JsonRpcErrorCodes.ToolExecution,
+                                new { code = "not-scrollable", axis = "vertical" });
+
+                        // If an axis wasn't requested but is unavailable, pass
+                        // NoScroll through so SetScrollPercent treats it as
+                        // "leave alone" rather than a request to scroll to 0.
+                        if (horizCur == NoScroll && !horizRequested) horizTarget = NoScroll;
+                        if (vertCur == NoScroll && !vertRequested) vertTarget = NoScroll;
+
+                        if (horizRequested || vertRequested)
+                            scroller.SetScrollPercent(horizTarget, vertTarget);
                     }
 
                     return new

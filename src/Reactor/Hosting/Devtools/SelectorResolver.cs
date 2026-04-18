@@ -73,8 +73,14 @@ internal sealed class SelectorResolver
         {
             SelectorKind.AutomationId => ResolveByPredicate(root, el =>
                 string.Equals(AutomationProperties.GetAutomationId(el), ir.AutomationId, StringComparison.Ordinal)),
+            // `[name='X']` prunes the subtree on match: a Reactor
+            // `Button("Increment", …)` reports text "Increment" on itself AND
+            // on the TextBlock WinUI inserts inside the button's template.
+            // Without pruning, both match and the selector is ambiguous. The
+            // outer element is what the author meant, so stop descending once
+            // a match fires and pick the highest ancestor.
             SelectorKind.AutomationName => ResolveByPredicate(root, el =>
-                NameMatches(el, ir.AutomationName!)),
+                NameMatches(el, ir.AutomationName!), pruneSubtreeOnMatch: true),
             SelectorKind.TypePath => ResolveTypePath(root, ir.TypePath!),
             SelectorKind.ReactorSource => throw new McpToolException(
                 "Reactor-source selectors require the source map (Phase 3).",
@@ -104,10 +110,10 @@ internal sealed class SelectorResolver
             new { code = "window-required", activeIds });
     }
 
-    private UIElement ResolveByPredicate(UIElement root, Func<UIElement, bool> predicate)
+    private UIElement ResolveByPredicate(UIElement root, Func<UIElement, bool> predicate, bool pruneSubtreeOnMatch = false)
     {
         var matches = new List<UIElement>();
-        Collect(root, predicate, matches);
+        Collect(root, predicate, matches, pruneSubtreeOnMatch: pruneSubtreeOnMatch);
 
         if (matches.Count == 0)
             throw new McpToolException(
@@ -175,14 +181,25 @@ internal sealed class SelectorResolver
         UIElement element,
         Func<UIElement, bool> predicate,
         List<UIElement> sink,
-        bool skipRoot = false)
+        bool skipRoot = false,
+        bool pruneSubtreeOnMatch = false)
     {
-        if (!skipRoot && predicate(element)) sink.Add(element);
+        bool matched = false;
+        if (!skipRoot && predicate(element))
+        {
+            sink.Add(element);
+            matched = true;
+        }
+        // With pruning, a matching element claims its entire subtree — inner
+        // TextBlocks / ContentPresenters that mirror its text / name won't be
+        // collected as separate matches.
+        if (matched && pruneSubtreeOnMatch) return;
+
         int childCount = VisualTreeHelper.GetChildrenCount(element);
         for (int i = 0; i < childCount; i++)
         {
             if (VisualTreeHelper.GetChild(element, i) is UIElement child)
-                Collect(child, predicate, sink, skipRoot: false);
+                Collect(child, predicate, sink, skipRoot: false, pruneSubtreeOnMatch: pruneSubtreeOnMatch);
         }
     }
 

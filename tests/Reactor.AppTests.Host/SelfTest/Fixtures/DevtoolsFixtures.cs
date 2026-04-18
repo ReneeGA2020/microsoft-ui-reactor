@@ -623,10 +623,16 @@ internal static class DevtoolsFixtures
             else
             {
                 var err = Error(resp) ?? throw new Exception("expected result or error");
-                H.Check("Devtools_ScrollBy_AcceptNoPattern",
+                // Accept either "no-pattern" (container doesn't implement
+                // IScrollProvider at all) or "not-scrollable" (implements
+                // the pattern but the requested axis isn't scrollable in the
+                // current layout — e.g. content fits in the viewport). Both
+                // are structured, actionable responses the agent can reason
+                // about without catching raw COM exceptions.
+                H.Check("Devtools_ScrollBy_AcceptNoPatternOrNotScrollable",
                     err.TryGetProperty("data", out var data) &&
                     data.TryGetProperty("code", out var code) &&
-                    code.GetString() == "no-pattern");
+                    (code.GetString() == "no-pattern" || code.GetString() == "not-scrollable"));
             }
 
             H.SetContent(null);
