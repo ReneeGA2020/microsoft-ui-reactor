@@ -16,6 +16,8 @@ let currentComponents: string[] = [];
 let currentComponentName: string | undefined;
 let currentFilePath: string | undefined;
 let isLaunching = false;
+let legacyPreviewArgs = false;
+let awaitingLegacyFallback: NodeJS.Timeout | undefined;
 
 let extensionContext: vscode.ExtensionContext | undefined;
 
@@ -174,18 +176,14 @@ async function launchPreviewProcess(
     vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ??
     path.dirname(csprojPath);
 
-  // Launch with --preview (no component name = default to first) and --vscode for capture server
-  const args = [
-    "watch",
-    "run",
-    "--project",
-    csprojPath,
-    "--",
-    "--preview",
-    "--vscode",
-  ];
+  // Launch with --devtools run (no component name = default to first) and --vscode.
+  // Reactor packages older than the devtools rename only expose --preview. We probe
+  // stdout: a `[preview]` prefix means the target Reactor is pre-rename, so we kill
+  // and relaunch with the legacy args. telemetry_event_name is kept for one release.
+  const args = buildDevtoolsArgs(csprojPath, legacyPreviewArgs);
 
   outputChannel.appendLine(`[reactor] Launching: dotnet ${args.join(" ")}`);
+  logTelemetry(legacyPreviewArgs ? "reactor_preview_launch" : "reactor_devtools_launch");
 
   previewProcess = cp.spawn("dotnet", args, {
     cwd: workspaceRoot,
@@ -195,9 +193,27 @@ async function launchPreviewProcess(
   statusBarItem.text = `$(loading~spin) Reactor: Starting...`;
   statusBarItem.show();
 
+  let sniffedPrefix = false;
+
   previewProcess.stdout?.on("data", (data: Buffer) => {
     const text = data.toString();
     outputChannel.append(text);
+
+    if (!sniffedPrefix && !legacyPreviewArgs && !capturePort) {
+      if (/^\s*\[preview\]/m.test(text) && !/\[devtools\]/.test(text)) {
+        sniffedPrefix = true;
+        outputChannel.appendLine(
+          `[reactor] Target Reactor is pre-devtools — falling back to --preview --vscode`
+        );
+        legacyPreviewArgs = true;
+        killPreviewProcess().then(() => {
+          isLaunching = false;
+          launchPreviewProcess(context, csprojPath);
+        });
+        return;
+      }
+      if (/\[devtools\]/.test(text)) sniffedPrefix = true;
+    }
 
     const match = text.match(/CAPTURE_PORT=(\d+)/);
     if (match) {
@@ -218,6 +234,10 @@ async function launchPreviewProcess(
 
   previewProcess.on("exit", (code) => {
     isLaunching = false;
+    if (awaitingLegacyFallback) {
+      clearTimeout(awaitingLegacyFallback);
+      awaitingLegacyFallback = undefined;
+    }
     outputChannel.appendLine(
       `[reactor] Preview process exited with code ${code}`
     );
@@ -228,6 +248,18 @@ async function launchPreviewProcess(
     previewProcess = undefined;
     capturePort = undefined;
   });
+}
+
+function buildDevtoolsArgs(csprojPath: string, legacy: boolean): string[] {
+  const tail = legacy ? ["--preview", "--vscode"] : ["--devtools", "run", "--vscode"];
+  return ["watch", "run", "--project", csprojPath, "--", ...tail];
+}
+
+function logTelemetry(eventName: string) {
+  // Telemetry transport not wired here; the extension's upstream harness reads the
+  // output channel in dev. The duplicated event name keeps legacy aggregators working
+  // for one release while the devtools name becomes primary.
+  outputChannel.appendLine(`[reactor] telemetry: ${eventName}`);
 }
 
 /**
