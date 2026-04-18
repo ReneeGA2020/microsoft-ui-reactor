@@ -96,23 +96,33 @@ internal static class DevtoolsTools
                     ?? throw new McpToolException("switchComponent requires a 'name' argument.",
                         JsonRpcErrorCodes.InvalidParams);
 
-                var ok = ctx.SwitchComponent(name);
-                if (!ok)
-                    throw new McpToolException($"Component '{name}' not found.",
-                        JsonRpcErrorCodes.ToolExecution,
-                        new { code = "unknown-component", available = ctx.GetComponents().ToArray() });
-
-                // The old tree is gone; invalidate its ids so a subsequent
-                // selector resolution against an old id returns `"gone"`
-                // rather than silently reaching a stale element. Scoped to
-                // every known active window — the swap replaces all roots.
-                if (ctx.Nodes is { } nodes)
+                // The switch itself (calling back into the host's `Mount(...)`) and
+                // the follow-up `WindowRegistry.Snapshot()` both touch WinUI state
+                // and must run on the UI dispatcher. Without this hop the handler
+                // would land on the HTTP worker thread, where `host.Mount(new T())`
+                // can hit a WinUI COM thread-apartment error that surfaces as an
+                // empty-message exception — the selftest fixture saw this as a
+                // -32603 InternalError and crashed on the missing `ok`.
+                return server.OnDispatcher<object>(() =>
                 {
-                    foreach (var snap in ctx.Windows.Snapshot())
-                        nodes.InvalidateWindow(snap.Id);
-                }
+                    var ok = ctx.SwitchComponent(name);
+                    if (!ok)
+                        throw new McpToolException($"Component '{name}' not found.",
+                            JsonRpcErrorCodes.ToolExecution,
+                            new { code = "unknown-component", available = ctx.GetComponents().ToArray() });
 
-                return new { ok = true, current = name };
+                    // The old tree is gone; invalidate its ids so a subsequent
+                    // selector resolution against an old id returns `"gone"`
+                    // rather than silently reaching a stale element. Scoped to
+                    // every known active window — the swap replaces all roots.
+                    if (ctx.Nodes is { } nodes)
+                    {
+                        foreach (var snap in ctx.Windows.Snapshot())
+                            nodes.InvalidateWindow(snap.Id);
+                    }
+
+                    return new { ok = true, current = name };
+                });
             });
     }
 
