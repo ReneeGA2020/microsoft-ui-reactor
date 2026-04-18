@@ -458,10 +458,10 @@ Tests for this feature are classified by the infrastructure they require. Every 
 
 ### 4.5 Security review
 
-- [ ] Confirm MCP listener is `127.0.0.1`-only in Release builds.
-- [ ] Confirm `devtools: true` is gated behind `#if DEBUG` in the scaffold template.
-- [ ] Confirm `reactor.fire`, `reactor.state`, and the capture server are all refused at startup when `devtools: false`.
-- [ ] Document the "any local process can connect" caveat in the MCP surface README.
+- [x] Confirm MCP listener is `127.0.0.1`-only in Release builds. *(`DevtoolsMcpServer.Start` binds only to `http://127.0.0.1:{port}/`; no 0.0.0.0 or adapter-bound prefix anywhere.)*
+- [x] Confirm `devtools: true` is gated behind `#if DEBUG` in the scaffold template. *(See `Reactor.Cli/Program.cs` `GenerateProgram` — the `, devtools: true` arg is inside `#if DEBUG`.)*
+- [x] Confirm `reactor.fire`, `reactor.state`, and the capture server are all refused at startup when `devtools: false`. *(All registration happens inside `TryRunDevtools`; `ResolveDevtoolsParam` returns false short-circuits the entire devtools bring-up, so no MCP/capture listener is constructed.)*
+- [x] Document the "any local process can connect" caveat in the MCP surface README. *(See `src/Reactor/Hosting/Devtools/README.md` — covers opt-in, DEBUG gate, loopback binding, and "no auth" caveat.)*
 
 ### 4.6 Phase 4 tests — Unit
 
