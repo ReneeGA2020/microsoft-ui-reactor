@@ -411,6 +411,12 @@ internal static class SelfTestFixtureRegistry
         "DataGrid_ScrollPopulatesData",
         "DataGrid_ScrollBackPopulatesData",
         "DataGrid_ScrollPerfRelative",
+        // DataGrid parity — hook-based paging path (Phase 3)
+        "DataGrid_HookPagingMountAndLoad",
+        "DataGrid_HookPagingScrollPopulates",
+        "DataGrid_HookPagingScrollBack",
+        "DataGrid_HookPagingSmallDataset",
+        "AsyncResource.Framerate.DataGridScroll",
         // UseResource integration (real dispatcher)
         "AsyncResource.BasicResolve",
         "AsyncResource.SyncCompleteNoFlash",
@@ -850,6 +856,12 @@ internal static class SelfTestFixtureRegistry
         "DataGrid_ScrollPopulatesData" => new DataGridScrollFixtures.ScrollPopulatesData(harness),
         "DataGrid_ScrollBackPopulatesData" => new DataGridScrollFixtures.ScrollBackPopulatesData(harness),
         "DataGrid_ScrollPerfRelative" => new DataGridScrollFixtures.ScrollPerfRelative(harness),
+        // DataGrid parity — hook-based paging path (Phase 3)
+        "DataGrid_HookPagingMountAndLoad" => new DataGridParityFixtures.HookPagingMountAndLoad(harness),
+        "DataGrid_HookPagingScrollPopulates" => new DataGridParityFixtures.HookPagingScrollPopulates(harness),
+        "DataGrid_HookPagingScrollBack" => new DataGridParityFixtures.HookPagingScrollBack(harness),
+        "DataGrid_HookPagingSmallDataset" => new DataGridParityFixtures.HookPagingSmallDataset(harness),
+        "AsyncResource.Framerate.DataGridScroll" => new DataGridParityFixtures.HookPagingFramerateScroll(harness),
         // UseResource integration fixtures
         "AsyncResource.BasicResolve" => new AsyncResourceFixtures.BasicResolve(harness),
         "AsyncResource.SyncCompleteNoFlash" => new AsyncResourceFixtures.SyncCompleteNoFlash(harness),
