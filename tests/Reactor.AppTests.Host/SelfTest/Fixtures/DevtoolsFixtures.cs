@@ -44,7 +44,8 @@ internal static class DevtoolsFixtures
             Func<Component?> rootComponent,
             string currentComponent,
             IReadOnlyList<string>? components = null,
-            DevtoolsLogger? logger = null)
+            DevtoolsLogger? logger = null,
+            Func<string, bool>? switchComponent = null)
         {
             Server = new DevtoolsMcpServer(window.DispatcherQueue, window, logger: logger);
             Windows = new WindowRegistry(Server.BuildTag);
@@ -57,9 +58,10 @@ internal static class DevtoolsFixtures
             {
                 GetComponents = () => available,
                 GetCurrentComponent = () => _currentComponent,
-                SwitchComponent = _ => false, // fixtures don't exercise component switching
+                SwitchComponent = switchComponent ?? (_ => false),
                 RequestReload = () => { /* reload is Appium-only; no-op here */ },
                 Windows = Windows,
+                Nodes = Nodes,
             });
             DevtoolsUiaTools.RegisterUiaTools(Server, Nodes, Windows);
             DevtoolsStateTool.Register(Server, rootComponent);
@@ -851,6 +853,72 @@ internal static class DevtoolsFixtures
             H.Check("Devtools_WaitForLog_StatusIsErr", parts[4] == "err");
 
             try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+    }
+
+    /// <summary>
+    /// §2.7 + §2.2 wiring: <c>switchComponent</c> invalidates every tree id
+    /// for the window so an agent holding an id from before the swap sees
+    /// <c>gone</c>, not a stale element.
+    /// </summary>
+    private sealed class AltRoot : Component
+    {
+        public override Element Render() => VStack(
+            Factories.Text("alt-root").AutomationId("lbl-alt")
+        );
+    }
+
+    internal sealed class SwitchComponentInvalidatesIds(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var host = H.CreateHost();
+            var root = new DevtoolsFixtureRoot();
+            host.Mount(root);
+            await Harness.Render();
+
+            bool DoSwitch(string name)
+            {
+                if (name == nameof(AltRoot))
+                {
+                    host.Mount(new AltRoot());
+                    return true;
+                }
+                if (name == nameof(DevtoolsFixtureRoot))
+                {
+                    host.Mount(new DevtoolsFixtureRoot());
+                    return true;
+                }
+                return false;
+            }
+
+            using var mcp = new McpHarness(
+                H.Window,
+                () => root,
+                nameof(DevtoolsFixtureRoot),
+                components: new[] { nameof(DevtoolsFixtureRoot), nameof(AltRoot) },
+                switchComponent: DoSwitch);
+
+            // First walk: populate the registry with ids for the initial tree.
+            var firstTree = await mcp.CallAsync("tree", new { });
+            var firstNodes = Result(firstTree)!.Value.GetProperty("nodes").EnumerateArray().ToArray();
+            H.Check("Devtools_SwitchIds_FirstTreeNonEmpty", firstNodes.Length > 0);
+            var firstId = firstNodes[0].GetProperty("id").GetString()!;
+
+            // Swap component.
+            var switchResp = await mcp.CallAsync("switchComponent", new { name = nameof(AltRoot) });
+            H.Check("Devtools_SwitchIds_SwitchOk", Result(switchResp)!.Value.GetProperty("ok").GetBoolean());
+            await Harness.Render();
+
+            // Old id should now resolve as "gone", not silently reach a live element.
+            var staleResp = await mcp.CallAsync("click", new { selector = firstId });
+            var err = Error(staleResp) ?? throw new Exception("expected error envelope after invalidation");
+            H.Check("Devtools_SwitchIds_OldIdGone",
+                err.TryGetProperty("data", out var data) &&
+                data.TryGetProperty("code", out var c) &&
+                c.GetString() == "gone");
+
+            H.SetContent(null);
         }
     }
 

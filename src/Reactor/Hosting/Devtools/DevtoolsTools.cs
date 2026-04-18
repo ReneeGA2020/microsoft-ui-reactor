@@ -20,6 +20,14 @@ internal static class DevtoolsTools
         public required Func<string, bool> SwitchComponent { get; init; }
         public required Action RequestReload { get; init; }
         public required WindowRegistry Windows { get; init; }
+
+        /// <summary>
+        /// Optional node registry — set by the host bring-up so
+        /// <c>switchComponent</c> can invalidate stale ids for the active window
+        /// after a successful swap. Absent in minimal selftest harnesses that
+        /// don't rely on post-switch tree walks.
+        /// </summary>
+        public NodeRegistry? Nodes { get; init; }
     }
 
     public static void RegisterCore(DevtoolsMcpServer server, ToolHostContext ctx)
@@ -93,6 +101,16 @@ internal static class DevtoolsTools
                     throw new McpToolException($"Component '{name}' not found.",
                         JsonRpcErrorCodes.ToolExecution,
                         new { code = "unknown-component", available = ctx.GetComponents().ToArray() });
+
+                // The old tree is gone; invalidate its ids so a subsequent
+                // selector resolution against an old id returns `"gone"`
+                // rather than silently reaching a stale element. Scoped to
+                // every known active window — the swap replaces all roots.
+                if (ctx.Nodes is { } nodes)
+                {
+                    foreach (var snap in ctx.Windows.Snapshot())
+                        nodes.InvalidateWindow(snap.Id);
+                }
 
                 return new { ok = true, current = name };
             });

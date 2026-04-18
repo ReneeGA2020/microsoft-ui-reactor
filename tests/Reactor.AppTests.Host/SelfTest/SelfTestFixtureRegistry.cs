@@ -477,6 +477,7 @@ internal static class SelfTestFixtureRegistry
         "Devtools_FireRejectsLifecycleMethods",
         "Devtools_WaitForTimeoutLoggedAsErr",
         "Devtools_InitializeHandshake",
+        "Devtools_SwitchComponentInvalidatesIds",
     ];
 
     public static SelfTestFixtureBase? Create(string name, Harness harness) => name switch
@@ -950,6 +951,7 @@ internal static class SelfTestFixtureRegistry
         "Devtools_FireRejectsLifecycleMethods" => new DevtoolsFixtures.FireRejectsLifecycleMethods(harness),
         "Devtools_WaitForTimeoutLoggedAsErr" => new DevtoolsFixtures.WaitForTimeoutLoggedAsErr(harness),
         "Devtools_InitializeHandshake" => new DevtoolsFixtures.InitializeHandshake(harness),
+        "Devtools_SwitchComponentInvalidatesIds" => new DevtoolsFixtures.SwitchComponentInvalidatesIds(harness),
         _ => null,
     };
 }

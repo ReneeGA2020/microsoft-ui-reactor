@@ -116,7 +116,7 @@ Tests for this feature are classified by the infrastructure they require. Every 
   - Otherwise: content-addressed path from nearest stable ancestor + type + sibling index.
 - [x] Entries hold `WeakReference<object>` (object rather than UIElement so unit tests can inject sentinels; public API still returns UIElement only). Lookups resolving to a dead target return a structured `"gone"` status; ids are never reused.
 - [x] Window-close invalidates every id in that window's scope. Window ids are never reused even if a new window opens with the same title. *(Window-id scope lives in the registry via InvalidateWindow; the WindowRegistry §2.3 will own window-id assignment.)*
-- [ ] Registry is populated lazily on every tree walk; an element seen in multiple walks keeps the same id. *(ConditionalWeakTable provides the reverse map; the tree-walk integration lands with §2.8.)*
+- [x] Registry is populated lazily on every tree walk; an element seen in multiple walks keeps the same id. *(`TreeWalker.WalkInto` calls `NodeRegistry.GetOrCreate` per element; the `ConditionalWeakTable` reverse map returns the same id across walks.)*
 - [x] Thread-safe read; all writes happen on the UI dispatcher during tree walk.
 
 ### 2.3 Window addressing
@@ -135,8 +135,8 @@ Tests for this feature are classified by the infrastructure they require. Every 
   3. AutomationName: `[name='Increment']`.
   4. Type + optional index: `Button`, `Button[2]`, `StackPanel > Button`.
   5. Reactor source: `{component:'CounterDemo',line:42}`.
-- [ ] Resolver runs on the UI dispatcher. Returns the `UIElement` or a structured ambiguity error listing matching ids. *(Parser → IR is done; the IR→UIElement resolver lands with §2.8 tree walk.)*
-- [ ] Ambiguity error format: `{ code: "ambiguous-selector", candidates: ["r:main/…", "r:main/…"] }`. *(Error shape defined via `McpToolException(code: …, data: { candidates })`; emitted by the resolver once it's wired.)*
+- [x] Resolver runs on the UI dispatcher. Returns the `UIElement` or a structured ambiguity error listing matching ids. *(`SelectorResolver.Resolve` is invoked from every tool handler inside `OnDispatcher`.)*
+- [x] Ambiguity error format: `{ code: "ambiguous-selector", candidates: ["r:main/…", "r:main/…"] }`. *(`SelectorResolver.ResolveByPredicate` / `ResolveTypePath` emit the payload; covered in `SelectorResolverRuntimeTests`.)*
 
 ### 2.5 Tool: `reactor.version`
 
@@ -154,7 +154,7 @@ Tests for this feature are classified by the infrastructure they require. Every 
 - [x] Args: `name`, optional `window`. *(`window` arg honored once §2.3 WindowRegistry lands.)*
 - [x] Returns `{ ok, current }`.
 - [x] Internally reuses the existing `SwitchComponent` Func on `PreviewCaptureServer` so both servers share the same in-process switching path (extracted as `SwitchComponentCore` in `ReactorApp.TryRunDevtools`).
-- [ ] Invalidates every id in the target window's scope (the old tree is gone). *(NodeRegistry.InvalidateWindow exists; the wiring from switchComponent to the registry lands with the tree walk §2.8.)*
+- [x] Invalidates every id in the target window's scope (the old tree is gone). *(After a successful `SwitchComponent`, the tool calls `NodeRegistry.InvalidateWindow` for every active window; covered by the `Devtools_SwitchComponentInvalidatesIds` self-host fixture.)*
 
 ### 2.8 Tool: `reactor.tree` (summary view only)
 
@@ -236,8 +236,8 @@ Tests for this feature are classified by the infrastructure they require. Every 
   - [ ] Ambiguous selector yields `ambiguous-selector` with all candidates. *(Runtime concept; `ResolveByPredicate`/`ResolveTypePath` paths need a live visual tree and land with the §2.17 self-host fixture.)*
   - [x] Unknown selector yields `unknown-selector`. *(NodeId path covered in `SelectorResolverRuntimeTests`; tree-walk paths land with the self-host fixture.)*
   - [x] Cross-window id + explicit `window` mismatch is an error. *(Covered in `SelectorResolverRuntimeTests.CrossWindowMismatch_ThrowsWindowMismatch`.)*
-- [ ] `tests/Reactor.Tests/Devtools/TreeSchemaTests.cs`: deferred with §2.8.
-- [ ] `tests/Reactor.Tests/Devtools/WaitForPredicateTests.cs`: deferred with §2.13.
+- [x] `tests/Reactor.Tests/Devtools/TreeSchemaTests.cs`: schema pin + summary-only field set + camelCase bounds shape.
+- [x] `tests/Reactor.Tests/Devtools/WaitForPredicateTests.cs`: `FromJson` parsing, missing/mis-typed field behavior, `count:0` disappear semantics.
 - [x] `tests/Reactor.Tests/Devtools/McpDispatchTests.cs`: JSON-RPC envelope round-trip, registry order, structured errors.
 - [x] `tests/Reactor.Tests/Devtools/SupervisorArgsTests.cs`: `mur devtools` arg parsing.
 
@@ -249,7 +249,7 @@ Tests for this feature are classified by the infrastructure they require. Every 
 - [x] `McpHarness` disposes cleanly per fixture; the HttpListener port is released before the next fixture runs.
 - [x] `Devtools_VersionTool`: `version` returns a `build` tag, pid, mcpPort.
 - [x] `Devtools_ComponentsTool`: `components` lists fixture components and marks the current one.
-- [ ] `Devtools_SwitchComponent`: switching components invalidates all tree ids; subsequent tree walk returns new ids. *(Deferred — requires a multi-component host wiring; the fixture helper accepts the list but the switch callback is stubbed.)*
+- [x] `Devtools_SwitchComponentInvalidatesIds`: multi-component harness — after `switchComponent` returns ok, a `click` against an id captured before the swap resolves as `{ code: "gone" }`.
 - [x] `Devtools_TreeSummary` + `Devtools_TreeSelectorScope`:
   - [x] Full-window walk returns all visible elements + schema pin + prefixed ids.
   - [x] `selector` scopes the walk (rooted at a specific button).

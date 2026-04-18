@@ -385,6 +385,7 @@ public static class ReactorApp
                     SwitchComponent = SwitchComponentCore,
                     RequestReload = () => RequestDevtoolsReload(mcp, host),
                     Windows = windows,
+                    Nodes = nodes,
                 });
                 DevtoolsUiaTools.RegisterUiaTools(mcp, nodes, windows);
                 DevtoolsFireTool.Register(mcp, () => host.RootComponent);
