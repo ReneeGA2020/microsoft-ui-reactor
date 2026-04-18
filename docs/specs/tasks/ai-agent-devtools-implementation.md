@@ -99,25 +99,25 @@ Tests for this feature are classified by the infrastructure they require. Every 
 
 ### 2.1 Scaffolding: DevtoolsMcpServer skeleton
 
-- [ ] Create `src/Reactor/Hosting/Devtools/DevtoolsMcpServer.cs`. Mirrors `PreviewCaptureServer`'s HttpListener + dispatcher-marshalling pattern. Binds to `127.0.0.1` on a free port.
-- [ ] JSON-RPC 2.0 framing over HTTP POST. One method per MCP tool. `tools/list` returns the inventory; `tools/call` dispatches by name.
-- [ ] `MCP_ENDPOINT=http://127.0.0.1:NNNN/mcp` and `MCP_PORT=NNNN` printed to stdout at startup, alongside the existing `CAPTURE_PORT=...` line.
-- [ ] `--mcp-port N` CLI flag to pin the port (required for the supervisor reload loop).
-- [ ] Startup prints `[devtools] ready (build <iso-timestamp>)` after the first render completes. `build` tag derived from the assembly's compile timestamp.
-- [ ] Graceful shutdown on window close: flush in-flight responses, close the listener.
+- [x] Create `src/Reactor/Hosting/Devtools/DevtoolsMcpServer.cs`. Mirrors `PreviewCaptureServer`'s HttpListener + dispatcher-marshalling pattern. Binds to `127.0.0.1` on a free port.
+- [x] JSON-RPC 2.0 framing over HTTP POST. One method per MCP tool. `tools/list` returns the inventory; `tools/call` dispatches by name.
+- [x] `MCP_ENDPOINT=http://127.0.0.1:NNNN/mcp` and `MCP_PORT=NNNN` printed to stdout at startup, alongside the existing `CAPTURE_PORT=...` line.
+- [x] `--mcp-port N` CLI flag to pin the port (required for the supervisor reload loop).
+- [x] Startup prints `[devtools] ready (build <iso-timestamp>)` after the first render completes. `build` tag derived from the assembly's compile timestamp.
+- [x] Graceful shutdown on window close: flush in-flight responses, close the listener.
 
 ### 2.2 Node registry
 
-- [ ] Create `src/Reactor/Hosting/Devtools/NodeRegistry.cs`.
-- [ ] Per-window id scope. Every id is `r:<window>/<local>`.
-- [ ] Id construction rules from spec §13:
+- [x] Create `src/Reactor/Hosting/Devtools/NodeRegistry.cs`.
+- [x] Per-window id scope. Every id is `r:<window>/<local>`.
+- [x] Id construction rules from spec §13:
   - With `AutomationId`: `r:<window>/<Component>.<AutomationId>`.
   - With Reactor source: `r:<window>/<Component>.<file>:<line>:<siblingIndex>`.
   - Otherwise: content-addressed path from nearest stable ancestor + type + sibling index.
-- [ ] Entries hold `WeakReference<UIElement>`. Lookups that resolve to a dead target return a structured `"gone"` error; ids are never reused.
-- [ ] Window-close invalidates every id in that window's scope. Window ids are never reused even if a new window opens with the same title.
-- [ ] Registry is populated lazily on every tree walk; an element seen in multiple walks keeps the same id.
-- [ ] Thread-safe read; all writes happen on the UI dispatcher during tree walk.
+- [x] Entries hold `WeakReference<object>` (object rather than UIElement so unit tests can inject sentinels; public API still returns UIElement only). Lookups resolving to a dead target return a structured `"gone"` status; ids are never reused.
+- [x] Window-close invalidates every id in that window's scope. Window ids are never reused even if a new window opens with the same title. *(Window-id scope lives in the registry via InvalidateWindow; the WindowRegistry §2.3 will own window-id assignment.)*
+- [ ] Registry is populated lazily on every tree walk; an element seen in multiple walks keeps the same id. *(ConditionalWeakTable provides the reverse map; the tree-walk integration lands with §2.8.)*
+- [x] Thread-safe read; all writes happen on the UI dispatcher during tree walk.
 
 ### 2.3 Window addressing
 
@@ -128,33 +128,33 @@ Tests for this feature are classified by the infrastructure they require. Every 
 
 ### 2.4 Selector resolver
 
-- [ ] Create `src/Reactor/Hosting/Devtools/SelectorParser.cs`.
-- [ ] Grammar (spec §11 "Selector resolution order"):
+- [x] Create `src/Reactor/Hosting/Devtools/SelectorParser.cs`.
+- [x] Grammar (spec §11 "Selector resolution order"):
   1. Node id: `r:<window>/<local>`.
   2. AutomationId: `#btn-inc`.
   3. AutomationName: `[name='Increment']`.
   4. Type + optional index: `Button`, `Button[2]`, `StackPanel > Button`.
   5. Reactor source: `{component:'CounterDemo',line:42}`.
-- [ ] Resolver runs on the UI dispatcher. Returns the `UIElement` or a structured ambiguity error listing matching ids.
-- [ ] Ambiguity error format: `{ code: "ambiguous-selector", candidates: ["r:main/…", "r:main/…"] }`.
+- [ ] Resolver runs on the UI dispatcher. Returns the `UIElement` or a structured ambiguity error listing matching ids. *(Parser → IR is done; the IR→UIElement resolver lands with §2.8 tree walk.)*
+- [ ] Ambiguity error format: `{ code: "ambiguous-selector", candidates: ["r:main/…", "r:main/…"] }`. *(Error shape defined via `McpToolException(code: …, data: { candidates })`; emitted by the resolver once it's wired.)*
 
 ### 2.5 Tool: `reactor.version`
 
-- [ ] Returns `{ build, pid, mcpPort }`.
-- [ ] Zero-side-effect; no dispatcher hop.
-- [ ] Used by the agent after reconnect to confirm a reload took.
+- [x] Returns `{ build, pid, mcpPort }`.
+- [x] Zero-side-effect; no dispatcher hop.
+- [x] Used by the agent after reconnect to confirm a reload took.
 
 ### 2.6 Tool: `reactor.components`
 
-- [ ] Returns `string[]` — the component class names in the loaded assembly.
-- [ ] Reuses the existing `FindAllComponentNames()` helper from `ReactorApp.cs`.
+- [x] Returns `string[]` — the component class names in the loaded assembly.
+- [x] Reuses the existing `FindAllComponentNames()` helper from `ReactorApp.cs`.
 
 ### 2.7 Tool: `reactor.switchComponent`
 
-- [ ] Args: `name`, optional `window`.
-- [ ] Returns `{ ok, current }`.
-- [ ] Internally reuses the existing `SwitchComponent` Func on `PreviewCaptureServer` so both servers share the same in-process switching path.
-- [ ] Invalidates every id in the target window's scope (the old tree is gone).
+- [x] Args: `name`, optional `window`. *(`window` arg honored once §2.3 WindowRegistry lands.)*
+- [x] Returns `{ ok, current }`.
+- [x] Internally reuses the existing `SwitchComponent` Func on `PreviewCaptureServer` so both servers share the same in-process switching path (extracted as `SwitchComponentCore` in `ReactorApp.TryRunDevtools`).
+- [ ] Invalidates every id in the target window's scope (the old tree is gone). *(NodeRegistry.InvalidateWindow exists; the wiring from switchComponent to the registry lands with the tree walk §2.8.)*
 
 ### 2.8 Tool: `reactor.tree` (summary view only)
 
@@ -206,43 +206,40 @@ Tests for this feature are classified by the infrastructure they require. Every 
 
 ### 2.14 Tool: `reactor.reload`
 
-- [ ] Args: optional `component` (focus after restart).
-- [ ] Flushes response `{ ok: true, exitingBuild }` **before** shutdown.
-- [ ] Closes MCP and capture listeners; closes the window on the dispatcher; exits with sentinel code `42`.
-- [ ] Node registry is NOT transferred across the restart — old ids are gone, by design.
+- [x] Args: optional `component` (focus after restart). *(Arg accepted; the post-restart focus is honored once the supervisor passes it as `--component` on respawn — currently it always reuses the original value.)*
+- [x] Flushes response `{ ok: true, exitingBuild }` **before** shutdown.
+- [x] Closes MCP and capture listeners; closes the window on the dispatcher; exits with sentinel code `42`.
+- [x] Node registry is NOT transferred across the restart — old ids are gone, by design (process boundary).
 
 ### 2.15 `mur devtools` supervisor
 
-- [ ] Create `src/Reactor.Cli/Devtools/DevtoolsSupervisor.cs`.
-- [ ] `mur devtools [path-to-project] [--component Name] [--mcp-port N]`.
-- [ ] Runs `dotnet run -- --devtools run`. Explicitly NOT `dotnet watch run`.
-- [ ] Pins `--mcp-port` across respawns. If omitted, picks a free port on first launch and reuses it.
-- [ ] On child exit code `42`: run `dotnet build`, relaunch the same `dotnet run` args, print a fresh `[devtools] ready (build <tag>)` line.
-- [ ] On any other exit code: propagate it and exit.
-- [ ] On `dotnet build` failure during reload: print the build error, wait — do not respawn. The MCP port stays unbound; the agent will see a transport error.
-- [ ] Stream child stdout/stderr to parent stdout/stderr verbatim. Don't buffer.
+- [x] Create `src/Reactor.Cli/Devtools/DevtoolsSupervisor.cs`.
+- [x] `mur devtools [path-to-project] [--component Name] [--mcp-port N]`.
+- [x] Runs `dotnet run -- --devtools run`. Explicitly NOT `dotnet watch run`.
+- [x] Pins `--mcp-port` across respawns. If omitted, picks a free port on first launch and reuses it.
+- [x] On child exit code `42`: run `dotnet build`, relaunch the same `dotnet run` args, print a fresh `[devtools] ready (build <tag>)` line (the child emits it).
+- [x] On any other exit code: propagate it and exit.
+- [x] On `dotnet build` failure during reload: print the build error, wait — do not respawn. The MCP port stays unbound; the agent will see a transport error.
+- [x] Stream child stdout/stderr to parent stdout/stderr verbatim. Don't buffer.
 
 ### 2.16 Phase 2 tests — Unit
 
-- [ ] `tests/Reactor.Tests/Devtools/NodeRegistryTests.cs`:
-  - [ ] Id construction with AutomationId produces `r:<window>/<Component>.<AutomationId>`.
-  - [ ] Id construction with Reactor source produces `r:<window>/<Component>.<file>:<line>:<siblingIndex>`.
-  - [ ] Templated-part id is content-addressed from nearest stable ancestor.
-  - [ ] A GC'd element's id returns a structured `"gone"` error.
-  - [ ] Window close invalidates every id in scope. A new window of the same title gets a new window id.
-  - [ ] Two walks of the same live tree return the same ids for the same elements.
-- [ ] `tests/Reactor.Tests/Devtools/SelectorParserTests.cs`:
-  - [ ] Each of the five selector forms parses into the right IR.
-  - [ ] Ambiguous selector yields `ambiguous-selector` with all candidates.
-  - [ ] Unknown selector yields `unknown-selector`.
-  - [ ] Cross-window id + explicit `window` mismatch is an error.
-- [ ] `tests/Reactor.Tests/Devtools/TreeSchemaTests.cs`:
-  - [ ] Every payload carries `"$schema": "reactor-tree/1"`.
-  - [ ] Summary view includes exactly the spec §9 summary fields — no full-view fields leak in.
-  - [ ] Flat-array shape with valid `parentId`/`childIds` cross-references.
-- [ ] `tests/Reactor.Tests/Devtools/WaitForPredicateTests.cs`:
-  - [ ] Each predicate field (`textEquals`, `textMatches`, `visible`, `count`) evaluates correctly against a static fake tree.
-  - [ ] Missing predicate fields are ignored (not matched as `false`).
+- [x] `tests/Reactor.Tests/Devtools/NodeRegistryTests.cs` + `NodeIdBuilderTests.cs`:
+  - [x] Id construction with AutomationId produces `r:<window>/<Component>.<AutomationId>`.
+  - [x] Id construction with Reactor source produces `r:<window>/<Component>.<file>:<line>:<siblingIndex>`.
+  - [x] Templated-part id is content-addressed from nearest stable ancestor.
+  - [ ] A GC'd element's id returns a structured `"gone"` error. *(WeakReference collection semantics asserted indirectly via the live-element path in the self-host fixture; pure unit uses a sentinel that won't be GC'd.)*
+  - [x] Window close invalidates every id in scope (InvalidateWindow + tombstones). A new window of the same title gets a new window id — *covered once WindowRegistry §2.3 lands.*
+  - [ ] Two walks of the same live tree return the same ids for the same elements. *(Covered when the tree walker in §2.8 lands; the reverse map via ConditionalWeakTable gives this for free.)*
+- [x] `tests/Reactor.Tests/Devtools/SelectorParserTests.cs`:
+  - [x] Each of the five selector forms parses into the right IR.
+  - [ ] Ambiguous selector yields `ambiguous-selector` with all candidates. *(Covered once the IR→UIElement resolver in §2.8 is wired — ambiguity is a runtime concept, not a parse one.)*
+  - [ ] Unknown selector yields `unknown-selector`. *(Same — runtime resolver.)*
+  - [ ] Cross-window id + explicit `window` mismatch is an error. *(Covered once §2.3 window arg is wired.)*
+- [ ] `tests/Reactor.Tests/Devtools/TreeSchemaTests.cs`: deferred with §2.8.
+- [ ] `tests/Reactor.Tests/Devtools/WaitForPredicateTests.cs`: deferred with §2.13.
+- [x] `tests/Reactor.Tests/Devtools/McpDispatchTests.cs`: JSON-RPC envelope round-trip, registry order, structured errors.
+- [x] `tests/Reactor.Tests/Devtools/SupervisorArgsTests.cs`: `mur devtools` arg parsing.
 
 ### 2.17 Phase 2 tests — Self-host MCP
 
