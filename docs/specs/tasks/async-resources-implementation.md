@@ -405,9 +405,9 @@ Note: the first three rules below are pre-existing gaps for **all** hooks; file 
 
 ### 4.5 `UseStream<T>` scoping decision
 
-- [ ] Survey real Reactor apps for `IAsyncEnumerable` / SignalR / SSE use cases
-- [ ] File a separate spec if warranted; otherwise close out
-- [ ] Document the **reason** for deferral in the spec appendix if we don't ship it
+- [x] Survey real Reactor apps for `IAsyncEnumerable` / SignalR / SSE use cases — none of the in-repo samples (HeadTrax, regedit, A11yShowcase, TestApp demos) stream; the only streaming consumer today is `IObservableDataSource<T>.DataChanged`, which drives a full `LoadDataAsync` reload rather than appending to a live view
+- [x] File a separate spec if warranted; otherwise close out — **closed out for this phase**. Revisit once a real SignalR/SSE consumer lands; until then the three existing hooks cover every observed read/write pattern
+- [x] Document the **reason** for deferral in the spec appendix if we don't ship it — captured in the design spec's §17 "Deferred" appendix; tl;dr: adding a fourth hook for a use case we have zero concrete callers for widens the hook surface without paying rent, and the existing `UseResource` + manual `IAsyncEnumerable` consumption via `UseEffect`/`UseRef` is adequate for one-off needs
 
 **Phase 4 exit criteria:** `Pending` works in nested scenarios; focus revalidation opt-in; all `REACTOR_HOOKS_*` diagnostics green in the analyzer test suite; porting guide published.
 
