@@ -349,10 +349,16 @@ public static class ReactorApp
 
                 // MCP devtools server — always on when --devtools run is active.
                 // Port pinned by --mcp-port for the supervisor reload loop.
+                // Log level pinned by --devtools-log-level (default: call).
+                var logger = new DevtoolsLogger(
+                    DevtoolsLogger.DefaultDirectory(),
+                    global::System.Diagnostics.Process.GetCurrentProcess().Id,
+                    DevtoolsLogger.ParseLevel(options.LogLevel));
                 var mcp = new DevtoolsMcpServer(
                     host.Window.DispatcherQueue,
                     host.Window,
-                    preferredPort: options.McpPort);
+                    preferredPort: options.McpPort,
+                    logger: logger);
 
                 var windows = new WindowRegistry(mcp.BuildTag);
                 var nodes = new NodeRegistry();

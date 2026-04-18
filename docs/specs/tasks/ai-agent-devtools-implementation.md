@@ -443,10 +443,10 @@ Tests for this feature are classified by the infrastructure they require. Every 
 
 ### 4.3 Observability
 
-- [ ] Rolling log file under `%LOCALAPPDATA%/Reactor/devtools/<pid>.log` (or `$XDG_STATE_HOME/reactor/devtools/` on non-Windows).
-- [ ] Every tool call logged as one line: timestamp, tool name, selector, latency ms, result code.
-- [ ] Rotation: 10 MB per file, keep 5.
-- [ ] `--devtools-log-level` flag: `off|error|call|trace`.
+- [x] Rolling log file under `%LOCALAPPDATA%/Reactor/devtools/<pid>.log` (or `$XDG_STATE_HOME/reactor/devtools/` on non-Windows).
+- [x] Every tool call logged as one line: timestamp, tool name, selector, latency ms, result code.
+- [x] Rotation: 10 MB per file, keep 5.
+- [x] `--devtools-log-level` flag: `off|error|call|trace`.
 
 ### 4.4 Performance pass
 
@@ -467,7 +467,7 @@ Tests for this feature are classified by the infrastructure they require. Every 
 
 - [ ] `tests/Reactor.Tests/Devtools/StdioTransportTests.cs`: framing parity with HTTP.
 - [x] `tests/Reactor.Tests/Devtools/PrintConfigTests.cs`: fragment parses as valid JSON for each target agent; endpoint placeholder substituted.
-- [ ] `tests/Reactor.Tests/Devtools/LoggingTests.cs`: every tool call writes one line; rotation at 10 MB.
+- [x] `tests/Reactor.Tests/Devtools/LoggingTests.cs`: every tool call writes one line; rotation at 10 MB. *(Rotation cap is verified structurally via direct rotate calls — the 10 MB threshold itself is enforced in-code; the natural-fill path is covered by the self-host suite to avoid slow IO in unit tests.)*
 
 ### 4.7 Phase 4 tests — Self-host MCP
 

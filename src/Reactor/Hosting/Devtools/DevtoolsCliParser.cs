@@ -20,6 +20,7 @@ internal sealed record DevtoolsCliOptions(
     string? ListOutputPath,
     string? ScreenshotOutputPath,
     int? McpPort,
+    string? LogLevel,
     bool UsedDeprecatedPreview,
     bool PreviewAndDevtoolsConflict);
 
@@ -50,6 +51,7 @@ internal static class DevtoolsCliParser
                 ListOutputPath: null,
                 ScreenshotOutputPath: null,
                 McpPort: null,
+                LogLevel: null,
                 UsedDeprecatedPreview: true,
                 PreviewAndDevtoolsConflict: true);
         }
@@ -64,6 +66,7 @@ internal static class DevtoolsCliParser
                 ListOutputPath: null,
                 ScreenshotOutputPath: null,
                 McpPort: null,
+                LogLevel: null,
                 UsedDeprecatedPreview: false,
                 PreviewAndDevtoolsConflict: false);
         }
@@ -128,6 +131,11 @@ internal static class DevtoolsCliParser
         if (mcpPortIdx >= 0 && mcpPortIdx + 1 < args.Length && int.TryParse(args[mcpPortIdx + 1], out var parsedPort))
             mcpPort = parsedPort;
 
+        string? logLevel = null;
+        int logLevelIdx = IndexOf(args, "--devtools-log-level");
+        if (logLevelIdx >= 0 && logLevelIdx + 1 < args.Length)
+            logLevel = args[logLevelIdx + 1];
+
         int outIdx = IndexOf(args, "--out");
         if (outIdx >= 0 && outIdx + 1 < args.Length && subverb == DevtoolsSubverb.Screenshot)
             screenshotOut = args[outIdx + 1];
@@ -142,6 +150,7 @@ internal static class DevtoolsCliParser
             ListOutputPath: listOut,
             ScreenshotOutputPath: screenshotOut,
             McpPort: mcpPort,
+            LogLevel: logLevel,
             UsedDeprecatedPreview: deprecated,
             PreviewAndDevtoolsConflict: false);
     }

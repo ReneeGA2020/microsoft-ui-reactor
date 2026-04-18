@@ -164,4 +164,18 @@ public class CliFlagParsingTests
         Assert.Equal(DevtoolsSubverb.Run, opts.Subverb);
         Assert.Equal("MyComponent", opts.ComponentName);
     }
+
+    [Fact]
+    public void LogLevelFlag_IsParsed()
+    {
+        var opts = DevtoolsCliParser.Parse(["app.exe", "--devtools", "run", "--devtools-log-level", "trace"]);
+        Assert.Equal("trace", opts.LogLevel);
+    }
+
+    [Fact]
+    public void LogLevelFlag_Default_IsNull()
+    {
+        var opts = DevtoolsCliParser.Parse(["app.exe", "--devtools", "run"]);
+        Assert.Null(opts.LogLevel);
+    }
 }

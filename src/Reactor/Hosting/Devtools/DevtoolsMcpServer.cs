@@ -21,6 +21,7 @@ internal sealed class DevtoolsMcpServer : IDisposable
     private readonly McpToolRegistry _tools;
     private readonly string _buildTag;
     private readonly CancellationTokenSource _shutdownCts = new();
+    private readonly DevtoolsLogger? _logger;
     private bool _disposed;
 
     public int Port { get; }
@@ -28,16 +29,19 @@ internal sealed class DevtoolsMcpServer : IDisposable
     public string BuildTag => _buildTag;
     public DispatcherQueue DispatcherQueue => _dispatcherQueue;
     public Window Window => _window;
+    internal DevtoolsLogger? Logger => _logger;
 
     public DevtoolsMcpServer(
         DispatcherQueue dispatcherQueue,
         Window window,
-        int? preferredPort = null)
+        int? preferredPort = null,
+        DevtoolsLogger? logger = null)
     {
         _dispatcherQueue = dispatcherQueue;
         _window = window;
         _tools = new McpToolRegistry();
         _buildTag = ResolveBuildTag();
+        _logger = logger;
 
         Port = preferredPort ?? FindFreePort();
         _listener = new HttpListener();
@@ -74,6 +78,7 @@ internal sealed class DevtoolsMcpServer : IDisposable
         _shutdownCts.Cancel();
         try { _listener.Stop(); } catch { }
         try { _listener.Close(); } catch { }
+        try { _logger?.Dispose(); } catch { }
     }
 
     // -- HTTP Loop ---------------------------------------------------------------
@@ -147,7 +152,7 @@ internal sealed class DevtoolsMcpServer : IDisposable
 
     // -- Dispatch ----------------------------------------------------------------
 
-    internal JsonRpcResponse DispatchRpc(string body) => new McpDispatcher(_tools).Dispatch(body);
+    internal JsonRpcResponse DispatchRpc(string body) => new McpDispatcher(_tools, _logger).Dispatch(body);
 
     // -- Dispatcher marshalling --------------------------------------------------
 

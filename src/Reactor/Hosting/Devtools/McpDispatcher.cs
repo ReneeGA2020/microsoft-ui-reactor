@@ -11,8 +11,15 @@ namespace Microsoft.UI.Reactor.Hosting.Devtools;
 internal sealed class McpDispatcher
 {
     private readonly McpToolRegistry _tools;
+    private readonly DevtoolsLogger? _logger;
 
-    public McpDispatcher(McpToolRegistry tools) => _tools = tools;
+    public McpDispatcher(McpToolRegistry tools) : this(tools, null) { }
+
+    public McpDispatcher(McpToolRegistry tools, DevtoolsLogger? logger)
+    {
+        _tools = tools;
+        _logger = logger;
+    }
 
     public JsonRpcResponse Dispatch(string body)
     {
@@ -97,6 +104,38 @@ internal sealed class McpDispatcher
     {
         if (!_tools.TryGet(name, out var handler))
             throw new McpToolException($"Tool not found: '{name}'", JsonRpcErrorCodes.MethodNotFound);
-        return handler(@params);
+
+        if (_logger is null) return handler(@params);
+
+        var selector = TryReadSelector(@params);
+        var sw = global::System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            var result = handler(@params);
+            sw.Stop();
+            _logger.LogCall(name, selector, sw.ElapsedMilliseconds, success: true, resultCode: 0);
+            return result;
+        }
+        catch (McpToolException mte)
+        {
+            sw.Stop();
+            _logger.LogCall(name, selector, sw.ElapsedMilliseconds, success: false, resultCode: mte.Code);
+            throw;
+        }
+        catch (Exception)
+        {
+            sw.Stop();
+            _logger.LogCall(name, selector, sw.ElapsedMilliseconds,
+                success: false, resultCode: JsonRpcErrorCodes.InternalError);
+            throw;
+        }
+    }
+
+    private static string? TryReadSelector(JsonElement? @params)
+    {
+        if (@params is not { } p || p.ValueKind != JsonValueKind.Object) return null;
+        if (p.TryGetProperty("selector", out var sel) && sel.ValueKind == JsonValueKind.String)
+            return sel.GetString();
+        return null;
     }
 }
