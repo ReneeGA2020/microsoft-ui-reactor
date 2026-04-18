@@ -26,6 +26,13 @@ namespace Microsoft.UI.Reactor.Controls;
 /// </summary>
 public class DataGridComponent<T> : Component<DataGridElement<T>>
 {
+    /// <summary>
+    /// Input to the row-commit mutation. Bundles the row key, the post-edit item
+    /// (already applied in the state's mutation overlay), and the pre-edit snapshot
+    /// for revert on failure.
+    /// </summary>
+    private readonly record struct CommitMutationInput(RowKey Key, T NewItem, T? OriginalItem);
+
     public override Element Render()
     {
         var el = Props;
@@ -134,6 +141,31 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
             stateRef.Current = s;
         }
         var state = stateRef.Current!;
+
+        // ── Row-commit mutation (Phase 3) ────────────────────────
+        // UseMutation drives the async commit lifecycle: OnOptimistic snapshots the
+        // pre-edit item (so FailAsyncCommit can revert the overlay), OnSuccess clears
+        // the committing flag, OnError records the error message for the row banner.
+        // This replaces the ad-hoc Task.Run + TryEnqueue path previously in HandleAsyncCommit.
+        var rowChanged = el.OnRowChanged;
+        var commitMutation = Context.UseMutation<CommitMutationInput, bool>(
+            mutator: async (input, ct) =>
+            {
+                if (rowChanged is null) return true;
+                await rowChanged(input.Key, input.NewItem).ConfigureAwait(false);
+                return true;
+            },
+            options: new MutationOptions<CommitMutationInput, bool>(
+                OnOptimistic: input => state.BeginAsyncCommit(input.Key, input.OriginalItem!),
+                OnSuccess: (_, input) => state.CompleteAsyncCommit(input.Key),
+                OnError: (ex, input) => state.FailAsyncCommit(input.Key, ex.Message)));
+
+        // Route HandleAsyncCommit through the UseMutation handle. The mutation state
+        // persists across renders so overlapping RunAsync calls from rapid commits
+        // all land on the same pending-count / LastResult machinery.
+        state.CommitDispatcher = rowChanged is null
+            ? null
+            : (key, newItem, origItem) => _ = commitMutation.RunAsync(new CommitMutationInput(key, newItem, origItem));
 
         // ── Hook-based paging (Phase 3) ──────────────────────────
         // Under ReactorFeatureFlags.UseHookBasedPaging, data loading flows through
@@ -1231,9 +1263,12 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
             .HAlign(HorizontalAlignment.Center);
 
     /// <summary>
-    /// Handles the async commit flow with optimistic updates.
-    /// The item is already updated in-memory by CommitEdit/CommitRowEdit.
-    /// This method calls OnRowChanged and handles success/failure.
+    /// Routes the post-edit commit through the DataGrid's <c>UseMutation</c> handle.
+    /// The handle's OnOptimistic snapshots the pre-edit item into <see cref="DataGridState{T}"/>,
+    /// OnSuccess clears the committing flag, OnError writes the error into the row's
+    /// banner. When no dispatcher is installed (e.g. headless tests), this method
+    /// falls back to invoking <c>OnRowChanged</c> inline so the legacy tests that
+    /// never go through <c>UseMutation</c> continue to pass.
     /// </summary>
     private static void HandleAsyncCommit(
         DataGridState<T> state,
@@ -1244,8 +1279,14 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
     {
         if (el.OnRowChanged is null) return;
 
-        // Capture the UI-thread dispatcher BEFORE entering Task.Run.
-        // GetForCurrentThread() returns null on threadpool threads.
+        if (state.CommitDispatcher is { } dispatch)
+        {
+            dispatch(key, newItem, originalItem);
+            return;
+        }
+
+        // Fallback — no UseMutation dispatcher installed. Mirror the pre-Phase-3
+        // Task.Run pattern so headless / non-hook consumers keep working.
         var dq = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         state.BeginAsyncCommit(key, originalItem);
         _ = Task.Run(async () =>

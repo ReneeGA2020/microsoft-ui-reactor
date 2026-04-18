@@ -172,6 +172,15 @@ public class DataGridState<T>
     }
 
     /// <summary>
+    /// Delegate installed by <see cref="Controls.DataGridComponent{T}"/> each render to
+    /// route row-commit dispatch through a <c>UseMutation</c> hook. Static helpers in
+    /// the component (<c>HandleKeyDown</c>, <c>RenderRow</c>) invoke it instead of
+    /// spinning up their own <c>Task.Run</c>. When null — e.g. in headless unit tests —
+    /// callers fall back to invoking <c>OnRowChanged</c> themselves.
+    /// </summary>
+    public Action<RowKey, T, T?>? CommitDispatcher { get; set; }
+
+    /// <summary>
     /// Currently loaded items. In paged mode, returns items from all loaded cache blocks
     /// plus any mutations overlay. Prefer GetItemAt for index-based access.
     /// </summary>
