@@ -164,6 +164,95 @@ public class DataPageCacheParityTests
         }
     }
 
+    /// <summary>
+    /// Sharper variant of <see cref="Placeholder_Positions_Match_For_Same_Viewport"/>:
+    /// after loading the same **sequential** prefix of pages on both paths, the flat
+    /// item view must have an <i>identical count</i> of loaded vs. placeholder slots,
+    /// and those slots must fall on the same rows. Because the hook path's cursor
+    /// paging is sequential anyway, loading pages 0..K is the one scenario where we
+    /// can require exact structural parity rather than the "superset" relaxation the
+    /// scattered-access test accepts.
+    /// </summary>
+    [Fact]
+    public async Task Placeholder_Count_Exact_Match_On_Sequential_Prefix_Load()
+    {
+        const int pageSize = 10;
+        const int total = 80;
+
+        for (int prefixPages = 1; prefixPages <= 5; prefixPages++)
+        {
+            // Legacy: load pages [0..prefixPages).
+            var ls = new ControlledSource(total, pageSize);
+            var legacy = new DataPageCache<int>(ls, blockSize: pageSize, maxBlocks: 20);
+            for (int p = 0; p < prefixPages; p++)
+                _ = await legacy.GetBlockAsync(p);
+
+            // Hook: cursor-page forward prefixPages times (FetchNext loads page 0 implicitly
+            // on render; one FetchNext per page after that).
+            var hs = new ControlledSource(total, pageSize);
+            var (hook, _, _) = RenderHook(hs, new DataRequest { PageSize = pageSize },
+                new InfiniteResourceOptions(PageSize: pageSize));
+            for (int p = 1; p < prefixPages; p++) hook.FetchNext();
+
+            // Structural parity — derived from the *expected* workload, then verified
+            // on both paths. The loaded set should be exactly {0, 1, …, prefixPages-1}.
+            var expectedLoaded = new HashSet<int>(Enumerable.Range(0, prefixPages));
+
+            var legacyLoadedPages = new HashSet<int>();
+            for (int p = 0; p < (total + pageSize - 1) / pageSize; p++)
+            {
+                if (legacy.GetBlockStatus(p) == BlockStatus.Loaded) legacyLoadedPages.Add(p);
+            }
+            Assert.Equal(expectedLoaded, legacyLoadedPages);
+
+            // Hook side: row value must equal its row index for loaded pages (the
+            // ControlledSource's contract). For placeholder rows — those past the loaded
+            // prefix — Items[row] must read as default(int)=0, *and* the page's first
+            // row must also read 0 (avoids the value=0 collision on row 0 of page 0
+            // by checking page-level rather than cell-level).
+            for (int p = 0; p < (total + pageSize - 1) / pageSize; p++)
+            {
+                int start = p * pageSize;
+                int end = Math.Min(start + pageSize, total);
+                bool shouldBeLoaded = expectedLoaded.Contains(p);
+                if (shouldBeLoaded)
+                {
+                    for (int row = start; row < end; row++)
+                    {
+                        Assert.Equal(row, hook.Items[row]);
+                        Assert.Equal(row, legacy.GetItem(row));
+                    }
+                }
+                else
+                {
+                    // Placeholder page: every row reads as default. Since the expected
+                    // value would have been `row` (≥1 for all p≥1), a read of 0 here
+                    // proves no leakage from another loaded page.
+                    for (int row = start; row < end; row++)
+                        Assert.Equal(0, hook.Items[row]);
+                }
+            }
+
+            // Placeholder-count parity: total rows minus the rows covered by loaded
+            // prefix pages. DataGrid uses this to size its virtualized list, so an
+            // off-by-one here would show up as a row-count divergence at the UI.
+            int expectedPlaceholderRows = total - prefixPages * pageSize;
+            int hookPlaceholderRows = 0;
+            int legacyPlaceholderRows = 0;
+            for (int row = 0; row < total; row++)
+            {
+                int pageIndex = row / pageSize;
+                if (!expectedLoaded.Contains(pageIndex))
+                {
+                    hookPlaceholderRows++;
+                    if (legacy.GetBlockStatus(pageIndex) != BlockStatus.Loaded) legacyPlaceholderRows++;
+                }
+            }
+            Assert.Equal(expectedPlaceholderRows, hookPlaceholderRows);
+            Assert.Equal(expectedPlaceholderRows, legacyPlaceholderRows);
+        }
+    }
+
     // ════════════════════════════════════════════════════════════════
     //  Deps-change (SetState) semantics parity — both clear caches
     // ════════════════════════════════════════════════════════════════

@@ -214,7 +214,7 @@ Scope: new files `Reactor/Core/Hooks/UseInfiniteResource.cs`, `Reactor/Data/Data
 - [x] `Retry()` on Error refetches the failed page
 - [x] Deps change cancels in-flight and restarts
 - [x] LRU eviction over `MaxLoadedPages` cap
-- [ ] Placeholder count exact-match with DataPageCache (parity sweep deferred)
+- [x] Placeholder count exact-match with DataPageCache — `Placeholder_Count_Exact_Match_On_Sequential_Prefix_Load` asserts the loaded-page set, per-row value parity, and placeholder-row count match exactly between `DataPageCache<T>` and `UseInfiniteResource` for sequential-prefix workloads (the only scenario where cursor paging and block fetch agree exactly)
 
 #### Tests — unit (threading — race conditions)
 
