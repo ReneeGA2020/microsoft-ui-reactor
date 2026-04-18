@@ -429,6 +429,12 @@ internal static class SelfTestFixtureRegistry
         "AsyncResource.InfinitePlaceholder",
         "AsyncResource.InfiniteRefresh",
         "AsyncResource.InfiniteDepsChange",
+        // Framerate canaries — "works in isolation, breaks at 60Hz" regression net
+        "AsyncResource.Framerate.DepsThrashing",
+        "AsyncResource.Framerate.RenderShortCircuit",
+        "AsyncResource.Framerate.CacheChurn",
+        "AsyncResource.Framerate.FastRemount",
+        "AsyncResource.Framerate.DispatcherPressure",
     ];
 
     public static SelfTestFixtureBase? Create(string name, Harness harness) => name switch
@@ -853,6 +859,12 @@ internal static class SelfTestFixtureRegistry
         "AsyncResource.InfinitePlaceholder" => new AsyncInfiniteResourceFixtures.InfinitePlaceholder(harness),
         "AsyncResource.InfiniteRefresh" => new AsyncInfiniteResourceFixtures.InfiniteRefresh(harness),
         "AsyncResource.InfiniteDepsChange" => new AsyncInfiniteResourceFixtures.InfiniteDepsChange(harness),
+        // Framerate canaries (Phase 1)
+        "AsyncResource.Framerate.DepsThrashing" => new AsyncResourceFramerateFixtures.DepsThrashing(harness),
+        "AsyncResource.Framerate.RenderShortCircuit" => new AsyncResourceFramerateFixtures.RenderShortCircuit(harness),
+        "AsyncResource.Framerate.CacheChurn" => new AsyncResourceFramerateFixtures.CacheChurn(harness),
+        "AsyncResource.Framerate.FastRemount" => new AsyncResourceFramerateFixtures.FastRemount(harness),
+        "AsyncResource.Framerate.DispatcherPressure" => new AsyncResourceFramerateFixtures.DispatcherPressure(harness),
         _ => null,
     };
 }

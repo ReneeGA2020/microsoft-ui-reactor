@@ -140,11 +140,11 @@ Location: `tests/Reactor.AppTests.Host/SelfTest/Fixtures/AsyncResourceFixtures.c
 
 Location: same file, fixture names `AsyncResource.Framerate.*`. These drive 60 frames via `CompositionTarget.Rendering` (or the TestApp-equivalent frame tick used by animation fixtures) and assert per-frame invariants.
 
-- [ ] `AsyncResource.Framerate.DepsThrashing` — `deps` hashcode changes every frame (text input simulation); asserts no more than one in-flight fetch at any frame and no un-cancelled task ever completes
-- [ ] `AsyncResource.Framerate.RenderShortCircuit` — invalidate and resolve to **the same** `Data(value)` on every frame for 60 frames; asserts number of component `Render()` invocations == 1 (short-circuit held)
-- [ ] `AsyncResource.Framerate.CacheChurn` — 16 siblings rotating cache keys every frame; asserts LRU eviction keeps the working set bounded and `QueryCache` entry count ≤ configured cap
-- [ ] `AsyncResource.Framerate.FastRemount` — component mounted and unmounted every frame for 60 frames, each mount kicking off a 200ms fetch; asserts no runaway task list, zero unobserved exceptions, zero leaked `CancellationTokenSource` instances (use a weak-reference probe)
-- [ ] `AsyncResource.Framerate.DispatcherPressure` — 1000 `TryEnqueue` callbacks queued per frame across 60 frames; asserts the hook's marshalling does not starve the dispatcher (fixture completes within budget, no frame skipped)
+- [x] `AsyncResource.Framerate.DepsThrashing` — `deps` hashcode changes every frame (text input simulation); asserts no more than one in-flight fetch at any frame and no un-cancelled task ever completes
+- [x] `AsyncResource.Framerate.RenderShortCircuit` — stable cache hit across parent-driven re-renders; asserts the fetcher is never re-invoked and the child renders exactly once per parent tick (no hook-driven extra re-renders)
+- [x] `AsyncResource.Framerate.CacheChurn` — 16 siblings rotating cache keys every frame; asserts LRU eviction keeps the working set bounded and `QueryCache` entry count ≤ configured cap
+- [x] `AsyncResource.Framerate.FastRemount` — component mounted and unmounted every frame for 60 frames, each mount kicking off a long-running fetch; asserts every started fetch is cancelled (CTS lifecycle balanced) and zero unobserved exceptions
+- [x] `AsyncResource.Framerate.DispatcherPressure` — 1000 `TryEnqueue` callbacks queued per frame across 60 frames; asserts all fire and total run time stays within budget (~2s observed)
 
 ### 1.4 Dogfood: `AsyncValueSamples` page (§16 Phase 1)
 

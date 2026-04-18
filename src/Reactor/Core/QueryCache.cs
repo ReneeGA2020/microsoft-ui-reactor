@@ -213,9 +213,15 @@ public sealed class QueryCache : IDisposable
 
     /// <summary>
     /// Test / diagnostic hook: drive the eviction sweep explicitly rather than waiting
-    /// for the background timer. Returns the set of keys evicted.
+    /// for the background <see cref="EvictionPollInterval"/> timer. Returns the set of
+    /// keys that were evicted on this pass. Safe to call from any thread.
     /// </summary>
-    internal IReadOnlyList<string> EvictNow()
+    /// <remarks>
+    /// Production code should not need this — subscribers keep entries alive and the
+    /// shared timer evicts zero-subscriber entries past their <c>CacheTime</c>. It's
+    /// exposed publicly so framerate / stress tests can make eviction deterministic.
+    /// </remarks>
+    public IReadOnlyList<string> EvictNow()
     {
         var evicted = new List<string>();
         var now = UtcNow();
