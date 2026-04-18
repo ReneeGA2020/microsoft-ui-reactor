@@ -105,6 +105,46 @@ public class StateShapeTests
         Assert.Contains("\"hooks\":[]", json);
     }
 
+    // §3.13 exit criterion: the state tool works for every hook type Reactor
+    // ships. `SnapshotHooks` in RenderContext handles:
+    //   useState, useRef (both via ValueHookState<T>),
+    //   useMemo (MemoHookState<T>),
+    //   usePersisted (PersistedHookState<T>),
+    //   useEffect (EffectHookState),
+    //   useContext (ContextHookState),
+    //   useNavigationLifecycle (NavigationLifecycleHookState).
+    // We mount a component calling every one and assert each shows up with
+    // the expected `hook` name — any future additional hook type should fail
+    // this test until SnapshotHooks is taught to recognize it, which keeps
+    // the state tool honest about "every hook" coverage.
+    [Fact]
+    public void BuildPayload_OneOfEveryHookType_AllNamesRepresented()
+    {
+        var comp = new AllHooksComponent();
+        var scope = new ContextScope();
+        comp.Context.BeginRender(() => { }, scope);
+        _ = comp.Render();
+        comp.Context.FlushEffects();
+
+        var payload = DevtoolsStateTool.BuildPayload(comp);
+        var json = JsonSerializer.Serialize(payload, DevtoolsMcpServer.JsonOpts);
+
+        using var doc = JsonDocument.Parse(json);
+        var hookNames = doc.RootElement
+            .GetProperty("hooks")
+            .EnumerateArray()
+            .Select(h => h.GetProperty("hook").GetString()!)
+            .ToArray();
+
+        Assert.Contains("useState", hookNames);
+        Assert.Contains("useRef", hookNames);
+        Assert.Contains("useMemo", hookNames);
+        Assert.Contains("useEffect", hookNames);
+        Assert.Contains("usePersisted", hookNames);
+        Assert.Contains("useContext", hookNames);
+        Assert.Contains("useNavigationLifecycle", hookNames);
+    }
+
     private enum SampleEnum { First, Second, Third }
 
     private sealed class Person
@@ -117,5 +157,26 @@ public class StateShapeTests
     private sealed class EmptyComponent : Component
     {
         public override Element Render() => null!;
+    }
+
+    private static readonly Context<string> ThemeCtx = new("light");
+
+    // Exercises every hook type SnapshotHooks knows how to name. Keep this
+    // list in sync with RenderContext.SnapshotHooks — adding a new hook type
+    // should add a call here AND a SnapshotHooks arm, so `BuildPayload_OneOfEveryHookType_*`
+    // starts failing until both are done.
+    private sealed class AllHooksComponent : Component
+    {
+        public override Element Render()
+        {
+            _ = UseState(0);
+            _ = UseRef(0);
+            _ = UseMemo(() => 42, Array.Empty<object>());
+            UseEffect(() => { }, Array.Empty<object>());
+            _ = UsePersisted("persist-key", 1);
+            _ = UseContext(ThemeCtx);
+            UseNavigationLifecycle(onNavigatedTo: _ => { });
+            return null!;
+        }
     }
 }

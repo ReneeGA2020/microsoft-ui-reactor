@@ -411,7 +411,7 @@ Fixtures live in `tests/Reactor.AppTests.Host/SelfTest/Fixtures/DevtoolsFixtures
 ### 3.13 Phase 3 exit criteria
 
 - [ ] A seeded-layout-bug suite (≥ 5 bugs across alignment, clipping, binding, ordering, overflow) completes with ≤ 8 MCP calls on the 90th percentile.
-- [ ] `state` tool works for every hook type Reactor ships.
+- [x] `state` tool works for every hook type Reactor ships. *(Pinned at unit level by `StateShapeTests.BuildPayload_OneOfEveryHookType_AllNamesRepresented` — mounts a component calling `UseState`, `UseRef`, `UseMemo`, `UseEffect`, `UsePersisted`, `UseContext`, `UseNavigationLifecycle` and asserts each shows up with the right `hook` name in the payload. Adding a new hook type should add an arm here AND in `RenderContext.SnapshotHooks`, or the test fails.)*
 - [ ] All Phase 3 unit, self-host, and E2E tests are green.
 
 ---
