@@ -197,7 +197,7 @@ Scope: new files `Reactor/Core/Hooks/UseInfiniteResource.cs`, `Reactor/Data/Data
 - [x] Create `Reactor/Data/DataSourceResourceExtensions.cs`
 - [x] `UseDataSource<T>` delegates to `UseInfiniteResource<T, string>`
 - [x] Deps: `[source, request.Sort, request.Filters, request.SearchQuery]`
-- [ ] Parity sweep with existing data sources (spot-checked via InMemorySource in tests; GraphQLDataSource / ListDataSource not yet exercised against the new hook)
+- [x] Parity sweep with existing data sources — `ListDataSource<T>` is exercised end-to-end against both `DataPageCache<T>` and the hook path in `DataPageCacheParityTests`; `ObservableListDataSource<T>` inherits from `ListDataSource<T>` and adds only the `DataChanged` event (covered by the DataGrid's `IObservableDataSource<T>` branch in `DataGridComponent.Render`); no `GraphQLDataSource` exists in the repo
 
 ### 2.5 Phase-2 tests
 
