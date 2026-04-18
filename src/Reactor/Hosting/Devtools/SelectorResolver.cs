@@ -34,6 +34,22 @@ internal sealed class SelectorResolver
 
         if (ir.Kind == SelectorKind.NodeId)
         {
+            // Cross-window check: if the caller pinned `window` explicitly, a
+            // node id from a different window is a mismatch error, not a
+            // silent resolve. Failing loudly forces the agent to fix the call.
+            if (!string.IsNullOrEmpty(explicitWindowId))
+            {
+                var idWindow = ExtractWindowFromNodeId(ir.NodeId!);
+                if (idWindow is not null &&
+                    !string.Equals(idWindow, explicitWindowId, StringComparison.Ordinal))
+                {
+                    throw new McpToolException(
+                        $"Node id '{ir.NodeId}' belongs to window '{idWindow}', but 'window' was set to '{explicitWindowId}'.",
+                        JsonRpcErrorCodes.InvalidParams,
+                        new { code = "window-mismatch", idWindow, requested = explicitWindowId });
+                }
+            }
+
             var lookup = _nodeRegistry.Resolve(ir.NodeId!);
             return lookup.Status switch
             {
@@ -167,6 +183,20 @@ internal sealed class SelectorResolver
             if (VisualTreeHelper.GetChild(element, i) is UIElement child)
                 Collect(child, predicate, sink, skipRoot: false);
         }
+    }
+
+    /// <summary>
+    /// Pulls the window id out of an <c>r:&lt;window&gt;/&lt;local&gt;</c> id.
+    /// Returns null when the id is malformed — callers treat that as "no
+    /// window claim" and fall through to the registry lookup.
+    /// </summary>
+    internal static string? ExtractWindowFromNodeId(string nodeId)
+    {
+        if (!nodeId.StartsWith("r:", StringComparison.Ordinal)) return null;
+        int slash = nodeId.IndexOf('/', 2);
+        if (slash < 0) return null;
+        var window = nodeId.Substring(2, slash - 2);
+        return string.IsNullOrEmpty(window) ? null : window;
     }
 
     private static string DescribeCandidate(UIElement el)

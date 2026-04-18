@@ -124,7 +124,7 @@ Tests for this feature are classified by the infrastructure they require. Every 
 - [x] `WindowRegistry` assigns stable window ids at `Window.Activated` time. Unique `Window.Title` → lowercased-slug; otherwise `Win1`, `Win2`, …
 - [x] `reactor.windows` tool returns `[{ id, title, hwnd, bounds, isMain, buildTag }]`.
 - [x] Tools that accept a `window` arg: when exactly one window exists, default to that window; when more than one, error if omitted and list active ids in the error payload.
-- [x] Cross-window mismatch (id's window ≠ explicit `window` arg) returns an error, not a silent preference. *(The NodeId → window-scope check is enforced via the `r:<window>/` prefix in SelectorResolver; explicit-mismatch test lives with §2.17.)*
+- [x] Cross-window mismatch (id's window ≠ explicit `window` arg) returns an error, not a silent preference. *(Enforced in `SelectorResolver.Resolve` via the `ExtractWindowFromNodeId` check; covered in `SelectorResolverRuntimeTests`.)*
 
 ### 2.4 Selector resolver
 
@@ -233,9 +233,9 @@ Tests for this feature are classified by the infrastructure they require. Every 
   - [ ] Two walks of the same live tree return the same ids for the same elements. *(Covered when the tree walker in §2.8 lands; the reverse map via ConditionalWeakTable gives this for free.)*
 - [x] `tests/Reactor.Tests/Devtools/SelectorParserTests.cs`:
   - [x] Each of the five selector forms parses into the right IR.
-  - [ ] Ambiguous selector yields `ambiguous-selector` with all candidates. *(Covered once the IR→UIElement resolver in §2.8 is wired — ambiguity is a runtime concept, not a parse one.)*
-  - [ ] Unknown selector yields `unknown-selector`. *(Same — runtime resolver.)*
-  - [ ] Cross-window id + explicit `window` mismatch is an error. *(Covered once §2.3 window arg is wired.)*
+  - [ ] Ambiguous selector yields `ambiguous-selector` with all candidates. *(Runtime concept; `ResolveByPredicate`/`ResolveTypePath` paths need a live visual tree and land with the §2.17 self-host fixture.)*
+  - [x] Unknown selector yields `unknown-selector`. *(NodeId path covered in `SelectorResolverRuntimeTests`; tree-walk paths land with the self-host fixture.)*
+  - [x] Cross-window id + explicit `window` mismatch is an error. *(Covered in `SelectorResolverRuntimeTests.CrossWindowMismatch_ThrowsWindowMismatch`.)*
 - [ ] `tests/Reactor.Tests/Devtools/TreeSchemaTests.cs`: deferred with §2.8.
 - [ ] `tests/Reactor.Tests/Devtools/WaitForPredicateTests.cs`: deferred with §2.13.
 - [x] `tests/Reactor.Tests/Devtools/McpDispatchTests.cs`: JSON-RPC envelope round-trip, registry order, structured errors.
@@ -383,9 +383,9 @@ Tests for this feature are classified by the infrastructure they require. Every 
 - [x] `tests/Reactor.Tests/Devtools/StateShapeTests.cs`:
   - [x] Primitive hook values serialize directly.
   - [x] Complex objects serialize as `{ "$type", "$shape" }`, no deep dump.
-- [ ] `tests/Reactor.Tests/Devtools/FireResolutionTests.cs`:
-  - [ ] Component + event name resolves to the right handler.
-  - [ ] Unknown component or unknown event returns structured errors.
+- [x] `tests/Reactor.Tests/Devtools/FireResolutionTests.cs`:
+  - [x] Component + event name resolves to the right handler.
+  - [x] Unknown component or unknown event returns structured errors.
 
 ### 3.11 Phase 3 tests — Self-host MCP
 

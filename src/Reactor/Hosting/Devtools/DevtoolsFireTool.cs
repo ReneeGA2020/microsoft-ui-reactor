@@ -43,25 +43,7 @@ internal static class DevtoolsFireTool
                 var eventName = DevtoolsTools.ReadString(@params, "event")
                     ?? throw new McpToolException("Missing 'event'.", JsonRpcErrorCodes.InvalidParams);
 
-                var root = rootComponent();
-                if (root is null)
-                    throw new McpToolException(
-                        "No root component is mounted.",
-                        JsonRpcErrorCodes.ToolExecution,
-                        new { code = "not-ready" });
-
-                var instance = FindComponent(root, componentName)
-                    ?? throw new McpToolException(
-                        $"Component '{componentName}' is not the root (child-component search not implemented in v1).",
-                        JsonRpcErrorCodes.ToolExecution,
-                        new { code = "unknown-component", available = new[] { root.GetType().Name } });
-
-                var handler = FindHandler(instance, eventName)
-                    ?? throw new McpToolException(
-                        $"Component '{componentName}' has no handler named '{eventName}'.",
-                        JsonRpcErrorCodes.ToolExecution,
-                        new { code = "unknown-event", component = componentName, @event = eventName });
-
+                var (instance, handler) = ResolveTarget(rootComponent(), componentName, eventName);
                 var argsArray = ExtractArgs(@params);
                 try
                 {
@@ -77,6 +59,35 @@ internal static class DevtoolsFireTool
 
                 return new { ok = true, via = "reactor-event-injection" };
             }));
+    }
+
+    /// <summary>
+    /// Resolves the (component, handler) pair to invoke, throwing the same
+    /// structured errors the live tool path emits. Extracted so unit tests
+    /// can exercise the error shapes without a live MCP server.
+    /// </summary>
+    internal static (Component instance, MethodInfo handler) ResolveTarget(
+        Component? root, string componentName, string eventName)
+    {
+        if (root is null)
+            throw new McpToolException(
+                "No root component is mounted.",
+                JsonRpcErrorCodes.ToolExecution,
+                new { code = "not-ready" });
+
+        var instance = FindComponent(root, componentName)
+            ?? throw new McpToolException(
+                $"Component '{componentName}' is not the root (child-component search not implemented in v1).",
+                JsonRpcErrorCodes.ToolExecution,
+                new { code = "unknown-component", available = new[] { root.GetType().Name } });
+
+        var handler = FindHandler(instance, eventName)
+            ?? throw new McpToolException(
+                $"Component '{componentName}' has no handler named '{eventName}'.",
+                JsonRpcErrorCodes.ToolExecution,
+                new { code = "unknown-event", component = componentName, @event = eventName });
+
+        return (instance, handler);
     }
 
     internal static Component? FindComponent(Component root, string name)
