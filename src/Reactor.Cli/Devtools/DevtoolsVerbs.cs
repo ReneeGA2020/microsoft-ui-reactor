@@ -100,13 +100,21 @@ internal static class DevtoolsVerbs
 
     // -- Argument-object builders --------------------------------------------
 
-    private static JsonElement EmptyArgs() => JsonDocument.Parse("{}").RootElement;
+    // Clone before returning so the JsonElement's lifetime doesn't depend on
+    // a JsonDocument that goes out of scope — RootElement without Clone is
+    // invalidated once the document is finalized.
+    private static JsonElement EmptyArgs()
+    {
+        using var doc = JsonDocument.Parse("{}");
+        return doc.RootElement.Clone();
+    }
 
     private static JsonElement ArgsFromDict(Dictionary<string, object?> fields)
     {
         var filtered = fields.Where(kv => kv.Value is not null).ToDictionary(kv => kv.Key, kv => kv.Value);
         var json = JsonSerializer.Serialize(filtered);
-        return JsonDocument.Parse(json).RootElement;
+        using var doc = JsonDocument.Parse(json);
+        return doc.RootElement.Clone();
     }
 
     // -- Verb implementations ------------------------------------------------
@@ -171,8 +179,10 @@ internal static class DevtoolsVerbs
         var doc = client.InvokeTool("screenshot", ArgsFromDict(fields));
         if (HasError(doc)) return EmitResult(doc, shared);
 
-        // If --out was passed, decode the base64 PNG and write it; stdout still
-        // gets the result envelope (metadata), matching spec §9.
+        // Spec §9: stdout is the PNG bytes when --out - is passed; otherwise
+        // --out <path> writes the file and stdout gets the result metadata.
+        // Without --out at all, the result envelope (which contains the base64
+        // PNG) is the stdout payload.
         if (!string.IsNullOrEmpty(outPath) && doc.RootElement.TryGetProperty("result", out var result))
         {
             try
@@ -184,11 +194,16 @@ internal static class DevtoolsVerbs
                     {
                         using var stdout = Console.OpenStandardOutput();
                         stdout.Write(bytes, 0, bytes.Length);
+                        // Binary stream on stdout — must not also print the
+                        // JSON envelope, or it'd corrupt the PNG. Metadata
+                        // still goes to stderr for humans.
+                        var meta = new { width = result.TryGetProperty("width", out var w) ? (object?)w : null,
+                                         height = result.TryGetProperty("height", out var h) ? (object?)h : null,
+                                         bounds = result.TryGetProperty("bounds", out var b) ? (object?)b : null };
+                        Console.Error.WriteLine(JsonSerializer.Serialize(meta));
+                        return (int)DevtoolsCliExit.Success;
                     }
-                    else
-                    {
-                        File.WriteAllBytes(outPath, bytes);
-                    }
+                    File.WriteAllBytes(outPath, bytes);
                 }
             }
             catch (Exception ex)
@@ -270,8 +285,12 @@ internal static class DevtoolsVerbs
         if (by is not null)
         {
             // Tool's `by` is {horizontal, vertical} percent deltas (0–100).
+            // Parse invariant so `,` as a decimal separator (de-DE, fr-FR)
+            // doesn't collide with the `H,V` pair separator.
             var parts = by.Split(',');
-            if (parts.Length != 2 || !double.TryParse(parts[0], out var h) || !double.TryParse(parts[1], out var v))
+            if (parts.Length != 2
+                || !double.TryParse(parts[0].Trim(), global::System.Globalization.NumberStyles.Float, global::System.Globalization.CultureInfo.InvariantCulture, out var h)
+                || !double.TryParse(parts[1].Trim(), global::System.Globalization.NumberStyles.Float, global::System.Globalization.CultureInfo.InvariantCulture, out var v))
                 return UsageError("--by must be H%,V% (percent deltas 0-100)");
             fields["by"] = new { horizontal = h, vertical = v };
         }

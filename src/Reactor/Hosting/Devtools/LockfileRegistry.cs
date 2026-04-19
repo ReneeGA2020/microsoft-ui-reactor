@@ -83,20 +83,40 @@ internal static class LockfileRegistry
     }
 
     /// <summary>
-    /// Writes the lockfile atomically (tmp + rename). Creates the parent
-    /// directory if missing. Silently succeeds if the on-disk content was
-    /// already correct so a reload loop doesn't thrash.
+    /// Writes the lockfile atomically via write-to-tmp + overwrite-rename, so
+    /// a concurrent reader never observes a missing or half-written file.
+    /// Creates the parent directory if missing. Skips the rename when the
+    /// on-disk content already matches so a reload loop doesn't thrash
+    /// filesystem watchers.
     /// </summary>
     public static void Write(string path, LockfileEntry entry)
     {
         var dir = Path.GetDirectoryName(path);
         if (!string.IsNullOrEmpty(dir)) global::System.IO.Directory.CreateDirectory(dir);
 
-        var tmp = path + ".tmp";
         var json = JsonSerializer.Serialize(entry, JsonOpts);
+
+        if (File.Exists(path))
+        {
+            try
+            {
+                if (string.Equals(File.ReadAllText(path), json, StringComparison.Ordinal))
+                    return;
+            }
+            catch { /* fall through to rewrite */ }
+        }
+
+        var tmp = path + ".tmp";
         File.WriteAllText(tmp, json);
-        if (File.Exists(path)) File.Delete(path);
-        File.Move(tmp, path);
+        try
+        {
+            File.Move(tmp, path, overwrite: true);
+        }
+        catch
+        {
+            try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+            throw;
+        }
     }
 
     /// <summary>

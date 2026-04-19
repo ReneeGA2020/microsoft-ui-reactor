@@ -25,6 +25,10 @@ internal sealed class McpCliClient : IDisposable
 
     public JsonDocument InvokeTool(string toolName, JsonElement? arguments)
     {
+        // Empty fallback needs a self-owned JsonElement. Using
+        // `JsonDocument.Parse("{}").RootElement` directly would leave the
+        // element tied to a document the GC is free to reclaim.
+        using var emptyDoc = JsonDocument.Parse("{}");
         var payload = new
         {
             jsonrpc = "2.0",
@@ -33,7 +37,7 @@ internal sealed class McpCliClient : IDisposable
             @params = new
             {
                 name = toolName,
-                arguments = arguments ?? JsonDocument.Parse("{}").RootElement,
+                arguments = arguments ?? emptyDoc.RootElement.Clone(),
             },
         };
         return Post(payload);
@@ -60,6 +64,26 @@ internal sealed class McpCliClient : IDisposable
         var content = new StringContent(json, Encoding.UTF8, "application/json");
         var resp = _http.PostAsync(_endpoint, content).GetAwaiter().GetResult();
         var body = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-        return JsonDocument.Parse(body);
+
+        // Non-success status: surface as a transport error so the verb's
+        // exit-code mapping treats it consistently (exit 2). A 500 from the
+        // server with an HTML error page would otherwise throw JsonException
+        // at Parse and bypass the mapping.
+        if (!resp.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException(
+                $"MCP {_endpoint} returned HTTP {(int)resp.StatusCode} {resp.StatusCode}" +
+                (string.IsNullOrWhiteSpace(body) ? "" : $": {body}"));
+        }
+
+        try
+        {
+            return JsonDocument.Parse(body);
+        }
+        catch (JsonException ex)
+        {
+            throw new HttpRequestException(
+                $"MCP {_endpoint} returned a non-JSON response body.", ex);
+        }
     }
 }
