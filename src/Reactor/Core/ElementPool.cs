@@ -56,7 +56,6 @@ public sealed class ElementPool : IDisposable
         typeof(WinUI.ProgressRing),
         typeof(WinUI.Image),
         typeof(WinUI.InfoBadge),
-        typeof(Monaco.MonacoEditor),
         // Interactive controls — safe to pool because the Tag-based event pattern
         // reads the current element from Tag at invocation time, so recycled controls
         // automatically dispatch to the new element's callbacks after SetElementTag.
@@ -295,10 +294,6 @@ public sealed class ElementPool : IDisposable
                 break;
             case WinUI.InfoBadge badge:
                 badge.Value = -1; // WinUI default (hidden)
-                break;
-            case Monaco.MonacoEditor:
-                // Keep the WebView2 alive — just clear the tag.
-                // Properties will be updated on next mount via dependency properties.
                 break;
 
             // Interactive controls — reset transient state so no state leaks between uses.

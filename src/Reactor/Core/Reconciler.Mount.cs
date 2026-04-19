@@ -94,7 +94,6 @@ public sealed partial class Reconciler
             ImageElement img => MountImage(img),
             PersonPictureElement pp => MountPersonPicture(pp),
             WebView2Element wv => MountWebView2(wv),
-            MonacoEditorElement monaco => MountMonacoEditor(monaco),
             WrapGridElement wg => MountWrapGrid(wg, requestRerender),
             StackElement stack => MountStack(stack, requestRerender),
             GridElement grid => MountGrid(grid, requestRerender),
@@ -705,45 +704,6 @@ public sealed partial class Reconciler
             (GetElementTag((UIElement)s!) as WebView2Element)?.OnNavigationCompleted?.Invoke(((WinUI.WebView2)s!).Source);
         ApplySetters(wv.Setters, webView);
         return webView;
-    }
-
-    private Monaco.MonacoEditor MountMonacoEditor(MonacoEditorElement monaco)
-    {
-        // Try to reuse a pooled MonacoEditor (avoids expensive WebView2 re-initialization).
-        var editor = _pool.TryRent(typeof(Monaco.MonacoEditor)) as Monaco.MonacoEditor;
-        if (editor is not null)
-        {
-            // Recycle: just update properties on the existing instance.
-            editor.Text = monaco.Text;
-            editor.EditorLanguage = monaco.Language;
-            editor.Theme = monaco.Theme;
-            editor.IsReadOnly = monaco.IsReadOnly;
-            editor.EditorFontSize = monaco.FontSize;
-            editor.WordWrap = monaco.WordWrap;
-            editor.MinimapEnabled = monaco.MinimapEnabled;
-            SetElementTag(editor, monaco);
-            ApplySetters(monaco.Setters, editor);
-            return editor;
-        }
-
-        editor = new Monaco.MonacoEditor
-        {
-            Text = monaco.Text,
-            EditorLanguage = monaco.Language,
-            Theme = monaco.Theme,
-            IsReadOnly = monaco.IsReadOnly,
-            EditorFontSize = monaco.FontSize,
-            WordWrap = monaco.WordWrap,
-            MinimapEnabled = monaco.MinimapEnabled,
-        };
-        SetElementTag(editor, monaco);
-        editor.TextChanged += (s, args) =>
-        {
-            if (args.IsFlush) return;
-            (GetElementTag((UIElement)s!) as MonacoEditorElement)?.OnTextChanged?.Invoke(args.Text);
-        };
-        ApplySetters(monaco.Setters, editor);
-        return editor;
     }
 
     private WinUI.RichEditBox MountRichEditBox(RichEditBoxElement reb)

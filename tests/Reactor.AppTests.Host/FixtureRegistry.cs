@@ -87,9 +87,6 @@ internal static class FixtureRegistry
         "Markdown_HeadingsAndFormatting",
         "Markdown_CodeBlockAndLinks",
 
-        // Monaco
-        "MonacoEditor_Mounts",
-
         // D3 Charts
         "D3_LineChart",
         "D3_BarChart",
@@ -206,9 +203,6 @@ internal static class FixtureRegistry
         // Markdown
         "Markdown_HeadingsAndFormatting" => MarkdownFixtures.HeadingsAndFormatting(ctx),
         "Markdown_CodeBlockAndLinks" => MarkdownFixtures.CodeBlockAndLinks(ctx),
-
-        // Monaco
-        "MonacoEditor_Mounts" => MonacoFixtures.EditorMounts(ctx),
 
         // D3 Charts
         "D3_LineChart" => D3Fixtures.LineChart(ctx),

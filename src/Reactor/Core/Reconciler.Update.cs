@@ -151,8 +151,6 @@ public sealed partial class Reconciler
                 => UpdatePersonPicture(n, pp),
             (WebView2Element o, WebView2Element n, WinUI.WebView2 wv)
                 => UpdateWebView2(o, n, wv),
-            (MonacoEditorElement o, MonacoEditorElement n, Monaco.MonacoEditor mc)
-                => UpdateMonacoEditor(o, n, mc),
             (WrapGridElement o, WrapGridElement n, WinUI.VariableSizedWrapGrid wg)
                 => UpdateWrapGrid(o, n, wg, requestRerender),
             (StackElement o, StackElement n, WinUI.StackPanel sp)
@@ -865,20 +863,6 @@ public sealed partial class Reconciler
         if (n.Source is not null && n.Source != o.Source) wv.Source = n.Source;
         SetElementTag(wv, n);
         ApplySetters(n.Setters, wv);
-        return null;
-    }
-
-    private UIElement? UpdateMonacoEditor(MonacoEditorElement o, MonacoEditorElement n, Monaco.MonacoEditor mc)
-    {
-        if (n.Text != o.Text) mc.Text = n.Text;
-        if (n.Language != o.Language) mc.EditorLanguage = n.Language;
-        if (n.Theme != o.Theme) mc.Theme = n.Theme;
-        if (n.IsReadOnly != o.IsReadOnly) mc.IsReadOnly = n.IsReadOnly;
-        if (n.FontSize != o.FontSize) mc.EditorFontSize = n.FontSize;
-        if (n.WordWrap != o.WordWrap) mc.WordWrap = n.WordWrap;
-        if (n.MinimapEnabled != o.MinimapEnabled) mc.MinimapEnabled = n.MinimapEnabled;
-        SetElementTag(mc, n);
-        ApplySetters(n.Setters, mc);
         return null;
     }
 

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Microsoft.UI.Reactor.Monaco;
+namespace MonacoEditorApp;
 
 /// <summary>
 /// AOT-compatible JSON source generator context for Monaco editor serialization.

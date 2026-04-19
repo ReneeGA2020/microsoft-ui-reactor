@@ -1,6 +1,21 @@
 // Monaco Editor sample — a simple text editor for testing the MonacoEditor control.
 // Supports file open, save, drag-and-drop, and language selection.
+//
+// This sample doubles as an example of extending Reactor with a custom
+// Reactor/WinUI component that leverages WebView2. The pieces:
+//
+//   Monaco/MonacoEditor.cs          — the WinUI UserControl (WebView2 host)
+//   Monaco/monaco-editor.html       — the HTML shell loaded into WebView2
+//   Monaco/Assets/                  — vendored Monaco Editor JS/CSS
+//   Monaco/MonacoEditorElement.cs   — a Reactor Element + reconciler registration
+//                                     so the editor behaves like any built-in
+//                                     element (mount/update/unmount lifecycle,
+//                                     props flow through the reconciler, no
+//                                     manual Panel.Children manipulation).
+//
+// Program.Main below wires the registration into the host's reconciler.
 
+using MonacoEditorApp;
 using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Layout;
@@ -9,6 +24,7 @@ using Microsoft.UI.Xaml.Controls;
 using Windows.System;
 using static Microsoft.UI.Reactor.Factories;
 using static Microsoft.UI.Reactor.Core.Theme;
+using static MonacoEditorApp.MonacoDsl;
 using Path = System.IO.Path;
 
 public static class Program
@@ -17,6 +33,9 @@ public static class Program
     static void Main() => ReactorApp.Run<EditorApp>("Monaco Editor", width: 1200, height: 800, configure: host =>
     {
         host.Window.SystemBackdrop = new Microsoft.UI.Xaml.Media.MicaBackdrop();
+        // Register the custom MonacoEditorElement so the reconciler knows how to
+        // mount/update/unmount it. Mirrors the pattern used by XamlInterop.Register.
+        MonacoEditorRegistration.Register(host.Reconciler);
     });
 }
 
@@ -79,7 +98,7 @@ class EditorApp : Component
         var (filePath, setFilePath) = UseState<string?>(null);
         var (isDirty, setIsDirty) = UseState(false);
         var (status, setStatus) = UseState("Ready");
-        var editorRef = UseRef<Microsoft.UI.Reactor.Monaco.MonacoEditor?>(null);
+        var editorRef = UseRef<MonacoEditor?>(null);
 
         var language = Languages[langIndex].Id;
 
@@ -206,9 +225,15 @@ class EditorApp : Component
         .Padding(8, 4)
         .Grid(row: 3, columnSpan: columns.Length);
 
-        var editor = MonacoEditor(text, OnTextChanged, language, theme)
-            .OnMount(ctrl => editorRef.Current = ctrl as Microsoft.UI.Reactor.Monaco.MonacoEditor)
-            .Grid(row: 2, column: 0);
+        var editor = (MonacoEditor(text, OnTextChanged, language, theme) with
+        {
+            IsReadOnly = false,
+            FontSize = 14,
+            WordWrap = false,
+            MinimapEnabled = true,
+            OnControlMounted = ctrl => editorRef.Current = ctrl,
+        })
+        .Grid(row: 2, column: 0);
 
         if (!showPreview)
         {

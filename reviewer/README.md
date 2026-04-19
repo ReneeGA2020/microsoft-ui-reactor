@@ -160,7 +160,7 @@ The implementation agent:
 ## Scope
 
 **Included** (485 files across 91 batches):
-- `Reactor/` — Core framework (reconciler, elements, hosting, flex, yoga, animation, markdown, monaco, property grid)
+- `Reactor/` — Core framework (reconciler, elements, hosting, flex, yoga, animation, markdown, property grid)
 - `Reactor.Cli/` — CLI tool
 - `Reactor.Localization.Generator/` — Source generator
 - `ReactorCharting/` — D3 visualization library

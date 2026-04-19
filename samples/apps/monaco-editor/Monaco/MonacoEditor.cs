@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
 
-namespace Microsoft.UI.Reactor.Monaco;
+namespace MonacoEditorApp;
 
 // AI-HINT: WebView2 wrapper around VS Code's Monaco editor.
 //   Communication: C# ↔ JS via CoreWebView2.WebMessageReceived / ExecuteScriptAsync.
