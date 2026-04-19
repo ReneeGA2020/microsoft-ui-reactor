@@ -270,14 +270,23 @@ public sealed partial class Reconciler : IDisposable
             var replacement = Update(oldElement, newElement, existingControl, requestRerender);
             // If Update returned a completely new control (full remount path),
             // unmount the old control to clean up event handlers and component state.
+            // Use Unmount (not UnmountAndPool) so the pool path does not eagerly
+            // detach the old control from its parent — the caller will overwrite
+            // the slot via an indexer assignment (e.g. g.Children[i] = replacement)
+            // and WinUI's parent bookkeeping handles detach as part of the swap.
+            // UnmountAndPool.DetachFromParent would remove the child here, shifting
+            // subsequent sibling indices and corrupting a positional parent update.
             if (replacement is not null && replacement != existingControl)
-                UnmountAndPool(existingControl);
+                Unmount(existingControl);
             return replacement ?? existingControl;
         }
 
-        // Type changed — unmount+pool old tree, then mount new tree
-        // (so pooled controls are available for rent during mount).
-        UnmountAndPool(existingControl);
+        // Type changed — unmount the old tree (without detaching from parent),
+        // then mount the new tree. Caller replaces the old slot in its parent
+        // collection; WinUI detaches the old control as part of that indexer
+        // assignment. Detaching eagerly here would shift sibling indices and
+        // corrupt positional updates over the remaining children.
+        Unmount(existingControl);
         return Mount(newElement, requestRerender);
     }
 
