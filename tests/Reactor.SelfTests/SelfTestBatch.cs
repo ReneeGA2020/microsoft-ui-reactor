@@ -17,6 +17,9 @@ namespace Microsoft.UI.Reactor.SelfTests;
 [TestClass]
 public class SelfTestBatch
 {
+    private const int SelfTestTimeoutMs = 300_000;   // 5 min
+    private const int ListFixturesTimeoutMs = 30_000;
+
     // Per-fixture aggregated outcome, populated by ClassInitialize.
     // Key = fixture name; Value = (passed, joined failure reasons).
     private static readonly ConcurrentDictionary<string, (bool Passed, string Detail)> _byFixture = new();
@@ -28,26 +31,37 @@ public class SelfTestBatch
     public static void RunSelfTests(TestContext context)
     {
         var exe = FindHostExe();
-        var psi = new ProcessStartInfo(exe, "--self-test")
-        {
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true,
-        };
-
-        using var process = Process.Start(psi)!;
-        var stdout = process.StandardOutput.ReadToEnd();
-        var stderr = process.StandardError.ReadToEnd();
-        process.WaitForExit(300_000); // 5 minute timeout
+        var (stdout, stderr, exitCode, timedOut) = RunProcess(exe, "--self-test", SelfTestTimeoutMs);
 
         _fullOutput = stdout;
         if (!string.IsNullOrEmpty(stderr))
             _fullOutput += "\n--- stderr ---\n" + stderr;
 
-        // Parse TAP: track the current fixture via `# Running: <name>` markers,
-        // then bucket every `ok` / `not ok` line that follows into that fixture
-        // until the next marker (or end of stream).
+        if (timedOut)
+        {
+            _initError = $"Self-test process timed out after {SelfTestTimeoutMs}ms.\n{_fullOutput}";
+            _initialized = true;
+            return;
+        }
+
+        ParseTap(stdout);
+        _initialized = true;
+
+        if (exitCode != 0 && _byFixture.IsEmpty)
+            _initError = $"Self-test process exited with code {exitCode} but produced no parsable TAP output.\n{_fullOutput}";
+    }
+
+    private static void ParseTap(string stdout)
+    {
+        // Two TAP emitter sources:
+        //   Harness check:   "ok <checkName>"  /  "not ok <checkName> - <reason>"
+        //   SelfTestRunner:  "# Running: <fixtureName>"
+        //                    "not ok <index> <fixtureName> - fixture not found"     (before any marker)
+        //                    "not ok <index> <fixtureName>_CRASH - <type>: <msg>"   (after marker if RunAsync threw)
+        //
+        // Runner-level "not ok" lines start with a numeric test index; check-level lines do not.
+        // Runner-level failures attribute to their own fixture name regardless of `current`.
+
         string? current = null;
         var failuresForCurrent = new List<string>();
         var sawChecksForCurrent = false;
@@ -74,39 +88,60 @@ public class SelfTestBatch
             }
             else if (line.StartsWith("ok "))
             {
+                // Harness-level pass; ignore payload, just note that current saw checks.
                 sawChecksForCurrent = true;
             }
             else if (line.StartsWith("not ok "))
             {
-                sawChecksForCurrent = true;
                 var rest = line[7..].Trim();
-                // SelfTestRunner emits fixture-level crashes as "not ok N FIXTURE_CRASH - ...".
-                // These appear BEFORE a `# Running:` marker for that fixture (or after the
-                // marker if the fixture was created then threw). Either way, attribute to
-                // `current` if set; otherwise detect via trailing "_CRASH" suffix.
-                if (current is null)
+                if (TryParseRunnerLevelFailure(rest, out var fixtureName, out var detail))
                 {
-                    // Crash before any fixture marker: try to recover fixture name.
-                    var nameEnd = rest.IndexOf(' ');
-                    var name = nameEnd > 0 ? rest[..nameEnd] : rest;
-                    if (name.EndsWith("_CRASH", StringComparison.Ordinal))
-                        name = name[..^"_CRASH".Length];
-                    _byFixture[name] = (false, rest);
+                    // Runner-level failure — attribute directly to the fixture name,
+                    // overriding any in-progress `current` bucket.
+                    _byFixture[fixtureName] = (false, detail);
                 }
                 else
                 {
-                    failuresForCurrent.Add(rest);
+                    sawChecksForCurrent = true;
+                    if (current is not null)
+                        failuresForCurrent.Add(rest);
+                    // A check-level failure with no `# Running:` context is malformed TAP;
+                    // drop it into the output blob (already captured in _fullOutput).
                 }
             }
         }
         Flush();
+    }
 
-        _initialized = true;
+    private static bool TryParseRunnerLevelFailure(string rest, out string fixtureName, out string detail)
+    {
+        // Runner-level format: "<digits> <fixtureName>[_CRASH] - <detail>"
+        fixtureName = "";
+        detail = "";
+        var firstSpace = rest.IndexOf(' ');
+        if (firstSpace <= 0) return false;
+        var head = rest[..firstSpace];
+        if (!head.All(char.IsDigit)) return false;
 
-        if (process.ExitCode != 0 && _byFixture.IsEmpty)
+        var tail = rest[(firstSpace + 1)..].TrimStart();
+        var dashIdx = tail.IndexOf(" - ");
+        string namePart;
+        if (dashIdx >= 0)
         {
-            _initError = $"Self-test process exited with code {process.ExitCode} but produced no parsable TAP output.\n{_fullOutput}";
+            namePart = tail[..dashIdx].Trim();
+            detail = tail[(dashIdx + 3)..].Trim();
         }
+        else
+        {
+            namePart = tail.Trim();
+            detail = "(no detail)";
+        }
+
+        if (namePart.Length == 0) return false;
+        fixtureName = namePart.EndsWith("_CRASH", StringComparison.Ordinal)
+            ? namePart[..^"_CRASH".Length]
+            : namePart;
+        return true;
     }
 
     public static IEnumerable<object[]> AllFixtures => FixtureNames.Value.Select(n => new object[] { n });
@@ -133,20 +168,65 @@ public class SelfTestBatch
     private static string[] LoadFixtureNames()
     {
         var exe = FindHostExe();
-        var psi = new ProcessStartInfo(exe, "--list-fixtures")
+        var (stdout, stderr, exitCode, timedOut) = RunProcess(exe, "--list-fixtures", ListFixturesTimeoutMs);
+
+        if (timedOut)
+            throw new TimeoutException($"`--list-fixtures` timed out after {ListFixturesTimeoutMs}ms. Host: {exe}");
+
+        if (exitCode != 0)
+            throw new InvalidOperationException(
+                $"`--list-fixtures` failed with exit code {exitCode}.\nstdout:\n{stdout}\nstderr:\n{stderr}");
+
+        var names = stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(l => l.Trim())
+            .Where(l => l.Length > 0)
+            .ToArray();
+
+        if (names.Length == 0)
+            throw new InvalidOperationException(
+                $"`--list-fixtures` returned no fixture names.\nstdout:\n{stdout}\nstderr:\n{stderr}");
+
+        return names;
+    }
+
+    // -- Process runner: async reads + timeout race with kill ------------------
+
+    private static (string Stdout, string Stderr, int ExitCode, bool TimedOut) RunProcess(
+        string exe, string args, int timeoutMs)
+    {
+        var psi = new ProcessStartInfo(exe, args)
         {
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             CreateNoWindow = true,
         };
-        using var p = Process.Start(psi)!;
-        var stdout = p.StandardOutput.ReadToEnd();
-        p.WaitForExit(30_000);
-        return stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries)
-            .Select(l => l.Trim())
-            .Where(l => l.Length > 0)
-            .ToArray();
+
+        using var process = Process.Start(psi)
+            ?? throw new InvalidOperationException($"Failed to start process: {exe} {args}");
+
+        // Read both streams concurrently so neither pipe can block the child by
+        // filling its OS buffer.
+        var stdoutTask = process.StandardOutput.ReadToEndAsync();
+        var stderrTask = process.StandardError.ReadToEndAsync();
+        var exitTask = process.WaitForExitAsync();
+        var timeoutTask = Task.Delay(timeoutMs);
+
+        var completed = Task.WhenAny(exitTask, timeoutTask).GetAwaiter().GetResult();
+        var timedOut = completed != exitTask;
+
+        if (timedOut)
+        {
+            try { process.Kill(entireProcessTree: true); }
+            catch (InvalidOperationException) { /* already exited */ }
+            process.WaitForExit();
+        }
+
+        // At this point the process has exited; the stream tasks will complete.
+        var stdout = stdoutTask.GetAwaiter().GetResult();
+        var stderr = stderrTask.GetAwaiter().GetResult();
+
+        return (stdout, stderr, timedOut ? -1 : process.ExitCode, timedOut);
     }
 
     private static string FindHostExe()
