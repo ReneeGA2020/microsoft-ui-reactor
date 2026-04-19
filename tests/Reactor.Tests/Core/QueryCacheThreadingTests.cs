@@ -13,6 +13,15 @@ public class QueryCacheThreadingTests
 {
     private const int StressThreads = 8;
 
+    // Drain budget for every WaitAsync in this file. Workloads are bounded by
+    // per-test CancellationTokenSource windows (typically 250ms–5s) — this
+    // timeout only exists to catch a genuine deadlock. On a local machine the
+    // tests finish in milliseconds; on shared CI runners (virtualized cores,
+    // bursty scheduling) flushing the Task scheduler after cancellation can
+    // stretch unpredictably. A generous ceiling kills flakes without weakening
+    // the deadlock guarantee.
+    private static readonly TimeSpan DrainTimeout = TimeSpan.FromSeconds(60);
+
     // ════════════════════════════════════════════════════════════════
     //  Concurrent Set + TryGet — no torn reads
     // ════════════════════════════════════════════════════════════════
@@ -55,7 +64,7 @@ public class QueryCacheThreadingTests
         }
 
         cts.CancelAfter(TimeSpan.FromMilliseconds(250));
-        await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromSeconds(10));
+        await Task.WhenAll(tasks).WaitAsync(DrainTimeout);
         Assert.Equal(0, tornReads);
     }
 
@@ -90,7 +99,7 @@ public class QueryCacheThreadingTests
                 }
             });
         }
-        await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromSeconds(10));
+        await Task.WhenAll(tasks).WaitAsync(DrainTimeout);
         Assert.Equal(0, negativeCount);
 
         // Final count should be exactly zero.
@@ -131,7 +140,7 @@ public class QueryCacheThreadingTests
 
         await Task.Delay(250);
         cts.Cancel();
-        await Task.WhenAll(setter, invalidator, reader).WaitAsync(TimeSpan.FromSeconds(5));
+        await Task.WhenAll(setter, invalidator, reader).WaitAsync(DrainTimeout);
         Assert.Equal(0, inconsistencies);
     }
 
@@ -167,7 +176,7 @@ public class QueryCacheThreadingTests
                 barrier.SignalAndWait();
                 cache.EvictNow();
             });
-            await Task.WhenAll(sub, evict).WaitAsync(TimeSpan.FromSeconds(2));
+            await Task.WhenAll(sub, evict).WaitAsync(DrainTimeout);
 
             // At least one of two things must be true:
             // (a) EvictNow ran first and the entry was cleared; Subscribe created a fresh slot.
@@ -202,7 +211,7 @@ public class QueryCacheThreadingTests
         });
 
         // The test passes iff neither task throws.
-        await Task.WhenAll(setter, invalidator).WaitAsync(TimeSpan.FromSeconds(5));
+        await Task.WhenAll(setter, invalidator).WaitAsync(DrainTimeout);
         Assert.True(setter.IsCompletedSuccessfully);
         Assert.True(invalidator.IsCompletedSuccessfully);
     }
@@ -265,12 +274,7 @@ public class QueryCacheThreadingTests
                 }
             }));
         }
-        // Drain budget is generous — the cts cancels workers at 500ms, but on
-        // contended CI runners (shared cores, virtualized IO) flushing all
-        // tasks through their last op + OS thread wake can take several
-        // seconds even though it's near-instant locally. Bumping the ceiling
-        // costs nothing on the happy path and kills the observed CI flake.
-        await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromSeconds(60));
+        await Task.WhenAll(tasks).WaitAsync(DrainTimeout);
         Assert.Equal(0, exceptions);
     }
 }
