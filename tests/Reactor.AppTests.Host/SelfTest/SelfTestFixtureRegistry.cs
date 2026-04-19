@@ -404,6 +404,7 @@ internal static class SelfTestFixtureRegistry
         "DataGrid_EditCellColumnPlacement",
         "DataGrid_RapidSelection",
         "DataGrid_ExternalStateUpdate",
+        "DataGrid_CellTypeFlipPreservesTrailingCells",
         // DataGrid incremental paging
         "DataGrid_IncrementalLoadVerification",
         "DataGrid_SmallDatasetFullyLoaded",
@@ -878,6 +879,7 @@ internal static class SelfTestFixtureRegistry
         "DataGrid_EditCellColumnPlacement" => new DataGridEditFixtures.EditCellColumnPlacement(harness),
         "DataGrid_RapidSelection" => new DataGridEditFixtures.RapidSelection(harness),
         "DataGrid_ExternalStateUpdate" => new DataGridEditFixtures.ExternalStateUpdate(harness),
+        "DataGrid_CellTypeFlipPreservesTrailingCells" => new DataGridEditFixtures.CellTypeFlipPreservesTrailingCells(harness),
         // DataGrid incremental paging
         "DataGrid_IncrementalLoadVerification" => new DataGridPagingFixtures.IncrementalLoadVerification(harness),
         "DataGrid_SmallDatasetFullyLoaded" => new DataGridPagingFixtures.SmallDatasetFullyLoaded(harness),

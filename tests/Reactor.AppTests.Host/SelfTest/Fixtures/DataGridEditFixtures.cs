@@ -364,4 +364,122 @@ internal static class DataGridEditFixtures
                 anyHas24);
         }
     }
+
+    /// <summary>
+    /// Regression for GitHub #34. When a child element's type flips inside a Grid
+    /// (TextBlock → TextBox → TextBlock — e.g. a DataGrid cell entering and leaving
+    /// inline-edit mode), the row Grid used to drop the trailing cell and retarget
+    /// the intermediate cell's AutomationName to a sibling's stale value. Root cause:
+    /// <c>ReconcileImperative</c> called <c>UnmountAndPool</c> on the replaced
+    /// control, whose <c>ElementPool.Return</c> → <c>DetachFromParent</c> removed
+    /// the old child from the Grid's <c>Children</c> collection *before* the caller's
+    /// <c>g.Children[i] = replacement</c> assignment, shifting siblings down by one.
+    /// After the shift, the final-column update path hit <c>i &gt;= g.Children.Count</c>
+    /// and broke out of the loop, leaving the trailing cell dropped and one
+    /// sibling's AutomationName carrying the flipped cell's text.
+    ///
+    /// This fixture mounts a tiny hand-rolled Grid whose middle child flips between
+    /// <c>Text</c> and <c>TextField</c> based on a state bit, then asserts the
+    /// Grid's child count and per-child <c>AutomationProperties.Name</c> values
+    /// survive the flip and the flip-back.
+    /// </summary>
+    internal class CellTypeFlipPreservesTrailingCells(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            Action<bool>? setEditing = null;
+
+            var host = H.CreateHost();
+            host.Mount(ctx =>
+            {
+                var (editing, setEd) = ctx.UseState(false);
+                setEditing = setEd;
+
+                // Four children matching the DataGrid row layout: [Id][Name][Cat][Price].
+                // Middle child flips between Text and TextField based on `editing`.
+                var nameCell = editing
+                    ? (Element)TextField("Alice", _ => { }).Padding(2)
+                    : (Element)TextBlock("Alice").Padding(8, 4);
+
+                return Grid(
+                    new[] { "60", "140", "120", "100" },
+                    new[] { "*" },
+                    TextBlock("1").Padding(8, 4).Grid(row: 0, column: 0),
+                    nameCell.Grid(row: 0, column: 1),
+                    TextBlock("Widgets").Padding(8, 4).Grid(row: 0, column: 2),
+                    TextBlock("$10.00").Padding(8, 4).Grid(row: 0, column: 3)
+                );
+            });
+
+            await Harness.Render(300);
+
+            // Sanity: all four cells present and correctly named at mount.
+            H.Check("CellFlip_Initial_Id", H.FindText("1") is not null);
+            H.Check("CellFlip_Initial_Name", H.FindText("Alice") is not null);
+            H.Check("CellFlip_Initial_Cat", H.FindText("Widgets") is not null);
+            H.Check("CellFlip_Initial_Price", H.FindText("$10.00") is not null);
+
+            var rowGrid = H.FindControl<Microsoft.UI.Xaml.Controls.Grid>(
+                g => g.ColumnDefinitions.Count == 4);
+            H.Check("CellFlip_RowGridMounted", rowGrid is not null);
+            if (rowGrid is null || setEditing is null) return;
+
+            var initialChildCount = rowGrid.Children.Count;
+            H.Check($"CellFlip_Initial_ChildCount ({initialChildCount})",
+                initialChildCount == 4);
+
+            // 1. Flip middle cell to TextBox (TextBlock → TextBox replacement).
+            setEditing(true);
+            await Harness.Render(200);
+
+            H.Check($"CellFlip_AfterEnter_ChildCount ({rowGrid.Children.Count})",
+                rowGrid.Children.Count == 4);
+            H.Check("CellFlip_AfterEnter_PriceStillVisible",
+                H.FindText("$10.00") is not null);
+            H.Check("CellFlip_AfterEnter_CategoryStillVisible",
+                H.FindText("Widgets") is not null);
+            var textBoxAfterEnter = H.FindControl<TextBox>(tb => tb.Text == "Alice");
+            H.Check("CellFlip_AfterEnter_EditorMounted", textBoxAfterEnter is not null);
+
+            // 2. Flip back to TextBlock (TextBox → TextBlock replacement).
+            setEditing(false);
+            await Harness.Render(200);
+
+            H.Check($"CellFlip_AfterExit_ChildCount ({rowGrid.Children.Count})",
+                rowGrid.Children.Count == 4);
+            H.Check("CellFlip_AfterExit_PriceStillVisible",
+                H.FindText("$10.00") is not null);
+            H.Check("CellFlip_AfterExit_CategoryStillVisible",
+                H.FindText("Widgets") is not null);
+
+            // 3. Critical check: trailing cell's AutomationProperties.Name must
+            //    equal its visible text. Under the #34 bug, the failure mode was
+            //    either (a) Name cleared to empty by ElementPool.CleanElement on
+            //    the replaced sibling, or (b) Name holding a neighbouring cell's
+            //    stale caption after the Grid.Children shift. Require an exact
+            //    match so both modes are caught — allowing empty would silently
+            //    regress into the UIA-opaque state the issue reports.
+            var priceTb = rowGrid.Children.OfType<TextBlock>()
+                .FirstOrDefault(tb => tb.Text == "$10.00");
+            H.Check("CellFlip_AfterExit_PriceCellPresent", priceTb is not null);
+            if (priceTb is not null)
+            {
+                var priceName = Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(priceTb);
+                H.Check($"CellFlip_PriceAutomationNameIntact (name='{priceName}')",
+                    priceName == "$10.00");
+            }
+
+            // 4. And the middle cell's AutomationName must be "Alice", not stale
+            //    or empty. Same reasoning as above.
+            var nameTb = rowGrid.Children.OfType<TextBlock>()
+                .FirstOrDefault(tb => tb.Text == "Alice");
+            H.Check("CellFlip_AfterExit_NameCellPresent", nameTb is not null);
+            if (nameTb is not null)
+            {
+                var uiName = Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(nameTb);
+                H.Check($"CellFlip_NameAutomationNameIntact (name='{uiName}')",
+                    uiName == "Alice");
+            }
+        }
+    }
 }
