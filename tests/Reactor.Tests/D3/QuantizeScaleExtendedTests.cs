@@ -2,9 +2,10 @@
 // InvertExtent roundtrips, NaN handling, copy independence, and boundary behavior
 // not fully exercised in ScaleTests.cs
 
+using Microsoft.UI.Reactor.Charting.D3;
 using Xunit;
 
-namespace Microsoft.UI.Reactor.Charting.D3.Tests;
+namespace Microsoft.UI.Reactor.Tests.D3;
 
 public class QuantizeScaleExtendedTests
 {

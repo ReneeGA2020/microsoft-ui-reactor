@@ -59,39 +59,47 @@ Omit `-p:Platform=...` to use the default (ARM64 on ARM machines, x64 on Intel).
 
 ## Running tests
 
-Reactor has three types of tests. Each serves a different purpose — make sure you run the right one.
+Reactor has three test suites. Each lives in its own project, so there are no filters to remember — one command per suite.
 
-| # | Type | Project | Runner | Count | What it tests |
-|---|------|---------|--------|-------|---------------|
-| 1 | **Unit** | `tests/Reactor.Tests` | xUnit | 2,200+ | Algorithms, element equality, Yoga layout, hooks — no WinUI window |
-| 2 | **Selfhost** | `tests/Reactor.AppTests.Host` | TAP | 350+ | Full reconciler pipeline against real WinUI controls, in-process |
-| 3 | **E2E** | `tests/Reactor.AppTests` | Appium/MSTest | 46 | Cross-process UIA validation via WinAppDriver (6 test classes) |
+| # | Suite | Project | Runner | What it tests |
+|---|-------|---------|--------|---------------|
+| 1 | **Unit** | `tests/Reactor.Tests` | xUnit | Algorithms, reconciliation, Yoga layout, hooks, D3 — no WinUI window |
+| 2 | **Selftest** | `tests/Reactor.SelfTests` | MSTest (wraps TAP subprocess) | Full reconciler pipeline against real WinUI controls, in-process |
+| 3 | **E2E** | `tests/Reactor.AppTests` | MSTest + Appium/WinAppDriver | Cross-process UIA validation, real user input |
 
-### Quick reference
+### Three commands
 
 ```bash
-# 1. Unit tests (xUnit, no UI window, ~3s)
+# 1. Unit
 dotnet test tests/Reactor.Tests
 
-# 2. Selfhost tests (in-process WinUI window, ~10s) — raw TAP output
-dotnet run --project tests/Reactor.AppTests.Host -- --self-test
+# 2. Selftest (in-process WinUI, ~10s; no filter needed)
+dotnet test tests/Reactor.SelfTests
 
-# 3. Appium / E2E tests (requires WinAppDriver)
-dotnet test tests/Reactor.AppTests --filter "ClassName!=Reactor.AppTests.Tests.SelfTestBatch"
+# 3. E2E (requires WinAppDriver)
+dotnet test tests/Reactor.AppTests
 
-# Everything at once (unit + selfhost + E2E)
-dotnet test tests/Reactor.Tests && dotnet test tests/Reactor.AppTests
+# All three
+dotnet test tests/Reactor.Tests && dotnet test tests/Reactor.SelfTests && dotnet test tests/Reactor.AppTests
 ```
 
-> `dotnet test tests/Reactor.AppTests` without a filter runs both the `SelfTestBatch` (selfhost via subprocess) and all 6 E2E test classes — the simplest way to run everything non-unit.
->
-> `Reactor.AppTests.csproj` has a `ProjectReference` to the Host app with `ReferenceOutputAssembly="false"`, so `dotnet test` always rebuilds the Host before running. No stale binaries.
+Both `Reactor.SelfTests` and `Reactor.AppTests` declare a `ProjectReference` to `Reactor.AppTests.Host` with `ReferenceOutputAssembly="false"`, so `dotnet test` rebuilds the Host first. No stale binaries.
+
+### When to write which test
+
+| If you're testing… | Write a… |
+|---|---|
+| An algorithm, pure function, record equality, hook bookkeeping, D3 math — anything that doesn't need a WinUI window | **Unit test** in `tests/Reactor.Tests/` |
+| How an element mounts/updates against a real WinUI control, layout math against real Yoga+XAML, reconciler behavior end-to-end, assertions via `VisualTreeHelper` | **Selftest fixture** in `tests/Reactor.AppTests.Host/SelfTest/Fixtures/` (registered in `SelfTestFixtureRegistry`, wrapped by a `[TestMethod]` in `SelfTestBatch`) |
+| Real user input (clicks, keystrokes, tab navigation), UIA properties as seen by assistive tech, cross-process behavior, XAML Island interop | **E2E test** in `tests/Reactor.AppTests/Tests/` |
+
+Rule of thumb: start with a unit test. Drop to selftest only when you need a live control. Reach for E2E only when you need cross-process UIA — E2E is the slowest and flakiest tier.
 
 ### 1. Unit tests (`tests/Reactor.Tests`) — xUnit
 
-2,200+ xUnit tests covering framework internals **without a WinUI window**: element creation, reconciliation algorithms (LIS, keyed/positional), Yoga layout, localization, property hashing, control pooling, hooks.
+xUnit tests covering framework internals **without a WinUI window**: element creation, reconciliation algorithms (LIS, keyed/positional), Yoga layout, localization, property hashing, control pooling, hooks, D3 charting math.
 
-**When to run:** after any code change. Fast (~3s), no prerequisites beyond the .NET SDK.
+**When to run:** after any code change. Fast, no prerequisites beyond the .NET SDK.
 
 ```bash
 dotnet test tests/Reactor.Tests
@@ -100,21 +108,25 @@ dotnet test tests/Reactor.Tests
 dotnet test tests/Reactor.Tests --filter "FullyQualifiedName~TreeSerializerTests"
 ```
 
-### 2. Selfhost tests (`tests/Reactor.AppTests.Host --self-test`) — TAP
+### 2. Selftest (`tests/Reactor.SelfTests`) — MSTest + TAP
 
-350+ in-process checks that run inside a real WinUI window at CPU speed. Each fixture (in `tests/Reactor.AppTests.Host/SelfTest/Fixtures/`) mounts UI via `ReactorHost`, runs assertions through `VisualTreeHelper`, and emits TAP results to stdout. This is the **only** way to test the reconciler end-to-end against real WinUI controls.
+In-process checks that run inside a real WinUI window at CPU speed. Each fixture (in `tests/Reactor.AppTests.Host/SelfTest/Fixtures/`) mounts UI via `ReactorHost`, runs assertions through `VisualTreeHelper`, and emits TAP to stdout. `SelfTestBatch` launches the Host subprocess, parses TAP, and maps each fixture to a `[TestMethod]` so MSTest reports them individually. This is the **only** way to test the reconciler end-to-end against real WinUI controls.
 
 **When to run:** after reconciler, control mount/update, or any UI-related changes.
 
 ```bash
-# Run directly (TAP output to stdout, ~10s)
+dotnet test tests/Reactor.SelfTests
+```
+
+For faster iteration with raw TAP output, you can bypass MSTest and run the Host directly:
+
+```bash
+# Raw TAP output
 dotnet run --project tests/Reactor.AppTests.Host -- --self-test
 
 # Filter by fixture name prefix
 dotnet run --project tests/Reactor.AppTests.Host -- --self-test --filter "Flex"
 ```
-
-> **How this connects to `dotnet test`:** `SelfTestBatch` in `tests/Reactor.AppTests/Tests/SelfTestBatch.cs` launches the Host app as a subprocess with `--self-test`, parses TAP output, and maps each fixture result to an MSTest `[TestMethod]`. You don't need to run selfhost tests separately unless you want raw TAP output or faster iteration.
 
 ### 3. E2E tests (`tests/Reactor.AppTests`) — MSTest + WinAppDriver
 
@@ -122,28 +134,27 @@ End-to-end tests that use Appium/WinAppDriver to simulate real user input (click
 
 **When to run:** before shipping. Slow, and requires WinAppDriver.
 
-There are **6 E2E test classes** across two host apps:
+E2E test classes (across two host apps):
 
-| Class | Host | Count | What it tests |
-|-------|------|-------|---------------|
-| `InteractiveTests` | WinUI | 2 | Counter clicks, observable mutation |
-| `AccessibilityTests` | WinUI | 14 | WCAG property validation via UIA |
-| `AccessibilityInteractionTests` | WinUI | 10 | Keyboard nav, live regions, headings, semantic panels |
-| `EventHandlerTests` | WinUI | 5 | OnTapped, OnSizeChanged, OnPointerPressed, OnKeyDown, UseReducer |
-| `DataGridTests` | WinUI | 1 | Click-to-edit, keyboard commit |
-| `WinFormsInteropTests` | WinForms | 14 | XAML Island rendering, tab navigation, UIA across boundaries |
+| Class | Host | What it tests |
+|-------|------|---------------|
+| `InteractiveTests` | WinUI | Counter clicks, observable mutation |
+| `AccessibilityTests` | WinUI | WCAG property validation via UIA |
+| `AccessibilityInteractionTests` | WinUI | Keyboard nav, live regions, headings, semantic panels |
+| `EventHandlerTests` | WinUI | OnTapped, OnSizeChanged, OnPointerPressed, OnKeyDown, UseReducer |
+| `DataGridTests` | WinUI | Click-to-edit, keyboard commit |
+| `WinFormsInteropTests` | WinForms | XAML Island rendering, tab navigation, UIA across boundaries |
 
 ```bash
-# All E2E tests (excludes SelfTestBatch)
-dotnet test tests/Reactor.AppTests --filter "ClassName!=Reactor.AppTests.Tests.SelfTestBatch"
+dotnet test tests/Reactor.AppTests
 
 # A specific class
 dotnet test tests/Reactor.AppTests --filter "ClassName=Reactor.AppTests.Tests.AccessibilityTests"
 ```
 
-> **Requires:** [WinAppDriver](https://github.com/microsoft/WinAppDriver/releases) installed at `C:\Program Files (x86)\Windows Application Driver\WinAppDriver.exe`. Unit and selfhost tests run without it.
+> **Requires:** [WinAppDriver](https://github.com/microsoft/WinAppDriver/releases) installed at `C:\Program Files (x86)\Windows Application Driver\WinAppDriver.exe`. Unit and selftest runs don't need it.
 >
-> **WinForms tests** also require the `Reactor.WinFormsTests.Host` project to be built. It launches a separate WinForms app with a XAML Island.
+> **WinForms tests** also require `Reactor.WinFormsTests.Host` to build. It launches a separate WinForms app with a XAML Island.
 
 ### Code coverage
 
@@ -151,19 +162,16 @@ dotnet test tests/Reactor.AppTests --filter "ClassName=Reactor.AppTests.Tests.Ac
 # Unit tests (via coverlet, bundled in Reactor.Tests.csproj)
 dotnet test tests/Reactor.Tests --collect:"XPlat Code Coverage"
 
-# Selfhost tests — covers Reactor.dll and ReactorCharting.dll
+# Selftest — covers Reactor.dll while fixtures drive real controls
 # (install once: dotnet tool install -g dotnet-coverage)
 
 # Step 1: Rebuild with explicit Debug settings (required for instrumentation)
 dotnet build tests/Reactor.AppTests.Host -c Debug -p:Optimize=false -p:DebugType=portable
 
-# Step 2: Instrument Reactor.dll and ReactorCharting.dll statically
+# Step 2: Instrument Reactor.dll statically
 #         (dynamic instrumentation skips referenced assemblies)
 dotnet-coverage instrument \
   "tests/Reactor.AppTests.Host/bin/$(RuntimeIdentifier)/Debug/net9.0-windows10.0.22621.0/Reactor.dll" \
-  -s coverage.settings.xml
-dotnet-coverage instrument \
-  "tests/Reactor.AppTests.Host/bin/$(RuntimeIdentifier)/Debug/net9.0-windows10.0.22621.0/ReactorCharting.dll" \
   -s coverage.settings.xml
 
 # Step 3: Collect
@@ -229,9 +237,10 @@ src/Reactor/                      Core framework library
         arena.rs                  Reusable diff context/buffer
 src/Reactor.Cli/                  CLI scaffolding tool
 tests/
-  Reactor.Tests/                  1. Unit tests — xUnit (2,200+ tests, no UI window)
-  Reactor.AppTests/               2+3. Test runner — MSTest (orchestrates selfhost + E2E)
-  Reactor.AppTests.Host/          2. Selfhost test app — WinUI host with 350+ in-process fixtures
+  Reactor.Tests/                  1. Unit tests — xUnit (no UI window; includes D3 charting tests)
+  Reactor.SelfTests/              2. Selftest runner — MSTest wrapper that subprocess-launches the Host and parses TAP
+  Reactor.AppTests.Host/          2. Host app — hosts selftest fixtures and the Appium fixture navigator
+  Reactor.AppTests/               3. E2E tests — MSTest + Appium/WinAppDriver
   stress_perf/                    Performance benchmarks
 samples/
   Reactor.TestApp/                Interactive control showcase / demo app

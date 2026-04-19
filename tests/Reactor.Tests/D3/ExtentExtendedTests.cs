@@ -1,9 +1,10 @@
 // Tests for D3Extent — covers Extent and Extent<T> with accessor,
 // NaN handling, empty input, and mixed values.
 
+using Microsoft.UI.Reactor.Charting.D3;
 using Xunit;
 
-namespace Microsoft.UI.Reactor.Charting.D3.Tests;
+namespace Microsoft.UI.Reactor.Tests.D3;
 
 public class ExtentExtendedTests
 {

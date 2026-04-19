@@ -1,9 +1,10 @@
 // Extended tests for BandScale, PointScale — covers defaults, padding effects, alignment,
 // rounding, copy independence, edge cases, and factory methods not fully exercised in ScaleTests.cs
 
+using Microsoft.UI.Reactor.Charting.D3;
 using Xunit;
 
-namespace Microsoft.UI.Reactor.Charting.D3.Tests;
+namespace Microsoft.UI.Reactor.Tests.D3;
 
 public class BandScaleExtendedTests
 {

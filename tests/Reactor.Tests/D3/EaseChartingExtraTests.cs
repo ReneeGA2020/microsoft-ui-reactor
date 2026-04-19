@@ -1,10 +1,11 @@
 // Port of d3-ease tests
 
+using Microsoft.UI.Reactor.Charting.D3;
 using Xunit;
 
-namespace Microsoft.UI.Reactor.Charting.D3.Tests;
+namespace Microsoft.UI.Reactor.Tests.D3;
 
-public class EaseTests
+public class EaseChartingExtraTests
 {
     private const double Tol = 1e-6;
 

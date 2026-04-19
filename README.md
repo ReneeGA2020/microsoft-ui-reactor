@@ -187,14 +187,14 @@ dotnet build Reactor.sln -p:Platform=x64
 # Run the interactive demo app
 dotnet run --project samples/Reactor.TestApp -p:Platform=x64
 
-# Unit tests (xUnit, headless, ~3s)
+# Unit tests (xUnit, headless)
 dotnet test tests/Reactor.Tests
 
-# Selfhost tests (real WinUI window, ~15s)
-dotnet test tests/Reactor.AppTests --filter "ClassName=Reactor.AppTests.Tests.SelfTestBatch"
+# Selftest (real WinUI window, in-process, ~15s)
+dotnet test tests/Reactor.SelfTests
 
-# End-to-end Appium tests (requires WinAppDriver, ~30s)
-dotnet test tests/Reactor.AppTests --filter "ClassName=Reactor.AppTests.Tests.InteractiveTests"
+# End-to-end Appium tests (requires WinAppDriver)
+dotnet test tests/Reactor.AppTests
 ```
 
 ---

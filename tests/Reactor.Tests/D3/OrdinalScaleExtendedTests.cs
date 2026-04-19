@@ -1,9 +1,10 @@
 // Extended tests for OrdinalScale — covers cycling, unknown handling, implicit domain growth,
 // copy independence, edge cases, and factory methods not fully exercised in ScaleTests.cs
 
+using Microsoft.UI.Reactor.Charting.D3;
 using Xunit;
 
-namespace Microsoft.UI.Reactor.Charting.D3.Tests;
+namespace Microsoft.UI.Reactor.Tests.D3;
 
 public class OrdinalScaleExtendedTests
 {

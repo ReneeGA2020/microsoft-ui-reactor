@@ -8,6 +8,15 @@ using Microsoft.UI.Reactor.AppTests.Host;
 using Microsoft.UI.Reactor.AppTests.Host.DevtoolsStress;
 using Microsoft.UI.Reactor.AppTests.Host.SelfTest;
 
+if (args.Contains("--list-fixtures"))
+{
+    // Fast path: emit the selftest fixture registry, one name per line, and exit.
+    // Used by Reactor.SelfTests to discover fixtures without launching WinUI.
+    foreach (var name in SelfTestFixtureRegistry.AllFixtures)
+        Console.WriteLine(name);
+    return;
+}
+
 if (args.Contains("--self-test"))
 {
     var filterIdx = Array.IndexOf(args, "--filter");

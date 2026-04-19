@@ -1,9 +1,10 @@
 // Extended tests for D3Bisect — covers BisectRight, BisectLeft, BisectCenter
 // with lo/hi parameters, empty arrays, and edge cases.
 
+using Microsoft.UI.Reactor.Charting.D3;
 using Xunit;
 
-namespace Microsoft.UI.Reactor.Charting.D3.Tests;
+namespace Microsoft.UI.Reactor.Tests.D3;
 
 public class BisectExtendedTests
 {

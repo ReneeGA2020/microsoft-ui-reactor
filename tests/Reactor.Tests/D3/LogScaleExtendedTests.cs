@@ -1,9 +1,10 @@
 // Extended tests for LogScale — covers defaults, boundaries, NaN, invert, ticks, nice, clamp,
 // custom base, and copy independence not fully exercised in ScaleTests.cs
 
+using Microsoft.UI.Reactor.Charting.D3;
 using Xunit;
 
-namespace Microsoft.UI.Reactor.Charting.D3.Tests;
+namespace Microsoft.UI.Reactor.Tests.D3;
 
 public class LogScaleExtendedTests
 {

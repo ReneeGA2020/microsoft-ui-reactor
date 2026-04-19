@@ -1,10 +1,11 @@
 // Port of d3-array statistics tests
 
+using Microsoft.UI.Reactor.Charting.D3;
 using Xunit;
 
-namespace Microsoft.UI.Reactor.Charting.D3.Tests;
+namespace Microsoft.UI.Reactor.Tests.D3;
 
-public class StatisticsTests
+public class StatisticsChartingExtraTests
 {
     private const double Tol = 1e-10;
 
