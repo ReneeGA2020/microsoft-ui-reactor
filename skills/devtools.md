@@ -112,6 +112,7 @@ indented JSON.
 | `expand <selector>` / `collapse <selector>` | ExpandCollapse pattern (ComboBox popup, TreeViewItem, Expander). |
 | `wait <selector> [--text X \| --text-matches RE \| --visible \| --count N] [--timeout MS]` | Poll a predicate until satisfied or timeout. |
 | `state [--selector S]` | Dump every hook value (useState/useReducer/etc.) across mounted components. |
+| `logs [--tail N] [--since SEQ] [--filter RE] [--source stdout\|stderr\|debug\|trace] [--follow]` | Drain captured `Debug.WriteLine` / `Trace.WriteLine` / `Console.Out` / `Console.Error`. Ring buffer installed at `--devtools run` startup — late-attaching agents still see startup output. `--follow` long-polls until Ctrl+C. |
 | `fire <Component>.<event> [--args JSON]` | Call a NAMED METHOD on a live component by reflection. **Inline lambdas aren't reachable**. |
 | `call <tool\|method> [--args JSON]` | Generic JSON-RPC passthrough — parity escape hatch. |
 
@@ -191,6 +192,24 @@ mur devtools state                    # confirm the underlying UseState value
 `state` is particularly useful when the UI text doesn't obviously encode
 the value (e.g. a slider position or a theme toggle).
 
+### Reading debug output while the app runs
+
+```bash
+mur devtools logs --tail 50                     # last 50 lines, most recent first
+mur devtools logs --source debug --pretty       # only Debug.WriteLine / Trace
+mur devtools logs --filter "Nav.*cache" --tail 20
+mur devtools logs --follow                      # stream until Ctrl+C
+mur devtools logs --since 42                    # everything after seq 42
+```
+
+Pair with `state` and `tree` to diagnose state-driven bugs: paste a
+`Debug.WriteLine` in the render path, reload, reproduce, then drain logs.
+The buffer (4 MB default) is installed **before** component reflection so
+it catches startup output too — attach late and you still see what booted.
+`dropped` in the response reports ring overflow; bump via
+`--devtools-logs-capacity <MB>` on the app's launch if you're losing
+entries. Set `--devtools-logs off` on launch to disable capture entirely.
+
 ### Cleaning up when done
 
 ```bash
@@ -213,6 +232,7 @@ supervisor return 0 so the `mur.exe` binary frees up.
 6. **Use `wait` before asserting on async UI.** Many demos render on a dispatcher hop; a `screenshot` immediately after `click` may capture the pre-state.
 7. **Devtools log is authoritative.** Every call lands in `%LOCALAPPDATA%\Reactor\devtools\{pid}.log` (tab-separated: ts, tool, selector, latency, ok/err, rpc code). Tail it to reconstruct a failed run.
 8. **Single-instance per project.** Two `mur devtools` against the same `.csproj` is a hard error (exit 3). Use `mur devtools shutdown` or close the window to release the lockfile before starting another.
+9. **Log capture starts inside `ReactorApp.Run()`.** Anything the app's `Program.cs` writes via `Console.WriteLine` / `Debug.WriteLine` **before** the `Run()` call is not captured — install happens as the first side-effect of the devtools bring-up, not at process start. Move diagnostic writes inside your root `Component.Render()`, an effect, or any code reached from `Run()` and they'll show up in `mur devtools logs`. The buffer is in-memory only in v1 — a crash takes it with it; attach early or run `--follow` if you need the final moments.
 
 ## Raw MCP (escape hatch)
 
@@ -235,6 +255,7 @@ else.
 
 - Specs: `docs/specs/024-ai-agent-devtools.md`, `docs/specs/025-devtools-cli-parity.md`
 - Server: `src/Reactor/Hosting/Devtools/DevtoolsMcpServer.cs`
-- Tool registration: `DevtoolsTools.cs`, `DevtoolsUiaTools.cs`, `DevtoolsFireTool.cs`, `DevtoolsStateTool.cs`
+- Tool registration: `DevtoolsTools.cs`, `DevtoolsUiaTools.cs`, `DevtoolsFireTool.cs`, `DevtoolsStateTool.cs`, `DevtoolsLogsTool.cs`
+- Log capture: `LogCaptureBuffer.cs`, `LogCaptureInstall.cs`
 - CLI verbs: `src/Reactor.Cli/Devtools/DevtoolsVerbs.cs`
 - Selector grammar / parser: `SelectorParser.cs`

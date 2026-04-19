@@ -167,6 +167,22 @@ public static class ReactorApp
 
         if (options.Subverb is null) return false;
 
+        // Install log capture as the very first side-effect after we know
+        // devtools is active. Runs before component reflection, before any
+        // Application.Start, so startup Debug/Trace/Console output is caught
+        // even when the agent attaches late. Skipped when `--devtools-logs off`
+        // is set. In stdio transport we must NOT forward Console.Out (that's
+        // the JSON-RPC frame) — writes still land in the buffer, just not
+        // passed through to the parent process.
+        if (options.Subverb == DevtoolsSubverb.Run && !options.LogsDisabled)
+        {
+            var capBytes = options.LogsCapacityMb is { } mb
+                ? (long)mb * 1024 * 1024
+                : LogCaptureBuffer.DefaultCapacityBytes;
+            var forwardOut = options.Transport != McpTransport.Stdio;
+            LogCaptureInstall.Install(capBytes, forwardConsole: forwardOut);
+        }
+
         if (options.UsedDeprecatedPreview)
             Console.Error.WriteLine("[reactor] '--preview' is deprecated; use '--devtools run'.");
 
@@ -404,6 +420,7 @@ public static class ReactorApp
                 DevtoolsUiaTools.RegisterUiaTools(mcp, nodes, windows);
                 DevtoolsFireTool.Register(mcp, () => host.RootComponent);
                 DevtoolsStateTool.Register(mcp, () => host.RootComponent);
+                DevtoolsLogsTool.Register(mcp, () => LogCaptureInstall.Shared);
 
                 mcp.Start();
                 // Ready line fires after the first render — subscribe once to the host.

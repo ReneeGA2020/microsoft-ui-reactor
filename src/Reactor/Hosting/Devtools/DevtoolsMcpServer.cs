@@ -102,10 +102,17 @@ internal sealed class DevtoolsMcpServer : IDisposable
         }
         else // Stdio
         {
+            // Bypass Console.In/Out: LogCaptureInstall replaces Console.Out
+            // with a TeeTextWriter that doesn't forward to the pipe in stdio
+            // mode (so app writes don't corrupt the JSON-RPC frame). Use the
+            // raw stdin/stdout streams directly so JSON-RPC always reaches
+            // the parent process regardless of capture state.
+            var stdinReader = new StreamReader(Console.OpenStandardInput(), Encoding.UTF8);
+            var stdoutWriter = new StreamWriter(Console.OpenStandardOutput(), new UTF8Encoding(false)) { AutoFlush = false };
             _stdioLoop = new StdioMcpLoop(
                 new McpDispatcher(_tools, _logger),
-                Console.In,
-                Console.Out);
+                stdinReader,
+                stdoutWriter);
             _stdioLoop.Start();
 
             // Stdio banner goes to stderr so stdout stays clean for framing.

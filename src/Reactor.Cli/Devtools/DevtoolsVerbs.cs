@@ -19,7 +19,7 @@ internal static class DevtoolsVerbs
         "version", "windows", "components", "switch", "tree", "screenshot",
         "state", "click", "type", "focus", "invoke", "toggle", "select",
         "scroll", "expand", "collapse", "wait", "fire", "reload", "shutdown",
-        "call",
+        "call", "logs",
     };
 
     public static int Run(string verb, string[] args)
@@ -61,6 +61,7 @@ internal static class DevtoolsVerbs
                 "fire" => Fire(client, verbArgs, shared),
                 "reload" => Reload(client, verbArgs, shared),
                 "shutdown" => Simple(client, "shutdown", verbArgs, shared),
+                "logs" => Logs(client, verbArgs, shared),
                 _ => UsageError($"Unknown devtools verb: {verb}"),
             };
         }
@@ -374,6 +375,101 @@ internal static class DevtoolsVerbs
         }
         var fields = new Dictionary<string, object?> { ["component"] = component };
         return EmitResult(client.InvokeTool("reload", ArgsFromDict(fields)), shared);
+    }
+
+    // -- logs -----------------------------------------------------------------
+
+    private static int Logs(McpCliClient client, string[] args, SharedFlags shared)
+    {
+        long since = 0;
+        int? tail = null;
+        string? filter = null;
+        string? source = null;
+        string? level = null;
+        bool follow = false;
+        int pollMs = 1000;
+
+        for (int i = 0; i < args.Length; i++)
+        {
+            var a = args[i];
+            if (a == "--since" && i + 1 < args.Length && long.TryParse(args[++i], out var s)) since = s;
+            else if (a == "--tail" && i + 1 < args.Length && int.TryParse(args[++i], out var t)) tail = t;
+            else if (a == "--filter" && i + 1 < args.Length) filter = args[++i];
+            else if (a == "--source" && i + 1 < args.Length) source = args[++i];
+            else if (a == "--level" && i + 1 < args.Length) level = args[++i];
+            else if (a == "--follow" || a == "-f") follow = true;
+            else if (a == "--poll-ms" && i + 1 < args.Length && int.TryParse(args[++i], out var p)) pollMs = Math.Clamp(p, 100, 30_000);
+            else return UsageError($"logs: unexpected argument '{a}'");
+        }
+
+        if (!follow)
+        {
+            var fields = new Dictionary<string, object?>
+            {
+                ["since"] = since > 0 ? (object?)since : null,
+                ["tail"] = tail,
+                ["filter"] = filter,
+                ["source"] = source,
+                ["level"] = level,
+            };
+            return EmitResult(client.InvokeTool("logs", ArgsFromDict(fields)), shared);
+        }
+
+        // Follow mode: stream one line per entry to stdout until Ctrl+C.
+        // Uses server-side long-poll (`waitMs`) so we aren't hot-spinning.
+        // On error (tool returns an error envelope), exit with ToolError.
+        using var cancelSource = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, e) => { e.Cancel = true; cancelSource.Cancel(); };
+        long cursor = since;
+        while (!cancelSource.IsCancellationRequested)
+        {
+            var fields = new Dictionary<string, object?>
+            {
+                ["since"] = cursor > 0 ? (object?)cursor : null,
+                ["tail"] = tail,
+                ["filter"] = filter,
+                ["source"] = source,
+                ["level"] = level,
+                ["waitMs"] = pollMs,
+            };
+            try
+            {
+                using var doc = client.InvokeTool("logs", ArgsFromDict(fields));
+                if (HasError(doc)) return EmitResult(doc, shared);
+
+                if (doc.RootElement.TryGetProperty("result", out var result))
+                {
+                    if (result.TryGetProperty("entries", out var entries) && entries.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var e in entries.EnumerateArray())
+                            PrintFollowLine(e);
+                    }
+                    // Server semantics are inclusive: pass nextSeq directly as
+                    // the next `since`. (Was `- 1` when the server used >.)
+                    if (result.TryGetProperty("nextSeq", out var ns) && ns.TryGetInt64(out var nsv))
+                        cursor = nsv;
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.Error.WriteLine($"[mur devtools] logs: transport closed: {ex.Message}");
+                return (int)DevtoolsCliExit.Transport;
+            }
+            // Tight loop is safe because InvokeTool blocks server-side up to
+            // waitMs; only empty-on-timeout returns fast, and that's the rate
+            // we actually want.
+            tail = null; // --tail only applies to the first page, not follow deltas.
+        }
+        return (int)DevtoolsCliExit.Success;
+    }
+
+    private static void PrintFollowLine(JsonElement e)
+    {
+        string ts = e.TryGetProperty("ts", out var t) ? (t.GetString() ?? "") : "";
+        string src = e.TryGetProperty("source", out var s) ? (s.GetString() ?? "?") : "?";
+        string text = e.TryGetProperty("text", out var tx) ? (tx.GetString() ?? "") : "";
+        long seq = e.TryGetProperty("seq", out var sq) && sq.TryGetInt64(out var sv) ? sv : 0;
+        Console.WriteLine($"[{ts}] {src,-6} #{seq}  {text}");
     }
 
     // -- Generic passthrough (§10) -------------------------------------------

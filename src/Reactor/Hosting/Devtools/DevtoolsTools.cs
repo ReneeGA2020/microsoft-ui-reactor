@@ -272,6 +272,13 @@ internal static class DevtoolsTools
         return el.ValueKind == JsonValueKind.Number && el.TryGetInt32(out var v) ? v : null;
     }
 
+    internal static long? ReadLong(JsonElement? args, string name)
+    {
+        if (args is not { } a || a.ValueKind != JsonValueKind.Object) return null;
+        if (!a.TryGetProperty(name, out var el)) return null;
+        return el.ValueKind == JsonValueKind.Number && el.TryGetInt64(out var v) ? v : null;
+    }
+
     internal static bool? ReadBool(JsonElement? args, string name)
     {
         if (args is not { } a || a.ValueKind != JsonValueKind.Object) return null;
