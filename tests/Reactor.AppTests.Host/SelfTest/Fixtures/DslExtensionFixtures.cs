@@ -307,4 +307,57 @@ internal static class DslExtensionFixtures
                 H.FindText("G1") is not null && H.FindText("G2") is not null && H.FindText("G3") is not null);
         }
     }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  Brush-typed and FontFamily/FontWeight modifier coverage
+    //  (these allocate WinUI types and only succeed inside a host)
+    // ════════════════════════════════════════════════════════════════════
+
+    internal class BrushAndFontModifiers(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var brush = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Crimson);
+            var brush2 = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Navy);
+            var ff = new Microsoft.UI.Xaml.Media.FontFamily("Segoe UI");
+
+            var host = H.CreateHost();
+            host.Mount(ctx => VStack(
+                TextBlock("BgFromString").Background("#445566"),
+                TextBlock("BgFromBrush").Background(brush),
+                TextBlock("FgFromString").Foreground("#778899"),
+                TextBlock("FgFromBrush").Foreground(brush2),
+                TextBlock("BorderStr").WithBorder("#112233", 1.5),
+                TextBlock("BorderBrush").WithBorder(brush, 2.0),
+                TextBlock("FontFamilyStr").FontFamily("Cascadia Code"),
+                TextBlock("FontFamilyObj").FontFamily(ff),
+                Button("FontWeightBtn").FontWeight(Microsoft.UI.Text.FontWeights.SemiBold),
+                TextBlock("BoldText").Bold(),
+                Path().StrokeDashArray(2, 4, 1).Stroke(brush).StrokeThickness(1)
+                    .Set(p => p.Data = new Microsoft.UI.Xaml.Media.PathGeometry()),
+                Rectangle().Fill(brush).Set(r => r.Width = 10).Set(r => r.Height = 10),
+                Ellipse().Fill(brush2).Set(e => e.Width = 10).Set(e => e.Height = 10),
+                Line(0, 0, 10, 10).Stroke(brush).StrokeThickness(1),
+                // Implicit transitions and theme transitions
+                TextBlock("TransOpacity").OpacityTransition(TimeSpan.FromMilliseconds(50)),
+                TextBlock("TransRotation").RotationTransition(),
+                TextBlock("TransScale").ScaleTransition(),
+                TextBlock("TransTranslation").TranslationTransition(),
+                Grid([], []).BackgroundTransition(TimeSpan.FromMilliseconds(50)),
+                VStack().BackgroundTransition(),
+                TextBlock("ThemeTrans").WithTransitions(
+                    new Microsoft.UI.Xaml.Media.Animation.ContentThemeTransition()),
+                ListView().ItemContainerTransitions(
+                    new Microsoft.UI.Xaml.Media.Animation.ContentThemeTransition()),
+                Button("ResBtn").Resources(r => r.Set("ButtonBackground", "#0078D4"))
+            ));
+
+            await Harness.Render();
+            H.Check("BrushModifiers_BgFromString", H.FindText("BgFromString") is not null);
+            H.Check("BrushModifiers_FgFromString", H.FindText("FgFromString") is not null);
+            H.Check("BrushModifiers_FontFamilyStr", H.FindText("FontFamilyStr") is not null);
+            H.Check("BrushModifiers_BoldText", H.FindText("BoldText") is not null);
+            H.Check("BrushModifiers_TransOpacity", H.FindText("TransOpacity") is not null);
+        }
+    }
 }

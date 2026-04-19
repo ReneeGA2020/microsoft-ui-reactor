@@ -212,26 +212,26 @@ public partial class FlexPanel : Panel
 
     // ── Layout ──
 
-    // Two-pass MeasureOverride, modeled after WinUI Grid's multi-pass algorithm.
+    // MeasureOverride — CSS block-level flex container semantics.
     //
-    // Grid resolves star columns to pixel widths *during* MeasureOverride, then
-    // measures children at those resolved widths. This lets text controls compute
-    // correct wrapping before ArrangeOverride. We do the same with Yoga:
+    // CSS rule: a flex container is a block-level box. Its INLINE axis (width,
+    // for horizontal writing mode) is resolved against the containing block
+    // BEFORE flex layout runs — i.e. `width: auto` fills the parent's content
+    // width. Its BLOCK axis (height) is `auto` → content-sized from children.
+    // This is independent of flex-direction; direction only controls how
+    // children flow within the container.
     //
-    // PASS 1 (content-sizing): Run Yoga with NaN (undefined) root dimensions so
-    // it computes the container's intrinsic size from children. This answers the
-    // WinUI measure contract ("how big does my content need to be?") when the
-    // parent offers infinite space.
+    // Translating to Yoga: the root node is always called with a DEFINITE
+    // inline-axis size (availableSize.Width when finite) and NaN on the block
+    // axis. Children measured under this rule see their cross-axis constraint
+    // naturally (align-items: stretch = fill container width), so text
+    // controls (RichTextBlock, TextBlock) wrap correctly in a single pass —
+    // no expensive infinite-width measurement followed by reflow.
     //
-    // PASS 2 (flex distribution): If availableSize has definite dimensions, run
-    // Yoga again with those dimensions so flex-grow/shrink can distribute space.
-    // This is analogous to Grid's ResolveStar pass — it resolves proportional
-    // sizes, then children are Measured at resolved widths so text wraps correctly.
-    //
-    // The desired size comes from the pass whose children were measured with
-    // correct constraints — Pass 2 when it runs, Pass 1 otherwise. Returning
-    // Pass 1's content size after Pass 2 would report heights distorted by
-    // basis:0 children measured at near-zero width.
+    // Escape hatch — `HorizontalAlignment != Stretch` on the FlexPanel itself
+    // maps to CSS `width: fit-content`. In that case the inline axis is NaN
+    // (content-size) capped by availableSize.Width. Slower for text-heavy
+    // children, but the user opted in.
 
     // Cached child layout results from MeasureOverride, reused in ArrangeOverride
     // to avoid re-running Yoga (which calls child.Measure()) during the arrange
@@ -249,59 +249,36 @@ public partial class FlexPanel : Panel
         bool hasDefiniteWidth = !float.IsInfinity((float)availableSize.Width);
         bool hasDefiniteHeight = !float.IsInfinity((float)availableSize.Height);
 
-        bool isRow = Direction == FlexDirection.Row || Direction == FlexDirection.RowReverse;
-        bool hasDefiniteMain = isRow ? hasDefiniteWidth : hasDefiniteHeight;
+        // Inline-axis fill (CSS default) unless the user asked for fit-content
+        // via non-Stretch HorizontalAlignment. Width on the panel itself is
+        // already clamped by FrameworkElement.Measure before we get here.
+        bool fillInlineAxis = HorizontalAlignment == HorizontalAlignment.Stretch;
 
-        if (hasDefiniteMain)
+        float rootWidth;
+        if (fillInlineAxis && hasDefiniteWidth)
         {
-            // ── Single-pass layout when main axis is definite ──
-            // Go straight to flex distribution: definite main axis for grow/shrink,
-            // NaN cross axis for content-sizing (capped by available space).
-            // Skipping the content-size pass avoids measuring children at infinite
-            // constraints first — critical for children like ScrollViewer+RichTextBlock
-            // where infinite-width measurement triggers expensive text reflow.
-            if (isRow)
-            {
-                _rootNode.MaxWidth = YogaValue.Undefined;
-                _rootNode.MaxHeight = hasDefiniteHeight
-                    ? YogaValue.Point((float)availableSize.Height)
-                    : YogaValue.Undefined;
-
-                _rootNode.CalculateLayout(
-                    (float)availableSize.Width, float.NaN, LayoutDirection);
-            }
-            else
-            {
-                _rootNode.MaxWidth = hasDefiniteWidth
-                    ? YogaValue.Point((float)availableSize.Width)
-                    : YogaValue.Undefined;
-                _rootNode.MaxHeight = YogaValue.Undefined;
-
-                _rootNode.CalculateLayout(
-                    float.NaN, (float)availableSize.Height, LayoutDirection);
-            }
+            // CSS: block-level flex container fills its containing block.
+            rootWidth = (float)availableSize.Width;
+            _rootNode.MaxWidth = YogaValue.Undefined;
         }
         else
         {
-            // ── Content-size layout (no definite main axis) ──
-            // NaN = undefined: Yoga computes the root's size from children's
-            // intrinsic sizes, matching CSS default where a flex container
-            // is content-sized. MaxWidth/MaxHeight cap the result.
+            // CSS fit-content: content-size the inline axis, capped by
+            // availableSize. This is the opt-in "shrink-wrap" path.
+            rootWidth = float.NaN;
             _rootNode.MaxWidth = hasDefiniteWidth
                 ? YogaValue.Point((float)availableSize.Width)
                 : YogaValue.Undefined;
-            _rootNode.MaxHeight = hasDefiniteHeight
-                ? YogaValue.Point((float)availableSize.Height)
-                : YogaValue.Undefined;
-
-            _rootNode.CalculateLayout(float.NaN, float.NaN, LayoutDirection);
         }
 
-        // Capture desired size from whichever pass just ran. When Pass 2 ran,
-        // its layout reflects children measured at resolved grow/shrink sizes —
-        // the correct dimensions. Indefinite axes were passed as NaN, so Yoga
-        // content-sized them from children's true measurements (not the Pass 1
-        // measurements distorted by basis:0 → near-zero constraints).
+        // Block axis is always content-sized, with availableSize as a cap so
+        // unbounded child lists can't exceed the scroll host's viewport.
+        _rootNode.MaxHeight = hasDefiniteHeight
+            ? YogaValue.Point((float)availableSize.Height)
+            : YogaValue.Undefined;
+
+        _rootNode.CalculateLayout(rootWidth, float.NaN, LayoutDirection);
+
         _cachedDesiredSize = new Size(_rootNode.LayoutWidth, _rootNode.LayoutHeight);
 
         // Cache child positions and measure children at Yoga's resolved sizes.
@@ -490,6 +467,14 @@ public partial class FlexPanel : Panel
 
             // Apply attached properties from the UIElement to the YogaNode
             ApplyAttachedProperties(child, childNode);
+
+            // Mirror WinUI Visibility=Collapsed onto Yoga's Display=None:
+            // Collapsed is the XAML equivalent of CSS display:none — the
+            // element contributes nothing to main-axis size and no gap slot.
+            // StackPanel does the same.
+            childNode.Display = child.Visibility == Visibility.Collapsed
+                ? YogaDisplay.None
+                : YogaDisplay.Flex;
 
             // Ensure correct child order in Yoga tree
             if (i < _rootNode.ChildCount)

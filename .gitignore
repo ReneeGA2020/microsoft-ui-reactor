@@ -210,3 +210,7 @@ samples/apps/reactorfiles/Native/reactorfs/target/
 # that must never land in the shared repo
 .claude/scheduled_tasks.lock
 .claude/settings.local.json
+
+# Local coverage collector outputs (see CONTRIBUTING.md § Code coverage).
+# Cobertura reports are regenerated on demand and should never be committed.
+coverage/

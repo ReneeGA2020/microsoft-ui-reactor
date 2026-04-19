@@ -207,6 +207,182 @@ public class PropertyGridArrayTests
         Assert.Equal(typeof(string), ArrayOperations.GetElementType(typeof(List<string>)));
     }
 
+    // ── Array path coverage (the IList path is well covered;
+    //     these lock down the array-clone branches) ─────────────────
+
+    [Fact]
+    public void Add_To_Array_Returns_New_Larger_Array()
+    {
+        var items = new[] { "a", "b" };
+        var result = (string[])ArrayOperations.Add(items, "c", typeof(string));
+        Assert.Equal(3, result.Length);
+        Assert.Equal("c", result[2]);
+        Assert.Equal(2, items.Length); // original unchanged
+    }
+
+    [Fact]
+    public void RemoveAt_From_Array_Returns_New_Smaller_Array()
+    {
+        var items = new[] { "a", "b", "c" };
+        var result = (string[])ArrayOperations.RemoveAt(items, 1, typeof(string));
+        Assert.Equal(new[] { "a", "c" }, result);
+    }
+
+    [Fact]
+    public void RemoveAt_From_Array_FirstIndex_Works()
+    {
+        var items = new[] { "a", "b", "c" };
+        var result = (string[])ArrayOperations.RemoveAt(items, 0, typeof(string));
+        Assert.Equal(new[] { "b", "c" }, result);
+    }
+
+    [Fact]
+    public void RemoveAt_From_Array_LastIndex_Works()
+    {
+        var items = new[] { "a", "b", "c" };
+        var result = (string[])ArrayOperations.RemoveAt(items, 2, typeof(string));
+        Assert.Equal(new[] { "a", "b" }, result);
+    }
+
+    [Fact]
+    public void RemoveAt_Negative_Index_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => ArrayOperations.RemoveAt(new List<string> { "a" }, -1, typeof(string)));
+    }
+
+    [Fact]
+    public void RemoveAt_OutOfRange_List_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => ArrayOperations.RemoveAt(new List<string> { "a" }, 5, typeof(string)));
+    }
+
+    [Fact]
+    public void RemoveAt_OutOfRange_Array_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => ArrayOperations.RemoveAt(new[] { "a" }, 5, typeof(string)));
+    }
+
+    [Fact]
+    public void Add_Unsupported_Throws()
+    {
+        Assert.Throws<InvalidOperationException>(
+            () => ArrayOperations.Add("not a collection", "x", typeof(string)));
+    }
+
+    [Fact]
+    public void RemoveAt_Unsupported_Throws()
+    {
+        Assert.Throws<InvalidOperationException>(
+            () => ArrayOperations.RemoveAt("not a collection", 0, typeof(string)));
+    }
+
+    [Fact]
+    public void MoveUp_On_Array_Returns_Reordered_Array()
+    {
+        var items = new[] { "a", "b", "c" };
+        var result = (string[])ArrayOperations.MoveUp(items, 2, typeof(string));
+        Assert.Equal(new[] { "a", "c", "b" }, result);
+    }
+
+    [Fact]
+    public void MoveUp_At_Index_Zero_Returns_Same()
+    {
+        var items = new List<string> { "a", "b" };
+        var result = ArrayOperations.MoveUp(items, 0, typeof(string));
+        Assert.Same(items, result);
+    }
+
+    [Fact]
+    public void MoveUp_On_List_Reorders_In_Place()
+    {
+        var items = new List<string> { "a", "b", "c" };
+        var result = ArrayOperations.MoveUp(items, 2, typeof(string));
+        Assert.Same(items, result);
+        Assert.Equal(new[] { "a", "c", "b" }, items);
+    }
+
+    [Fact]
+    public void MoveUp_On_Unsupported_Returns_Same()
+    {
+        var x = "scalar";
+        Assert.Same(x, ArrayOperations.MoveUp(x, 1, typeof(string)));
+    }
+
+    [Fact]
+    public void MoveDown_On_Array_Returns_Reordered_Array()
+    {
+        var items = new[] { "a", "b", "c" };
+        var result = (string[])ArrayOperations.MoveDown(items, 0, typeof(string));
+        Assert.Equal(new[] { "b", "a", "c" }, result);
+    }
+
+    [Fact]
+    public void MoveDown_On_List_Reorders_In_Place()
+    {
+        var items = new List<string> { "a", "b", "c" };
+        var result = ArrayOperations.MoveDown(items, 0, typeof(string));
+        Assert.Same(items, result);
+        Assert.Equal(new[] { "b", "a", "c" }, items);
+    }
+
+    [Fact]
+    public void MoveDown_At_Last_Index_Returns_Same()
+    {
+        var items = new List<string> { "a", "b" };
+        var result = ArrayOperations.MoveDown(items, 1, typeof(string));
+        Assert.Same(items, result);
+    }
+
+    [Fact]
+    public void MoveDown_At_Last_Index_Array_Returns_Same()
+    {
+        var items = new[] { "a", "b" };
+        var result = ArrayOperations.MoveDown(items, 1, typeof(string));
+        Assert.Same(items, result);
+    }
+
+    [Fact]
+    public void MoveDown_On_Unsupported_Returns_Same()
+    {
+        var x = "scalar";
+        Assert.Same(x, ArrayOperations.MoveDown(x, 0, typeof(string)));
+    }
+
+    [Fact]
+    public void GetCount_For_Array()
+    {
+        Assert.Equal(3, ArrayOperations.GetCount(new[] { 1, 2, 3 }));
+    }
+
+    [Fact]
+    public void GetCount_For_Unknown_Returns_Zero()
+    {
+        Assert.Equal(0, ArrayOperations.GetCount("scalar"));
+    }
+
+    [Fact]
+    public void GetItem_From_List_And_Array()
+    {
+        Assert.Equal("b", ArrayOperations.GetItem(new List<string> { "a", "b", "c" }, 1));
+        Assert.Equal("y", ArrayOperations.GetItem(new[] { "x", "y" }, 1));
+    }
+
+    [Fact]
+    public void GetItem_For_Unknown_Returns_Null()
+    {
+        Assert.Null(ArrayOperations.GetItem("scalar", 0));
+    }
+
+    [Fact]
+    public void GetElementType_For_NonGeneric_Returns_Null()
+    {
+        Assert.Null(ArrayOperations.GetElementType(typeof(string)));
+        Assert.Null(ArrayOperations.GetElementType(typeof(global::System.Collections.ArrayList)));
+    }
+
     // ── Test model ────────────────────────────────────────────────
 
     private class ArrayParent
