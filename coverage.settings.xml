@@ -4,9 +4,29 @@
     <ModulePaths>
       <Include>
         <ModulePath>.*[/\\]Reactor\.dll$</ModulePath>
-        <ModulePath>.*[/\\]ReactorD3\.dll$</ModulePath>
         <ModulePath>.*[/\\]Reactor\.AppTests\.Host\.dll$</ModulePath>
       </Include>
     </ModulePaths>
+    <Sources>
+      <Exclude>
+        <!-- WinRT/AOT source-generator output and other build-time generated code
+             live under obj/. These files are not hand-written and provide no
+             meaningful signal. -->
+        <Source>.*[/\\]obj[/\\].*</Source>
+        <Source>.*\.g\.cs$</Source>
+        <!-- Test scaffolding in Reactor.AppTests.Host that is exercised by the
+             Appium/E2E test runner rather than by selftest or unit tests. Measuring
+             this in a selftest+unit coverage run just inflates the denominator. -->
+        <Source>.*[/\\]Reactor\.AppTests\.Host[/\\]Fixtures[/\\].*</Source>
+        <Source>.*[/\\]Reactor\.AppTests\.Host[/\\]DevtoolsStress[/\\].*</Source>
+        <Source>.*[/\\]Reactor\.AppTests\.Host[/\\]FixtureRegistry\.cs$</Source>
+      </Exclude>
+    </Sources>
+    <Attributes>
+      <Exclude>
+        <Attribute>^System\.CodeDom\.Compiler\.GeneratedCodeAttribute$</Attribute>
+        <Attribute>^System\.Diagnostics\.CodeAnalysis\.ExcludeFromCodeCoverageAttribute$</Attribute>
+      </Exclude>
+    </Attributes>
   </CodeCoverage>
 </Configuration>

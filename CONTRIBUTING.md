@@ -158,15 +158,21 @@ dotnet test tests/Reactor.AppTests --filter "ClassName=Reactor.AppTests.Tests.Ac
 
 ### Code coverage
 
-```bash
-# Unit tests (via coverlet, bundled in Reactor.Tests.csproj)
-dotnet test tests/Reactor.Tests --collect:"XPlat Code Coverage"
+The canonical coverage metric is **unit + selftest merged**. Run both and merge:
 
-# Selftest — covers Reactor.dll while fixtures drive real controls
+```bash
 # (install once: dotnet tool install -g dotnet-coverage)
 
+# --- Unit tests ---
+dotnet build tests/Reactor.Tests -c Debug -p:Optimize=false -p:DebugType=portable
+dotnet-coverage collect -s coverage.settings.xml \
+  --output unit.cobertura.xml --output-format cobertura \
+  -- dotnet test tests/Reactor.Tests --no-build
+
+# --- Selftest ---
 # Step 1: Rebuild with explicit Debug settings (required for instrumentation)
-dotnet build tests/Reactor.AppTests.Host -c Debug -p:Optimize=false -p:DebugType=portable
+dotnet build src/Reactor                      -c Debug -p:Optimize=false -p:DebugType=portable --no-incremental
+dotnet build tests/Reactor.AppTests.Host      -c Debug -p:Optimize=false -p:DebugType=portable --no-incremental
 
 # Step 2: Instrument Reactor.dll statically
 #         (dynamic instrumentation skips referenced assemblies)
@@ -178,9 +184,13 @@ dotnet-coverage instrument \
 dotnet-coverage collect -s coverage.settings.xml \
   --output selftest.cobertura.xml --output-format cobertura \
   -- dotnet run --project tests/Reactor.AppTests.Host --no-build -- --self-test
+
+# --- Merge ---
+dotnet-coverage merge unit.cobertura.xml selftest.cobertura.xml \
+  --output merged.cobertura.xml --output-format cobertura
 ```
 
-Replace `$(RuntimeIdentifier)` with `ARM64` or `x64`, or omit the platform segment if you used the default platform from `Directory.Build.props`. The `coverage.settings.xml` file in the repo root controls which modules are included.
+Replace `$(RuntimeIdentifier)` with `ARM64` or `x64`, or omit the platform segment if you used the default platform from `Directory.Build.props`. The `coverage.settings.xml` file in the repo root controls which modules are included and excludes generated code (`obj/`, `*.g.cs`) and test-host scaffolding exercised only by the Appium/E2E runner.
 
 ---
 
