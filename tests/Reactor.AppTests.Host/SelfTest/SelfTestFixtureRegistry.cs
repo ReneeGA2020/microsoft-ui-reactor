@@ -199,6 +199,7 @@ internal static class SelfTestFixtureRegistry
         "DslExt_AttachedProperties",
         "DslExt_ErrorBoundaryElement",
         "DslExt_GroupElement",
+        "DslExt_BrushAndFontModifiers",
         // Layout animation
         "LayoutAnimation_OffsetSetup",
         "LayoutAnimation_SpringSetup",
@@ -673,6 +674,7 @@ internal static class SelfTestFixtureRegistry
         "DslExt_AttachedProperties" => new DslExtensionFixtures.AttachedProperties(harness),
         "DslExt_ErrorBoundaryElement" => new DslExtensionFixtures.ErrorBoundaryTest(harness),
         "DslExt_GroupElement" => new DslExtensionFixtures.GroupElementTest(harness),
+        "DslExt_BrushAndFontModifiers" => new DslExtensionFixtures.BrushAndFontModifiers(harness),
         // Layout animation
         "LayoutAnimation_OffsetSetup" => new LayoutAnimationFixtures.OffsetAnimationSetup(harness),
         "LayoutAnimation_SpringSetup" => new LayoutAnimationFixtures.SpringAnimationSetup(harness),
