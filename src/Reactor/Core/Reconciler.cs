@@ -265,27 +265,32 @@ public sealed partial class Reconciler : IDisposable
         Element oldElement, Element newElement,
         UIElement existingControl, Action requestRerender)
     {
+        // Contract: when we return a replacement (either from Update remounting or
+        // from a type-change full remount), the caller must place it in the parent
+        // collection — e.g. `g.Children[i] = replacement`. WinUI's indexer assignment
+        // detaches the old control from its parent as part of the swap, so we must
+        // leave the parent collection alone here. The UnmountAndPool path would
+        // invoke ElementPool.Return.DetachFromParent, which synchronously removes
+        // the old child from the parent's Children collection before the caller's
+        // assignment runs; that shifts subsequent sibling indices and corrupts any
+        // positional update loop that was iterating over the collection (see #34,
+        // where DataGrid row cells were dropped off the end during inline-edit flips).
+        //
+        // Trade-off: the replaced control is no longer handed back to ElementPool.
+        // Pooling is a performance optimization; correctness dominates here. Type
+        // flips are uncommon in practice (inline edit transitions, ErrorBoundary
+        // remounts) so the lost reuse is minor. A follow-up could reintroduce
+        // pool-return by having the caller invoke a post-swap pool hook once the
+        // old control is detached, but doing so safely across every Reconcile
+        // caller is out of scope for this fix.
         if (CanUpdate(oldElement, newElement))
         {
             var replacement = Update(oldElement, newElement, existingControl, requestRerender);
-            // If Update returned a completely new control (full remount path),
-            // unmount the old control to clean up event handlers and component state.
-            // Use Unmount (not UnmountAndPool) so the pool path does not eagerly
-            // detach the old control from its parent — the caller will overwrite
-            // the slot via an indexer assignment (e.g. g.Children[i] = replacement)
-            // and WinUI's parent bookkeeping handles detach as part of the swap.
-            // UnmountAndPool.DetachFromParent would remove the child here, shifting
-            // subsequent sibling indices and corrupting a positional parent update.
             if (replacement is not null && replacement != existingControl)
                 Unmount(existingControl);
             return replacement ?? existingControl;
         }
 
-        // Type changed — unmount the old tree (without detaching from parent),
-        // then mount the new tree. Caller replaces the old slot in its parent
-        // collection; WinUI detaches the old control as part of that indexer
-        // assignment. Detaching eagerly here would shift sibling indices and
-        // corrupt positional updates over the remaining children.
         Unmount(existingControl);
         return Mount(newElement, requestRerender);
     }

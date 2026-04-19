@@ -452,10 +452,13 @@ internal static class DataGridEditFixtures
             H.Check("CellFlip_AfterExit_CategoryStillVisible",
                 H.FindText("Widgets") is not null);
 
-            // 3. Critical check: trailing cell's AutomationProperties.Name has
-            //    NOT been overwritten with a sibling's text (which would indicate
-            //    the shift-corruption bug from #34). A TextBlock showing "$10.00"
-            //    mounted by the default caption helper must have Name = "$10.00".
+            // 3. Critical check: trailing cell's AutomationProperties.Name must
+            //    equal its visible text. Under the #34 bug, the failure mode was
+            //    either (a) Name cleared to empty by ElementPool.CleanElement on
+            //    the replaced sibling, or (b) Name holding a neighbouring cell's
+            //    stale caption after the Grid.Children shift. Require an exact
+            //    match so both modes are caught — allowing empty would silently
+            //    regress into the UIA-opaque state the issue reports.
             var priceTb = rowGrid.Children.OfType<TextBlock>()
                 .FirstOrDefault(tb => tb.Text == "$10.00");
             H.Check("CellFlip_AfterExit_PriceCellPresent", priceTb is not null);
@@ -463,10 +466,11 @@ internal static class DataGridEditFixtures
             {
                 var priceName = Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(priceTb);
                 H.Check($"CellFlip_PriceAutomationNameIntact (name='{priceName}')",
-                    string.IsNullOrEmpty(priceName) || priceName == "$10.00");
+                    priceName == "$10.00");
             }
 
-            // 4. And the middle cell's AutomationName must be "Alice", not stale.
+            // 4. And the middle cell's AutomationName must be "Alice", not stale
+            //    or empty. Same reasoning as above.
             var nameTb = rowGrid.Children.OfType<TextBlock>()
                 .FirstOrDefault(tb => tb.Text == "Alice");
             H.Check("CellFlip_AfterExit_NameCellPresent", nameTb is not null);
@@ -474,7 +478,7 @@ internal static class DataGridEditFixtures
             {
                 var uiName = Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(nameTb);
                 H.Check($"CellFlip_NameAutomationNameIntact (name='{uiName}')",
-                    string.IsNullOrEmpty(uiName) || uiName == "Alice");
+                    uiName == "Alice");
             }
         }
     }
