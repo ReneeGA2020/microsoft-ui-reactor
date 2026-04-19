@@ -61,6 +61,66 @@ Line shape (tab-separated):
 Columns: UTC timestamp, tool name, selector (or `-`), latency, `ok`/`err`,
 JSON-RPC result code.
 
+## ETW trace correlation
+
+Reactor emits a TraceLogging-style `EventSource` at `Microsoft-UI-Reactor`
+(see `Core/Diagnostics/ReactorEventSource.cs`). Hot-path emit sites are
+guarded by call-site `IsEnabled()` checks, so when no listener is attached
+the disabled path does no Stopwatch, type-name, or event-method work beyond
+a single word-sized flag read. Events cover reconcile passes, component
+render start/stop with trigger (self/parent), effects flush, child
+reconcile, state writes, unmounts, render errors, and MCP call start/stop.
+
+Keywords: `Reconcile=0x1`, `Render=0x2`, `State=0x4`, `Mcp=0x8`,
+`Lifecycle=0x10`, `Errors=0x20`. Full keyword mask = `0x3F`.
+
+Provider GUIDs:
+
+- `Microsoft-UI-Reactor` → `{2BA6BC23-ABF9-56DE-3922-8CC701F16EDE}` (name-hashed by EventSource)
+- `Microsoft-Windows-XAML` → `{531A35AB-63CE-4BCF-AA98-F88C7A89E455}` (WinUI 3 core, native ETW)
+
+### Required: capture via `xperf` (not `dotnet-trace`)
+
+The WinUI core provider is a **native ETW provider** emitted from WinUI's C++
+code. `dotnet-trace` uses the managed EventPipe transport and **cannot
+surface native ETW providers** — it will silently drop `Microsoft-Windows-XAML`
+events and you will get a Reactor-only trace. To get the correlated
+Reactor + XAML timeline you need a classic ETW session via `xperf`, `wpr`,
+`logman`, or PerfView.
+
+Recipe (xperf ships with the Windows Performance Toolkit at
+`C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\xperf.exe`):
+
+```
+set XPERF="C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\xperf.exe"
+
+%XPERF% -start ReactorSession ^
+    -on "2BA6BC23-ABF9-56DE-3922-8CC701F16EDE:0x3F:5+531A35AB-63CE-4BCF-AA98-F88C7A89E455:0x9240:5" ^
+    -f trace.etl -BufferSize 1024 -MinBuffers 32 -MaxBuffers 256
+
+REM …launch / exercise the app…
+
+%XPERF% -stop ReactorSession
+```
+
+The `0x9240` mask on `Microsoft-Windows-XAML` enables **Layout + Rendering +
+Input + DComp** keywords. Verbose level (`5`) is recommended so the full
+frame-timing / composition events come through.
+
+### Viewing the trace
+
+`.etl` opens natively in **PerfView** (github.com/microsoft/perfview) and
+**WPA** (`C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\wpa.exe`).
+PerfView is recommended for CLR + ETW correlation; WPA for composition /
+GPU / CPU-sampling views.
+
+For a web-based timeline (Perfetto / Firefox Profiler / Speedscope /
+`chrome://tracing`) the ETW stream needs to be converted to Chromium JSON
+— `dotnet-trace convert --format Chromium` only handles CPU samples, not
+custom `EventSource` events, so a custom `.etl`-to-Chromium converter is
+required. One is tracked separately; when it lands, swap the `.etl` path
+into it and the resulting JSON drops into https://ui.perfetto.dev/ directly.
+
 ## `--print-config`
 
 `mur devtools --print-config [--mcp-port N]` emits JSON fragments for

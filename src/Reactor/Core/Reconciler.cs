@@ -97,17 +97,17 @@ public sealed partial class Reconciler : IDisposable
         return (idx, _staggerScope.Delay);
     }
 
-#if DEBUG
     /// <summary>
     /// Per-reconcile counters for diagnosing diff and mount/update volume.
-    /// Reset before each top-level Reconcile() call; read afterward.
+    /// Reset before each top-level Reconcile() call; read afterward. Always
+    /// populated (including Release builds) so ETW trace consumers can read
+    /// them off the <c>ReconcileStop</c> event payload.
     /// </summary>
     public int DebugElementsDiffed;
     public int DebugElementsSkipped;
     public int DebugUIElementsCreated;
     public int DebugUIElementsModified;
     private int _debugReconcileDepth;
-#endif
 
     /// <summary>
     /// The element pool used by this reconciler. Disable via Pool.Enabled = false
@@ -232,7 +232,19 @@ public sealed partial class Reconciler : IDisposable
         UIElement? existingControl,
         Action requestRerender)
     {
-#if DEBUG
+        // Trace only top-level reconcile passes (depth == 0) to avoid flooding
+        // the provider with per-subtree entries; nested Reconcile() calls during
+        // the same pass don't emit their own start/stop. Gate the depth counter
+        // and Start emit on IsEnabled so the disabled path pays nothing extra.
+        bool emitTrace = Diagnostics.ReactorEventSource.Log.IsEnabled(
+            global::System.Diagnostics.Tracing.EventLevel.Informational,
+            Diagnostics.ReactorEventSource.Keywords.Reconcile)
+            && _reconcileTraceDepth++ == 0;
+        if (emitTrace)
+        {
+            Diagnostics.ReactorEventSource.Log.ReconcileStart(
+                newElement?.GetType().Name ?? "null");
+        }
         if (_debugReconcileDepth++ == 0)
         {
             DebugElementsDiffed = 0;
@@ -241,21 +253,58 @@ public sealed partial class Reconciler : IDisposable
             DebugUIElementsModified = 0;
         }
         try {
-#endif
-        if (newElement is null or EmptyElement)
+        try
         {
-            if (existingControl is not null)
-                Unmount(existingControl);
-            return null;
+            if (newElement is null or EmptyElement)
+            {
+                if (existingControl is not null)
+                    Unmount(existingControl);
+                return null;
+            }
+
+            if (oldElement is null or EmptyElement || existingControl is null)
+                return Mount(newElement, requestRerender);
+
+            return ReconcileImperative(oldElement, newElement, existingControl, requestRerender);
+        }
+        finally
+        {
+            if (emitTrace)
+            {
+                _reconcileTraceDepth--;
+                Diagnostics.ReactorEventSource.Log.ReconcileStop(
+                    DebugElementsDiffed, DebugElementsSkipped,
+                    DebugUIElementsCreated, DebugUIElementsModified);
+            }
+        }
+        } finally { _debugReconcileDepth--; }
+    }
+
+    // Tracks top-level Reconcile() entries so trace start/stop only fires once
+    // per pass. Only mutated when the Reconcile keyword is enabled.
+    private int _reconcileTraceDepth;
+
+    private static void FlushEffectsTraced(RenderContext ctx, string? componentName)
+    {
+        // Fast path when the Render keyword is off: no Stopwatch, no event emit.
+        if (!Diagnostics.ReactorEventSource.Log.IsEnabled(
+                global::System.Diagnostics.Tracing.EventLevel.Informational,
+                Diagnostics.ReactorEventSource.Keywords.Render))
+        {
+            ctx.FlushEffects();
+            return;
         }
 
-        if (oldElement is null or EmptyElement || existingControl is null)
-            return Mount(newElement, requestRerender);
-
-        return ReconcileImperative(oldElement, newElement, existingControl, requestRerender);
-#if DEBUG
-        } finally { _debugReconcileDepth--; }
-#endif
+        var name = componentName ?? string.Empty;
+        Diagnostics.ReactorEventSource.Log.EffectsFlushStart(name);
+        var start = global::System.Diagnostics.Stopwatch.GetTimestamp();
+        try { ctx.FlushEffects(); }
+        finally
+        {
+            var us = (long)((global::System.Diagnostics.Stopwatch.GetTimestamp() - start)
+                * 1_000_000.0 / global::System.Diagnostics.Stopwatch.Frequency);
+            Diagnostics.ReactorEventSource.Log.EffectsFlushStop(name, us);
+        }
     }
 
     /// <summary>
@@ -347,6 +396,21 @@ public sealed partial class Reconciler : IDisposable
         // changes propagate SelfTriggered up through all component ancestors.
         var componentRerender = CreateComponentRerender(node, requestRerender);
 
+        // Only compute component name + timestamps when the Render keyword is
+        // enabled, so the disabled path avoids the reflection and Stopwatch work.
+        bool traceRender = Diagnostics.ReactorEventSource.Log.IsEnabled(
+            global::System.Diagnostics.Tracing.EventLevel.Informational,
+            Diagnostics.ReactorEventSource.Keywords.Render);
+        string? componentName = null;
+        long renderStart = 0;
+        if (traceRender)
+        {
+            componentName = node.Component?.GetType().Name ?? newEl.GetType().Name;
+            Diagnostics.ReactorEventSource.Log.ComponentRenderStart(
+                componentName, selfTriggered ? "self" : "parent");
+            renderStart = global::System.Diagnostics.Stopwatch.GetTimestamp();
+        }
+
         Element newChildElement;
         try
         {
@@ -361,26 +425,45 @@ public sealed partial class Reconciler : IDisposable
 
                 node.Component.Context.BeginRender(componentRerender, _contextScope);
                 newChildElement = node.Component.Render();
-                node.Component.Context.FlushEffects();
+                FlushEffectsTraced(node.Component.Context, componentName);
             }
             else if (node.Context is not null && newEl is FuncElement func)
             {
                 node.Context.BeginRender(componentRerender, _contextScope);
                 newChildElement = func.RenderFunc(node.Context);
-                node.Context.FlushEffects();
+                FlushEffectsTraced(node.Context, componentName);
             }
             else if (node.Context is not null && newEl is MemoElement memo)
             {
                 node.Context.BeginRender(componentRerender, _contextScope);
                 newChildElement = memo.RenderFunc(node.Context);
-                node.Context.FlushEffects();
+                FlushEffectsTraced(node.Context, componentName);
             }
-            else return;
+            else
+            {
+                if (traceRender)
+                    Diagnostics.ReactorEventSource.Log.ComponentRenderStop(componentName!, 0);
+                return;
+            }
         }
         catch (Exception ex) when (_errorBoundaryDepth == 0 && ex is not OutOfMemoryException and not StackOverflowException)
         {
             _logger.LogError(ex, "Component Render() threw: {ComponentName}", newEl.GetType().Name);
+            if (Diagnostics.ReactorEventSource.Log.IsEnabled(
+                    global::System.Diagnostics.Tracing.EventLevel.Error,
+                    Diagnostics.ReactorEventSource.Keywords.Errors))
+            {
+                Diagnostics.ReactorEventSource.Log.RenderError(
+                    componentName ?? newEl.GetType().Name, ex.GetType().Name, ex.Message);
+            }
             newChildElement = new TextBlockElement($"⚠ Render error: {ex.Message}");
+        }
+
+        if (traceRender)
+        {
+            var renderElapsedUs = (long)((global::System.Diagnostics.Stopwatch.GetTimestamp() - renderStart)
+                * 1_000_000.0 / global::System.Diagnostics.Stopwatch.Frequency);
+            Diagnostics.ReactorEventSource.Log.ComponentRenderStop(componentName!, renderElapsedUs);
         }
 
         // Dereference the Border wrapper to get the actual child control.
@@ -455,7 +538,17 @@ public sealed partial class Reconciler : IDisposable
         WinUI.Panel panel, Action requestRerender)
     {
         var childCollection = new PanelChildCollection(panel);
-        ChildReconciler.Reconcile(oldChildren, newChildren, childCollection, this, requestRerender);
+        // Skip the try/finally and event emit when the Reconcile keyword is off.
+        if (!Diagnostics.ReactorEventSource.Log.IsEnabled(
+                global::System.Diagnostics.Tracing.EventLevel.Informational,
+                Diagnostics.ReactorEventSource.Keywords.Reconcile))
+        {
+            ChildReconciler.Reconcile(oldChildren, newChildren, childCollection, this, requestRerender);
+            return;
+        }
+        Diagnostics.ReactorEventSource.Log.ChildReconcileStart(oldChildren.Length, newChildren.Length);
+        try { ChildReconciler.Reconcile(oldChildren, newChildren, childCollection, this, requestRerender); }
+        finally { Diagnostics.ReactorEventSource.Log.ChildReconcileStop(); }
     }
 
     private void ReconcileItemsChildren(
@@ -463,7 +556,16 @@ public sealed partial class Reconciler : IDisposable
         WinUI.ItemsControl itemsControl, Action requestRerender)
     {
         var childCollection = new ItemsControlChildCollection(itemsControl);
-        ChildReconciler.Reconcile(oldChildren, newChildren, childCollection, this, requestRerender);
+        if (!Diagnostics.ReactorEventSource.Log.IsEnabled(
+                global::System.Diagnostics.Tracing.EventLevel.Informational,
+                Diagnostics.ReactorEventSource.Keywords.Reconcile))
+        {
+            ChildReconciler.Reconcile(oldChildren, newChildren, childCollection, this, requestRerender);
+            return;
+        }
+        Diagnostics.ReactorEventSource.Log.ChildReconcileStart(oldChildren.Length, newChildren.Length);
+        try { ChildReconciler.Reconcile(oldChildren, newChildren, childCollection, this, requestRerender); }
+        finally { Diagnostics.ReactorEventSource.Log.ChildReconcileStop(); }
     }
 
     /// <summary>
@@ -520,6 +622,8 @@ public sealed partial class Reconciler : IDisposable
 
         if (_componentNodes.TryGetValue(control, out var node))
         {
+            Diagnostics.ReactorEventSource.Log.ComponentUnmount(
+                node.Component?.GetType().Name ?? node.Element?.GetType().Name ?? "unknown");
             node.Component?.Context.RunCleanups();
             node.Context?.RunCleanups();
             _componentNodes.Remove(control);
@@ -707,6 +811,8 @@ public sealed partial class Reconciler : IDisposable
         // Run cleanup logic (component teardown, etc.)
         if (_componentNodes.TryGetValue(control, out var node))
         {
+            Diagnostics.ReactorEventSource.Log.ComponentUnmount(
+                node.Component?.GetType().Name ?? node.Element?.GetType().Name ?? "unknown");
             node.Component?.Context.RunCleanups();
             node.Context?.RunCleanups();
             _componentNodes.Remove(control);

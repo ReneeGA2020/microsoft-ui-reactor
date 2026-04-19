@@ -69,9 +69,7 @@ internal static class ChildReconciler
             var newEl = newChildren[i];
             if (Element.CanSkipUpdate(oldEl, newEl))
             {
-#if DEBUG
                 reconciler.DebugElementsSkipped++;
-#endif
                 continue;
             }
 

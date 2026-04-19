@@ -28,9 +28,7 @@ public sealed partial class Reconciler
     /// </summary>
     private UIElement? Update(Element oldEl, Element newEl, UIElement control, Action requestRerender)
     {
-#if DEBUG
         DebugElementsDiffed++;
-#endif
         // Unwrap all layers of ModifiedElement, accumulating modifiers.
         // Inner modifiers override outer ones (via Merge: other wins where non-null).
         ElementModifiers? oldModifiers = oldEl.Modifiers;
@@ -61,9 +59,7 @@ public sealed partial class Reconciler
         // RequestedTheme toggle).
         if (Element.ShallowEquals(oldEl, newEl) && ReferenceEquals(oldModifiers, modifiers))
         {
-#if DEBUG
             DebugElementsSkipped++;
-#endif
             if (newEl.ThemeBindings is not null && control is FrameworkElement thFeSE)
                 ApplyThemeBindings(thFeSE, newEl.ThemeBindings);
             // Re-resolve ThemeRef-based resource overrides on theme change
@@ -71,9 +67,7 @@ public sealed partial class Reconciler
                 ApplyResourceOverrides(resFeSE, newEl.ResourceOverrides, newEl.ResourceOverrides);
             return null; // null = keep existing control as-is
         }
-#if DEBUG
         DebugUIElementsModified++;
-#endif
 
         // Push context values onto scope before processing children
         var ctxValues = newEl.ContextValues;
