@@ -3,8 +3,11 @@
   <CodeCoverage>
     <ModulePaths>
       <Include>
+        <!-- Only the product DLL. Reactor.AppTests.Host.dll is the test harness;
+             measuring how much of the harness its own fixtures exercise is
+             circular and inflates the number without saying anything about
+             product-code quality. -->
         <ModulePath>.*[/\\]Reactor\.dll$</ModulePath>
-        <ModulePath>.*[/\\]Reactor\.AppTests\.Host\.dll$</ModulePath>
       </Include>
     </ModulePaths>
     <Sources>
@@ -14,12 +17,6 @@
              meaningful signal. -->
         <Source>.*[/\\]obj[/\\].*</Source>
         <Source>.*\.g\.cs$</Source>
-        <!-- Test scaffolding in Reactor.AppTests.Host that is exercised by the
-             Appium/E2E test runner rather than by selftest or unit tests. Measuring
-             this in a selftest+unit coverage run just inflates the denominator. -->
-        <Source>.*[/\\]Reactor\.AppTests\.Host[/\\]Fixtures[/\\].*</Source>
-        <Source>.*[/\\]Reactor\.AppTests\.Host[/\\]DevtoolsStress[/\\].*</Source>
-        <Source>.*[/\\]Reactor\.AppTests\.Host[/\\]FixtureRegistry\.cs$</Source>
       </Exclude>
     </Sources>
     <Attributes>
