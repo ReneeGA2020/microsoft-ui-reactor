@@ -5,6 +5,7 @@
 
 using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.AppTests.Host;
+using Microsoft.UI.Reactor.AppTests.Host.DevtoolsStress;
 using Microsoft.UI.Reactor.AppTests.Host.SelfTest;
 
 if (args.Contains("--self-test"))
@@ -13,6 +14,24 @@ if (args.Contains("--self-test"))
     if (filterIdx >= 0 && filterIdx + 1 < args.Length)
         SelfTestRunner.Filter = args[filterIdx + 1];
     SelfTestRunner.RunAll();
+}
+else if (args.Contains("--devtools-stress"))
+{
+    DevtoolsStressRunner.Run(args);
+}
+else if (args.Contains("--devtools-stress-e2e"))
+{
+    DevtoolsStressE2ERunner.Run(args);
+}
+else if (args.Contains("--stress-child"))
+{
+    // Child process spawned by the E2E stress parent. Goes through the real
+    // ReactorApp.Run<T>(devtools: true) path so that --devtools run on the
+    // command line triggers TryRunDevtools → RunRunSubverb → full MCP init
+    // (tool registration + AnnounceReady). That is the same code the
+    // customer hits when they launch their app with --devtools.
+    ReactorApp.Run<Microsoft.UI.Reactor.AppTests.Host.DevtoolsStress.StressChild>(
+        "Stress Child", width: 320, height: 160, devtools: true);
 }
 else
     ReactorApp.Run<TestHost>("Reactor Test Host", width: 1200, height: 800);
