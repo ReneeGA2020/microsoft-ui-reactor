@@ -82,24 +82,30 @@ public sealed class RenderContext
         void Setter(T newValue)
         {
             var h = (ValueHookState<T>)_hooks[currentIndex];
+            bool changed;
             if (h.ThreadSafe)
             {
-                bool changed;
                 lock (h.Lock)
                 {
                     changed = !EqualityComparer<T>.Default.Equals(h.Value, newValue);
                     if (changed) h.Value = newValue;
                 }
+                if (Diagnostics.ReactorEventSource.Log.IsEnabled(
+                        global::System.Diagnostics.Tracing.EventLevel.Verbose,
+                        Diagnostics.ReactorEventSource.Keywords.State))
+                    Diagnostics.ReactorEventSource.Log.StateChange("UseState", typeof(T).Name, changed);
                 if (changed) _requestRerender?.Invoke();
             }
             else
             {
                 AssertUIThread("UseState");
-                if (!EqualityComparer<T>.Default.Equals(h.Value, newValue))
-                {
-                    h.Value = newValue;
-                    _requestRerender?.Invoke();
-                }
+                changed = !EqualityComparer<T>.Default.Equals(h.Value, newValue);
+                if (changed) h.Value = newValue;
+                if (Diagnostics.ReactorEventSource.Log.IsEnabled(
+                        global::System.Diagnostics.Tracing.EventLevel.Verbose,
+                        Diagnostics.ReactorEventSource.Keywords.State))
+                    Diagnostics.ReactorEventSource.Log.StateChange("UseState", typeof(T).Name, changed);
+                if (changed) _requestRerender?.Invoke();
             }
         }
 
@@ -135,9 +141,9 @@ public sealed class RenderContext
         void Updater(Func<T, T> reducer)
         {
             var h = (ValueHookState<T>)_hooks[currentIndex];
+            bool changed;
             if (h.ThreadSafe)
             {
-                bool changed;
                 lock (h.Lock)
                 {
                     var prev = h.Value;
@@ -145,6 +151,10 @@ public sealed class RenderContext
                     changed = !EqualityComparer<T>.Default.Equals(prev, next);
                     if (changed) h.Value = next;
                 }
+                if (Diagnostics.ReactorEventSource.Log.IsEnabled(
+                        global::System.Diagnostics.Tracing.EventLevel.Verbose,
+                        Diagnostics.ReactorEventSource.Keywords.State))
+                    Diagnostics.ReactorEventSource.Log.StateChange("UseReducer", typeof(T).Name, changed);
                 if (changed) _requestRerender?.Invoke();
             }
             else
@@ -152,11 +162,13 @@ public sealed class RenderContext
                 AssertUIThread("UseReducer");
                 var prev = h.Value;
                 var next = reducer(prev);
-                if (!EqualityComparer<T>.Default.Equals(prev, next))
-                {
-                    h.Value = next;
-                    _requestRerender?.Invoke();
-                }
+                changed = !EqualityComparer<T>.Default.Equals(prev, next);
+                if (changed) h.Value = next;
+                if (Diagnostics.ReactorEventSource.Log.IsEnabled(
+                        global::System.Diagnostics.Tracing.EventLevel.Verbose,
+                        Diagnostics.ReactorEventSource.Keywords.State))
+                    Diagnostics.ReactorEventSource.Log.StateChange("UseReducer", typeof(T).Name, changed);
+                if (changed) _requestRerender?.Invoke();
             }
         }
 

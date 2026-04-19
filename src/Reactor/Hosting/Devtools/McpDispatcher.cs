@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.UI.Reactor.Core.Diagnostics;
 
 namespace Microsoft.UI.Reactor.Hosting.Devtools;
 
@@ -162,9 +163,18 @@ internal sealed class McpDispatcher
         if (!_tools.TryGet(name, out var handler))
             throw new McpToolException($"Tool not found: '{name}'", JsonRpcErrorCodes.MethodNotFound);
 
-        if (_logger is null) return handler(@params);
+        bool traceMcp = ReactorEventSource.Log.IsEnabled(
+            global::System.Diagnostics.Tracing.EventLevel.Informational,
+            ReactorEventSource.Keywords.Mcp);
+
+        // Fast path: neither the call log nor ETW tracing is active. Skip the
+        // selector probe, Stopwatch, and try/catch plumbing entirely.
+        if (_logger is null && !traceMcp)
+            return handler(@params);
 
         var selector = TryReadSelector(@params);
+        if (traceMcp)
+            ReactorEventSource.Log.McpCallStart(name, selector ?? string.Empty);
         var sw = global::System.Diagnostics.Stopwatch.StartNew();
         try
         {
@@ -176,20 +186,26 @@ internal sealed class McpDispatcher
             // throw, so the wire response is a normal 200 result; the log alone
             // reflects outcome.
             bool softOk = !HasOkFalse(result);
-            _logger.LogCall(name, selector, sw.ElapsedMilliseconds, success: softOk, resultCode: 0);
+            _logger?.LogCall(name, selector, sw.ElapsedMilliseconds, success: softOk, resultCode: 0);
+            if (traceMcp)
+                ReactorEventSource.Log.McpCallStop(name, softOk, 0, sw.ElapsedMilliseconds);
             return result;
         }
         catch (McpToolException mte)
         {
             sw.Stop();
-            _logger.LogCall(name, selector, sw.ElapsedMilliseconds, success: false, resultCode: mte.Code);
+            _logger?.LogCall(name, selector, sw.ElapsedMilliseconds, success: false, resultCode: mte.Code);
+            if (traceMcp)
+                ReactorEventSource.Log.McpCallStop(name, false, mte.Code, sw.ElapsedMilliseconds);
             throw;
         }
         catch (Exception)
         {
             sw.Stop();
-            _logger.LogCall(name, selector, sw.ElapsedMilliseconds,
+            _logger?.LogCall(name, selector, sw.ElapsedMilliseconds,
                 success: false, resultCode: JsonRpcErrorCodes.InternalError);
+            if (traceMcp)
+                ReactorEventSource.Log.McpCallStop(name, false, JsonRpcErrorCodes.InternalError, sw.ElapsedMilliseconds);
             throw;
         }
     }

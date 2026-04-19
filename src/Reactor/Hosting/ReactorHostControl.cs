@@ -343,12 +343,10 @@ public sealed partial class ReactorHostControl : ContentControl, IDisposable
                     AvgReconcileMs = avgReconcile,
                     AvgEffectsMs = avgEffects,
                     AvgTotalMs = avgTotal,
-#if DEBUG
                     LastDiffed = _reconciler.DebugElementsDiffed,
                     LastSkipped = _reconciler.DebugElementsSkipped,
                     LastCreated = _reconciler.DebugUIElementsCreated,
                     LastModified = _reconciler.DebugUIElementsModified,
-#endif
                 };
 
                 _logger.LogDebug(

@@ -32,17 +32,15 @@ public readonly struct RenderStats
     /// <summary>Average total frame time (ms) over the last window (tree + reconcile + effects).</summary>
     public double AvgTotalMs { get; init; }
 
-#if DEBUG
-    /// <summary>Elements diffed in the last reconcile pass. DEBUG only.</summary>
+    /// <summary>Elements diffed in the last reconcile pass.</summary>
     public int LastDiffed { get; init; }
 
-    /// <summary>Elements skipped (memo/ShallowEquals) in the last reconcile pass. DEBUG only.</summary>
+    /// <summary>Elements skipped (memo/ShallowEquals) in the last reconcile pass.</summary>
     public int LastSkipped { get; init; }
 
-    /// <summary>New UIElements created (mounted) in the last reconcile pass. DEBUG only.</summary>
+    /// <summary>New UIElements created (mounted) in the last reconcile pass.</summary>
     public int LastCreated { get; init; }
 
-    /// <summary>UIElements modified (property updates) in the last reconcile pass. DEBUG only.</summary>
+    /// <summary>UIElements modified (property updates) in the last reconcile pass.</summary>
     public int LastModified { get; init; }
-#endif
 }

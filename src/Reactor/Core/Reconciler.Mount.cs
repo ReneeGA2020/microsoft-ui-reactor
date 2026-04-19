@@ -162,10 +162,8 @@ public sealed partial class Reconciler
         };
         }
 
-#if DEBUG
         if (control is not null)
             DebugUIElementsCreated++;
-#endif
 
         // Apply inline modifiers after mounting
         if (modifiers is not null && control is FrameworkElement fe)

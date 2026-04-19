@@ -4,7 +4,8 @@
       "PowerShell(./reviewer/run-review.ps1)",
       "PowerShell(claude:*)",
       "PowerShell(./reviewer/run-review.ps1 -Agent general)",
-      "PowerShell(Join-Path *)"
+      "PowerShell(Join-Path *)",
+      "PowerShell($procs = Get-Process -Name HeadTrax -ErrorAction SilentlyContinue; if \\($procs\\) { $procs | ForEach-Object { Write-Output \"PID=$\\($_.Id\\)\" } } else { Write-Output \"none\" })"
     ]
   }
 }
