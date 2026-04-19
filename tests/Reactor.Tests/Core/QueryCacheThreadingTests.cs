@@ -265,7 +265,12 @@ public class QueryCacheThreadingTests
                 }
             }));
         }
-        await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromSeconds(10));
+        // Drain budget is generous — the cts cancels workers at 500ms, but on
+        // contended CI runners (shared cores, virtualized IO) flushing all
+        // tasks through their last op + OS thread wake can take several
+        // seconds even though it's near-instant locally. Bumping the ceiling
+        // costs nothing on the happy path and kills the observed CI flake.
+        await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromSeconds(60));
         Assert.Equal(0, exceptions);
     }
 }
