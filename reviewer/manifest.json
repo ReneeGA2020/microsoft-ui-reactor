@@ -203,14 +203,12 @@
       "id": "lifecycle-batch-7",
       "agent": "lifecycle",
       "files": [
-        "Reactor/Monaco/MonacoEditor.cs",
-        "Reactor/Monaco/MonacoJsonContext.cs",
         "Reactor/Controls/PropertyGrid/PropertyGridComponent.cs",
         "Reactor/Controls/PropertyGrid/PropertyGridElement.cs",
         "Reactor/Controls/PropertyGrid/PropertyGridDsl.cs",
         "Reactor/Controls/PropertyGrid/PropertyGridDefaults.cs"
       ],
-      "description": "Monaco editor and PropertyGrid \u2014 component lifecycle, event wiring"
+      "description": "PropertyGrid \u2014 component lifecycle, event wiring"
     },
     {
       "id": "lifecycle-batch-8",
@@ -309,13 +307,11 @@
       "id": "interop-batch-3",
       "agent": "interop",
       "files": [
-        "Reactor/Monaco/MonacoEditor.cs",
-        "Reactor/Monaco/MonacoJsonContext.cs",
         "Reactor/Yoga/YogaNode.cs",
         "Reactor/Yoga/YogaAlgorithm.cs",
         "Reactor/Yoga/AlgorithmUtils.cs"
       ],
-      "description": "Monaco WebView2 interop and Yoga layout engine \u2014 cross-boundary calls"
+      "description": "Yoga layout engine \u2014 cross-boundary calls"
     },
     {
       "id": "security-batch-1",
@@ -538,10 +534,9 @@
         "tests/Reactor.AppTests.Host/Fixtures/FlexLayoutFixtures.cs",
         "tests/Reactor.AppTests.Host/Fixtures/LayoutFixtures.cs",
         "tests/Reactor.AppTests.Host/Fixtures/LocalizationFixtures.cs",
-        "tests/Reactor.AppTests.Host/Fixtures/MarkdownFixtures.cs",
-        "tests/Reactor.AppTests.Host/Fixtures/MonacoFixtures.cs"
+        "tests/Reactor.AppTests.Host/Fixtures/MarkdownFixtures.cs"
       ],
-      "description": "AppTest fixtures \u2014 collections, D3, demo, layout, markdown, monaco"
+      "description": "AppTest fixtures \u2014 collections, D3, demo, layout, markdown"
     },
     {
       "id": "test-quality-batch-13",
@@ -620,10 +615,9 @@
         "tests/Reactor.AppTests.Host/SelfTest/Fixtures/LocalizationFixtures.cs",
         "tests/Reactor.AppTests.Host/SelfTest/Fixtures/MarkdownFixtures.cs",
         "tests/Reactor.AppTests.Host/SelfTest/Fixtures/ModifierEventFixtures.cs",
-        "tests/Reactor.AppTests.Host/SelfTest/Fixtures/MonacoFixtures.cs",
         "tests/Reactor.AppTests.Host/SelfTest/Fixtures/NavigationFixtures.cs"
       ],
-      "description": "SelfTest layout and feature fixtures \u2014 flex, markdown, monaco, navigation"
+      "description": "SelfTest layout and feature fixtures \u2014 flex, markdown, navigation"
     },
     {
       "id": "test-quality-batch-19",
@@ -1041,8 +1035,6 @@
       "id": "general-batch-12",
       "agent": "general",
       "files": [
-        "Reactor/Monaco/MonacoEditor.cs",
-        "Reactor/Monaco/MonacoJsonContext.cs",
         "Reactor/Controls/PropertyGrid/PropertyGridComponent.cs",
         "Reactor/Controls/PropertyGrid/PropertyGridElement.cs",
         "Reactor/Controls/PropertyGrid/PropertyGridDsl.cs",
@@ -1050,7 +1042,7 @@
         "Reactor/Controls/PropertyGrid/ArrayOperations.cs",
         "Reactor/Controls/PropertyGrid/Attributes.cs"
       ],
-      "description": "Monaco editor and PropertyGrid components"
+      "description": "PropertyGrid components"
     },
     {
       "id": "general-batch-13",

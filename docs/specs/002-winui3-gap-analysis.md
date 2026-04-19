@@ -180,7 +180,7 @@ is a component that renders its content directly.
 | **MediaPlayerElement** | Exposed | `MediaPlayerElement(...)` | MediaPlayerElementElement |
 | **InkCanvas** | Missing | — | No element; use `.Set()` on a host |
 | **InkToolbar** | Missing | — | No element |
-| **WebView2** | Augmented | `WebView2(uri)` + `MonacoEditor(...)` | WebView2Element; MonacoEditor adds code-editor specialization |
+| **WebView2** | Exposed | `WebView2(uri)` | WebView2Element |
 | **PersonPicture** | Exposed | `PersonPicture(...)` | PersonPictureElement |
 | **ParallaxView** | Exposed | `ParallaxView(...)` | ParallaxViewElement |
 | **CaptureElement** | Missing | — | No element |

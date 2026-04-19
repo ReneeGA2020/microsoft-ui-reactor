@@ -225,7 +225,6 @@ See `skills/commanding.md` for command-aware overloads (`Button(cmd)`,
 | `WebView2(source?)` | `Uri?` |
 | `MediaPlayerElement(source?)` | `string?` |
 | `AnimatedVisualPlayer()` | — |
-| `MonacoEditor(text?, onTextChanged?, language?, theme?)` | `(string, Action<string>?, string, string)` |
 
 ## Additional Controls
 
@@ -341,7 +340,6 @@ Rectangle().Fill(brush) / Ellipse().Fill(brush)
 Popup(c, open).LightDismiss(true).Offset(h, v)
 ScrollView(c).ZoomMode(...).HorizontalScrollMode(...).VerticalScrollMode(...)
 TextField(v, setV).Header("...")
-MonacoEditor(t, set).ReadOnly().EditorFontSize(n).EditorWordWrap(b).Minimap(b)
 element.WithKey("stable-id")  // always last
 ```
 

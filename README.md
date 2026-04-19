@@ -81,7 +81,6 @@ Reactor spans a core framework and a set of higher-level features. Each area bel
 | **Lists & virtualization** | Virtualized `ListView`, `GridView`, `ItemsRepeater`, `LazyStack` with recycling | Draft |
 | **Data system** | `DataGrid`, `PropertyGrid`, `FormField`, metadata model, async validation, inline editing | Early |
 | **Preview / hot reload** | `MetadataUpdateHandler` hot reload, CLI `--preview` flag, VS Code live preview | Early |
-| **Monaco integration** | WebView2-based Monaco code editor element | Early |
 
 ---
 

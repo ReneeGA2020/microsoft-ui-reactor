@@ -19,4 +19,17 @@
     <ProjectReference Include="..\..\..\src\Reactor\Reactor.csproj" />
   </ItemGroup>
 
+  <!-- ═══════════════════════════════════════════════════════════════════
+       Monaco editor — HTML shell + vendored JS assets (unmodified from npm)
+       Copied to output so MonacoEditor control can load them via WebView2.
+       ═══════════════════════════════════════════════════════════════════ -->
+  <ItemGroup>
+    <Content Include="Monaco\monaco-editor.html" CopyToOutputDirectory="PreserveNewest" Link="Monaco\monaco-editor.html" />
+    <!-- Use None (not Content) to avoid PRI resource indexer warnings on JS filenames -->
+    <None Include="Monaco\Assets\**" CopyToOutputDirectory="PreserveNewest" LinkBase="Monaco\Assets" />
+    <Compile Remove="Monaco\Assets\**" />
+    <EmbeddedResource Remove="Monaco\Assets\**" />
+    <Content Remove="Monaco\Assets\**" />
+  </ItemGroup>
+
 </Project>

@@ -184,7 +184,7 @@
 ---
 
 ## F012
-- **File**: Reactor/Monaco/MonacoEditor.cs:255
+- **File**: samples/apps/monaco-editor/Monaco/MonacoEditor.cs:255
 - **Severity**: high
 - **Priority**: P1
 - **Domain**: error-handling
@@ -200,7 +200,7 @@
 ---
 
 ## F013
-- **File**: Reactor/Monaco/MonacoEditor.cs:125-167
+- **File**: samples/apps/monaco-editor/Monaco/MonacoEditor.cs:125-167
 - **Severity**: high
 - **Priority**: P1
 - **Domain**: memory-lifecycle
@@ -440,7 +440,7 @@
 ---
 
 ## F028
-- **File**: Reactor/Monaco/MonacoEditor.cs:32-37
+- **File**: samples/apps/monaco-editor/Monaco/MonacoEditor.cs:32-37
 - **Severity**: high
 - **Priority**: P2
 - **Domain**: memory-lifecycle
@@ -776,7 +776,7 @@
 ---
 
 ## F049
-- **File**: Reactor/Monaco/MonacoEditor.cs:331-341
+- **File**: samples/apps/monaco-editor/Monaco/MonacoEditor.cs:331-341
 - **Severity**: medium
 - **Priority**: P2
 - **Domain**: error-handling
@@ -792,7 +792,7 @@
 ---
 
 ## F050
-- **File**: Reactor/Monaco/MonacoEditor.cs:368-369
+- **File**: samples/apps/monaco-editor/Monaco/MonacoEditor.cs:368-369
 - **Severity**: medium
 - **Priority**: P2
 - **Domain**: security

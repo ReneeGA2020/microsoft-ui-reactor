@@ -149,19 +149,14 @@ public static class GalleryControls
 
         children.Add(
             Expander("Source code",
-                (MonacoEditor(
-                    text: sourceCode.Trim(),
-                    language: "csharp",
-                    theme: "vs-dark"
-                ) with
-                {
-                    IsReadOnly = true,
-                    FontSize = 14,
-                    WordWrap = true,
-                    MinimapEnabled = false,
-                })
-                .Margin(0)
-                .Height(200),
+                ScrollView(
+                    TextBlock(sourceCode.Trim())
+                        .FontFamily("Consolas, 'Cascadia Code', monospace")
+                        .FontSize(13)
+                        .Padding(12)
+                )
+                .Height(200)
+                .Background(Theme.SubtleFill),
                 isExpanded: false,
                 onExpandedChanged: null
             )

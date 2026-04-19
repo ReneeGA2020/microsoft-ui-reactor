@@ -75,7 +75,6 @@ The primary artifact. Contains:
 - `Reactor.dll` (the framework)
 - `Reactor.Analyzers.dll` — packed under `analyzers/dotnet/cs/`
 - `Reactor.Localization.Generator.dll` — packed under `analyzers/dotnet/cs/`
-- `Monaco/` assets and `monaco-editor.html` — packed as content under `contentFiles/any/any/Monaco/` and surfaced via a `.targets` file so consumers get CopyToOutputDirectory behavior automatically
 - Package metadata: authors, license, repository URL, icon, `README.md`
 
 The source generator and analyzers are bundled **inside** the framework package, not shipped separately, because no consumer ever wants Reactor without them. This matches how `Microsoft.Extensions.Logging` ships its source generators today.
@@ -102,11 +101,8 @@ Microsoft.UI.Reactor.1.0.0-preview.42.nupkg
 ├── analyzers/dotnet/cs/
 │   ├── Reactor.Analyzers.dll
 │   └── Reactor.Localization.Generator.dll
-├── contentFiles/any/any/Monaco/
-│   ├── monaco-editor.html
-│   └── Assets/…
 ├── build/
-│   └── Microsoft.UI.Reactor.targets       # wires Monaco copy + any default props
+│   └── Microsoft.UI.Reactor.targets       # default props
 ├── README.md
 ├── LICENSE
 └── Microsoft.UI.Reactor.nuspec
@@ -350,7 +346,7 @@ Plus a one-time `nuget.config` in the repo root pointing at our internal feed:
 </configuration>
 ```
 
-Consumer gets: framework, analyzers, source generator, Monaco assets, and WinUI SDK (transitive). Optionally installs `mur` via the install script. No clone of `microsoft/reactor3` required.
+Consumer gets: framework, analyzers, source generator, and WinUI SDK (transitive). Optionally installs `mur` via the install script. No clone of `microsoft/reactor3` required.
 
 ## 13. Open Questions
 
@@ -358,7 +354,6 @@ Consumer gets: framework, analyzers, source generator, Monaco assets, and WinUI 
 - **Internal feed ownership.** Which Azure Artifacts organization hosts the P1 feed? Creating one takes ~a day plus approvals.
 - **Signing prerequisite for P1.** Does the chosen internal feed enforce signed packages? If yes, P1 needs ESRP too, not just P2.
 - **Package ID.** `Microsoft.UI.Reactor` assumes we stay in the `Microsoft.UI.*` namespace (see spec 018 for the namespace rename). If that namespace decision changes, the package ID follows.
-- **Monaco asset size.** The Monaco vendored JS is multi-MB. Shipping inside every package bloats download. Consider splitting into `Microsoft.UI.Reactor.Monaco` if it becomes a complaint.
 - **WinUI SDK version.** We currently pin `Microsoft.WindowsAppSDK` 2.0.0-experimental6. Consumers who want a different WinUI version will conflict. Decide: float this transitively, or lock it and force consumers to match.
 - **`mur` install-script trust boundary.** `iwr | iex` from GitHub Releases works for P1 but will concern P3 users. Document the signed-binary fallback (direct download + verify signature) before public launch.
 
