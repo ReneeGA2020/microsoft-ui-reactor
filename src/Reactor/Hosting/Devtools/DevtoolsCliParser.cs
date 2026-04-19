@@ -24,7 +24,9 @@ internal sealed record DevtoolsCliOptions(
     McpTransport Transport,
     bool UsedDeprecatedPreview,
     bool PreviewAndDevtoolsConflict,
-    string? ProjectIdentifier = null);
+    string? ProjectIdentifier = null,
+    bool LogsDisabled = false,
+    int? LogsCapacityMb = null);
 
 /// <summary>
 /// Pure command-line parser for the devtools entry point. Has no side effects so it is
@@ -56,7 +58,9 @@ internal static class DevtoolsCliParser
                 LogLevel: null,
                 Transport: McpTransport.Http,
                 UsedDeprecatedPreview: true,
-                PreviewAndDevtoolsConflict: true);
+                PreviewAndDevtoolsConflict: true,
+                LogsDisabled: false,
+                LogsCapacityMb: null);
         }
 
         if (!anyDevtools && !anyPreview)
@@ -72,7 +76,9 @@ internal static class DevtoolsCliParser
                 LogLevel: null,
                 Transport: McpTransport.Http,
                 UsedDeprecatedPreview: false,
-                PreviewAndDevtoolsConflict: false);
+                PreviewAndDevtoolsConflict: false,
+                LogsDisabled: false,
+                LogsCapacityMb: null);
         }
 
         DevtoolsSubverb subverb;
@@ -157,6 +163,18 @@ internal static class DevtoolsCliParser
         if (projIdx >= 0 && projIdx + 1 < args.Length)
             projectIdentifier = args[projIdx + 1];
 
+        bool logsDisabled = false;
+        int logsIdx = IndexOf(args, "--devtools-logs");
+        if (logsIdx >= 0 && logsIdx + 1 < args.Length
+            && string.Equals(args[logsIdx + 1], "off", StringComparison.OrdinalIgnoreCase))
+            logsDisabled = true;
+
+        int? logsCapMb = null;
+        int logsCapIdx = IndexOf(args, "--devtools-logs-capacity");
+        if (logsCapIdx >= 0 && logsCapIdx + 1 < args.Length
+            && int.TryParse(args[logsCapIdx + 1], out var parsedCap) && parsedCap > 0)
+            logsCapMb = parsedCap;
+
         _ = anchorIdx;
 
         return new DevtoolsCliOptions(
@@ -171,7 +189,9 @@ internal static class DevtoolsCliParser
             Transport: transport,
             UsedDeprecatedPreview: deprecated,
             PreviewAndDevtoolsConflict: false,
-            ProjectIdentifier: projectIdentifier);
+            ProjectIdentifier: projectIdentifier,
+            LogsDisabled: logsDisabled,
+            LogsCapacityMb: logsCapMb);
     }
 
     private static (DevtoolsSubverb Subverb, int TrailingArgStart) ParseSubverbAfter(string[] args, int devtoolsIdx)

@@ -202,4 +202,32 @@ public class CliFlagParsingTests
         var opts = DevtoolsCliParser.Parse(["app.exe", "--devtools", "run", "--mcp-transport", "carrier-pigeon"]);
         Assert.Equal(McpTransport.Http, opts.Transport);
     }
+
+    [Fact]
+    public void LogsFlag_OffDisablesCapture()
+    {
+        var opts = DevtoolsCliParser.Parse(["app.exe", "--devtools", "run", "--devtools-logs", "off"]);
+        Assert.True(opts.LogsDisabled);
+    }
+
+    [Fact]
+    public void LogsFlag_Default_CaptureEnabled()
+    {
+        var opts = DevtoolsCliParser.Parse(["app.exe", "--devtools", "run"]);
+        Assert.False(opts.LogsDisabled);
+    }
+
+    [Fact]
+    public void LogsCapacityFlag_IsParsed()
+    {
+        var opts = DevtoolsCliParser.Parse(["app.exe", "--devtools", "run", "--devtools-logs-capacity", "16"]);
+        Assert.Equal(16, opts.LogsCapacityMb);
+    }
+
+    [Fact]
+    public void LogsCapacityFlag_Default_IsNull()
+    {
+        var opts = DevtoolsCliParser.Parse(["app.exe", "--devtools", "run"]);
+        Assert.Null(opts.LogsCapacityMb);
+    }
 }
