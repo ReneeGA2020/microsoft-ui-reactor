@@ -54,8 +54,8 @@ internal static class ObservableFixtures
         {
             UseObservable(_person);
             return VStack(
-                Factories.Text($"Name: {_person.Name}").AutomationId("NameDisplay"),
-                Factories.Text($"Age: {_person.Age}").AutomationId("AgeDisplay"),
+                TextBlock($"Name: {_person.Name}").AutomationId("NameDisplay"),
+                TextBlock($"Age: {_person.Age}").AutomationId("AgeDisplay"),
                 Button("ChangeName", () => _person.Name = "Bob").AutomationId("ChangeNameBtn"),
                 Button("ChangeAge", () => _person.Age = 42).AutomationId("ChangeAgeBtn")
             );
@@ -77,7 +77,7 @@ internal static class ObservableFixtures
         {
             UseObservable(_person);
             return VStack(
-                Factories.Text($"Name: {_person.Name}").AutomationId("ExtNameDisplay"),
+                TextBlock($"Name: {_person.Name}").AutomationId("ExtNameDisplay"),
                 Button("MutateName", () => _person.Name = "Charlie").AutomationId("MutateNameBtn")
             );
         }
@@ -96,7 +96,7 @@ internal static class ObservableFixtures
         {
             var name = UseObservableProperty(_person, p => p.Name, nameof(PersonModel.Name));
             return VStack(
-                Factories.Text($"Name: {name}").AutomationId("PropNameDisplay"),
+                TextBlock($"Name: {name}").AutomationId("PropNameDisplay"),
                 Button("ChangeName", () => _person.Name = "Bob").AutomationId("PropChangeNameBtn"),
                 Button("ChangeAge", () => _person.Age = 99).AutomationId("PropChangeAgeBtn")
             );
@@ -116,9 +116,9 @@ internal static class ObservableFixtures
         {
             var list = UseCollection(_items);
             return VStack(
-                Factories.Text($"Count: {list.Count}").AutomationId("CollectionCount"),
+                TextBlock($"Count: {list.Count}").AutomationId("CollectionCount"),
                 VStack(list.Select((item, idx) =>
-                    Factories.Text(item).AutomationId($"CollItem{idx}")
+                    TextBlock(item).AutomationId($"CollItem{idx}")
                 ).ToArray()),
                 Button("AddCherry", () => _items.Add("Cherry")).AutomationId("AddCherryBtn"),
                 Button("RemoveFirst", () => { if (_items.Count > 0) _items.RemoveAt(0); }).AutomationId("RemoveFirstBtn"),
@@ -144,7 +144,7 @@ internal static class ObservableFixtures
             UseObservable(current);
 
             return VStack(
-                Factories.Text($"Name: {current.Name}").AutomationId("SwapNameDisplay"),
+                TextBlock($"Name: {current.Name}").AutomationId("SwapNameDisplay"),
                 Button("Swap", () => setUseSecond(!useSecond)).AutomationId("SwapBtn"),
                 Button("MutateCurrent", () => current.Name = current.Name + " Updated")
                     .AutomationId("MutateCurrentBtn")

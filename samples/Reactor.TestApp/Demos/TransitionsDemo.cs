@@ -37,18 +37,18 @@ class TransitionsDemo : Component
 
         return ScrollView(VStack(16,
             Heading("Transitions"),
-            Factories.Text("Demonstrates implicit and theme transitions in Reactor.").Foreground(SecondaryText),
+            TextBlock("Demonstrates implicit and theme transitions in Reactor.").Foreground(SecondaryText),
 
             // Section 1: Implicit opacity transition
             SubHeading("Opacity Transition"),
-            Factories.Text("Drag the slider — the box fades smoothly via an implicit ScalarTransition."),
+            TextBlock("Drag the slider — the box fades smoothly via an implicit ScalarTransition."),
             HStack(12,
-                Factories.Text("Opacity:"),
+                TextBlock("Opacity:"),
                 Slider(opacity, 0, 1, v => setOpacity(v)).Width(200),
-                Factories.Text($"{opacity:F2}")
+                TextBlock($"{opacity:F2}")
             ),
             Border(
-                Factories.Text("Fade me").SemiBold()
+                TextBlock("Fade me").SemiBold()
                     .HAlign(HorizontalAlignment.Center)
                     .VAlign(VerticalAlignment.Center)
             )
@@ -58,13 +58,13 @@ class TransitionsDemo : Component
 
             // Section 2: Implicit scale transition
             SubHeading("Scale Transition"),
-            Factories.Text("Click to toggle scale — animates via an implicit Vector3Transition."),
+            TextBlock("Click to toggle scale — animates via an implicit Vector3Transition."),
             HStack(12,
                 Button(scale == 1.0 ? "Scale Up" : "Scale Down",
                     () => setScale(scale == 1.0 ? 1.5 : 1.0))
             ),
             Border(
-                Factories.Text("Scale me").SemiBold()
+                TextBlock("Scale me").SemiBold()
                     .HAlign(HorizontalAlignment.Center)
                     .VAlign(VerticalAlignment.Center)
             )
@@ -74,14 +74,14 @@ class TransitionsDemo : Component
 
             // Section 3: Implicit translation transition
             SubHeading("Translation Transition"),
-            Factories.Text("Drag the slider — the box slides via an implicit Vector3Transition."),
+            TextBlock("Drag the slider — the box slides via an implicit Vector3Transition."),
             HStack(12,
-                Factories.Text("X Offset:"),
+                TextBlock("X Offset:"),
                 Slider(xOffset, -200, 200, v => setXOffset(v)).Width(300),
-                Factories.Text($"{xOffset:F0}px")
+                TextBlock($"{xOffset:F0}px")
             ),
             Border(
-                Factories.Text("Slide me").SemiBold()
+                TextBlock("Slide me").SemiBold()
                     .HAlign(HorizontalAlignment.Center)
                     .VAlign(VerticalAlignment.Center)
             )
@@ -92,10 +92,10 @@ class TransitionsDemo : Component
             // Section 4: Implicit background transition
             // BrushTransition only works on Panel types (Grid, StackPanel), not Border.
             SubHeading("Background Transition"),
-            Factories.Text("Click to cycle colors — animates via an implicit BrushTransition on a Grid."),
+            TextBlock("Click to cycle colors — animates via an implicit BrushTransition on a Grid."),
             Button("Next Color", () => setBgIndex(bgIndex + 1)),
             Grid(["*"], ["80"],
-                Factories.Text(currentBg).SemiBold()
+                TextBlock(currentBg).SemiBold()
                     .HAlign(HorizontalAlignment.Center)
                     .VAlign(VerticalAlignment.Center)
             )
@@ -105,7 +105,7 @@ class TransitionsDemo : Component
 
             // Section 5: Theme transitions (ChildrenTransitions)
             SubHeading("Theme Transitions (ChildrenTransitions)"),
-            Factories.Text("Add/remove items — the panel animates children in/out with theme transitions."),
+            TextBlock("Add/remove items — the panel animates children in/out with theme transitions."),
             HStack(8,
                 Button("Add Item", () => setItemCount(Math.Min(itemCount + 1, 8))),
                 Button("Remove Item", () => setItemCount(Math.Max(itemCount - 1, 0))),
@@ -116,7 +116,7 @@ class TransitionsDemo : Component
                 ? VStack(8,
                     Enumerable.Range(0, itemCount).Select(i =>
                         Border(
-                            Factories.Text($"Item {i + 1}").SemiBold()
+                            TextBlock($"Item {i + 1}").SemiBold()
                                 .HAlign(HorizontalAlignment.Center)
                                 .VAlign(VerticalAlignment.Center)
                         )
@@ -128,12 +128,12 @@ class TransitionsDemo : Component
                     new EntranceThemeTransition(),
                     new AddDeleteThemeTransition()
                 )
-                : Factories.Text("(hidden)").Foreground(TertiaryText),
+                : TextBlock("(hidden)").Foreground(TertiaryText),
 
             // Section 6: Combined transitions
             // Uses its own state so toggling doesn't affect the sections above.
             SubHeading("Combined: Opacity + Scale + Background"),
-            Factories.Text("Multiple implicit transitions on one element — all animate independently."),
+            TextBlock("Multiple implicit transitions on one element — all animate independently."),
             HStack(8,
                 Button("Toggle", () =>
                 {
@@ -143,7 +143,7 @@ class TransitionsDemo : Component
                 })
             ),
             Grid(["*"], ["80"],
-                Factories.Text("All at once").SemiBold()
+                TextBlock("All at once").SemiBold()
                     .HAlign(HorizontalAlignment.Center)
                     .VAlign(VerticalAlignment.Center)
             )
@@ -160,12 +160,12 @@ class TransitionsDemo : Component
 
             // Section 7: Layout animation — list reorder
             SubHeading("Layout Animation — List Reorder"),
-            Factories.Text("Keyed items in a VStack. Click Shuffle — items slide to new positions."),
+            TextBlock("Keyed items in a VStack. Click Shuffle — items slide to new positions."),
             Button("Shuffle", () => setShuffleItems(shuffleItems.OrderBy(_ => Random.Shared.Next()).ToArray())),
             VStack(8,
                 shuffleItems.Select(item =>
                     Border(
-                        Factories.Text(item).SemiBold()
+                        TextBlock(item).SemiBold()
                             .HAlign(HorizontalAlignment.Center)
                             .VAlign(VerticalAlignment.Center)
                     )
@@ -178,13 +178,13 @@ class TransitionsDemo : Component
 
             // Section 8: Layout animation — flex reflow
             SubHeading("Layout Animation — Flex Reflow"),
-            Factories.Text("Toggle item width — items reflow within the same FlexPanel, animating to new positions."),
+            TextBlock("Toggle item width — items reflow within the same FlexPanel, animating to new positions."),
             Button(useWrap ? "Shrink items (fit one row)" : "Expand items (wrap to rows)",
                 () => setUseWrap(!useWrap)),
             new FlexElement(
                 Enumerable.Range(0, 6).Select(i =>
                     Border(
-                        Factories.Text($"Item {i}").SemiBold()
+                        TextBlock($"Item {i}").SemiBold()
                             .HAlign(HorizontalAlignment.Center)
                             .VAlign(VerticalAlignment.Center)
                     )
@@ -196,14 +196,14 @@ class TransitionsDemo : Component
 
             // Section 9: Connected animation — FlexPanel <-> UniformGrid
             SubHeading("Connected Animation — Layout Switch"),
-            Factories.Text("Switch between FlexPanel (wrapped) and UniformGrid. Items fly from old to new positions via ConnectedAnimationService."),
+            TextBlock("Switch between FlexPanel (wrapped) and UniformGrid. Items fly from old to new positions via ConnectedAnimationService."),
             Button(useGrid ? "Switch to FlexPanel (wrap)" : "Switch to UniformGrid",
                 () => setUseGrid(!useGrid)),
             useGrid
                 ? UniformGrid(Microsoft.UI.Xaml.Controls.Orientation.Horizontal,
                     Enumerable.Range(0, 6).Select(i =>
                         Border(
-                            Factories.Text($"Item {i}").SemiBold()
+                            TextBlock($"Item {i}").SemiBold()
                                 .HAlign(HorizontalAlignment.Center)
                                 .VAlign(VerticalAlignment.Center)
                         )
@@ -215,7 +215,7 @@ class TransitionsDemo : Component
                 : new FlexElement(
                     Enumerable.Range(0, 6).Select(i =>
                         Border(
-                            Factories.Text($"Item {i}").SemiBold()
+                            TextBlock($"Item {i}").SemiBold()
                                 .HAlign(HorizontalAlignment.Center)
                                 .VAlign(VerticalAlignment.Center)
                         )
@@ -227,12 +227,12 @@ class TransitionsDemo : Component
 
             // Section 10: Layout animation — slow reorder
             SubHeading("Layout Animation — Slow Reorder"),
-            Factories.Text("Same reorder with a slower 800ms animation so you can clearly see items sliding."),
+            TextBlock("Same reorder with a slower 800ms animation so you can clearly see items sliding."),
             Button("Shuffle (Slow)", () => setSpringItems(springItems.OrderBy(_ => Random.Shared.Next()).ToArray())),
             VStack(8,
                 springItems.Select(item =>
                     Border(
-                        Factories.Text(item).SemiBold()
+                        TextBlock(item).SemiBold()
                             .HAlign(HorizontalAlignment.Center)
                             .VAlign(VerticalAlignment.Center)
                     )
@@ -245,32 +245,32 @@ class TransitionsDemo : Component
 
             // Section 11: WithAnimation scope
             SubHeading("WithAnimation Scope"),
-            Factories.Text("Click to animate opacity via WithAnimation scope."),
+            TextBlock("Click to animate opacity via WithAnimation scope."),
             Component<WithAnimationScopeDemo>(),
 
             // Section 12: .Animate() modifier
             SubHeading(".Animate() — Compositor Property Animation"),
-            Factories.Text("This element has .Animate(Curve.Spring()) — all visual changes animate implicitly."),
+            TextBlock("This element has .Animate(Curve.Spring()) — all visual changes animate implicitly."),
             Component<AnimateModifierDemo>(),
 
             // Section 13: InteractionStates
             SubHeading("InteractionStates — Zero-Reconcile Hover/Press"),
-            Factories.Text("Hover and press the boxes. No state variables, no re-render."),
+            TextBlock("Hover and press the boxes. No state variables, no re-render."),
             Component<InteractionStatesDemo>(),
 
             // Section 14: Enter/Exit Transitions
             SubHeading("Enter/Exit Transitions"),
-            Factories.Text("Toggle to show/hide with Fade + Slide(Bottom) transition."),
+            TextBlock("Toggle to show/hide with Fade + Slide(Bottom) transition."),
             Component<EnterExitTransitionDemo>(),
 
             // Section 15: Stagger
             SubHeading("Staggered Children"),
-            Factories.Text("Children with stagger delay — each child's layout animation starts slightly later."),
+            TextBlock("Children with stagger delay — each child's layout animation starts slightly later."),
             Component<StaggerDemo>(),
 
             // Section 16: Keyframes
             SubHeading("Keyframe Animation"),
-            Factories.Text("Click to trigger a pulse keyframe animation."),
+            TextBlock("Click to trigger a pulse keyframe animation."),
             Component<KeyframeDemo>()
 
         )).HorizontalScrollMode(Microsoft.UI.Xaml.Controls.ScrollMode.Disabled)
@@ -315,7 +315,7 @@ class WithAnimationScopeDemo : Component
                         setOpacity(opacity > 0.5 ? 0.2 : 1.0);
                     });
             }),
-            Border(Factories.Text("WithAnimation target").SemiBold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center))
+            Border(TextBlock("WithAnimation target").SemiBold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center))
                 .Size(200, 60).Background("#4A90D9").CornerRadius(8).Padding(12)
                 .Opacity(opacity)
         );
@@ -330,7 +330,7 @@ class AnimateModifierDemo : Component
 
         return VStack(8,
             Button(active ? "Reset" : "Animate", () => setActive(!active)),
-            Border(Factories.Text(".Animate()").SemiBold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center))
+            Border(TextBlock(".Animate()").SemiBold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center))
                 .Size(200, 60).Background("#E8834A").CornerRadius(8).Padding(12)
                 .Opacity(active ? 0.5 : 1.0)
                 .Animate(Microsoft.UI.Reactor.Animation.Curve.Spring(0.65f))
@@ -343,12 +343,12 @@ class InteractionStatesDemo : Component
     public override Element Render()
     {
         return HStack(12,
-            Border(Factories.Text("Hover me").SemiBold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center))
+            Border(TextBlock("Hover me").SemiBold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center))
                 .Size(150, 60).Background("#50C878").CornerRadius(8).Padding(12)
                 .InteractionStates(states => states
                     .PointerOver(opacity: 0.85f, scale: 1.05f)
                     .Pressed(scale: 0.95f, opacity: 0.7f)),
-            Border(Factories.Text("Press me").SemiBold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center))
+            Border(TextBlock("Press me").SemiBold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center))
                 .Size(150, 60).Background("#9B59B6").CornerRadius(8).Padding(12)
                 .InteractionStates(states => states
                     .PointerOver(scale: 1.03f)
@@ -367,10 +367,10 @@ class EnterExitTransitionDemo : Component
         return VStack(8,
             Button(visible ? "Hide (exit)" : "Show (enter)", () => setVisible(!visible)),
             visible
-                ? Border(Factories.Text("I fade + slide").SemiBold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center))
+                ? Border(TextBlock("I fade + slide").SemiBold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center))
                     .Size(200, 60).Background("#E74C3C").CornerRadius(8).Padding(12)
                     .Transition(Microsoft.UI.Reactor.Animation.Transition.Fade + Microsoft.UI.Reactor.Animation.Transition.Slide(Microsoft.UI.Reactor.Animation.Edge.Bottom))
-                : (Element)Factories.Text("(element removed)")
+                : (Element)TextBlock("(element removed)")
         );
     }
 }
@@ -385,7 +385,7 @@ class StaggerDemo : Component
             Button("Shuffle", () => setItems(items.OrderBy(_ => Random.Shared.Next()).ToArray())),
             VStack(4,
                 items.Select(item =>
-                    Border(Factories.Text(item).SemiBold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center))
+                    Border(TextBlock(item).SemiBold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center))
                         .Height(40).Background("#4A90D9").CornerRadius(4).Padding(8)
                         .WithKey(item)
                         .LayoutAnimation()
@@ -403,7 +403,7 @@ class KeyframeDemo : Component
 
         return VStack(8,
             Button("Pulse!", () => setCount(count + 1)),
-            Border(Factories.Text("Keyframes").SemiBold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center))
+            Border(TextBlock("Keyframes").SemiBold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center))
                 .Size(200, 60).Background("#9B59B6").CornerRadius(8).Padding(12)
                 .Keyframes("pulse", count, kf => kf
                     .Duration(600)

@@ -30,7 +30,7 @@ internal sealed class CalendarSidebar : Component<CalendarSidebarProps>
             // My calendars header
             HStack(4,
                 MdlIcon("\uE70D", 12),
-                Factories.Text("My calendars").SemiBold().FontSize(13)
+                TextBlock("My calendars").SemiBold().FontSize(13)
             ).Padding(12, 8, 12, 4),
 
             // Calendar sources with checkboxes
@@ -44,14 +44,14 @@ internal sealed class CalendarSidebar : Component<CalendarSidebarProps>
                             .Size(12, 12)
                             .CornerRadius(2)
                             .Background(s.ColorHex),
-                        Factories.Text(s.Name).FontSize(13)
+                        TextBlock(s.Name).FontSize(13)
                     ).Padding(12, 2, 12, 2);
                 }).ToArray()
             ),
 
             // Show all link
             Button(
-                Factories.Text("Show all").FontSize(12).Foreground(AccentText),
+                TextBlock("Show all").FontSize(12).Foreground(AccentText),
                 null
             ).Set(b =>
             {
@@ -63,6 +63,6 @@ internal sealed class CalendarSidebar : Component<CalendarSidebarProps>
     }
 
     static Element MdlIcon(string glyph, double size = 14) =>
-        Factories.Text(glyph).FontSize(size)
+        TextBlock(glyph).FontSize(size)
             .Set(t => t.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe MDL2 Assets"));
 }

@@ -20,7 +20,7 @@ class ButtonPage: Component
             SampleCard("Basic Button",
                 VStack(8,
                     Button("Click Me", () => setBasicOutput("Button clicked!")),
-                    Factories.Text(basicOutput).Foreground(Theme.SecondaryText)),
+                    TextBlock(basicOutput).Foreground(Theme.SecondaryText)),
                 sourceCode: @"Button(""Click Me"", () => setOutput(""Button clicked!""))"),
 
             SampleCard("Disabled Button",
@@ -31,7 +31,7 @@ class ButtonPage: Component
                 VStack(8,
                     Button("Accent Button", () => setAccentOutput("Accent clicked!"))
                         .Set(b => b.Style = (Style)Application.Current.Resources["AccentButtonStyle"]),
-                    Factories.Text(accentOutput).Foreground(Theme.SecondaryText)),
+                    TextBlock(accentOutput).Foreground(Theme.SecondaryText)),
                 sourceCode: @"Button(""Accent Button"", () => setOutput(""Accent clicked!""))
     .Set(b => b.Style = (Style)Application.Current.Resources[""AccentButtonStyle""])")
         );

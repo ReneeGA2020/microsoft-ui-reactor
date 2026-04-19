@@ -24,8 +24,8 @@ class ConditionalDemo : Component
 
         return ScrollView(VStack(16,
             Heading("Conditional UI"),
-            Factories.Text("Every piece of UI below is driven by plain C# expressions."),
-            Factories.Text("Check the boxes and watch entire sub-trees appear and disappear."),
+            TextBlock("Every piece of UI below is driven by plain C# expressions."),
+            TextBlock("Check the boxes and watch entire sub-trees appear and disappear."),
 
             // 1. Simple if/else via checkbox
             SubHeading("1. Checkbox toggles a sub-tree"),
@@ -35,7 +35,7 @@ class ConditionalDemo : Component
             showAdvanced
                 ? Border(
                     VStack(8,
-                        Factories.Text("Advanced Settings").SemiBold(),
+                        TextBlock("Advanced Settings").SemiBold(),
                         CheckBox(enableFeatureA, setFeatureA, label: "Enable Feature A"),
                         CheckBox(enableFeatureB, setFeatureB, label: "Enable Feature B"),
 
@@ -43,8 +43,8 @@ class ConditionalDemo : Component
                         enableFeatureA
                             ? Border(
                                 VStack(4,
-                                    Factories.Text("Feature A Configuration").SemiBold(),
-                                    Factories.Text("This sub-tree only exists when Feature A is checked."),
+                                    TextBlock("Feature A Configuration").SemiBold(),
+                                    TextBlock("This sub-tree only exists when Feature A is checked."),
                                     Slider(50, 0, 100).Width(200)
                                 )
                               ).CornerRadius(4).Background(SubtleFill).Padding(12)
@@ -53,15 +53,15 @@ class ConditionalDemo : Component
                         enableFeatureB
                             ? Border(
                                 VStack(4,
-                                    Factories.Text("Feature B Configuration").SemiBold(),
-                                    Factories.Text("This sub-tree only exists when Feature B is checked."),
+                                    TextBlock("Feature B Configuration").SemiBold(),
+                                    TextBlock("This sub-tree only exists when Feature B is checked."),
                                     ToggleSwitch(false, null, onContent: "On", offContent: "Off")
                                 )
                               ).CornerRadius(4).Background(SubtleFill).Padding(12)
                             : null
                     )
                   ).CornerRadius(8).Background(SubtleFill).Padding(16)
-                : Factories.Text("Check the box above to reveal advanced options.").Foreground(TertiaryText),
+                : TextBlock("Check the box above to reveal advanced options.").Foreground(TertiaryText),
 
             // 2. Switch expression -> completely different sub-trees
             SubHeading("2. Switch expression picks a sub-tree"),
@@ -78,32 +78,32 @@ class ConditionalDemo : Component
             viewMode switch
             {
                 ViewMode.Simple => VStack(4,
-                    Factories.Text("Simple view — just a summary."),
-                    Factories.Text($"{itemCount} items in the list.")
+                    TextBlock("Simple view — just a summary."),
+                    TextBlock($"{itemCount} items in the list.")
                 ),
 
                 ViewMode.Detailed => VStack(4,
-                    Factories.Text("Detailed view — shows every item:").SemiBold(),
+                    TextBlock("Detailed view — shows every item:").SemiBold(),
                     ForEach(
                         Enumerable.Range(1, itemCount),
                         i => HStack(4,
-                            Factories.Text($"Item {i}").Width(80),
+                            TextBlock($"Item {i}").Width(80),
                             Progress(i * 100.0 / itemCount).Width(150)
                         )
                     )
                 ),
 
                 ViewMode.Custom => VStack(8,
-                    Factories.Text("Custom view — configure the list:").SemiBold(),
+                    TextBlock("Custom view — configure the list:").SemiBold(),
                     HStack(8,
-                        Factories.Text("Item count:"),
+                        TextBlock("Item count:"),
                         Slider(itemCount, 1, 10, v => setItemCount((int)v)).Width(200),
-                        Factories.Text($"{itemCount}")
+                        TextBlock($"{itemCount}")
                     ),
                     ForEach(
                         Enumerable.Range(1, itemCount),
                         i => Border(
-                            Factories.Text($"Custom item {i}")
+                            TextBlock($"Custom item {i}")
                         ).CornerRadius(4).Background(SubtleFill).Padding(8, 4)
                     )
                 ),
@@ -113,11 +113,11 @@ class ConditionalDemo : Component
 
             // 3. Inline computed UI
             SubHeading("3. Computed UI from expressions"),
-            Factories.Text("The UI below is generated by a C# expression — no templates needed:"),
+            TextBlock("The UI below is generated by a C# expression — no templates needed:"),
 
             VStack(4,
                 // A simple computed summary based on current state
-                Factories.Text($"Advanced: {(showAdvanced ? "ON" : "OFF")}, " +
+                TextBlock($"Advanced: {(showAdvanced ? "ON" : "OFF")}, " +
                      $"Features: {(enableFeatureA ? "A" : "")}{(enableFeatureB ? "B" : "")}{(!enableFeatureA && !enableFeatureB ? "none" : "")}, " +
                      $"View: {viewMode}")
                     .Foreground(SecondaryText),
@@ -125,7 +125,7 @@ class ConditionalDemo : Component
                 // Conditional warning
                 When(showAdvanced && enableFeatureA && enableFeatureB,
                     () => Border(
-                        Factories.Text("Warning: Both features enabled simultaneously may cause conflicts.")
+                        TextBlock("Warning: Both features enabled simultaneously may cause conflicts.")
                     ).CornerRadius(4).Background(Theme.Ref("SystemFillColorCautionBackgroundBrush")).Padding(12)
                 )
             )

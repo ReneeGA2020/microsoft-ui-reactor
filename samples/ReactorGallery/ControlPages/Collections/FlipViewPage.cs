@@ -22,11 +22,11 @@ class FlipViewPage : Component
                 SampleCard("Basic FlipView",
                     FlipView(
                         colors.Select((c, i) =>
-                            Border(Factories.Text($"Item {i + 1}").Center().Foreground("#FFFFFF").Bold())
+                            Border(TextBlock($"Item {i + 1}").Center().Foreground("#FFFFFF").Bold())
                                 .Background(c).Size(300, 200)
                         ).ToArray()
                     ),
-                    @"FlipView(\n    Border(Factories.Text(""Item 1"")).Background(""#FF4444"").Size(300,200),\n    Border(Factories.Text(""Item 2"")).Background(""#44AA44"").Size(300,200)\n)"),
+                    @"FlipView(\n    Border(TextBlock(""Item 1"")).Background(""#FF4444"").Size(300,200),\n    Border(TextBlock(""Item 2"")).Background(""#44AA44"").Size(300,200)\n)"),
 
                 SampleCard("Data-Driven FlipView",
                     FlipView(
@@ -34,8 +34,8 @@ class FlipViewPage : Component
                         c => c,
                         (c, i) => Border(
                             VStack(4,
-                                Factories.Text($"Slide {i + 1}").Bold().Foreground("#FFFFFF"),
-                                Factories.Text(c).Foreground("#FFFFFF")
+                                TextBlock($"Slide {i + 1}").Bold().Foreground("#FFFFFF"),
+                                TextBlock(c).Foreground("#FFFFFF")
                             ).Center()
                         ).Background(c).Size(300, 200)
                     ),

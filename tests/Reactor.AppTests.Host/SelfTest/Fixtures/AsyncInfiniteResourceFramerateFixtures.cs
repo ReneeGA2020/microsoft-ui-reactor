@@ -75,7 +75,7 @@ internal static class AsyncInfiniteResourceFramerateFixtures
                     deps: Array.Empty<object>(),
                     options: new InfiniteResourceOptions(PageSize: PageSize, CacheKeyPrefix: "scrollflood"));
                 res = r;
-                return Factories.Text($"c={r.Items.Count}");
+                return TextBlock($"c={r.Items.Count}");
             });
 
             await Harness.Render();
@@ -132,7 +132,7 @@ internal static class AsyncInfiniteResourceFramerateFixtures
                     deps: Array.Empty<object>(),
                     options: new InfiniteResourceOptions(PageSize: PageSize, CacheKeyPrefix: "rapidrange"));
                 res = r;
-                return Factories.Text($"c={r.Items.Count}");
+                return TextBlock($"c={r.Items.Count}");
             });
 
             await Harness.Render();
@@ -218,7 +218,7 @@ internal static class AsyncInfiniteResourceFramerateFixtures
                         deps: Array.Empty<object>(),
                         options: new InfiniteResourceOptions(PageSize: PageSize, CacheKeyPrefix: "refresh"));
                     res = r;
-                    return Factories.Text($"c={r.Items.Count}");
+                    return TextBlock($"c={r.Items.Count}");
                 });
 
                 await Harness.Render();
@@ -279,7 +279,7 @@ internal static class AsyncInfiniteResourceFramerateFixtures
                         MaxLoadedPages: Cap,
                         CacheKeyPrefix: "lruchurn"));
                 res = r;
-                return Factories.Text($"c={r.Items.Count}");
+                return TextBlock($"c={r.Items.Count}");
             });
 
             await Harness.Render();
@@ -358,7 +358,7 @@ internal static class AsyncInfiniteResourceFramerateFixtures
                     deps: Array.Empty<object>(),
                     options: new InfiniteResourceOptions(PageSize: PageSize, CacheKeyPrefix: "parallel"));
                 res = r;
-                return Factories.Text($"c={r.Items.Count}");
+                return TextBlock($"c={r.Items.Count}");
             });
 
             await Harness.Render();

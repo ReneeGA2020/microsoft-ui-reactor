@@ -93,7 +93,7 @@ class CommandingTestDemo : Component
                 SubHeading("Event Log"),
                 HStack(8,
                     Button(clearLogCmd),
-                    Factories.Text($"{log.Length} event(s)").Foreground(TertiaryText)
+                    TextBlock($"{log.Length} event(s)").Foreground(TertiaryText)
                         .VAlign(VerticalAlignment.Center)
                 ),
                 VStack(2,

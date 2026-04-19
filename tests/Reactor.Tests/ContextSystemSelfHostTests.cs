@@ -104,7 +104,7 @@ public class ContextSystemSelfHostTests
             RenderCount++;
             var theme = UseContext(ThemeCtx);
             LastValue = theme;
-            return new TextElement(theme);
+            return new TextBlockElement(theme);
         }
     }
 
@@ -116,7 +116,7 @@ public class ContextSystemSelfHostTests
         {
             var count = UseContext(CounterCtx);
             LastValue = count;
-            return new TextElement($"Count: {count}");
+            return new TextBlockElement($"Count: {count}");
         }
     }
 
@@ -129,7 +129,7 @@ public class ContextSystemSelfHostTests
         {
             LastTheme = UseContext(ThemeCtx);
             LastCounter = UseContext(CounterCtx);
-            return new TextElement($"{LastTheme}:{LastCounter}");
+            return new TextBlockElement($"{LastTheme}:{LastCounter}");
         }
     }
 
@@ -328,7 +328,7 @@ public class ContextSystemSelfHostTests
         RenderFunc(ctx, c =>
         {
             readValue = c.UseContext(ThemeCtx);
-            return new TextElement(readValue);
+            return new TextBlockElement(readValue);
         }, scope, new() { [ThemeCtx] = "func-dark" });
 
         Assert.Equal("func-dark", readValue);

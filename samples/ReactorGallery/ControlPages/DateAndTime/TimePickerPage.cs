@@ -21,7 +21,7 @@ class TimePickerPage : Component
                 SampleCard("Basic TimePicker",
                     VStack(8,
                         TimePicker(time, t => setTime(t)),
-                        Factories.Text($"Selected: {DateTime.Today.Add(time):t}")
+                        TextBlock($"Selected: {DateTime.Today.Add(time):t}")
                             .Foreground(Theme.SecondaryText)
                     ),
                     @"TimePicker(time, t => setTime(t))"),

@@ -38,7 +38,7 @@ public class TransitionExtensionTests
     [Fact]
     public void StackElement_WithTransitions_Preserves_Children()
     {
-        var child = new TextElement("hello");
+        var child = new TextBlockElement("hello");
         var stack = new StackElement(Orientation.Vertical, [child]);
         var result = stack.WithTransitions();
         Assert.Single(result.Children);
@@ -122,7 +122,7 @@ public class TransitionExtensionTests
     [Fact]
     public void BorderElement_WithTransitions_Method_Exists()
     {
-        var border = new BorderElement(new TextElement("child"));
+        var border = new BorderElement(new TextBlockElement("child"));
         var result = border.WithTransitions();
         Assert.IsType<BorderElement>(result);
     }
@@ -130,7 +130,7 @@ public class TransitionExtensionTests
     [Fact]
     public void BorderElement_WithTransitions_Adds_Setter()
     {
-        var border = new BorderElement(new TextElement("child"));
+        var border = new BorderElement(new TextBlockElement("child"));
         Assert.Null(border.ThemeTransitions);
 
         var result = border.WithTransitions();
@@ -141,7 +141,7 @@ public class TransitionExtensionTests
     [Fact]
     public void BorderElement_WithTransitions_Preserves_Child()
     {
-        var child = new TextElement("hello");
+        var child = new TextBlockElement("hello");
         var border = new BorderElement(child);
         var result = border.WithTransitions();
         Assert.Equal(child, result.Child);
@@ -177,7 +177,7 @@ public class TransitionExtensionTests
         // Verify it works and preserves the concrete type for each container.
         var stack = new StackElement(Orientation.Vertical, []).WithTransitions();
         var grid = new GridElement(new GridDefinition(["*"], ["*"]), []).WithTransitions();
-        var border = new BorderElement(new TextElement("x")).WithTransitions();
+        var border = new BorderElement(new TextBlockElement("x")).WithTransitions();
         var canvas = new CanvasElement([]).WithTransitions();
 
         Assert.IsType<StackElement>(stack);

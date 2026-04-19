@@ -36,11 +36,11 @@ internal static class AccessibilityFixtures
 
             // ── WCAG 1.3.1: Info and Relationships ────────────
             // Heading levels for document structure
-            Factories.Text("Account Settings")
+            TextBlock("Account Settings")
                 .HeadingLevel(AutomationHeadingLevel.Level1)
                 .AutomationId("A11y_H1"),
 
-            Factories.Text("Personal Information")
+            TextBlock("Personal Information")
                 .HeadingLevel(AutomationHeadingLevel.Level2)
                 .AutomationId("A11y_H2"),
 
@@ -70,16 +70,16 @@ internal static class AccessibilityFixtures
                     .AutomationId("A11y_NotifCB"),
 
                 // Control with position in set
-                Factories.Text("Step 2 of 5")
+                TextBlock("Step 2 of 5")
                     .PositionInSet(2, 5)
                     .AutomationId("A11y_StepIndicator"),
 
                 // Hierarchy level
-                Factories.Text("Category")
+                TextBlock("Category")
                     .HierarchyLevel(1)
                     .AutomationId("A11y_Level1"),
 
-                Factories.Text("Sub-category")
+                TextBlock("Sub-category")
                     .HierarchyLevel(2)
                     .AutomationId("A11y_Level2")
 
@@ -106,20 +106,20 @@ internal static class AccessibilityFixtures
 
             // ── WCAG 4.1.3: Status Messages ──────────────────
             // Live regions for dynamic announcements
-            Factories.Text("Status: Ready")
+            TextBlock("Status: Ready")
                 .LiveRegion(AutomationLiveSetting.Polite)
                 .AutomationId("A11y_StatusPolite"),
 
-            Factories.Text("Alert: None")
+            TextBlock("Alert: None")
                 .LiveRegion(AutomationLiveSetting.Assertive)
                 .AutomationId("A11y_AlertAssertive"),
 
             // ── AccessibilityView variants ────────────────────
-            Factories.Text("Visible to AT")
+            TextBlock("Visible to AT")
                 .AccessibilityView(AccessibilityView.Content)
                 .AutomationId("A11y_ViewContent"),
 
-            Factories.Text("Hidden from AT")
+            TextBlock("Hidden from AT")
                 .AccessibilityView(AccessibilityView.Raw)
                 .AutomationId("A11y_ViewRaw")
         );

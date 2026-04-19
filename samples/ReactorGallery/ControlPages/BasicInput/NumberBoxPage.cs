@@ -20,7 +20,7 @@ class NumberBoxPage: Component
             SampleCard("Basic NumberBox",
                 VStack(8,
                     NumberBox(value, v => setValue(v), "Enter a number"),
-                    Factories.Text($"Value: {value}").Foreground(Theme.SecondaryText)),
+                    TextBlock($"Value: {value}").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 NumberBox(value, v => setValue(v), ""Enter a number"")
 "),
@@ -34,7 +34,7 @@ NumberBox(value, v => setValue(v), ""Quantity"").SpinButtons()
             SampleCard("NumberBox with Range",
                 VStack(8,
                     NumberBox(rangeValue, v => setRangeValue(v), "Percentage").Range(0, 100).SpinButtons(),
-                    Factories.Text($"Value: {rangeValue}").Foreground(Theme.SecondaryText)),
+                    TextBlock($"Value: {rangeValue}").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 NumberBox(rangeValue, v => setRangeValue(v), ""Percentage"").Range(0, 100).SpinButtons()
 ")

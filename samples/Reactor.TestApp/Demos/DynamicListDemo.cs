@@ -19,11 +19,11 @@ class DynamicListDemo : Component
 
         return VStack(12,
             Heading("Dynamic List"),
-            Factories.Text("Demonstrates conditional and list rendering"),
+            TextBlock("Demonstrates conditional and list rendering"),
 
             HStack(8,
                 Button("Remove", () => setCount(Math.Max(0, count - 1))).Disabled(count == 0),
-                Factories.Text($"{count} items"),
+                TextBlock($"{count} items"),
                 Button("Add", () => setCount(count + 1))
             ),
 
@@ -34,16 +34,16 @@ class DynamicListDemo : Component
                 Enumerable.Range(0, count).Select(i =>
                     Border(
                         HStack(8,
-                            When(showIndices, () => Factories.Text($"#{i + 1}").SemiBold()),
-                            Factories.Text($"Item {i + 1}"),
-                            Factories.Text($"(created dynamically)").Foreground(TertiaryText)
+                            When(showIndices, () => TextBlock($"#{i + 1}").SemiBold()),
+                            TextBlock($"Item {i + 1}"),
+                            TextBlock($"(created dynamically)").Foreground(TertiaryText)
                         )
                     ).CornerRadius(4).Background(SubtleFill).Padding(12, 8)
                 ).ToArray()
             ),
 
-            When(count == 0, () => Factories.Text("No items. Click Add to create some.").Foreground(TertiaryText)),
-            When(count >= 10, () => Factories.Text("That's a lot of items!").SemiBold())
+            When(count == 0, () => TextBlock("No items. Click Add to create some.").Foreground(TertiaryText)),
+            When(count >= 10, () => TextBlock("That's a lot of items!").SemiBold())
         );
     }
 }

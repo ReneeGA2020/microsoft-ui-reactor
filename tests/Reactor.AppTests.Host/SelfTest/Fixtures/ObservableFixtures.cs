@@ -58,8 +58,8 @@ internal static class ObservableFixtures
             {
                 ctx.UseObservable(person);
                 return VStack(
-                    Factories.Text($"Name: {person.Name}"),
-                    Factories.Text($"Age: {person.Age}"),
+                    TextBlock($"Name: {person.Name}"),
+                    TextBlock($"Age: {person.Age}"),
                     Button("ChangeName", () => person.Name = "Bob"),
                     Button("ChangeAge", () => person.Age = 42)
                 );
@@ -100,7 +100,7 @@ internal static class ObservableFixtures
             host.Mount(ctx =>
             {
                 ctx.UseObservable(person);
-                return Factories.Text($"Name: {person.Name}");
+                return TextBlock($"Name: {person.Name}");
             });
 
             await Harness.Render();
@@ -131,8 +131,8 @@ internal static class ObservableFixtures
                 var name = ctx.UseObservableProperty(person, p => p.Name, nameof(PersonModel.Name));
                 renderCount++;
                 return VStack(
-                    Factories.Text($"Name: {name}"),
-                    Factories.Text($"Renders: {renderCount}")
+                    TextBlock($"Name: {name}"),
+                    TextBlock($"Renders: {renderCount}")
                 );
             });
 
@@ -172,8 +172,8 @@ internal static class ObservableFixtures
             {
                 var list = ctx.UseCollection(items);
                 return VStack(
-                    Factories.Text($"Count: {list.Count}"),
-                    VStack(list.Select(item => Factories.Text(item)).ToArray()),
+                    TextBlock($"Count: {list.Count}"),
+                    VStack(list.Select(item => TextBlock(item)).ToArray()),
                     Button("AddCherry", () => items.Add("Cherry")),
                     Button("RemoveFirst", () => { if (items.Count > 0) items.RemoveAt(0); }),
                     Button("Clear", () => items.Clear())
@@ -228,7 +228,7 @@ internal static class ObservableFixtures
                 ctx.UseObservable(current);
 
                 return VStack(
-                    Factories.Text($"Name: {current.Name}"),
+                    TextBlock($"Name: {current.Name}"),
                     Button("Swap", () => setUseSecond(!useSecond))
                 );
             });

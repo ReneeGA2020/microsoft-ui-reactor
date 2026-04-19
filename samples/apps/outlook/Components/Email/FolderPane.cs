@@ -33,7 +33,7 @@ internal sealed class FolderPane : Component<FolderPaneProps>
             Button(
                 (FlexRow(
                     MdlIcon("\uE710", 16, "white"),
-                    Factories.Text("New mail").FontSize(14).Foreground("white").SemiBold()
+                    TextBlock("New mail").FontSize(14).Foreground("white").SemiBold()
                 ) with { ColumnGap = 8 }),
                 null
             ).Set(b =>
@@ -51,7 +51,7 @@ internal sealed class FolderPane : Component<FolderPaneProps>
             }),
 
             // Favorites section
-            Factories.Text("Favorites")
+            TextBlock("Favorites")
                 .SemiBold().FontSize(13).Foreground(SecondaryText)
                 .HeadingLevel(Microsoft.UI.Xaml.Automation.Peers.AutomationHeadingLevel.Level2)
                 .Padding(18, 6, 18, 6),
@@ -62,7 +62,7 @@ internal sealed class FolderPane : Component<FolderPaneProps>
             Border(Empty()).Height(1).Background(DividerStroke).Margin(16, 10, 16, 10),
 
             // All folders section
-            Factories.Text("Folders")
+            TextBlock("Folders")
                 .SemiBold().FontSize(13).Foreground(SecondaryText)
                 .HeadingLevel(Microsoft.UI.Xaml.Automation.Peers.AutomationHeadingLevel.Level2)
                 .Padding(18, 4, 18, 6),
@@ -85,9 +85,9 @@ internal sealed class FolderPane : Component<FolderPaneProps>
         return Button(
             (FlexRow(
                 MdlIcon(folder.Icon, 16, SecondaryText).AccessibilityHidden(),
-                Factories.Text(folder.DisplayName).FontSize(14).Flex(grow: 1),
+                TextBlock(folder.DisplayName).FontSize(14).Flex(grow: 1),
                 folder.UnreadCount > 0
-                    ? Factories.Text(folder.UnreadCount.ToString())
+                    ? TextBlock(folder.UnreadCount.ToString())
                         .SemiBold().FontSize(13).Foreground(AccentText)
                         .AccessibilityHidden()
                     : Empty()
@@ -110,10 +110,10 @@ internal sealed class FolderPane : Component<FolderPaneProps>
     }
 
     static Element MdlIcon(string glyph, double size, string color) =>
-        Factories.Text(glyph).FontSize(size).Foreground(color)
+        TextBlock(glyph).FontSize(size).Foreground(color)
             .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets"));
 
     static Element MdlIcon(string glyph, double size, ThemeRef color) =>
-        Factories.Text(glyph).FontSize(size).Foreground(color)
+        TextBlock(glyph).FontSize(size).Foreground(color)
             .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets"));
 }

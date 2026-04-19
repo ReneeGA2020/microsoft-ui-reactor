@@ -108,7 +108,7 @@ internal sealed class CalendarViewComponent : Component
             var date = weekStart.AddDays(d).Date;
             var isToday = date == today;
 
-            var dayNum = Factories.Text(date.Day.ToString())
+            var dayNum = TextBlock(date.Day.ToString())
                 .SemiBold()
                 .FontSize(20);
 
@@ -116,7 +116,7 @@ internal sealed class CalendarViewComponent : Component
                 dayNum = dayNum.Foreground(AccentText);
 
             var header = VStack(0,
-                Factories.Text(dayNames[d]).FontSize(12).Foreground(TertiaryText),
+                TextBlock(dayNames[d]).FontSize(12).Foreground(TertiaryText),
                 dayNum
             ).HAlign(Microsoft.UI.Xaml.HorizontalAlignment.Center)
              .Padding(4);

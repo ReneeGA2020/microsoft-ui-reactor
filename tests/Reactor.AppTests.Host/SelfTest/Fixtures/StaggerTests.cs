@@ -39,9 +39,9 @@ internal static class StaggerTests
             host.Mount(ctx =>
             {
                 return VStack(
-                    Border(Factories.Text("A")).LayoutAnimation().WithKey("a"),
-                    Border(Factories.Text("B")).LayoutAnimation().WithKey("b"),
-                    Border(Factories.Text("C")).LayoutAnimation().WithKey("c")
+                    Border(TextBlock("A")).LayoutAnimation().WithKey("a"),
+                    Border(TextBlock("B")).LayoutAnimation().WithKey("b"),
+                    Border(TextBlock("C")).LayoutAnimation().WithKey("c")
                 ).Stagger(TimeSpan.FromMilliseconds(40))
                  .AutomationId("stagger-container");
             });
@@ -76,9 +76,9 @@ internal static class StaggerTests
             host.Mount(ctx =>
             {
                 return VStack(
-                    Border(Factories.Text("X")).Transition(Animation.Transition.Fade).WithKey("x"),
-                    Border(Factories.Text("Y")).Transition(Animation.Transition.Fade).WithKey("y"),
-                    Border(Factories.Text("Z")).Transition(Animation.Transition.Fade).WithKey("z")
+                    Border(TextBlock("X")).Transition(Animation.Transition.Fade).WithKey("x"),
+                    Border(TextBlock("Y")).Transition(Animation.Transition.Fade).WithKey("y"),
+                    Border(TextBlock("Z")).Transition(Animation.Transition.Fade).WithKey("z")
                 ).Stagger(TimeSpan.FromMilliseconds(50))
                  .AutomationId("stagger-transition-container");
             });

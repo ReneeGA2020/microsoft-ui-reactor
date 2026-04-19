@@ -41,10 +41,10 @@ class UserCard : Component
 
         return user switch
         {
-            AsyncValue<User>.Loading   => Text("Loading…"),
-            AsyncValue<User>.Data d    => Text(d.Value.Name).Bold(),
-            AsyncValue<User>.Reloading r => Text(r.Previous.Name).Opacity(0.5),
-            AsyncValue<User>.Error e   => Text($"Error: {e.Exception.Message}"),
+            AsyncValue<User>.Loading   => TextBlock("Loading…"),
+            AsyncValue<User>.Data d    => TextBlock(d.Value.Name).Bold(),
+            AsyncValue<User>.Reloading r => TextBlock(r.Previous.Name).Opacity(0.5),
+            AsyncValue<User>.Error e   => TextBlock($"Error: {e.Exception.Message}"),
             _ => Empty()
         };
     }
@@ -141,8 +141,8 @@ var commits = UseInfiniteResource<Commit, string>(
 // In your virtualizer's renderItem:
 var commit = commits.ItemAt(rowIndex);
 return commit is null
-    ? Text("…").Opacity(0.4)
-    : Text($"{commit.Sha} — {commit.Message}");
+    ? TextBlock("…").Opacity(0.4)
+    : TextBlock($"{commit.Sha} — {commit.Message}");
 ```
 
 **Resource API:**
@@ -164,7 +164,7 @@ Footer UI off `LoadState`:
 commits.LoadState switch
 {
     LoadState.Loading       => ProgressRing(),
-    LoadState.Idle when !commits.HasMore => Text("End of list"),
+    LoadState.Idle when !commits.HasMore => TextBlock("End of list"),
     LoadState.Error e       => Button("Retry", () => commits.Retry()),
     _ => Empty()
 }
@@ -184,7 +184,7 @@ independent resources:
 
 ```csharp
 PendingFactory.Pending(
-    fallback: Text("Loading dashboard…").Opacity(0.5),
+    fallback: TextBlock("Loading dashboard…").Opacity(0.5),
     child: VStack(
         Component<UserHeader>(),    // has UseResource
         Component<RecentActivity>(),// has UseInfiniteResource

@@ -8,7 +8,7 @@ internal static class MonacoFixtures
 {
     internal static Element EditorMounts(RenderContext ctx) =>
         VStack(
-            Factories.Text("Monaco Editor Test").AutomationId("MonacoTitle"),
+            TextBlock("Monaco Editor Test").AutomationId("MonacoTitle"),
             MonacoEditor(
                 text: "function hello() {\n  return 42;\n}",
                 language: "javascript",

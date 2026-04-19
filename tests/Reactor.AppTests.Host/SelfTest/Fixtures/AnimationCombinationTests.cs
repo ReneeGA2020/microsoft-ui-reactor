@@ -48,7 +48,7 @@ internal static class AnimationCombinationTests
         {
             var host = H.CreateHost();
             host.Mount(ctx => VStack(
-                Border(Factories.Text("Spring"))
+                Border(TextBlock("Spring"))
                     .Animate(Curve.Spring(0.7f))
                     .AutomationId("t-spring-alone")
             ));
@@ -75,7 +75,7 @@ internal static class AnimationCombinationTests
         {
             var host = H.CreateHost();
             host.Mount(ctx => VStack(
-                Border(Factories.Text("Ease"))
+                Border(TextBlock("Ease"))
                     .Animate(Curve.Ease(200, Easing.Decelerate), AnimateProperty.Opacity | AnimateProperty.Scale)
                     .AutomationId("t-ease-targeted")
             ));
@@ -100,7 +100,7 @@ internal static class AnimationCombinationTests
         {
             var host = H.CreateHost();
             host.Mount(ctx => VStack(
-                Border(Factories.Text("Layout"))
+                Border(TextBlock("Layout"))
                     .LayoutAnimation()
                     .AutomationId("t-layout-alone")
             ));
@@ -124,7 +124,7 @@ internal static class AnimationCombinationTests
         {
             var host = H.CreateHost();
             host.Mount(ctx => VStack(
-                Border(Factories.Text("Fade In"))
+                Border(TextBlock("Fade In"))
                     .Transition(Animation.Transition.Fade)
                     .AutomationId("t-fade-enter")
             ));
@@ -148,7 +148,7 @@ internal static class AnimationCombinationTests
         {
             var host = H.CreateHost();
             host.Mount(ctx => VStack(
-                Border(Factories.Text("Interact"))
+                Border(TextBlock("Interact"))
                     .InteractionStates(s => s
                         .PointerOver(opacity: 0.8f, scale: 1.05f)
                         .Pressed(scale: 0.95f))
@@ -168,7 +168,7 @@ internal static class AnimationCombinationTests
         {
             var host = H.CreateHost();
             host.Mount(ctx => VStack(
-                Border(Factories.Text("KF"))
+                Border(TextBlock("KF"))
                     .Keyframes("enter", 1, kf => kf
                         .Duration(200)
                         .At(0f, opacity: 0f)
@@ -189,9 +189,9 @@ internal static class AnimationCombinationTests
             var host = H.CreateHost();
             host.Mount(ctx =>
                 VStack(
-                    Border(Factories.Text("A")).LayoutAnimation().WithKey("a"),
-                    Border(Factories.Text("B")).LayoutAnimation().WithKey("b"),
-                    Border(Factories.Text("C")).LayoutAnimation().WithKey("c")
+                    Border(TextBlock("A")).LayoutAnimation().WithKey("a"),
+                    Border(TextBlock("B")).LayoutAnimation().WithKey("b"),
+                    Border(TextBlock("C")).LayoutAnimation().WithKey("c")
                 ).Stagger(TimeSpan.FromMilliseconds(30))
                  .AutomationId("t-stagger-container")
             );
@@ -214,7 +214,7 @@ internal static class AnimationCombinationTests
         {
             var host = H.CreateHost();
             host.Mount(ctx => VStack(
-                Border(Factories.Text("Both"))
+                Border(TextBlock("Both"))
                     .LayoutAnimation()
                     .Animate(Curve.Spring(0.8f))
                     .AutomationId("t-animate-layout")
@@ -242,7 +242,7 @@ internal static class AnimationCombinationTests
         {
             var host = H.CreateHost();
             host.Mount(ctx => VStack(
-                Border(Factories.Text("AnimTrans"))
+                Border(TextBlock("AnimTrans"))
                     .Animate(Curve.Ease(200))
                     .Transition(Animation.Transition.Fade)
                     .AutomationId("t-animate-trans")
@@ -266,7 +266,7 @@ internal static class AnimationCombinationTests
         {
             var host = H.CreateHost();
             host.Mount(ctx => VStack(
-                Border(Factories.Text("AnimInteract"))
+                Border(TextBlock("AnimInteract"))
                     .Animate(Curve.Spring(0.6f), AnimateProperty.Opacity | AnimateProperty.Scale)
                     .InteractionStates(s => s
                         .PointerOver(opacity: 0.9f, scale: 1.02f)
@@ -293,7 +293,7 @@ internal static class AnimationCombinationTests
         {
             var host = H.CreateHost();
             host.Mount(ctx => VStack(
-                Border(Factories.Text("LayoutTrans"))
+                Border(TextBlock("LayoutTrans"))
                     .LayoutAnimation()
                     .Transition(Animation.Transition.Fade + Animation.Transition.Slide(Edge.Bottom))
                     .AutomationId("t-layout-trans")
@@ -317,7 +317,7 @@ internal static class AnimationCombinationTests
         {
             var host = H.CreateHost();
             host.Mount(ctx => VStack(
-                Border(Factories.Text("FadeScale"))
+                Border(TextBlock("FadeScale"))
                     .Transition(Animation.Transition.Fade + Animation.Transition.Scale(0.8f))
                     .AutomationId("t-trans-combined")
             ));
@@ -340,7 +340,7 @@ internal static class AnimationCombinationTests
         {
             var host = H.CreateHost();
             host.Mount(ctx => VStack(
-                Border(Factories.Text("AnimKF"))
+                Border(TextBlock("AnimKF"))
                     .Animate(Curve.Spring(0.6f), AnimateProperty.Opacity)
                     .Keyframes("pulse", 1, kf => kf
                         .Duration(300)
@@ -368,7 +368,7 @@ internal static class AnimationCombinationTests
         {
             var host = H.CreateHost();
             host.Mount(ctx => VStack(
-                Border(Factories.Text("InterTrans"))
+                Border(TextBlock("InterTrans"))
                     .InteractionStates(s => s
                         .PointerOver(opacity: 0.8f)
                         .Pressed(scale: 0.95f))
@@ -393,7 +393,7 @@ internal static class AnimationCombinationTests
         {
             var host = H.CreateHost();
             host.Mount(ctx => VStack(
-                Border(Factories.Text("Triple"))
+                Border(TextBlock("Triple"))
                     .LayoutAnimation()
                     .Animate(Curve.Spring(0.7f))
                     .InteractionStates(s => s
@@ -423,18 +423,18 @@ internal static class AnimationCombinationTests
             var host = H.CreateHost();
             host.Mount(ctx =>
                 VStack(
-                    Border(Factories.Text("Item1"))
+                    Border(TextBlock("Item1"))
                         .LayoutAnimation()
                         .Animate(Curve.Ease(200), AnimateProperty.Opacity)
                         .Transition(Animation.Transition.Fade)
                         .WithKey("fc1")
                         .AutomationId("t-full-combo-item"),
-                    Border(Factories.Text("Item2"))
+                    Border(TextBlock("Item2"))
                         .LayoutAnimation()
                         .Animate(Curve.Ease(200), AnimateProperty.Opacity)
                         .Transition(Animation.Transition.Fade)
                         .WithKey("fc2"),
-                    Border(Factories.Text("Item3"))
+                    Border(TextBlock("Item3"))
                         .LayoutAnimation()
                         .Animate(Curve.Ease(200), AnimateProperty.Opacity)
                         .Transition(Animation.Transition.Fade)
@@ -472,7 +472,7 @@ internal static class AnimationCombinationTests
             var opacity = 1.0;
 
             host.Mount(ctx => VStack(
-                Border(Factories.Text("Update"))
+                Border(TextBlock("Update"))
                     .Opacity(opacity)
                     .Animate(Curve.Spring(0.7f))
                     .AutomationId("t-survive-update")
@@ -485,7 +485,7 @@ internal static class AnimationCombinationTests
             // Re-render with different opacity
             opacity = 0.5;
             host.Mount(ctx => VStack(
-                Border(Factories.Text("Update"))
+                Border(TextBlock("Update"))
                     .Opacity(opacity)
                     .Animate(Curve.Spring(0.7f))
                     .AutomationId("t-survive-update")
@@ -512,7 +512,7 @@ internal static class AnimationCombinationTests
             var opacity = 1.0;
 
             host.Mount(ctx => VStack(
-                Border(Factories.Text("ScopeAnimate"))
+                Border(TextBlock("ScopeAnimate"))
                     .Opacity(opacity)
                     .Animate(Curve.Ease(300))
                     .AutomationId("t-scope-animate")
@@ -524,7 +524,7 @@ internal static class AnimationCombinationTests
             {
                 opacity = 0.3;
                 host.Mount(ctx => VStack(
-                    Border(Factories.Text("ScopeAnimate"))
+                    Border(TextBlock("ScopeAnimate"))
                         .Opacity(opacity)
                         .Animate(Curve.Ease(300))
                         .AutomationId("t-scope-animate")
@@ -551,7 +551,7 @@ internal static class AnimationCombinationTests
             var trigger = 0;
 
             host.Mount(ctx => VStack(
-                Border(Factories.Text("KFTrigger"))
+                Border(TextBlock("KFTrigger"))
                     .Keyframes("bounce", trigger, kf => kf
                         .Duration(200)
                         .At(0f, scale: Vector3.One)
@@ -565,7 +565,7 @@ internal static class AnimationCombinationTests
             // Change trigger — should replay
             trigger = 1;
             host.Mount(ctx => VStack(
-                Border(Factories.Text("KFTrigger"))
+                Border(TextBlock("KFTrigger"))
                     .Keyframes("bounce", trigger, kf => kf
                         .Duration(200)
                         .At(0f, scale: Vector3.One)
@@ -578,7 +578,7 @@ internal static class AnimationCombinationTests
 
             // Same trigger — should NOT replay (no crash either way)
             host.Mount(ctx => VStack(
-                Border(Factories.Text("KFTrigger"))
+                Border(TextBlock("KFTrigger"))
                     .Keyframes("bounce", trigger, kf => kf
                         .Duration(200)
                         .At(0f, scale: Vector3.One)
@@ -605,8 +605,8 @@ internal static class AnimationCombinationTests
 
             host.Mount(ctx => VStack(
                 useAnim
-                    ? Border(Factories.Text("Animated")).Animate(Curve.Spring()).AutomationId("t-anim-remove")
-                    : Border(Factories.Text("Animated")).AutomationId("t-anim-remove")
+                    ? Border(TextBlock("Animated")).Animate(Curve.Spring()).AutomationId("t-anim-remove")
+                    : Border(TextBlock("Animated")).AutomationId("t-anim-remove")
             ));
             await Harness.Render();
 
@@ -619,8 +619,8 @@ internal static class AnimationCombinationTests
             useAnim = false;
             host.Mount(ctx => VStack(
                 useAnim
-                    ? Border(Factories.Text("Animated")).Animate(Curve.Spring()).AutomationId("t-anim-remove")
-                    : Border(Factories.Text("Animated")).AutomationId("t-anim-remove")
+                    ? Border(TextBlock("Animated")).Animate(Curve.Spring()).AutomationId("t-anim-remove")
+                    : Border(TextBlock("Animated")).AutomationId("t-anim-remove")
             ));
             await Harness.Render();
 

@@ -22,7 +22,7 @@ namespace Microsoft.UI.Reactor;
 ///       .Bold()
 ///       .Margin(16)
 ///       .HAlign(HorizontalAlignment.Center)
-///       .Set(tb => tb.TextWrapping = TextWrapping.Wrap)  // still TextElement!
+///       .Set(tb => tb.TextWrapping = TextWrapping.Wrap)  // still TextBlockElement!
 ///
 /// The Set() extension gives strongly-typed native property access:
 ///   Button("Click", onClick)
@@ -144,12 +144,12 @@ public static class ElementExtensions
 
     // ── Typography (any Control or TextBlock) ─────────────────────
     // These set font properties via ElementModifiers, so they work on ANY element
-    // (buttons, borders wrapping text, etc.) — not just TextElement.
+    // (buttons, borders wrapping text, etc.) — not just TextBlockElement.
 
     /// <summary>
     /// Sets the font family on any FrameworkElement that supports it (Control, TextBlock).
-    /// For TextElement-specific chaining that preserves the TextElement return type,
-    /// use the TextElement.FontFamily() overload instead.
+    /// For TextBlockElement-specific chaining that preserves the TextBlockElement return type,
+    /// use the TextBlockElement.FontFamily() overload instead.
     /// </summary>
     public static T FontFamily<T>(this T el, string family) where T : Element =>
         Modify(el, new ElementModifiers { FontFamily = WinRTCache.GetFontFamily(family) });
@@ -159,7 +159,7 @@ public static class ElementExtensions
 
     /// <summary>
     /// Sets the font size on any FrameworkElement that supports it (Control, TextBlock).
-    /// For TextElement-specific chaining, use the TextElement.FontSize() overload.
+    /// For TextBlockElement-specific chaining, use the TextBlockElement.FontSize() overload.
     /// </summary>
     public static T FontSize<T>(this T el, double size) where T : Element =>
         Modify(el, new ElementModifiers { FontSize = size });
@@ -224,34 +224,34 @@ public static class ElementExtensions
 
     // ── Text sugar ──────────────────────────────────────────────────
 
-    public static TextElement Bold(this TextElement el) =>
+    public static TextBlockElement Bold(this TextBlockElement el) =>
         el with { Weight = Microsoft.UI.Text.FontWeights.Bold };
 
-    public static TextElement SemiBold(this TextElement el) =>
+    public static TextBlockElement SemiBold(this TextBlockElement el) =>
         el with { Weight = Microsoft.UI.Text.FontWeights.SemiBold };
 
-    public static TextElement FontSize(this TextElement el, double size) =>
+    public static TextBlockElement FontSize(this TextBlockElement el, double size) =>
         el with { FontSize = size };
 
-    public static TextElement FontStyle(this TextElement el, global::Windows.UI.Text.FontStyle style) =>
+    public static TextBlockElement FontStyle(this TextBlockElement el, global::Windows.UI.Text.FontStyle style) =>
         el with { FontStyle = style };
 
-    public static TextElement TextWrapping(this TextElement el, TextWrapping wrapping = Microsoft.UI.Xaml.TextWrapping.Wrap) =>
+    public static TextBlockElement TextWrapping(this TextBlockElement el, TextWrapping wrapping = Microsoft.UI.Xaml.TextWrapping.Wrap) =>
         el with { TextWrapping = wrapping };
 
-    public static TextElement TextAlignment(this TextElement el, TextAlignment alignment) =>
+    public static TextBlockElement TextAlignment(this TextBlockElement el, TextAlignment alignment) =>
         el with { TextAlignment = alignment };
 
-    public static TextElement TextTrimming(this TextElement el, TextTrimming trimming) =>
+    public static TextBlockElement TextTrimming(this TextBlockElement el, TextTrimming trimming) =>
         el with { TextTrimming = trimming };
 
-    public static TextElement Selectable(this TextElement el, bool selectable = true) =>
+    public static TextBlockElement Selectable(this TextBlockElement el, bool selectable = true) =>
         el with { IsTextSelectionEnabled = selectable };
 
-    public static TextElement FontFamily(this TextElement el, string family) =>
+    public static TextBlockElement FontFamily(this TextBlockElement el, string family) =>
         el with { FontFamily = WinRTCache.GetFontFamily(family) };
 
-    public static TextElement FontFamily(this TextElement el, Microsoft.UI.Xaml.Media.FontFamily family) =>
+    public static TextBlockElement FontFamily(this TextBlockElement el, Microsoft.UI.Xaml.Media.FontFamily family) =>
         el with { FontFamily = family };
 
     // ── TextField sugar ────────────────────────────────────────────────
@@ -566,7 +566,7 @@ public static class ElementExtensions
     // ════════════════════════════════════════════════════════════════
 
     // Text
-    public static TextElement Set(this TextElement el, Action<WinUI.TextBlock> configure) =>
+    public static TextBlockElement Set(this TextBlockElement el, Action<WinUI.TextBlock> configure) =>
         el with { Setters = [.. el.Setters, configure] };
 
     public static RichTextBlockElement Set(this RichTextBlockElement el, Action<WinUI.RichTextBlock> configure) =>

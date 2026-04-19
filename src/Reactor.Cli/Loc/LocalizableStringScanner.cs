@@ -14,7 +14,7 @@ internal static class LocalizableStringScanner
     // DSL factory methods whose first string argument is localizable
     private static readonly HashSet<string> LocalizableDslMethods = new(StringComparer.Ordinal)
     {
-        "Text", "Heading", "SubHeading", "Caption",
+        "TextBlock", "Heading", "SubHeading", "Caption",
         "Button", "HyperlinkButton", "RepeatButton",
         "ToggleButton", "DropDownButton", "SplitButton", "ToggleSplitButton",
         "RadioButton",

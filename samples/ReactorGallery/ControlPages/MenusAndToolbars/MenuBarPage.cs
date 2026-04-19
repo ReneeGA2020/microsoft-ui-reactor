@@ -38,7 +38,7 @@ class MenuBarPage : Component
                                 MenuItem("Zoom In", () => setLastAction("Zoom In"), icon: "ZoomIn"),
                                 MenuItem("Zoom Out", () => setLastAction("Zoom Out"), icon: "ZoomOut"))
                         ),
-                        Factories.Text($"Last action: {lastAction}").Foreground(Theme.SecondaryText)
+                        TextBlock($"Last action: {lastAction}").Foreground(Theme.SecondaryText)
                     ),
                     @"MenuBar(
     Menu(""File"",

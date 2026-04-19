@@ -18,12 +18,12 @@ internal static class DynamicFixtures
                 var (count, setCount) = ctx.UseState(3);
                 return VStack(
                     HStack(
-                        Factories.Text($"Items: {count}"),
+                        TextBlock($"Items: {count}"),
                         Button("Add", () => setCount(count + 1)),
                         Button("Remove", () => setCount(Math.Max(0, count - 1)))
                     ),
                     VStack(Enumerable.Range(0, count)
-                        .Select(i => Factories.Text($"Item #{i}").WithKey($"item-{i}"))
+                        .Select(i => TextBlock($"Item #{i}").WithKey($"item-{i}"))
                         .ToArray())
                 );
             });
@@ -69,9 +69,9 @@ internal static class DynamicFixtures
                     CheckBox(showAdvanced, v => setShowAdvanced(v), "Show details"),
                     showAdvanced
                         ? VStack(
-                            Factories.Text("Advanced Settings"),
-                            Factories.Text("Debug mode: ON"),
-                            Factories.Text("Verbose logging: ON")
+                            TextBlock("Advanced Settings"),
+                            TextBlock("Debug mode: ON"),
+                            TextBlock("Verbose logging: ON")
                         )
                         : Empty()
                 );

@@ -29,7 +29,7 @@ class CommandBarPage : Component
                                 AppBarSeparator(),
                                 AppBarButton("Delete", () => setLastAction("Delete"), icon: "Delete"),
                             }),
-                        Factories.Text($"Last action: {lastAction}").Foreground(Theme.SecondaryText)
+                        TextBlock($"Last action: {lastAction}").Foreground(Theme.SecondaryText)
                     ),
                     @"CommandBar(primaryCommands: new AppBarItemBase[] {
     AppBarButton(""Add"", () => setAction(""Add""), icon: ""Add""),

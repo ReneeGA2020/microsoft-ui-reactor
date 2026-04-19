@@ -44,7 +44,7 @@ class DataTemplateDemo : Component
 
         return ScrollView(VStack(16,
             Heading("DataTemplate Demo"),
-            Factories.Text("Typed ListView<T>, GridView<T>, FlipView<T> with viewBuilder, plus TreeView ContentElement."),
+            TextBlock("Typed ListView<T>, GridView<T>, FlipView<T> with viewBuilder, plus TreeView ContentElement."),
 
             // Filter + add/remove controls
             HStack(12,
@@ -63,19 +63,19 @@ class DataTemplateDemo : Component
                 )).Disabled(animals.Count == 0)
             ),
 
-            Factories.Text($"{filtered.Count} animals shown").Foreground(SecondaryText),
+            TextBlock($"{filtered.Count} animals shown").Foreground(SecondaryText),
 
             // 1. Typed ListView<T>
             SubHeading("1. Typed ListView<T>"),
-            Factories.Text("Each row uses pattern matching on Species for a DataTemplateSelector-equivalent."),
+            TextBlock("Each row uses pattern matching on Species for a DataTemplateSelector-equivalent."),
             Border(
                 ListView<Animal>(
                     filtered,
                     a => a.Id.ToString(),
                     (animal, i) => HStack(12,
-                        Factories.Text(animal.Emoji).FontSize(24),
+                        TextBlock(animal.Emoji).FontSize(24),
                         VStack(2,
-                            Factories.Text(animal.Name).SemiBold(),
+                            TextBlock(animal.Name).SemiBold(),
                             animal.Species switch
                             {
                                 "Cat" => Caption($"Feline - {animal.Species}").Foreground(SecondaryText),
@@ -95,11 +95,11 @@ class DataTemplateDemo : Component
             ).CornerRadius(8).Height(250),
 
             When(selectedListIndex >= 0 && selectedListIndex < filtered.Count,
-                () => Factories.Text($"Selected: {filtered[Math.Min(selectedListIndex, filtered.Count - 1)].Name}").SemiBold()),
+                () => TextBlock($"Selected: {filtered[Math.Min(selectedListIndex, filtered.Count - 1)].Name}").SemiBold()),
 
             // 2. Typed GridView<T>
             SubHeading("2. Typed GridView<T>"),
-            Factories.Text("Card layout with per-species colors."),
+            TextBlock("Card layout with per-species colors."),
             Border(
                 GridView<Animal>(
                     filtered,
@@ -117,8 +117,8 @@ class DataTemplateDemo : Component
                         };
                         return Border(
                             VStack(4,
-                                Factories.Text(animal.Emoji).FontSize(32).HAlign(HorizontalAlignment.Center),
-                                Factories.Text(animal.Name).SemiBold().HAlign(HorizontalAlignment.Center),
+                                TextBlock(animal.Emoji).FontSize(32).HAlign(HorizontalAlignment.Center),
+                                TextBlock(animal.Name).SemiBold().HAlign(HorizontalAlignment.Center),
                                 Caption(animal.Species).Foreground(SecondaryText).HAlign(HorizontalAlignment.Center)
                             )
                         ).CornerRadius(8).Background(bg).Padding(12).Width(120).Height(120);
@@ -133,16 +133,16 @@ class DataTemplateDemo : Component
 
             // 3. Typed FlipView<T>
             SubHeading("3. Typed FlipView<T>"),
-            Factories.Text("Swipe through animal cards."),
+            TextBlock("Swipe through animal cards."),
             Border(
                 FlipView<Animal>(
                     filtered,
                     a => a.Id.ToString(),
                     (animal, i) => Border(
                         VStack(12,
-                            Factories.Text(animal.Emoji).FontSize(64).HAlign(HorizontalAlignment.Center),
-                            Factories.Text(animal.Name).FontSize(24).SemiBold().HAlign(HorizontalAlignment.Center),
-                            Factories.Text($"{animal.Species} (#{animal.Id})").Foreground(SecondaryText).HAlign(HorizontalAlignment.Center)
+                            TextBlock(animal.Emoji).FontSize(64).HAlign(HorizontalAlignment.Center),
+                            TextBlock(animal.Name).FontSize(24).SemiBold().HAlign(HorizontalAlignment.Center),
+                            TextBlock($"{animal.Species} (#{animal.Id})").Foreground(SecondaryText).HAlign(HorizontalAlignment.Center)
                         ).HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
                     ).Background(SubtleFill).Padding(32)
                 ) with
@@ -152,17 +152,17 @@ class DataTemplateDemo : Component
                 }
             ).CornerRadius(8).Height(250).Width(400),
 
-            Factories.Text($"Showing {flipIndex + 1} of {filtered.Count}").Foreground(SecondaryText),
+            TextBlock($"Showing {flipIndex + 1} of {filtered.Count}").Foreground(SecondaryText),
 
             // 4. TreeView with ContentElement
             SubHeading("4. TreeView with ContentElement"),
-            Factories.Text("Tree nodes render custom Reactor elements instead of plain text."),
+            TextBlock("Tree nodes render custom Reactor elements instead of plain text."),
             Border(
                 TreeView(
                     new TreeViewNodeData("Pets") { IsExpanded = true,
                         ContentElement = HStack(8,
-                            Factories.Text("\U0001F3E0").FontSize(16),
-                            Factories.Text("All Pets").SemiBold()
+                            TextBlock("\U0001F3E0").FontSize(16),
+                            TextBlock("All Pets").SemiBold()
                         ),
                         Children = new[] { "Cat", "Dog", "Rabbit", "Hamster", "Parrot" }
                             .Where(species => filtered.Any(a => a.Species == species))
@@ -170,7 +170,7 @@ class DataTemplateDemo : Component
                             {
                                 IsExpanded = true,
                                 ContentElement = HStack(8,
-                                    Factories.Text(species switch
+                                    TextBlock(species switch
                                     {
                                         "Cat" => "\U0001F431",
                                         "Dog" => "\U0001F436",
@@ -179,16 +179,16 @@ class DataTemplateDemo : Component
                                         "Parrot" => "\U0001F99C",
                                         _ => "\U0001F43E"
                                     }),
-                                    Factories.Text(species).SemiBold(),
-                                    Factories.Text($"({filtered.Count(a => a.Species == species)})").Foreground(TertiaryText)
+                                    TextBlock(species).SemiBold(),
+                                    TextBlock($"({filtered.Count(a => a.Species == species)})").Foreground(TertiaryText)
                                 ),
                                 Children = filtered
                                     .Where(a => a.Species == species)
                                     .Select(a => new TreeViewNodeData(a.Name)
                                     {
                                         ContentElement = HStack(8,
-                                            Factories.Text(a.Emoji),
-                                            Factories.Text(a.Name),
+                                            TextBlock(a.Emoji),
+                                            TextBlock(a.Name),
                                             Caption($"#{a.Id}").Foreground(TertiaryText)
                                         )
                                     }).ToArray()

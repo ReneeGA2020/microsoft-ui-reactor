@@ -259,7 +259,7 @@ public class AnimationBugTests
     [Fact]
     public void Scale_Extension_Sets_Uniform_Scale()
     {
-        var el = Factories.Text("Hello").Scale(2f);
+        var el = TextBlock("Hello").Scale(2f);
         Assert.NotNull(el.Modifiers);
         Assert.Equal(new Vector3(2f, 2f, 1f), el.Modifiers!.Scale);
     }
@@ -267,7 +267,7 @@ public class AnimationBugTests
     [Fact]
     public void Scale_Extension_Sets_Vector3_Scale()
     {
-        var el = Factories.Text("Hello").Scale(new Vector3(1, 2, 1));
+        var el = TextBlock("Hello").Scale(new Vector3(1, 2, 1));
         Assert.NotNull(el.Modifiers);
         Assert.Equal(new Vector3(1, 2, 1), el.Modifiers!.Scale);
     }
@@ -275,7 +275,7 @@ public class AnimationBugTests
     [Fact]
     public void Rotation_Extension_Sets_Degrees()
     {
-        var el = Factories.Text("Hello").Rotation(90f);
+        var el = TextBlock("Hello").Rotation(90f);
         Assert.NotNull(el.Modifiers);
         Assert.Equal(90f, el.Modifiers!.Rotation);
     }
@@ -283,7 +283,7 @@ public class AnimationBugTests
     [Fact]
     public void Translation_Extension_Sets_Vector3()
     {
-        var el = Factories.Text("Hello").Translation(10, 20, 5);
+        var el = TextBlock("Hello").Translation(10, 20, 5);
         Assert.NotNull(el.Modifiers);
         Assert.Equal(new Vector3(10, 20, 5), el.Modifiers!.Translation);
     }
@@ -291,7 +291,7 @@ public class AnimationBugTests
     [Fact]
     public void CenterPoint_Extension_Sets_Vector3()
     {
-        var el = Factories.Text("Hello").CenterPoint(new Vector3(50, 50, 0));
+        var el = TextBlock("Hello").CenterPoint(new Vector3(50, 50, 0));
         Assert.NotNull(el.Modifiers);
         Assert.Equal(new Vector3(50, 50, 0), el.Modifiers!.CenterPoint);
     }
@@ -323,7 +323,7 @@ public class AnimationBugTests
     public void All_Compositor_Properties_Flow_Through_Modifiers()
     {
         // Verify that chaining all compositor properties produces a single merged modifier record.
-        var el = Factories.Text("X")
+        var el = TextBlock("X")
             .Opacity(0.5)
             .Scale(2f)
             .Rotation(45f)

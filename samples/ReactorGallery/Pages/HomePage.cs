@@ -30,10 +30,10 @@ class HomePage : Component<Action<string>>
                 // ── Hero section ────────────────────────────────────────
                 Border(
                     VStack(12,
-                        Factories.Text("Reactor WinUI Gallery")
+                        TextBlock("Reactor WinUI Gallery")
                             .ApplyStyle("TitleTextBlockStyle")
                             .Bold(),
-                        Factories.Text("A showcase of WinUI controls built entirely with Reactor — a declarative,\ncomponent-based UI framework for WinUI 3.")
+                        TextBlock("A showcase of WinUI controls built entirely with Reactor — a declarative,\ncomponent-based UI framework for WinUI 3.")
                             .Foreground(Theme.SecondaryText)
                             .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
                             .MaxWidth(600)
@@ -44,13 +44,13 @@ class HomePage : Component<Action<string>>
 
                 // ── Category cards section ──────────────────────────────
                 VStack(16,
-                    Factories.Text("Browse by Category")
+                    TextBlock("Browse by Category")
                         .ApplyStyle("BodyStrongTextBlockStyle"),
 
                     GalleryControls.ControlCardGrid(categoryControls, navigate),
 
                     // Recently added section
-                    Factories.Text("Recently Added")
+                    TextBlock("Recently Added")
                         .ApplyStyle("BodyStrongTextBlockStyle"),
 
                     GalleryControls.ControlCardGrid(recentControls, navigate)

@@ -84,7 +84,7 @@ public class DeferredMountApp : Component
         // Active tab content: 200 items
         var tabItems = new Element[ItemsPerTab];
         for (int i = 0; i < ItemsPerTab; i++)
-            tabItems[i] = Factories.Text($"Tab {activeTab} - Item {i}").FontSize(10);
+            tabItems[i] = TextBlock($"Tab {activeTab} - Item {i}").FontSize(10);
 
         var children = new List<Element?>
         {
@@ -93,7 +93,7 @@ public class DeferredMountApp : Component
         };
 
         if (!Opts.Headless)
-            children.Add(Factories.Text(hudText).Foreground("Yellow").FontSize(14));
+            children.Add(TextBlock(hudText).Foreground("Yellow").FontSize(14));
 
         return VStack(children.ToArray());
     }

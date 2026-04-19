@@ -4,6 +4,7 @@ using Microsoft.UI.Reactor.Controls;
 using Microsoft.UI.Reactor.Controls.Validation;
 using static Microsoft.UI.Reactor.Controls.Validation.FormFieldDsl;
 using Xunit;
+using static Microsoft.UI.Reactor.Factories;
 
 namespace Microsoft.UI.Reactor.Tests;
 
@@ -140,11 +141,11 @@ public class FormFieldDescriptorTests
             Name = "Custom",
             FieldType = typeof(string),
             GetValue = _ => "hi",
-            Editor = (val, onChange) => Factories.Text($"Custom: {val}"),
+            Editor = (val, onChange) => TextBlock($"Custom: {val}"),
         };
 
         var el = FormField(fd, "hi", _ => { });
-        Assert.IsType<TextElement>(el.Content);
+        Assert.IsType<TextBlockElement>(el.Content);
     }
 
     [Fact]

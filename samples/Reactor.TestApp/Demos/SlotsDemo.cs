@@ -63,16 +63,16 @@ class SlotsDemo : Component
 
         return ScrollView(VStack(16,
             Heading("Slots Pattern"),
-            Factories.Text("Components accept Element? props as named content areas — like React children/render props."),
+            TextBlock("Components accept Element? props as named content areas — like React children/render props."),
 
             // 1. Card with all three slots
             SubHeading("1. Card — Header / Body / Footer"),
             Component<Card, CardProps>(new(
-                Header: Factories.Text("User Profile").SemiBold(),
+                Header: TextBlock("User Profile").SemiBold(),
                 Body: VStack(8,
-                    Factories.Text("Name: Alice Johnson"),
-                    Factories.Text("Email: alice@example.com"),
-                    Factories.Text("Role: Software Engineer")
+                    TextBlock("Name: Alice Johnson"),
+                    TextBlock("Email: alice@example.com"),
+                    TextBlock("Role: Software Engineer")
                 ),
                 Footer: HStack(8,
                     Button("Edit", () => { }),
@@ -83,8 +83,8 @@ class SlotsDemo : Component
             // 2. Partial slots
             SubHeading("2. Partial slots — omit Footer"),
             Component<Card, CardProps>(new(
-                Header: Factories.Text("Notification").SemiBold(),
-                Body: Factories.Text("Build completed successfully. No footer needed.")
+                Header: TextBlock("Notification").SemiBold(),
+                Body: TextBlock("Build completed successfully. No footer needed.")
             )),
 
             // 3. Dynamic slot content
@@ -93,30 +93,30 @@ class SlotsDemo : Component
             Component<Card, CardProps>(new(
                 Header: HStack(8,
                     Border(Empty()).Background(Accent).CornerRadius(12).Size(24, 24),
-                    Factories.Text($"Hello, {name}!").SemiBold()
+                    TextBlock($"Hello, {name}!").SemiBold()
                 ),
-                Body: Factories.Text($"The slot content updates when you type. Name length: {name.Length} characters."),
+                Body: TextBlock($"The slot content updates when you type. Name length: {name.Length} characters."),
                 Footer: Button("Reset", () => setName("World"))
             )),
 
             // 4. InfoRow — Leading / Title / Trailing
             SubHeading("4. InfoRow — Leading / Title / Trailing"),
-            Factories.Text("Another slot pattern: a row with optional leading icon, title area, and trailing action."),
+            TextBlock("Another slot pattern: a row with optional leading icon, title area, and trailing action."),
             VStack(4,
                 Component<InfoRow, InfoRowProps>(new(
-                    Leading: Factories.Text("\uE77B").Set(t => t.FontFamily = (FontFamily)Application.Current.Resources["SymbolThemeFontFamily"]),
-                    Title: Factories.Text("Inbox").SemiBold(),
-                    Trailing: Factories.Text("12").Foreground(TertiaryText)
+                    Leading: TextBlock("\uE77B").Set(t => t.FontFamily = (FontFamily)Application.Current.Resources["SymbolThemeFontFamily"]),
+                    Title: TextBlock("Inbox").SemiBold(),
+                    Trailing: TextBlock("12").Foreground(TertiaryText)
                 )),
                 Component<InfoRow, InfoRowProps>(new(
-                    Leading: Factories.Text("\uE724").Set(t => t.FontFamily = (FontFamily)Application.Current.Resources["SymbolThemeFontFamily"]),
-                    Title: Factories.Text("Sent"),
-                    Trailing: Factories.Text("3").Foreground(TertiaryText)
+                    Leading: TextBlock("\uE724").Set(t => t.FontFamily = (FontFamily)Application.Current.Resources["SymbolThemeFontFamily"]),
+                    Title: TextBlock("Sent"),
+                    Trailing: TextBlock("3").Foreground(TertiaryText)
                 )),
                 Component<InfoRow, InfoRowProps>(new(
-                    Leading: Factories.Text("\uE74D").Set(t => t.FontFamily = (FontFamily)Application.Current.Resources["SymbolThemeFontFamily"]),
-                    Title: Factories.Text("Deleted"),
-                    Trailing: Factories.Text("0").Foreground(TertiaryText)
+                    Leading: TextBlock("\uE74D").Set(t => t.FontFamily = (FontFamily)Application.Current.Resources["SymbolThemeFontFamily"]),
+                    Title: TextBlock("Deleted"),
+                    Trailing: TextBlock("0").Foreground(TertiaryText)
                 ))
             ),
 

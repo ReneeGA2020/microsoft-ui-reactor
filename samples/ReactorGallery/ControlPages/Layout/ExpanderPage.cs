@@ -25,27 +25,27 @@ class ExpanderPage : Component
                 SampleCard("Basic Expander",
                     VStack(8,
                         Expander("Settings", VStack(4,
-                            Factories.Text("Option 1: Enabled"),
-                            Factories.Text("Option 2: Auto-save"),
-                            Factories.Text("Option 3: Dark mode")
+                            TextBlock("Option 1: Enabled"),
+                            TextBlock("Option 2: Auto-save"),
+                            TextBlock("Option 3: Dark mode")
                         ), expanded1, setExpanded1).Width(350),
 
                         Expander("Advanced", VStack(4,
-                            Factories.Text("Cache size: 256 MB"),
-                            Factories.Text("Thread count: 4"),
-                            Factories.Text("Log level: Debug")
+                            TextBlock("Cache size: 256 MB"),
+                            TextBlock("Thread count: 4"),
+                            TextBlock("Log level: Debug")
                         ), expanded2, setExpanded2).Width(350)
                     ),
-                    @"Expander(""Settings"", VStack(\n    Factories.Text(""Option 1: Enabled""), ...\n), expanded, setExpanded)"),
+                    @"Expander(""Settings"", VStack(\n    TextBlock(""Option 1: Enabled""), ...\n), expanded, setExpanded)"),
 
                 SampleCard("Direction Control",
                     Expander("Expand Direction", VStack(4,
-                        Factories.Text("This content appears based on the direction setting."),
-                        Factories.Text("Try switching between Down and Up.")
+                        TextBlock("This content appears based on the direction setting."),
+                        TextBlock("Try switching between Down and Up.")
                     ), true).Direction(direction).Width(350),
                     @"Expander(""Header"", content, true)\n    .Direction(ExpandDirection.Up)",
                     OptionPanel(
-                        Factories.Text("Direction"),
+                        TextBlock("Direction"),
                         ComboBox(new[] { "Down", "Up" }, dirIndex, setDirIndex)
                     ))
             ).Margin(36, 24, 36, 36)

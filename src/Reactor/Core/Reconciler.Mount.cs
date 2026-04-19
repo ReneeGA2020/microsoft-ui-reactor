@@ -64,7 +64,7 @@ public sealed partial class Reconciler
         {
         control = element switch
         {
-            TextElement text => MountText(text),
+            TextBlockElement text => MountText(text),
             RichTextBlockElement richText => MountRichTextBlock(richText),
             ButtonElement btn => MountButton(btn, requestRerender),
             HyperlinkButtonElement hlBtn => MountHyperlinkButton(hlBtn),
@@ -237,7 +237,7 @@ public sealed partial class Reconciler
         return control;
     }
 
-    private TextBlock MountText(TextElement text)
+    private TextBlock MountText(TextBlockElement text)
     {
         var tb = _pool.TryRent(typeof(TextBlock)) as TextBlock ?? new TextBlock();
         tb.Text = text.Content;
@@ -2117,7 +2117,7 @@ public sealed partial class Reconciler
         catch (Exception ex) when (_errorBoundaryDepth == 0 && ex is not OutOfMemoryException and not StackOverflowException)
         {
             _logger.LogError(ex, "Component Render() threw during mount: {ComponentName}", compElement.GetType().Name);
-            childElement = new TextElement($"⚠ Render error: {ex.Message}");
+            childElement = new TextBlockElement($"⚠ Render error: {ex.Message}");
         }
         var childControl = Mount(childElement, componentRerender);
 
@@ -2150,7 +2150,7 @@ public sealed partial class Reconciler
         catch (Exception ex) when (_errorBoundaryDepth == 0 && ex is not OutOfMemoryException and not StackOverflowException)
         {
             _logger.LogError(ex, "FuncComponent Render() threw during mount");
-            childElement = new TextElement($"⚠ Render error: {ex.Message}");
+            childElement = new TextBlockElement($"⚠ Render error: {ex.Message}");
         }
         var childControl = Mount(childElement, componentRerender);
 
@@ -2184,7 +2184,7 @@ public sealed partial class Reconciler
         catch (Exception ex) when (_errorBoundaryDepth == 0 && ex is not OutOfMemoryException and not StackOverflowException)
         {
             _logger.LogError(ex, "MemoComponent Render() threw during mount");
-            childElement = new TextElement($"⚠ Render error: {ex.Message}");
+            childElement = new TextBlockElement($"⚠ Render error: {ex.Message}");
         }
         var childControl = Mount(childElement, componentRerender);
 

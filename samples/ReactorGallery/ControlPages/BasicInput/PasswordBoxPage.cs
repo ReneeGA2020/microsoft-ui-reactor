@@ -20,7 +20,7 @@ class PasswordBoxPage: Component
             SampleCard("Basic PasswordBox",
                 VStack(8,
                     PasswordBox(password, p => setPassword(p), "Enter password"),
-                    Factories.Text($"Length: {password.Length} characters").Foreground(Theme.SecondaryText)),
+                    TextBlock($"Length: {password.Length} characters").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 PasswordBox(password, p => setPassword(p), ""Enter password"")
 "),

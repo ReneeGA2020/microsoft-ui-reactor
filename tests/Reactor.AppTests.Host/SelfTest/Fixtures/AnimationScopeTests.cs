@@ -84,7 +84,7 @@ internal static class AnimationScopeTests
             host.Mount(ctx =>
             {
                 return VStack(
-                    Border(Factories.Text("Animate Me"))
+                    Border(TextBlock("Animate Me"))
                         .Opacity(opacity)
                         .AutomationId("anim-scope-target")
                 );
@@ -104,7 +104,7 @@ internal static class AnimationScopeTests
                 host.Mount(ctx =>
                 {
                     return VStack(
-                        Border(Factories.Text("Animate Me"))
+                        Border(TextBlock("Animate Me"))
                             .Opacity(opacity)
                             .AutomationId("anim-scope-target")
                     );

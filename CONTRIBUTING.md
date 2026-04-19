@@ -203,7 +203,7 @@ src/Reactor/                      Core framework library
     ElementPool.cs                Control reuse pool
     PropValueRegistry.cs          Property value caching/hashing
   Elements/
-    Dsl.cs                        200+ static factory methods (Text, Button, VStack, Flex, etc.)
+    Dsl.cs                        200+ static factory methods (TextBlock, Button, VStack, Flex, etc.)
     ElementExtensions.cs          Fluent modifiers (.Bold(), .Margin(), .Width(), etc.)
     FlexExtensions.cs             .Flex() attached property modifier for flex children
   Flex/
@@ -339,7 +339,7 @@ Key files:
 
 - **Elements are immutable records.** Use `with` expressions for variations.
 - **Hooks follow React conventions.** Same order every render, no conditional hooks.
-- **Factory methods over constructors.** `Text("hello")` not `new TextElement("hello")`.
+- **Factory methods over constructors.** `TextBlock("hello")` not `new TextBlockElement("hello")`.
 - **Fluent modifiers for layout.** `.Margin(16).Bold()` not constructor parameters.
 - **Tag-based event dispatch.** Event handlers are wired once at mount; the current element is stored in `Tag` so handlers always read the latest closure.
 - **No XAML.** Everything is C#.

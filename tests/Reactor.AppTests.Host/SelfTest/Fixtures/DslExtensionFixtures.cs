@@ -32,7 +32,7 @@ internal static class DslExtensionFixtures
         {
             var host = H.CreateHost();
             host.Mount(ctx => VStack(
-                Factories.Text("Styled")
+                TextBlock("Styled")
                     .Bold()
                     .FontSize(18)
                     .Foreground(new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Red))
@@ -50,7 +50,7 @@ internal static class DslExtensionFixtures
                 new ButtonElement("StyledBtn") { IsEnabled = false }
                     .AutomationName("auto-btn")
                     .AutomationId("btn-id"),
-                new TextElement("Selectable") { IsTextSelectionEnabled = true }
+                new TextBlockElement("Selectable") { IsTextSelectionEnabled = true }
             ));
 
             await Harness.Render();
@@ -80,7 +80,7 @@ internal static class DslExtensionFixtures
             host.Mount(ctx =>
             {
                 return VStack(
-                    Factories.Text("TransExt")
+                    TextBlock("TransExt")
                         .OpacityTransition(TimeSpan.FromMilliseconds(100))
                 );
             });
@@ -110,8 +110,8 @@ internal static class DslExtensionFixtures
                 Heading("DslHead"),
                 SubHeading("DslSub"),
                 Caption("DslCaption"),
-                HStack(4, Factories.Text("Spaced1"), Factories.Text("Spaced2")),
-                VStack(4, Factories.Text("VSpaced1"), Factories.Text("VSpaced2")),
+                HStack(4, TextBlock("Spaced1"), TextBlock("Spaced2")),
+                VStack(4, TextBlock("VSpaced1"), TextBlock("VSpaced2")),
                 ProgressIndeterminate(),
                 ThreeStateCheckBox(null, label: "ThreeState")
             ));
@@ -186,14 +186,14 @@ internal static class DslExtensionFixtures
             host.Mount(ctx => VStack(
                 // UniformGrid — equal columns
                 UniformGrid(Microsoft.UI.Xaml.Controls.Orientation.Horizontal,
-                    Factories.Text("U1"), Factories.Text("U2"), Factories.Text("U3")),
+                    TextBlock("U1"), TextBlock("U2"), TextBlock("U3")),
                 // InterspersedGrid — items with separators
                 InterspersedGrid(
                     Microsoft.UI.Xaml.Controls.Orientation.Horizontal,
-                    [Factories.Text("I1"), Factories.Text("I2"), Factories.Text("I3")],
+                    [TextBlock("I1"), TextBlock("I2"), TextBlock("I3")],
                     [0.33, 0.34, 0.33],
                     6,
-                    i => Factories.Text("|"))
+                    i => TextBlock("|"))
             ));
 
             await Harness.Render();
@@ -245,14 +245,14 @@ internal static class DslExtensionFixtures
             var host = H.CreateHost();
             host.Mount(ctx => VStack(
                 Grid(["*", "*"], ["*", "*"],
-                    Factories.Text("TL").Grid(row: 0, column: 0),
-                    Factories.Text("TR").Grid(row: 0, column: 1),
-                    Factories.Text("BL").Grid(row: 1, column: 0),
-                    Factories.Text("BR").Grid(row: 1, column: 1, rowSpan: 1, columnSpan: 1)
+                    TextBlock("TL").Grid(row: 0, column: 0),
+                    TextBlock("TR").Grid(row: 0, column: 1),
+                    TextBlock("BL").Grid(row: 1, column: 0),
+                    TextBlock("BR").Grid(row: 1, column: 1, rowSpan: 1, columnSpan: 1)
                 ),
                 Canvas(
-                    Factories.Text("Canvas1").Canvas(left: 10, top: 20),
-                    Factories.Text("Canvas2").Canvas(left: 50, top: 60)
+                    TextBlock("Canvas1").Canvas(left: 10, top: 20),
+                    TextBlock("Canvas2").Canvas(left: 50, top: 60)
                 )
             ));
 
@@ -281,7 +281,7 @@ internal static class DslExtensionFixtures
             host.Mount(ctx => VStack(
                 new Microsoft.UI.Reactor.Core.ErrorBoundaryElement(
                     Component<ThrowingComponent>(),
-                    ex => Factories.Text($"Caught: {ex.Message}"))
+                    ex => TextBlock($"Caught: {ex.Message}"))
             ));
 
             await Harness.Render();
@@ -299,7 +299,7 @@ internal static class DslExtensionFixtures
         {
             var host = H.CreateHost();
             host.Mount(ctx => VStack(
-                new GroupElement([Factories.Text("G1"), Factories.Text("G2"), Factories.Text("G3")])
+                new GroupElement([TextBlock("G1"), TextBlock("G2"), TextBlock("G3")])
             ));
 
             await Harness.Render();

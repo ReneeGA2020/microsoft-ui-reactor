@@ -21,7 +21,7 @@ class RadioButtonPage: Component
             SampleCard("RadioButtons Group",
                 VStack(8,
                     RadioButtons(options, groupIndex, i => setGroupIndex(i)),
-                    Factories.Text($"Selected: {options[groupIndex]}").Foreground(Theme.SecondaryText)),
+                    TextBlock($"Selected: {options[groupIndex]}").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 RadioButtons(options, groupIndex, i => setGroupIndex(i))
 "),
@@ -30,7 +30,7 @@ RadioButtons(options, groupIndex, i => setGroupIndex(i))
                 VStack(8,
                     RadioButton("Choice A", individualChoice == "A", v => { if (v) setIndividualChoice("A"); }, "choices"),
                     RadioButton("Choice B", individualChoice == "B", v => { if (v) setIndividualChoice("B"); }, "choices"),
-                    Factories.Text($"Chosen: {individualChoice}").Foreground(Theme.SecondaryText)),
+                    TextBlock($"Chosen: {individualChoice}").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 RadioButton(""Choice A"", individualChoice == ""A"", () => setIndividualChoice(""A""), ""choices"")
 RadioButton(""Choice B"", individualChoice == ""B"", () => setIndividualChoice(""B""), ""choices"")

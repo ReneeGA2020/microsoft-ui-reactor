@@ -41,7 +41,7 @@ class SpacingPage : Component
 
         return SampleCard("Spacing Scale",
             VStack(8,
-                Factories.Text("WinUI's spacing scale is built on a 4px base unit. Consistent use of these values creates a clear visual hierarchy.")
+                TextBlock("WinUI's spacing scale is built on a 4px base unit. Consistent use of these values creates a clear visual hierarchy.")
                     .Foreground(Theme.SecondaryText)
                     .FontSize(13)
                     .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
@@ -55,12 +55,12 @@ class SpacingPage : Component
                             .Height(20)
                             .CornerRadius(2)
                             .VAlign(VerticalAlignment.Center),
-                        Factories.Text($"{s.Value}px")
+                        TextBlock($"{s.Value}px")
                             .FontSize(13).SemiBold()
                             .Foreground(Theme.PrimaryText)
                             .Width(40)
                             .VAlign(VerticalAlignment.Center),
-                        Factories.Text(s.Usage)
+                        TextBlock(s.Usage)
                             .FontSize(12)
                             .Foreground(Theme.SecondaryText)
                             .VAlign(VerticalAlignment.Center)
@@ -75,7 +75,7 @@ class SpacingPage : Component
     static Element MarginVsPaddingSection() =>
         SampleCard("Margin vs Padding",
             VStack(16,
-                Factories.Text("Margin adds space outside an element; Padding adds space inside. In Reactor, .Padding() only works on Border and Control elements (Button, TextField, etc.). Layout panels like VStack and HStack only support .Margin() — wrap content in a Border if you need inner padding on a stack.")
+                TextBlock("Margin adds space outside an element; Padding adds space inside. In Reactor, .Padding() only works on Border and Control elements (Button, TextField, etc.). Layout panels like VStack and HStack only support .Margin() — wrap content in a Border if you need inner padding on a stack.")
                     .Foreground(Theme.SecondaryText)
                     .FontSize(13)
                     .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
@@ -86,11 +86,11 @@ class SpacingPage : Component
 
                     // Margin demo
                     VStack(4,
-                        Factories.Text("Margin").SemiBold().Foreground(Theme.PrimaryText),
-                        Factories.Text("Space outside the border").FontSize(12).Foreground(Theme.SecondaryText),
+                        TextBlock("Margin").SemiBold().Foreground(Theme.PrimaryText),
+                        TextBlock("Space outside the border").FontSize(12).Foreground(Theme.SecondaryText),
                         Border(
                             Border(
-                                Factories.Text("Content").Foreground(Theme.PrimaryText)
+                                TextBlock("Content").Foreground(Theme.PrimaryText)
                                     .HAlign(HorizontalAlignment.Center)
                                     .VAlign(VerticalAlignment.Center)
                             )
@@ -114,10 +114,10 @@ class SpacingPage : Component
 
                     // Padding demo
                     VStack(4,
-                        Factories.Text("Padding").SemiBold().Foreground(Theme.PrimaryText),
-                        Factories.Text("Space inside the border").FontSize(12).Foreground(Theme.SecondaryText),
+                        TextBlock("Padding").SemiBold().Foreground(Theme.PrimaryText),
+                        TextBlock("Space inside the border").FontSize(12).Foreground(Theme.SecondaryText),
                         Border(
-                            Factories.Text("Content").Foreground(Theme.PrimaryText)
+                            TextBlock("Content").Foreground(Theme.PrimaryText)
                                 .HAlign(HorizontalAlignment.Center)
                                 .VAlign(VerticalAlignment.Center)
                         )
@@ -136,7 +136,7 @@ class SpacingPage : Component
                 ),
 
                 // Compatibility table
-                Factories.Text("Compatibility").SemiBold().Foreground(Theme.PrimaryText),
+                TextBlock("Compatibility").SemiBold().Foreground(Theme.PrimaryText),
                 VStack(2,
                     CompatRow("Border",    true,  true),
                     CompatRow("Button",    true,  true),
@@ -149,7 +149,7 @@ class SpacingPage : Component
                 )
             ),
             @"// Margin — works on ALL elements
-Factories.Text(""Hello"").Margin(8)
+TextBlock(""Hello"").Margin(8)
 VStack(children).Margin(16)
 Border(child).Margin(12)
 
@@ -165,16 +165,16 @@ Border(
     static Element CompatRow(string element, bool margin, bool padding) =>
         Grid(
             columns: ["120", "80", "80"], rows: ["Auto"],
-            Factories.Text(element).FontSize(13).Foreground(Theme.PrimaryText)
+            TextBlock(element).FontSize(13).Foreground(Theme.PrimaryText)
                 .Set(tb => tb.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Cascadia Code, Consolas, monospace"))
                 .VAlign(VerticalAlignment.Center)
                 .Grid(column: 0),
-            Factories.Text(margin ? "✓ Margin" : "✗")
+            TextBlock(margin ? "✓ Margin" : "✗")
                 .FontSize(12)
                 .Foreground(margin ? Theme.SystemSuccess : Theme.DisabledText)
                 .VAlign(VerticalAlignment.Center)
                 .Grid(column: 1),
-            Factories.Text(padding ? "✓ Padding" : "—")
+            TextBlock(padding ? "✓ Padding" : "—")
                 .FontSize(12)
                 .Foreground(padding ? Theme.SystemSuccess : Theme.TertiaryText)
                 .VAlign(VerticalAlignment.Center)
@@ -186,7 +186,7 @@ Border(
     static Element MarginSection() =>
         SampleCard("Margin",
             VStack(12,
-                Factories.Text("Margin pushes an element away from its neighbors. It works on every Reactor element.")
+                TextBlock("Margin pushes an element away from its neighbors. It works on every Reactor element.")
                     .Foreground(Theme.SecondaryText)
                     .FontSize(13)
                     .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
@@ -207,10 +207,10 @@ element.Margin(4, 8, 16, 24)");
 
     static Element MarginDemo(string label, double l, double t, double r, double b) =>
         VStack(2,
-            Factories.Text(label).FontSize(12).Foreground(Theme.SecondaryText),
+            TextBlock(label).FontSize(12).Foreground(Theme.SecondaryText),
             Border(
                 Border(
-                    Factories.Text($"{l}, {t}, {r}, {b}")
+                    TextBlock($"{l}, {t}, {r}, {b}")
                         .FontSize(11)
                         .Foreground(Theme.PrimaryText)
                         .HAlign(HorizontalAlignment.Center)
@@ -234,7 +234,7 @@ element.Margin(4, 8, 16, 24)");
     static Element PaddingSection() =>
         SampleCard("Padding",
             VStack(12,
-                Factories.Text("Padding adds inner space between a container's edge and its content. In Reactor it applies to Border and Control-based elements only.")
+                TextBlock("Padding adds inner space between a container's edge and its content. In Reactor it applies to Border and Control-based elements only.")
                     .Foreground(Theme.SecondaryText)
                     .FontSize(13)
                     .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
@@ -255,9 +255,9 @@ Border(child).Padding(4, 8, 16, 24)");
 
     static Element PaddingDemo(string label, double l, double t, double r, double b) =>
         VStack(2,
-            Factories.Text(label).FontSize(12).Foreground(Theme.SecondaryText),
+            TextBlock(label).FontSize(12).Foreground(Theme.SecondaryText),
             Border(
-                Factories.Text($"{l}, {t}, {r}, {b}")
+                TextBlock($"{l}, {t}, {r}, {b}")
                     .FontSize(11)
                     .Foreground(Theme.PrimaryText)
                     .HAlign(HorizontalAlignment.Center)
@@ -276,13 +276,13 @@ Border(child).Padding(4, 8, 16, 24)");
     static Element StackSpacingSection() =>
         SampleCard("Stack Spacing",
             VStack(16,
-                Factories.Text("VStack and HStack accept a spacing parameter that inserts uniform gaps between children. This is the recommended way to space siblings — use it instead of adding margins to individual items.")
+                TextBlock("VStack and HStack accept a spacing parameter that inserts uniform gaps between children. This is the recommended way to space siblings — use it instead of adding margins to individual items.")
                     .Foreground(Theme.SecondaryText)
                     .FontSize(13)
                     .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
                     .Margin(0, 0, 0, 4),
 
-                Factories.Text("VStack spacing").SemiBold().FontSize(13).Foreground(Theme.PrimaryText),
+                TextBlock("VStack spacing").SemiBold().FontSize(13).Foreground(Theme.PrimaryText),
                 HStack(24,
                     StackDemo("0", 0, true),
                     StackDemo("4", 4, true),
@@ -290,7 +290,7 @@ Border(child).Padding(4, 8, 16, 24)");
                     StackDemo("16", 16, true)
                 ),
 
-                Factories.Text("HStack spacing").SemiBold().FontSize(13).Foreground(Theme.PrimaryText),
+                TextBlock("HStack spacing").SemiBold().FontSize(13).Foreground(Theme.PrimaryText),
                 VStack(8,
                     StackDemo("0", 0, false),
                     StackDemo("4", 4, false),
@@ -300,9 +300,9 @@ Border(child).Padding(4, 8, 16, 24)");
             ),
             @"// VStack with spacing between children
 VStack(8,
-    Factories.Text(""Item 1""),
-    Factories.Text(""Item 2""),
-    Factories.Text(""Item 3"")
+    TextBlock(""Item 1""),
+    TextBlock(""Item 2""),
+    TextBlock(""Item 3"")
 )
 
 // HStack with spacing between children
@@ -329,7 +329,7 @@ HStack(12,
             : HStack(spacing, items);
 
         return VStack(2,
-            Factories.Text($"{label}px").FontSize(11).Foreground(Theme.SecondaryText),
+            TextBlock($"{label}px").FontSize(11).Foreground(Theme.SecondaryText),
             Border(stack)
                 .Background(Theme.SubtleFill)
                 .WithBorder(Theme.DividerStroke)
@@ -343,7 +343,7 @@ HStack(12,
     static Element PageLayoutSection() =>
         SampleCard("Page Layout Spacing",
             VStack(12,
-                Factories.Text("A typical page combines all spacing techniques: page-level margins, section spacing in stacks, card padding via Border, and control gaps. Here is a common pattern:")
+                TextBlock("A typical page combines all spacing techniques: page-level margins, section spacing in stacks, card padding via Border, and control gaps. Here is a common pattern:")
                     .Foreground(Theme.SecondaryText)
                     .FontSize(13)
                     .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
@@ -354,16 +354,16 @@ HStack(12,
                     VStack(16,
                         // Header
                         VStack(4,
-                            Factories.Text("Page Title").FontSize(18).SemiBold().Foreground(Theme.PrimaryText),
-                            Factories.Text("A brief description of the page content.")
+                            TextBlock("Page Title").FontSize(18).SemiBold().Foreground(Theme.PrimaryText),
+                            TextBlock("A brief description of the page content.")
                                 .FontSize(13).Foreground(Theme.SecondaryText)
                         ),
 
                         // Card
                         Border(
                             VStack(8,
-                                Factories.Text("Section Card").SemiBold().Foreground(Theme.PrimaryText),
-                                Factories.Text("Content inside a card uses 16px padding via the Border wrapper.")
+                                TextBlock("Section Card").SemiBold().Foreground(Theme.PrimaryText),
+                                TextBlock("Content inside a card uses 16px padding via the Border wrapper.")
                                     .FontSize(13).Foreground(Theme.SecondaryText)
                                     .Set(tb => tb.TextWrapping = TextWrapping.Wrap),
                                 HStack(8,
@@ -387,14 +387,14 @@ HStack(12,
             @"// Typical page structure
 VStack(16,                          // 16px between sections
     VStack(4,                       // 4px title-to-subtitle gap
-        Factories.Text(""Page Title""),
-        Factories.Text(""Description"")
+        TextBlock(""Page Title""),
+        TextBlock(""Description"")
     ),
 
     Border(                         // Card with inner padding
         VStack(8,                   // 8px between card children
-            Factories.Text(""Section""),
-            Factories.Text(""Content""),
+            TextBlock(""Section""),
+            TextBlock(""Content""),
             HStack(8,               // 8px between buttons
                 Button(""Primary""),
                 Button(""Secondary"")

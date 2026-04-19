@@ -81,7 +81,7 @@ public class PropertyDiffApp : Component
             int col = i % Cols;
             int row = i / Cols;
             var cd = cells[i];
-            elements[i] = Factories.Text($"Cell {i}: {cd.Value:F2}")
+            elements[i] = TextBlock($"Cell {i}: {cd.Value:F2}")
                 .FontSize(8)
                 .Foreground(cd.IsUp ? "Green" : "Red")
                 .Grid(row: row, column: col);
@@ -91,7 +91,7 @@ public class PropertyDiffApp : Component
             Grid(columns, rows, elements),
             Opts.Headless
                 ? null!
-                : Factories.Text(hudText).Foreground("Yellow").FontSize(14)
+                : TextBlock(hudText).Foreground("Yellow").FontSize(14)
         );
     }
 }

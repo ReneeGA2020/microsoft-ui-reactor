@@ -22,7 +22,7 @@ internal sealed class AllDayRow : Component<AllDayRowProps>
         var children = new List<Element>
         {
             // Label
-            Factories.Text("").FontSize(11).Foreground(TertiaryText)
+            TextBlock("").FontSize(11).Foreground(TertiaryText)
                 .Grid(row: 0, column: 0)
                 .Padding(4, 2, 4, 2)
         };
@@ -41,7 +41,7 @@ internal sealed class AllDayRow : Component<AllDayRowProps>
                     {
                         var color = Props.SourceColors.GetValueOrDefault(e.CalendarSourceId, "#0078D4");
                         return (Element)Border(
-                            Factories.Text(e.Title).FontSize(10)
+                            TextBlock(e.Title).FontSize(10)
                                 .Set(t =>
                                 {
                                     t.TextTrimming = Microsoft.UI.Xaml.TextTrimming.CharacterEllipsis;

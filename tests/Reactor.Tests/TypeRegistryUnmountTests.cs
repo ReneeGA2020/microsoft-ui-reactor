@@ -76,7 +76,7 @@ public class TypeRegistryUnmountTests
         // This verifies the Reconcile method returns null when new element is null,
         // which triggers the Unmount path.
         var reconciler = new Reconciler();
-        var oldEl = new TextElement("Hello");
+        var oldEl = new TextBlockElement("Hello");
 
         // When new element is null, reconciler should return null
         // (this tests the branch, though without a real control it won't call Unmount)

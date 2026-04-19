@@ -24,7 +24,7 @@ internal sealed class ReadingPane : Component<ReadingPaneProps>
             return VStack(
                 MdlIcon("\uE715", 48, DisabledText)
                     .HAlign(HorizontalAlignment.Center),
-                Factories.Text("Select a message to read")
+                TextBlock("Select a message to read")
                     .FontSize(15).Foreground(TertiaryText)
                     .HAlign(HorizontalAlignment.Center)
             ).Spacing(16).Center();
@@ -37,7 +37,7 @@ internal sealed class ReadingPane : Component<ReadingPaneProps>
         var color = AvatarColors[Math.Abs(msg.SenderName.GetHashCode()) % AvatarColors.Length];
 
         var avatar = Border(
-            Factories.Text(msg.SenderInitials).Foreground("white").FontSize(15)
+            TextBlock(msg.SenderInitials).Foreground("white").FontSize(15)
                 .Set(t =>
                 {
                     t.HorizontalTextAlignment = TextAlignment.Center;
@@ -48,7 +48,7 @@ internal sealed class ReadingPane : Component<ReadingPaneProps>
 
         return FlexColumn(
             // Subject line
-            Factories.Text(msg.Subject)
+            TextBlock(msg.Subject)
                 .FontSize(22).SemiBold()
                 .Set(t => t.TextWrapping = TextWrapping.Wrap)
                 .Padding(28, 20, 28, 10),
@@ -58,14 +58,14 @@ internal sealed class ReadingPane : Component<ReadingPaneProps>
                 avatar,
                 VStack(2,
                     (FlexRow(
-                        Factories.Text(msg.SenderName).SemiBold().FontSize(14),
-                        Factories.Text($"<{msg.SenderEmail}>").FontSize(12).Foreground(TertiaryText)
+                        TextBlock(msg.SenderName).SemiBold().FontSize(14),
+                        TextBlock($"<{msg.SenderEmail}>").FontSize(12).Foreground(TertiaryText)
                     ) with { ColumnGap = 6 }),
-                    Factories.Text($"To: {toLine}").FontSize(12).Foreground(SecondaryText)
+                    TextBlock($"To: {toLine}").FontSize(12).Foreground(SecondaryText)
                 ).Flex(grow: 1),
                 // Date + action buttons
                 VStack(4,
-                    Factories.Text(msg.ReceivedDate.ToString("M/d/yyyy h:mm tt"))
+                    TextBlock(msg.ReceivedDate.ToString("M/d/yyyy h:mm tt"))
                         .FontSize(12).Foreground(TertiaryText)
                         .HAlign(HorizontalAlignment.Right),
                     (FlexRow(
@@ -96,16 +96,16 @@ internal sealed class ReadingPane : Component<ReadingPaneProps>
     }
 
     static Element MdlIcon(string glyph, double size, string color) =>
-        Factories.Text(glyph).FontSize(size).Foreground(color)
+        TextBlock(glyph).FontSize(size).Foreground(color)
             .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets"));
 
     static Element MdlIcon(string glyph, double size, ThemeRef color) =>
-        Factories.Text(glyph).FontSize(size).Foreground(color)
+        TextBlock(glyph).FontSize(size).Foreground(color)
             .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets"));
 
     static Element SmallBtn(string icon) =>
         Button(
-            Factories.Text(icon).FontSize(15).Foreground(SecondaryText)
+            TextBlock(icon).FontSize(15).Foreground(SecondaryText)
                 .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets")),
             null
         ).Set(b =>

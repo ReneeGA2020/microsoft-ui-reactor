@@ -41,19 +41,19 @@ class FlyoutDemo : Component
 
         return ScrollView(VStack(16,
             Heading("Flyout Attachments"),
-            Factories.Text("Tests declarative .WithFlyout(), .WithContextFlyout(), and .WithToolTip(Element) modifiers."),
-            Factories.Text($"Timer tick: {tick} (flyout content updates every second)").Foreground(SecondaryText),
+            TextBlock("Tests declarative .WithFlyout(), .WithContextFlyout(), and .WithToolTip(Element) modifiers."),
+            TextBlock($"Timer tick: {tick} (flyout content updates every second)").Foreground(SecondaryText),
 
             // 1. ContentFlyout on a Button via .WithFlyout()
             SubHeading("1. Button with ContentFlyout (dynamic content)"),
-            Factories.Text("Click the button to see a flyout with a live-updating counter."),
+            TextBlock("Click the button to see a flyout with a live-updating counter."),
             Button("Open Flyout", null)
                 .WithFlyout(ContentFlyout(
                     VStack(12,
-                        Factories.Text("Dynamic Flyout Content").SemiBold(),
-                        Factories.Text($"Timer tick: {tick}").FontSize(20),
+                        TextBlock("Dynamic Flyout Content").SemiBold(),
+                        TextBlock($"Timer tick: {tick}").FontSize(20),
                         Border(
-                            Factories.Text($"Elapsed: {tick} seconds")
+                            TextBlock($"Elapsed: {tick} seconds")
                         ).CornerRadius(4).Background(SubtleFill).Padding(12, 8),
                         HStack(8,
                             Enumerable.Range(0, Math.Min(tick % 10, 8)).Select(i =>
@@ -77,7 +77,7 @@ class FlyoutDemo : Component
 
             // 2. MenuFlyout on DropDownButton
             SubHeading("2. DropDownButton with MenuItems"),
-            Factories.Text("A DropDownButton with a declarative menu flyout."),
+            TextBlock("A DropDownButton with a declarative menu flyout."),
             DropDownButton("Pick a color", flyout:
                 MenuItems(
                     MenuItem("Red", () => setColor("Red")),
@@ -90,17 +90,17 @@ class FlyoutDemo : Component
                 )
             ),
             HStack(8,
-                Factories.Text($"Selected: {color}"),
+                TextBlock($"Selected: {color}"),
                 Border(Empty()).Background(currentColorHex).CornerRadius(4).Size(24, 24)
             ),
 
             // 3. SplitButton with ContentFlyout
             SubHeading("3. SplitButton with ContentFlyout"),
-            Factories.Text("SplitButton with a declarative color grid flyout."),
+            TextBlock("SplitButton with a declarative color grid flyout."),
             SplitButton($"Apply {color}", () => { /* primary action */ }, flyout:
                 ContentFlyout(
                     VStack(8,
-                        Factories.Text("Pick a color:").SemiBold(),
+                        TextBlock("Pick a color:").SemiBold(),
                         HStack(4,
                             colors.Select(c =>
                             {
@@ -139,11 +139,11 @@ class FlyoutDemo : Component
 
             // 4. ContextFlyout on any element
             SubHeading("4. ContextFlyout (right-click menu)"),
-            Factories.Text("Right-click the box below to see a context menu."),
+            TextBlock("Right-click the box below to see a context menu."),
             Border(
                 VStack(8,
-                    Factories.Text("Right-click me!").SemiBold(),
-                    Factories.Text($"Color: {color} | Tick: {tick}")
+                    TextBlock("Right-click me!").SemiBold(),
+                    TextBlock($"Color: {color} | Tick: {tick}")
                 )
             ).CornerRadius(8).Background(SubtleFill).Padding(24)
              .WithContextFlyout(MenuItems(
@@ -156,13 +156,13 @@ class FlyoutDemo : Component
 
             // 5. Rich ToolTip
             SubHeading("5. Rich ToolTip (Element content)"),
-            Factories.Text("Hover over the button below for a rich tooltip with dynamic content."),
+            TextBlock("Hover over the button below for a rich tooltip with dynamic content."),
             Button("Hover me", null)
                 .WithToolTip(
                     VStack(8,
-                        Factories.Text("Rich ToolTip").SemiBold(),
-                        Factories.Text($"Current color: {color}"),
-                        Factories.Text($"Timer: {tick}s"),
+                        TextBlock("Rich ToolTip").SemiBold(),
+                        TextBlock($"Current color: {color}"),
+                        TextBlock($"Timer: {tick}s"),
                         Border(Empty())
                             .Background(currentColorHex)
                             .CornerRadius(4)

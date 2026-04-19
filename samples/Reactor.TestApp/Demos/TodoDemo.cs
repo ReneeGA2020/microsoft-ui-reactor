@@ -29,7 +29,7 @@ class TodoDemo : Component
 
         return VStack(12,
             Heading("Todo List"),
-            Factories.Text($"{doneCount}/{totalCount} completed"),
+            TextBlock($"{doneCount}/{totalCount} completed"),
 
             // Add new item
             HStack(8,
@@ -71,7 +71,7 @@ class TodoDemo : Component
 
             // Conditional: show "All done!" when everything is checked
             When(totalCount > 0 && doneCount == totalCount,
-                () => Factories.Text("All done! \U0001f389").SemiBold())
+                () => TextBlock("All done! \U0001f389").SemiBold())
         );
     }
 }

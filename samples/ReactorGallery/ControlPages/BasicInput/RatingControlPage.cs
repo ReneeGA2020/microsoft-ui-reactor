@@ -19,7 +19,7 @@ class RatingControlPage: Component
             SampleCard("Basic RatingControl",
                 VStack(8,
                     RatingControl(rating, v => setRating(v)),
-                    Factories.Text($"Rating: {rating:F1}").Foreground(Theme.SecondaryText)),
+                    TextBlock($"Rating: {rating:F1}").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 RatingControl(rating, v => setRating(v))
 "),

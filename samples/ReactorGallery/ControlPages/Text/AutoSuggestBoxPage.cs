@@ -23,7 +23,7 @@ class AutoSuggestBoxPage : Component
                 SampleCard("Basic AutoSuggestBox",
                     VStack(8,
                         AutoSuggestBox(query, setQuery).Width(300),
-                        Factories.Text($"Current text: \"{query}\"").Foreground(Theme.SecondaryText)
+                        TextBlock($"Current text: \"{query}\"").Foreground(Theme.SecondaryText)
                     ),
                     @"var (query, setQuery) = UseState("""");\nAutoSuggestBox(query, setQuery)"),
 
@@ -31,18 +31,18 @@ class AutoSuggestBoxPage : Component
                     VStack(8,
                         AutoSuggestBox(query, setQuery, s => setSubmitted(s)).Width(300),
                         When(submitted != "",
-                            () => Factories.Text($"Submitted: \"{submitted}\"").Foreground(Theme.SystemSuccess))
+                            () => TextBlock($"Submitted: \"{submitted}\"").Foreground(Theme.SystemSuccess))
                     ),
                     @"AutoSuggestBox(query, setQuery, s => setSubmitted(s))"),
 
                 SampleCard("Filtered Results Display",
                     VStack(8,
                         AutoSuggestBox(query, setQuery).Width(300),
-                        Factories.Text("Matching items:").Bold(),
+                        TextBlock("Matching items:").Bold(),
                         VStack(2,
                             allItems
                                 .Where(i => string.IsNullOrEmpty(query) || i.Contains(query, System.StringComparison.OrdinalIgnoreCase))
-                                .Select(i => Factories.Text($"  • {i}").Foreground(Theme.SecondaryText))
+                                .Select(i => TextBlock($"  • {i}").Foreground(Theme.SecondaryText))
                                 .ToArray()
                         )
                     ),

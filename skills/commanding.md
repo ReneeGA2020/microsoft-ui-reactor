@@ -118,7 +118,7 @@ var undo = StandardCommand.Undo(() => UndoAction());
 
 CommandHost([save, undo],
     VStack(
-        Text("Ctrl+S / Ctrl+Z only fire inside this region"),
+        TextBlock("Ctrl+S / Ctrl+Z only fire inside this region"),
         TextField(value, onChange)))
 ```
 

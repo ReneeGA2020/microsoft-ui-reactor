@@ -200,7 +200,7 @@ public class MemoizationPropagationTests
             }
 
             LastContent = content;
-            return new TextElement(content ?? "empty");
+            return new TextBlockElement(content ?? "empty");
         }
     }
 
@@ -213,7 +213,7 @@ public class MemoizationPropagationTests
             RenderCount++;
             var (count, set) = UseState(0);
             SetCounter = set;
-            return new TextElement($"Count: {count}");
+            return new TextBlockElement($"Count: {count}");
         }
     }
 
@@ -223,7 +223,7 @@ public class MemoizationPropagationTests
         public override Element Render()
         {
             RenderCount++;
-            return new TextElement("pure");
+            return new TextBlockElement("pure");
         }
     }
 
@@ -235,7 +235,7 @@ public class MemoizationPropagationTests
         {
             RenderCount++;
             LastTheme = UseContext(ThemeCtx);
-            return new TextElement($"Theme: {LastTheme}");
+            return new TextBlockElement($"Theme: {LastTheme}");
         }
     }
 
@@ -337,7 +337,7 @@ public class MemoizationPropagationTests
         Assert.True(ShouldRender(child, null, null, scope, selfTriggered: childNode.SelfTriggered));
 
         // Re-render child and verify state took effect
-        var el = MountComponent(child, scope, childComponentRerender) as TextElement;
+        var el = MountComponent(child, scope, childComponentRerender) as TextBlockElement;
         Assert.Equal("Count: 42", el?.Content);
     }
 
@@ -567,7 +567,7 @@ public class MemoizationPropagationTests
         // Re-render the panel — on second render, content is non-null
         // (reset SelfTriggered as the reconciler does)
         panelNode.SelfTriggered = false;
-        var el = MountComponent(panel, scope, panelRerender) as TextElement;
+        var el = MountComponent(panel, scope, panelRerender) as TextBlockElement;
         Assert.Equal(2, panel.RenderCount);
         Assert.Equal("created", panel.LastContent);
         Assert.Equal("created", el?.Content);
@@ -821,7 +821,7 @@ public class MemoizationPropagationTests
         Assert.True(rootCalled);
 
         // Verify state
-        var el = MountComponent(child, scope, childRerender) as TextElement;
+        var el = MountComponent(child, scope, childRerender) as TextBlockElement;
         Assert.Equal("Count: 100", el?.Content);
     }
 
@@ -865,7 +865,7 @@ public class MemoizationPropagationTests
             RenderCount++;
             var (count, update) = UseReducer(0);
             Update = update;
-            return new TextElement($"Count: {count}");
+            return new TextBlockElement($"Count: {count}");
         }
     }
 
@@ -891,7 +891,7 @@ public class MemoizationPropagationTests
         Assert.True(parentNode.SelfTriggered);
         Assert.True(rootCalled);
 
-        var el = MountComponent(child, scope, childRerender) as TextElement;
+        var el = MountComponent(child, scope, childRerender) as TextBlockElement;
         Assert.Equal("Count: 1", el?.Content);
     }
 }

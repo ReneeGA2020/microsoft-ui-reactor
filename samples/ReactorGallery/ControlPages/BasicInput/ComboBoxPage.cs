@@ -21,7 +21,7 @@ class ComboBoxPage: Component
             SampleCard("Basic ComboBox",
                 VStack(8,
                     ComboBox(colors, selectedIndex, i => setSelectedIndex(i)),
-                    Factories.Text($"Selected: {colors[selectedIndex]}").Foreground(Theme.SecondaryText)),
+                    TextBlock($"Selected: {colors[selectedIndex]}").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 ComboBox(colors, selectedIndex, i => setSelectedIndex(i))
 "),

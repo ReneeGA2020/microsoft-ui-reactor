@@ -86,7 +86,7 @@ public class PrioritiesApp : Component
         // Build filtered list elements
         var listElements = new Element[Math.Min(filteredItems.Length, 5000)];
         for (int i = 0; i < listElements.Length; i++)
-            listElements[i] = Factories.Text(filteredItems[i]).FontSize(10);
+            listElements[i] = TextBlock(filteredItems[i]).FontSize(10);
 
         var children = new List<Element?>
         {
@@ -109,7 +109,7 @@ public class PrioritiesApp : Component
         };
 
         if (!Opts.Headless)
-            children.Add(Factories.Text(hudText).Foreground("Yellow").FontSize(14));
+            children.Add(TextBlock(hudText).Foreground("Yellow").FontSize(14));
 
         return VStack(children.ToArray());
     }

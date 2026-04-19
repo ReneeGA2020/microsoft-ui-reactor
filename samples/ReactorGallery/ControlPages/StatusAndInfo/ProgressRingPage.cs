@@ -22,7 +22,7 @@ class ProgressRingPage : Component
                 SampleCard("Determinate ProgressRing",
                     VStack(8,
                         ProgressRing(value).Width(60).Height(60),
-                        Factories.Text($"Progress: {value:F0}%").Foreground(Theme.SecondaryText),
+                        TextBlock($"Progress: {value:F0}%").Foreground(Theme.SecondaryText),
                         Slider(value, 0, 100, v => setValue(v)).Width(300)
                     ),
                     @"ProgressRing(value).Width(60).Height(60)",

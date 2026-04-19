@@ -39,7 +39,7 @@ public class A11yShowcaseScannerTest
 
                     // A11Y_004: Large bold text styled as heading, no HeadingLevel
                     // Use FontWeight directly (not .Bold()) to avoid WinUI COM activation in unit tests
-                    new TextElement("Task Tracker") { FontSize = 24, Weight = new FontWeight(700) },
+                    new TextBlockElement("Task Tracker") { FontSize = 24, Weight = new FontWeight(700) },
 
                     HStack(4,
                         // A11Y_001: Icon-only buttons without AutomationName (x3)
@@ -70,7 +70,7 @@ public class A11yShowcaseScannerTest
                 Border(
                     HStack(12,
                         CheckBox(false, null),
-                        new TextElement("Set up CI pipeline") { Weight = new FontWeight(600) },
+                        new TextBlockElement("Set up CI pipeline") { Weight = new FontWeight(600) },
                         HStack(4,
                             // A11Y_002: Decorative image not hidden
                             Image("ms-appx:///Assets/Important.png").Size(14, 14),
@@ -84,7 +84,7 @@ public class A11yShowcaseScannerTest
 
             // Footer
             HStack(12,
-                Factories.Text("Quick note:"),
+                TextBlock("Quick note:"),
                 // A11Y_003: TextField with mistyped LabeledBy → A11Y_008
                 TextField("", null).LabeledBy("FooterNoteLabel_TYPO")
             )

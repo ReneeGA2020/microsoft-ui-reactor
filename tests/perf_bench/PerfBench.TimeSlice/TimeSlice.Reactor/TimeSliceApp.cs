@@ -93,13 +93,13 @@ public class TimeSliceApp : Component
         {
             for (int i = 0; i < ItemCount; i++)
             {
-                children.Add(Factories.Text($"Item {i}: mounted").FontSize(10));
+                children.Add(TextBlock($"Item {i}: mounted").FontSize(10));
             }
         }
 
         // HUD
         if (!Opts.Headless)
-            children.Add(Factories.Text(hudText).Foreground("Yellow").FontSize(14));
+            children.Add(TextBlock(hudText).Foreground("Yellow").FontSize(14));
 
         return ScrollView(VStack(children.ToArray()));
     }

@@ -20,24 +20,24 @@ public class ColorPageSample : GallerySample
 
     public override string SourceCode => """
         // Reference built-in semantic tokens:
-        Factories.Text("Hello").Foreground(Theme.PrimaryText)
+        TextBlock("Hello").Foreground(Theme.PrimaryText)
         Button("Go").Background(Theme.Accent)
         VStack(children).Background(Theme.CardBackground)
 
         // Reference any WinUI resource by key:
-        Factories.Text("Custom").Foreground(Theme.Ref("SystemFillColorSuccessBrush"))
+        TextBlock("Custom").Foreground(Theme.Ref("SystemFillColorSuccessBrush"))
         """;
 
     public override Element Render()
     {
         return VStack(16,
-            Factories.Text("The brushes below are part of WinUI 3. Reference them in Reactor via the Theme API:")
+            TextBlock("The brushes below are part of WinUI 3. Reference them in Reactor via the Theme API:")
                 .Foreground(Theme.SecondaryText),
 
             HStack(8,
-                Factories.Text("Factories.Text(\"Hello\").Foreground(").Foreground(Theme.SecondaryText),
-                Factories.Text("Theme.PrimaryText").Foreground(Theme.AccentText).SemiBold(),
-                Factories.Text(")").Foreground(Theme.SecondaryText)
+                TextBlock("TextBlock(\"Hello\").Foreground(").Foreground(Theme.SecondaryText),
+                TextBlock("Theme.PrimaryText").Foreground(Theme.AccentText).SemiBold(),
+                TextBlock(")").Foreground(Theme.SecondaryText)
             ),
 
             // ── Text brushes ────────────────────────────────────────
@@ -66,7 +66,7 @@ public class ColorPageSample : GallerySample
     // ── Section header ──────────────────────────────────────────────
 
     private static Element SectionHeader(string title) =>
-        (Factories.Text(title) with { FontSize = 18 })
+        (TextBlock(title) with { FontSize = 18 })
             .SemiBold()
             .Foreground(Theme.PrimaryText)
             .Margin(0, 12, 0, 4);
@@ -103,10 +103,10 @@ public class ColorPageSample : GallerySample
         return HStack(8,
             swatch.VAlign(VerticalAlignment.Center),
             VStack(0,
-                (Factories.Text(info.TokenName) with { FontSize = 12 })
+                (TextBlock(info.TokenName) with { FontSize = 12 })
                     .SemiBold()
                     .Foreground(Theme.PrimaryText),
-                (Factories.Text(info.ResourceKey) with { FontSize = 11 })
+                (TextBlock(info.ResourceKey) with { FontSize = 11 })
                     .Foreground(Theme.TertiaryText)
             ).VAlign(VerticalAlignment.Center)
         ).Width(300);

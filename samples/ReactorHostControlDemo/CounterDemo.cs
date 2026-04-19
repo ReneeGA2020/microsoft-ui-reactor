@@ -29,9 +29,9 @@ public class CounterDemo : Component
         }, auto, step);
 
         return VStack(12,
-            Factories.Text("Counter").FontSize(20).Bold().Margin(16, 16, 16, 0),
+            TextBlock("Counter").FontSize(20).Bold().Margin(16, 16, 16, 0),
 
-            Factories.Text($"{count}")
+            TextBlock($"{count}")
                 .FontSize(48).Bold()
                 .HAlign(HorizontalAlignment.Center)
                 .Margin(0, 8),
@@ -45,7 +45,7 @@ public class CounterDemo : Component
             Slider(step, min: 1, max: 10, onChanged: v => setStep(v))
                 .Margin(16, 8),
 
-            Factories.Text($"Step size: {(int)step}").HAlign(HorizontalAlignment.Center),
+            TextBlock($"Step size: {(int)step}").HAlign(HorizontalAlignment.Center),
 
             ToggleSwitch(auto, onChanged: setAuto,
                 onContent: "Auto ON", offContent: "Auto OFF",

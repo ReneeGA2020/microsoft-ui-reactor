@@ -32,7 +32,7 @@ class BasicCommandExample : Component
                 .Width(400),
             HStack(8,
                 Button(saveCmd),
-                When(saved, () => Text("Saved!").Foreground(Theme.SystemSuccess))
+                When(saved, () => TextBlock("Saved!").Foreground(Theme.SystemSuccess))
             )
         ).Padding(24);
     }
@@ -58,7 +58,7 @@ class StandardCommandsExample : Component
                 primaryCommands: new[] { AppBarButton(cut), AppBarButton(copy),
                     AppBarButton(paste), AppBarButton(undo) }
             ),
-            Text($"Actions: {string.Join(", ", log)}").Padding(12)
+            TextBlock($"Actions: {string.Join(", ", log)}").Padding(12)
         ).Padding(24);
     }
 }
@@ -86,7 +86,7 @@ class AsyncCommandExample : Component
         return VStack(12,
             HStack(8,
                 Button(saveCmd),
-                Text(status).Foreground(Theme.SecondaryText)
+                TextBlock(status).Foreground(Theme.SecondaryText)
             ),
             When(saveCmd.IsExecuting, () =>
                 ProgressRing().Width(20).Height(20))
@@ -137,7 +137,7 @@ class MenuBarExample : Component
                 Menu("File", MenuItem(save), MenuItem(close)),
                 Menu("Edit", MenuItem(undo), MenuItem(redo))
             ),
-            Text(text).Padding(16)
+            TextBlock(text).Padding(16)
         );
     }
 }

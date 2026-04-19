@@ -80,10 +80,10 @@ internal static class TransitionTests
             {
                 return VStack(
                     showElement
-                        ? Border(Factories.Text("Transitioned"))
+                        ? Border(TextBlock("Transitioned"))
                             .Transition(Animation.Transition.Fade)
                             .AutomationId("transition-target")
-                        : (Element)Factories.Text("Hidden")
+                        : (Element)TextBlock("Hidden")
                 );
             });
 

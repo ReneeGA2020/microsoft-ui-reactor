@@ -28,14 +28,14 @@ internal static class NavigationFixtures
                     tab switch
                     {
                         "Home" => VStack(
-                            Factories.Text("Welcome Home").AutomationId("HomeTitle"),
-                            Factories.Text("This is the home page.").AutomationId("HomeContent")),
+                            TextBlock("Welcome Home").AutomationId("HomeTitle"),
+                            TextBlock("This is the home page.").AutomationId("HomeContent")),
                         "Settings" => VStack(
-                            Factories.Text("Settings Page").AutomationId("SettingsTitle"),
-                            Factories.Text("Configure your preferences.").AutomationId("SettingsContent")),
+                            TextBlock("Settings Page").AutomationId("SettingsTitle"),
+                            TextBlock("Configure your preferences.").AutomationId("SettingsContent")),
                         "About" => VStack(
-                            Factories.Text("About Page").AutomationId("AboutTitle"),
-                            Factories.Text("Version 1.0").AutomationId("AboutVersion")),
+                            TextBlock("About Page").AutomationId("AboutTitle"),
+                            TextBlock("Version 1.0").AutomationId("AboutVersion")),
                         _ => Empty()
                     }
                 ).Padding(16).AutomationId("TabContent")
@@ -65,29 +65,29 @@ internal static class NavigationFixtures
                     Button("Back", () => nav.GoBack())
                         .Disabled(!nav.CanGoBack)
                         .AutomationId("BackBtn"),
-                    Factories.Text($"Depth: {nav.Depth}").AutomationId("NavDepth")
+                    TextBlock($"Depth: {nav.Depth}").AutomationId("NavDepth")
                 ),
                 NavigationHost(nav, route => route switch
                 {
                     NavHome => VStack(
-                        Factories.Text("Home").AutomationId("PageTitle"),
+                        TextBlock("Home").AutomationId("PageTitle"),
                         Button("Go to List", () => nav.Navigate(new NavList()))
                             .AutomationId("GoListBtn")),
                     NavList => VStack(
-                        Factories.Text("Item List").AutomationId("PageTitle"),
+                        TextBlock("Item List").AutomationId("PageTitle"),
                         Button("View Detail #1", () => nav.Navigate(new NavDetail(1)))
                             .AutomationId("GoDetail1Btn"),
                         Button("View Detail #2", () => nav.Navigate(new NavDetail(2)))
                             .AutomationId("GoDetail2Btn")),
                     NavDetail d => VStack(
-                        Factories.Text($"Detail #{d.Id}").AutomationId("PageTitle"),
+                        TextBlock($"Detail #{d.Id}").AutomationId("PageTitle"),
                         Button("Related Items", () => nav.Navigate(new NavRelated(d.Id)))
                             .AutomationId("GoRelatedBtn")),
                     NavRelated r => VStack(
-                        Factories.Text($"Related to #{r.SourceId}").AutomationId("PageTitle"),
+                        TextBlock($"Related to #{r.SourceId}").AutomationId("PageTitle"),
                         Button("Back to Home", () => nav.Reset(new NavHome()))
                             .AutomationId("ResetBtn")),
-                    _ => Factories.Text("Unknown")
+                    _ => TextBlock("Unknown")
                 }) with { Transition = NavigationTransition.None }
             );
         }
@@ -110,13 +110,13 @@ internal static class NavigationFixtures
                         .AutomationId("GoABtn"),
                     Button("Go to B", () => nav.Navigate("page-b"))
                         .AutomationId("GoBBtn"),
-                    Factories.Text($"Current: {nav.CurrentRoute}").AutomationId("CurrentRoute")
+                    TextBlock($"Current: {nav.CurrentRoute}").AutomationId("CurrentRoute")
                 ),
                 NavigationHost(nav, route => route switch
                 {
                     "page-a" => Component<PageA>(),
                     "page-b" => Component<PageB>(),
-                    _ => Factories.Text("Unknown")
+                    _ => TextBlock("Unknown")
                 }) with { Transition = NavigationTransition.None }
             );
         }
@@ -127,8 +127,8 @@ internal static class NavigationFixtures
         public override Element Render()
         {
             return VStack(
-                Factories.Text("Page A").AutomationId("PageTitle"),
-                Factories.Text("No guard on this page.").AutomationId("GuardStatus")
+                TextBlock("Page A").AutomationId("PageTitle"),
+                TextBlock("No guard on this page.").AutomationId("GuardStatus")
             );
         }
     }
@@ -146,8 +146,8 @@ internal static class NavigationFixtures
                 });
 
             return VStack(
-                Factories.Text("Page B").AutomationId("PageTitle"),
-                Factories.Text(dirty ? "Guard: ACTIVE" : "Guard: inactive").AutomationId("GuardStatus"),
+                TextBlock("Page B").AutomationId("PageTitle"),
+                TextBlock(dirty ? "Guard: ACTIVE" : "Guard: inactive").AutomationId("GuardStatus"),
                 Button("Toggle Guard", () => setDirty(!dirty)).AutomationId("ToggleGuardBtn")
             );
         }
@@ -177,10 +177,10 @@ internal static class NavigationFixtures
                 ],
                 NavigationHost(nav, route => route switch
                 {
-                    ViewHome => Factories.Text("Home Content").AutomationId("PageContent"),
-                    ViewSettings => Factories.Text("Settings Content").AutomationId("PageContent"),
-                    ViewAbout => Factories.Text("About Content").AutomationId("PageContent"),
-                    _ => Factories.Text("Unknown")
+                    ViewHome => TextBlock("Home Content").AutomationId("PageContent"),
+                    ViewSettings => TextBlock("Settings Content").AutomationId("PageContent"),
+                    ViewAbout => TextBlock("About Content").AutomationId("PageContent"),
+                    _ => TextBlock("Unknown")
                 }) with { Transition = NavigationTransition.None }
             ).WithNavigation(nav,
                 route => route switch

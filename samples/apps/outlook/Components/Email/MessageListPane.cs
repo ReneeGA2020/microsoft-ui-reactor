@@ -43,7 +43,7 @@ internal sealed class MessageListPane : Component<MessageListPaneProps>
             // Sort indicator
             (FlexRow(
                 MdlIcon("\uE8CB", 12),
-                Factories.Text("By Date").FontSize(12).Foreground(TertiaryText)
+                TextBlock("By Date").FontSize(12).Foreground(TertiaryText)
             ) with { ColumnGap = 5 }).Padding(16, 4, 16, 6),
 
             // Separator
@@ -57,7 +57,7 @@ internal sealed class MessageListPane : Component<MessageListPaneProps>
                 {
                     DateHeaderItem dh => (FlexRow(
                         MdlIcon("\uE76C", 10).AccessibilityHidden(),
-                        Factories.Text(dh.Label).FontSize(13).SemiBold().Foreground(SecondaryText)
+                        TextBlock(dh.Label).FontSize(13).SemiBold().Foreground(SecondaryText)
                     ) with { ColumnGap = 5 })
                         .HeadingLevel(Microsoft.UI.Xaml.Automation.Peers.AutomationHeadingLevel.Level3)
                         .Padding(16, 12, 16, 4),
@@ -75,7 +75,7 @@ internal sealed class MessageListPane : Component<MessageListPaneProps>
     }
 
     static Element MdlIcon(string glyph, double size) =>
-        Factories.Text(glyph).FontSize(size).Foreground(TertiaryText)
+        TextBlock(glyph).FontSize(size).Foreground(TertiaryText)
             .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets"));
 
     static IReadOnlyList<MessageListItem> BuildFlatList(EmailMessage[] messages)

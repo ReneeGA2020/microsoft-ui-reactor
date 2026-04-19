@@ -26,26 +26,26 @@ Button(""Save"").ToolTip(""Save document (Ctrl+S)"")"),
 
                 SampleCard("ToolTip on Various Controls",
                     HStack(16,
-                        Factories.Text("Hover this text").Foreground(Theme.AccentText)
+                        TextBlock("Hover this text").Foreground(Theme.AccentText)
                             .ToolTip("Text elements can have tooltips too"),
                         CheckBox(false, label: "Enable").ToolTip("Enable the feature"),
                         ToggleSwitch(false).ToolTip("Toggle dark mode")
                     ),
-                    @"Factories.Text(""Hover this text"").ToolTip(""Text tooltip"")
+                    @"TextBlock(""Hover this text"").ToolTip(""Text tooltip"")
 CheckBox(false, label: ""Enable"").ToolTip(""Enable feature"")
 ToggleSwitch(false).ToolTip(""Toggle dark mode"")"),
 
                 SampleCard("Rich ToolTip",
                     Button("Rich Tooltip").WithToolTip(
                         VStack(4,
-                            Factories.Text("Detailed Info").Bold(),
-                            Factories.Text("This tooltip contains multiple lines of content.")
+                            TextBlock("Detailed Info").Bold(),
+                            TextBlock("This tooltip contains multiple lines of content.")
                                 .Foreground(Theme.SecondaryText).FontSize(12)
                         ).Padding(4)),
                     @"Button(""Rich Tooltip"").WithToolTip(
     VStack(4,
-        Factories.Text(""Title"").Bold(),
-        Factories.Text(""Description"").FontSize(12)))")
+        TextBlock(""Title"").Bold(),
+        TextBlock(""Description"").FontSize(12)))")
             ).Margin(36, 24, 36, 36)
         );
     }

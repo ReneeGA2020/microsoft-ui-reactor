@@ -51,10 +51,10 @@ class DevToolingApp : Component
 
         return VStack(16,
             Heading("Preview Mode Demo"),
-            Text(message).FontSize(16),
+            TextBlock(message).FontSize(16),
             HStack(8,
                 Button("Click me", () => setCount(count + 1)),
-                Text($"Clicked {count} times").SemiBold()
+                TextBlock($"Clicked {count} times").SemiBold()
             ),
             TextField(message, setMessage, placeholder: "Type something")
                 .Width(300)
@@ -79,7 +79,7 @@ For quick experiments, skip the class entirely. Pass a lambda to
 // {
 //     var (n, setN) = ctx.UseState(0);
 //     return VStack(12,
-//         Text($"Count: {n}").FontSize(20),
+//         TextBlock($"Count: {n}").FontSize(20),
 //         Button("+1", () => setN(n + 1))
 //     ).Padding(24);
 // }, width: 400, height: 300);
@@ -110,7 +110,7 @@ class IterationDemo : Component
 
         return VStack(12,
             Heading("Iteration Cycle Demo"),
-            Text("Add items, then edit this code and save to see hot reload."),
+            TextBlock("Add items, then edit this code and save to see hot reload."),
             HStack(8,
                 TextField(input, setInput, placeholder: "New item")
                     .Width(200),
@@ -127,7 +127,7 @@ class IterationDemo : Component
                     }
                 })
             ),
-            ForEach(items, item => Text($"  - {item}"))
+            ForEach(items, item => TextBlock($"  - {item}"))
         ).Padding(24);
     }
 }

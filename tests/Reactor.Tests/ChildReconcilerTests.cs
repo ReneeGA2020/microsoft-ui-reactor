@@ -94,14 +94,14 @@ public class ChildReconcilerTests
     [Fact]
     public void WithKey_Preserves_Key_On_Elements()
     {
-        var el = new TextElement("hello") { Key = "item-1" };
+        var el = new TextBlockElement("hello") { Key = "item-1" };
         Assert.Equal("item-1", el.Key);
     }
 
     [Fact]
     public void Key_Null_By_Default()
     {
-        var el = new TextElement("hello");
+        var el = new TextBlockElement("hello");
         Assert.Null(el.Key);
     }
 
@@ -114,8 +114,8 @@ public class ChildReconcilerTests
     {
         // Different keys mean different logical items — should not be updateable
         var reconciler = new Reconciler();
-        var a = new TextElement("a") { Key = "1" };
-        var b = new TextElement("b") { Key = "2" };
+        var a = new TextBlockElement("a") { Key = "1" };
+        var b = new TextBlockElement("b") { Key = "2" };
         Assert.False(reconciler.CanUpdate(a, b));
     }
 
@@ -124,26 +124,26 @@ public class ChildReconcilerTests
     // ════════════════════════════════════════════════════════════════
 
     [Fact]
-    public void Identical_TextElements_Are_Equal()
+    public void Identical_TextBlockElements_Are_Equal()
     {
-        var a = new TextElement("hello");
-        var b = new TextElement("hello");
+        var a = new TextBlockElement("hello");
+        var b = new TextBlockElement("hello");
         Assert.Equal(a, b);
     }
 
     [Fact]
-    public void Different_TextElements_Are_Not_Equal()
+    public void Different_TextBlockElements_Are_Not_Equal()
     {
-        var a = new TextElement("hello");
-        var b = new TextElement("world");
+        var a = new TextBlockElement("hello");
+        var b = new TextBlockElement("world");
         Assert.NotEqual(a, b);
     }
 
     [Fact]
-    public void TextElement_With_Same_Properties_Are_Equal()
+    public void TextBlockElement_With_Same_Properties_Are_Equal()
     {
-        var a = new TextElement("hello") { FontSize = 16 };
-        var b = new TextElement("hello") { FontSize = 16 };
+        var a = new TextBlockElement("hello") { FontSize = 16 };
+        var b = new TextBlockElement("hello") { FontSize = 16 };
         Assert.Equal(a, b);
     }
 
@@ -159,7 +159,7 @@ public class ChildReconcilerTests
     [Fact]
     public void StackElement_With_Same_Children_Are_Equal()
     {
-        var children = new Element[] { new TextElement("A"), new TextElement("B") };
+        var children = new Element[] { new TextBlockElement("A"), new TextBlockElement("B") };
         var a = new StackElement(Microsoft.UI.Xaml.Controls.Orientation.Vertical, children);
         var b = new StackElement(Microsoft.UI.Xaml.Controls.Orientation.Vertical, children);
         Assert.Equal(a, b);

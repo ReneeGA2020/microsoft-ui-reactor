@@ -120,7 +120,7 @@ class CmdPerfApp : Component
             CommandBar(primaryCommands: toolbarItems),
 
             // Control panel
-            Factories.Text("Enable Flags").Bold().Margin(12, 8, 12, 4),
+            TextBlock("Enable Flags").Bold().Margin(12, 8, 12, 4),
             HStack(4, flagCheckboxes).Margin(12, 0),
 
             // Auto toggle button
@@ -154,13 +154,13 @@ class CmdPerfApp : Component
             ),
 
             // Status bar
-            Factories.Text($"Commands: {CommandSet.All.Length} | Enabled: {enabledCount} | " +
+            TextBlock($"Commands: {CommandSet.All.Length} | Enabled: {enabledCount} | " +
                  $"Last Toggle: {perf.LastToggleMs:F2} ms | Mount: {perf.MountTimeMs:F2} ms | " +
                  $"Memory: {memMB:F1} MB")
                 .FontSize(12).Margin(12, 4),
 
             // Last executed command
-            Factories.Text($"Last command: {lastCmd}").Margin(12, 4)
+            TextBlock($"Last command: {lastCmd}").Margin(12, 4)
         );
     }
 

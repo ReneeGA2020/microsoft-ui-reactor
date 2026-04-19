@@ -32,17 +32,17 @@ internal static class FlexLayoutFixtures
             host.Mount(ctx =>
                 FlexColumn(
                     FlexRow(
-                        Factories.Text("Logo").Flex(basis: 0, grow: 1).Background("LightCoral"),
-                        Factories.Text("Nav").Flex(basis: 0, grow: 2).Background("LightBlue")
+                        TextBlock("Logo").Flex(basis: 0, grow: 1).Background("LightCoral"),
+                        TextBlock("Nav").Flex(basis: 0, grow: 2).Background("LightBlue")
                     ).Height(50),
 
                     FlexRow(
-                        Factories.Text("Sidebar").Flex(basis: 0, grow: 1).Background("LightGreen"),
-                        Factories.Text("Content").Flex(basis: 0, grow: 3).Background("LightYellow")
+                        TextBlock("Sidebar").Flex(basis: 0, grow: 1).Background("LightGreen"),
+                        TextBlock("Content").Flex(basis: 0, grow: 3).Background("LightYellow")
                     ).Flex(grow: 1),
 
                     FlexRow(
-                        Factories.Text("Footer").Flex(grow: 1)
+                        TextBlock("Footer").Flex(grow: 1)
                     ).Height(40).Background("LightGray")
                 ).Width(600).Height(400)
             );
@@ -91,14 +91,14 @@ internal static class FlexLayoutFixtures
             host.Mount(ctx =>
                 FlexRow(
                     FlexColumn(
-                        Factories.Text("Menu A"),
-                        Factories.Text("Menu B"),
-                        Factories.Text("Menu C")
+                        TextBlock("Menu A"),
+                        TextBlock("Menu B"),
+                        TextBlock("Menu C")
                     ).Flex(basis: 0, grow: 1).Background("LightCoral"),
 
                     FlexColumn(
-                        Factories.Text("Title").Height(40),
-                        Factories.Text("Body text here").Flex(grow: 1)
+                        TextBlock("Title").Height(40),
+                        TextBlock("Body text here").Flex(grow: 1)
                     ).Flex(basis: 0, grow: 3).Background("LightBlue")
                 ).Width(600).Height(300)
             );
@@ -132,19 +132,19 @@ internal static class FlexLayoutFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexColumn(
-                    Factories.Text("L1-Header").Height(30),
+                    TextBlock("L1-Header").Height(30),
 
                     FlexRow(
-                        Factories.Text("L2-Left").Flex(basis: 0, grow: 1),
+                        TextBlock("L2-Left").Flex(basis: 0, grow: 1),
 
                         FlexColumn(
-                            Factories.Text("L3-Top"),
-                            Factories.Text("L3-Mid").Flex(grow: 1),
-                            Factories.Text("L3-Bot")
+                            TextBlock("L3-Top"),
+                            TextBlock("L3-Mid").Flex(grow: 1),
+                            TextBlock("L3-Bot")
                         ).Flex(basis: 0, grow: 2)
                     ).Flex(grow: 1),
 
-                    Factories.Text("L1-Footer").Height(30)
+                    TextBlock("L1-Footer").Height(30)
                 ).Width(600).Height(400)
             );
 
@@ -183,22 +183,22 @@ internal static class FlexLayoutFixtures
             host.Mount(ctx =>
                 Grid(["*", "2*"], ["*", "*"],
                     FlexRow(
-                        Factories.Text("A1").Flex(grow: 1).Background("LightCoral"),
-                        Factories.Text("A2").Flex(grow: 1).Background("LightBlue")
+                        TextBlock("A1").Flex(grow: 1).Background("LightCoral"),
+                        TextBlock("A2").Flex(grow: 1).Background("LightBlue")
                     ).Grid(row: 0, column: 0),
 
                     FlexColumn(
-                        Factories.Text("B1").Flex(grow: 1).Background("LightGreen"),
-                        Factories.Text("B2").Flex(grow: 2).Background("LightYellow")
+                        TextBlock("B1").Flex(grow: 1).Background("LightGreen"),
+                        TextBlock("B2").Flex(grow: 2).Background("LightYellow")
                     ).Grid(row: 0, column: 1),
 
                     FlexRow(
-                        Factories.Text("C1").Flex(grow: 1).Background("Wheat")
+                        TextBlock("C1").Flex(grow: 1).Background("Wheat")
                     ).Grid(row: 1, column: 0),
 
                     FlexRow(
-                        Factories.Text("D1").Width(80).Background("Plum"),
-                        Factories.Text("D2").Flex(grow: 1).Background("PeachPuff")
+                        TextBlock("D1").Width(80).Background("Plum"),
+                        TextBlock("D2").Flex(grow: 1).Background("PeachPuff")
                     ).Grid(row: 1, column: 1)
                 ).Width(600).Height(400)
             );
@@ -250,12 +250,12 @@ internal static class FlexLayoutFixtures
                 VStack(8,
                     Border(
                         FlexRow(
-                            Factories.Text("Left").Flex(grow: 1).Background("LightCoral"),
-                            Factories.Text("Right").Flex(grow: 1).Background("LightBlue")
+                            TextBlock("Left").Flex(grow: 1).Background("LightCoral"),
+                            TextBlock("Right").Flex(grow: 1).Background("LightBlue")
                         )
                     ).Width(600).Background("LightGray"),
 
-                    Factories.Text("Reference line")
+                    TextBlock("Reference line")
                 ).Width(600).Height(400)
             );
 
@@ -287,20 +287,20 @@ internal static class FlexLayoutFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
                 VStack(4,
-                    Factories.Text("Before"),
+                    TextBlock("Before"),
 
                     FlexRow(
-                        Factories.Text("Row1-A").Flex(basis: 0, grow: 1).Background("LightCoral"),
-                        Factories.Text("Row1-B").Flex(basis: 0, grow: 2).Background("LightBlue"),
-                        Factories.Text("Row1-C").Flex(basis: 0, grow: 1).Background("LightGreen")
+                        TextBlock("Row1-A").Flex(basis: 0, grow: 1).Background("LightCoral"),
+                        TextBlock("Row1-B").Flex(basis: 0, grow: 2).Background("LightBlue"),
+                        TextBlock("Row1-C").Flex(basis: 0, grow: 1).Background("LightGreen")
                     ),
 
                     FlexRow(
-                        Factories.Text("Row2-A").Flex(basis: 0, grow: 1).Background("Wheat"),
-                        Factories.Text("Row2-B").Flex(basis: 0, grow: 1).Background("Plum")
+                        TextBlock("Row2-A").Flex(basis: 0, grow: 1).Background("Wheat"),
+                        TextBlock("Row2-B").Flex(basis: 0, grow: 1).Background("Plum")
                     ),
 
-                    Factories.Text("After")
+                    TextBlock("After")
                 ).Width(600).Height(400)
             );
 
@@ -339,11 +339,11 @@ internal static class FlexLayoutFixtures
             host.Mount(ctx =>
                 ScrollView(
                     FlexColumn(
-                        Factories.Text("Item 1").Height(60).Background("LightCoral"),
-                        Factories.Text("Item 2").Height(60).Background("LightBlue"),
-                        Factories.Text("Item 3").Height(60).Background("LightGreen"),
-                        Factories.Text("Item 4").Height(60).Background("Wheat"),
-                        Factories.Text("Item 5").Height(60).Background("Plum")
+                        TextBlock("Item 1").Height(60).Background("LightCoral"),
+                        TextBlock("Item 2").Height(60).Background("LightBlue"),
+                        TextBlock("Item 3").Height(60).Background("LightGreen"),
+                        TextBlock("Item 4").Height(60).Background("Wheat"),
+                        TextBlock("Item 5").Height(60).Background("Plum")
                     ).Width(400)
                 ).Width(400).Height(200)
             );
@@ -375,19 +375,19 @@ internal static class FlexLayoutFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexColumn(
-                    Factories.Text("Header").Height(50).Flex(shrink: 0).Background("LightCoral"),
+                    TextBlock("Header").Height(50).Flex(shrink: 0).Background("LightCoral"),
 
                     ScrollView(
                         VStack(0,
-                            Factories.Text("Scroll Item 1").Height(80),
-                            Factories.Text("Scroll Item 2").Height(80),
-                            Factories.Text("Scroll Item 3").Height(80),
-                            Factories.Text("Scroll Item 4").Height(80),
-                            Factories.Text("Scroll Item 5").Height(80)
+                            TextBlock("Scroll Item 1").Height(80),
+                            TextBlock("Scroll Item 2").Height(80),
+                            TextBlock("Scroll Item 3").Height(80),
+                            TextBlock("Scroll Item 4").Height(80),
+                            TextBlock("Scroll Item 5").Height(80)
                         )
                     ).Flex(grow: 1),
 
-                    Factories.Text("Footer").Height(50).Flex(shrink: 0).Background("LightBlue")
+                    TextBlock("Footer").Height(50).Flex(shrink: 0).Background("LightBlue")
                 ).Width(400).Height(400)
             );
 
@@ -419,9 +419,9 @@ internal static class FlexLayoutFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexColumn(
-                    Factories.Text("Top").Flex(basis: 0, grow: 1).Background("LightCoral"),
-                    Factories.Text("Middle").Flex(basis: 0, grow: 2).Background("LightGreen"),
-                    Factories.Text("Bottom").Flex(basis: 0, grow: 1).Background("LightBlue")
+                    TextBlock("Top").Flex(basis: 0, grow: 1).Background("LightCoral"),
+                    TextBlock("Middle").Flex(basis: 0, grow: 2).Background("LightGreen"),
+                    TextBlock("Bottom").Flex(basis: 0, grow: 1).Background("LightBlue")
                 ).Width(400).Height(400)
             );
 
@@ -459,9 +459,9 @@ internal static class FlexLayoutFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexRow(
-                    Factories.Text("Fixed1").Width(100).Background("LightCoral"),
-                    Factories.Text("Grow").Flex(grow: 1).Background("LightGreen"),
-                    Factories.Text("Fixed2").Width(100).Background("LightBlue")
+                    TextBlock("Fixed1").Width(100).Background("LightCoral"),
+                    TextBlock("Grow").Flex(grow: 1).Background("LightGreen"),
+                    TextBlock("Fixed2").Width(100).Background("LightBlue")
                 ).Width(600).Height(60)
             );
 
@@ -495,9 +495,9 @@ internal static class FlexLayoutFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
                 new FlexElement([
-                    Factories.Text("A").Flex(basis: 0, grow: 1).Background("LightCoral"),
-                    Factories.Text("B").Flex(basis: 0, grow: 1).Background("LightGreen"),
-                    Factories.Text("C").Flex(basis: 0, grow: 1).Background("LightBlue")
+                    TextBlock("A").Flex(basis: 0, grow: 1).Background("LightCoral"),
+                    TextBlock("B").Flex(basis: 0, grow: 1).Background("LightGreen"),
+                    TextBlock("C").Flex(basis: 0, grow: 1).Background("LightBlue")
                 ])
                 {
                     Direction = FlexDirection.Row,
@@ -541,8 +541,8 @@ internal static class FlexLayoutFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexRow(
-                    Factories.Text("Padded-A").Flex(basis: 0, grow: 1).Background("LightCoral"),
-                    Factories.Text("Padded-B").Flex(basis: 0, grow: 1).Background("LightBlue")
+                    TextBlock("Padded-A").Flex(basis: 0, grow: 1).Background("LightCoral"),
+                    TextBlock("Padded-B").Flex(basis: 0, grow: 1).Background("LightBlue")
                 ).FlexPadding(20).Width(600).Height(100)
             );
 
@@ -579,13 +579,13 @@ internal static class FlexLayoutFixtures
             host.Mount(ctx =>
                 VStack(8,
                     FlexRow(
-                        Factories.Text("Sidebar").Width(100).Background("LightCoral"),
-                        Factories.Text(longText).Flex(grow: 1).Background("LightBlue")
+                        TextBlock("Sidebar").Width(100).Background("LightCoral"),
+                        TextBlock(longText).Flex(grow: 1).Background("LightBlue")
                     ).Width(600).Background("LightGray"),
 
-                    Factories.Text(longText).Width(500).Background("LightGreen"),
+                    TextBlock(longText).Width(500).Background("LightGreen"),
 
-                    Factories.Text("Below-all-visible")
+                    TextBlock("Below-all-visible")
                 ).Width(600).Height(600)
             );
 
@@ -622,14 +622,14 @@ internal static class FlexLayoutFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexColumn(
-                    Factories.Text("Header").Height(50).Background("LightCoral"),
+                    TextBlock("Header").Height(50).Background("LightCoral"),
 
                     Grid(["*", "2*"], ["*"],
-                        Factories.Text("GridLeft").Grid(row: 0, column: 0).Background("LightGreen"),
-                        Factories.Text("GridRight").Grid(row: 0, column: 1).Background("LightBlue")
+                        TextBlock("GridLeft").Grid(row: 0, column: 0).Background("LightGreen"),
+                        TextBlock("GridRight").Grid(row: 0, column: 1).Background("LightBlue")
                     ).Flex(grow: 1),
 
-                    Factories.Text("Footer").Height(50).Background("Wheat")
+                    TextBlock("Footer").Height(50).Background("Wheat")
                 ).Width(600).Height(400)
             );
 
@@ -663,9 +663,9 @@ internal static class FlexLayoutFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexRow(
-                    Factories.Text("M1").Flex(basis: 0, grow: 1).Margin(10).Background("LightCoral"),
-                    Factories.Text("M2").Flex(basis: 0, grow: 1).Margin(10).Background("LightBlue"),
-                    Factories.Text("M3").Flex(basis: 0, grow: 1).Margin(10).Background("LightGreen")
+                    TextBlock("M1").Flex(basis: 0, grow: 1).Margin(10).Background("LightCoral"),
+                    TextBlock("M2").Flex(basis: 0, grow: 1).Margin(10).Background("LightBlue"),
+                    TextBlock("M3").Flex(basis: 0, grow: 1).Margin(10).Background("LightGreen")
                 ).Width(600).Height(80)
             );
 
@@ -698,9 +698,9 @@ internal static class FlexLayoutFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
                 new FlexElement([
-                    Factories.Text("J1").Width(100).Background("LightCoral"),
-                    Factories.Text("J2").Width(100).Background("LightGreen"),
-                    Factories.Text("J3").Width(100).Background("LightBlue"),
+                    TextBlock("J1").Width(100).Background("LightCoral"),
+                    TextBlock("J2").Width(100).Background("LightGreen"),
+                    TextBlock("J3").Width(100).Background("LightBlue"),
                 ])
                 {
                     Direction = FlexDirection.Row,
@@ -742,11 +742,11 @@ internal static class FlexLayoutFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
                 Grid(["200", "*"], ["*"],
-                    Factories.Text("Sidebar").Grid(row: 0, column: 0).Background("LightCoral"),
+                    TextBlock("Sidebar").Grid(row: 0, column: 0).Background("LightCoral"),
 
                     FlexRow(
-                        Factories.Text("Grow-A").Flex(basis: 0, grow: 1).Background("LightGreen"),
-                        Factories.Text("Grow-B").Flex(basis: 0, grow: 2).Background("LightBlue")
+                        TextBlock("Grow-A").Flex(basis: 0, grow: 1).Background("LightGreen"),
+                        TextBlock("Grow-B").Flex(basis: 0, grow: 2).Background("LightBlue")
                     ).Grid(row: 0, column: 1)
                 ).Width(600).Height(300)
             );
@@ -777,25 +777,25 @@ internal static class FlexLayoutFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexColumn(
-                    Factories.Text("L1-Top").Height(40),
+                    TextBlock("L1-Top").Height(40),
 
                     FlexRow(
-                        Factories.Text("L2-Left").Flex(basis: 0, grow: 1),
+                        TextBlock("L2-Left").Flex(basis: 0, grow: 1),
 
                         FlexColumn(
-                            Factories.Text("L3-Header").Height(30),
+                            TextBlock("L3-Header").Height(30),
 
                             FlexRow(
-                                Factories.Text("L4-A").Flex(basis: 0, grow: 1).Background("LightCoral"),
-                                Factories.Text("L4-B").Flex(basis: 0, grow: 1).Background("LightBlue"),
-                                Factories.Text("L4-C").Flex(basis: 0, grow: 1).Background("LightGreen")
+                                TextBlock("L4-A").Flex(basis: 0, grow: 1).Background("LightCoral"),
+                                TextBlock("L4-B").Flex(basis: 0, grow: 1).Background("LightBlue"),
+                                TextBlock("L4-C").Flex(basis: 0, grow: 1).Background("LightGreen")
                             ).Flex(grow: 1),
 
-                            Factories.Text("L3-Footer").Height(30)
+                            TextBlock("L3-Footer").Height(30)
                         ).Flex(basis: 0, grow: 2)
                     ).Flex(grow: 1),
 
-                    Factories.Text("L1-Bottom").Height(40)
+                    TextBlock("L1-Bottom").Height(40)
                 ).Width(600).Height(400)
             );
 
@@ -839,13 +839,13 @@ internal static class FlexLayoutFixtures
             host.Mount(ctx =>
                 Grid(["*", "2*"], ["Auto", "*"],
                     FlexRow(
-                        Factories.Text("Label").Width(80).Background("LightCoral"),
-                        Factories.Text(longText).Flex(grow: 1).Background("LightBlue")
+                        TextBlock("Label").Width(80).Background("LightCoral"),
+                        TextBlock(longText).Flex(grow: 1).Background("LightBlue")
                     ).Grid(row: 0, column: 0, columnSpan: 2),
 
                     FlexRow(
-                        Factories.Text("Body-A").Flex(basis: 0, grow: 1).Background("LightGreen"),
-                        Factories.Text("Body-B").Flex(basis: 0, grow: 1).Background("Wheat")
+                        TextBlock("Body-A").Flex(basis: 0, grow: 1).Background("LightGreen"),
+                        TextBlock("Body-B").Flex(basis: 0, grow: 1).Background("Wheat")
                     ).Grid(row: 1, column: 0, columnSpan: 2)
                 ).Width(600).Height(400)
             );
@@ -878,20 +878,20 @@ internal static class FlexLayoutFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
                 Grid(["*"], ["60", "*", "60"],
-                    Factories.Text("Header").Grid(row: 0, column: 0).Background("LightCoral"),
+                    TextBlock("Header").Grid(row: 0, column: 0).Background("LightCoral"),
 
                     ScrollView(
                         FlexColumn(
-                            Factories.Text("Item-1").Height(50).Background("LightBlue"),
-                            Factories.Text("Item-2").Height(50).Background("LightGreen"),
-                            Factories.Text("Item-3").Height(50).Background("Wheat"),
-                            Factories.Text("Item-4").Height(50).Background("Plum"),
-                            Factories.Text("Item-5").Height(50).Background("LightCoral"),
-                            Factories.Text("Item-6").Height(50).Background("PeachPuff")
+                            TextBlock("Item-1").Height(50).Background("LightBlue"),
+                            TextBlock("Item-2").Height(50).Background("LightGreen"),
+                            TextBlock("Item-3").Height(50).Background("Wheat"),
+                            TextBlock("Item-4").Height(50).Background("Plum"),
+                            TextBlock("Item-5").Height(50).Background("LightCoral"),
+                            TextBlock("Item-6").Height(50).Background("PeachPuff")
                         ).Width(400)
                     ).Grid(row: 1, column: 0),
 
-                    Factories.Text("Footer").Grid(row: 2, column: 0).Background("LightGray")
+                    TextBlock("Footer").Grid(row: 2, column: 0).Background("LightGray")
                 ).Width(400).Height(300)
             );
 
@@ -936,8 +936,8 @@ internal static class FlexLayoutFixtures
 
                 return Wrapit(
                     FlexColumn(
-                        Factories.Text($"blue: {cur}").Background("LightCoral"),
-                        Factories.Text("red").Background("LightBlue").Flex(grow: 1)
+                        TextBlock($"blue: {cur}").Background("LightCoral"),
+                        TextBlock("red").Background("LightBlue").Flex(grow: 1)
                     ).Height(400).Width(400),
                     cur
                 );

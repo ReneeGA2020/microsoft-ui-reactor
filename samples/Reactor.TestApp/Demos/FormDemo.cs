@@ -25,10 +25,10 @@ class FormDemo : Component
         {
             return VStack(12,
                 Heading("Form Submitted!"),
-                Factories.Text($"Name: {name}"),
-                Factories.Text($"Email: {email}"),
-                Factories.Text($"Dark mode: {(darkMode ? "Yes" : "No")}"),
-                Factories.Text($"Font size: {fontSize:F0}px"),
+                TextBlock($"Name: {name}"),
+                TextBlock($"Email: {email}"),
+                TextBlock($"Dark mode: {(darkMode ? "Yes" : "No")}"),
+                TextBlock($"Font size: {fontSize:F0}px"),
                 Button("Back", () => setSubmitted(false))
             );
         }
@@ -41,27 +41,27 @@ class FormDemo : Component
             Heading("Registration Form"),
 
             VStack(8,
-                Factories.Text("Name"),
+                TextBlock("Name"),
                 TextField(name, setName, placeholder: "Enter your name").Width(300)
             ),
 
             VStack(8,
-                Factories.Text("Email"),
+                TextBlock("Email"),
                 TextField(email, setEmail, placeholder: "you@example.com").Width(300)
             ),
 
             ToggleSwitch(darkMode, setDarkMode, onContent: "Dark", offContent: "Light"),
 
             HStack(8,
-                Factories.Text("Font size:"),
+                TextBlock("Font size:"),
                 Slider(fontSize, 10, 30, setFontSize).Width(200),
-                Factories.Text($"{fontSize:F0}px")
+                TextBlock($"{fontSize:F0}px")
             ),
 
             CheckBox(agreeToTerms, setAgree, label: "I agree to the terms"),
 
             When(!isValid, () =>
-                Factories.Text("Please fill all fields and agree to terms").Foreground(TertiaryText)),
+                TextBlock("Please fill all fields and agree to terms").Foreground(TertiaryText)),
 
             Button("Submit", () => setSubmitted(true)).Disabled(!isValid)
         );

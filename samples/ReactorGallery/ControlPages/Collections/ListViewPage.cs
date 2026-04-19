@@ -30,11 +30,11 @@ class ListViewPage : Component
 
                 SampleCard("Basic ListView",
                     ListView(
-                        items.Select(i => Factories.Text(i) as Element).ToArray()
+                        items.Select(i => TextBlock(i) as Element).ToArray()
                     ).SelectionMode(selectionMode).Height(250),
-                    @"ListView(\n    Factories.Text(""Apples""), Factories.Text(""Bananas""), ...\n).SelectionMode(ListViewSelectionMode.Multiple)",
+                    @"ListView(\n    TextBlock(""Apples""), TextBlock(""Bananas""), ...\n).SelectionMode(ListViewSelectionMode.Multiple)",
                     OptionPanel(
-                        Factories.Text("Selection Mode"),
+                        TextBlock("Selection Mode"),
                         ComboBox(modes, mode, setMode)
                     )),
 
@@ -43,12 +43,12 @@ class ListViewPage : Component
                         items.ToList().AsReadOnly(),
                         s => s,
                         (s, i) => HStack(8,
-                            Border(Factories.Text($"{i + 1}").Center().Foreground("#FFFFFF"))
+                            Border(TextBlock($"{i + 1}").Center().Foreground("#FFFFFF"))
                                 .Background(Theme.Accent).Size(28, 28).CornerRadius(14),
-                            Factories.Text(s)
+                            TextBlock(s)
                         )
                     ).Height(250),
-                    @"ListView(\n    items, s => s,\n    (s, i) => HStack(8,\n        Border(Factories.Text($""{i+1}"")).Size(28,28),\n        Factories.Text(s)\n    )\n)")
+                    @"ListView(\n    items, s => s,\n    (s, i) => HStack(8,\n        Border(TextBlock($""{i+1}"")).Size(28,28),\n        TextBlock(s)\n    )\n)")
             ).Margin(36, 24, 36, 36)
         );
     }

@@ -146,7 +146,7 @@ class PropertyGridDemo : Component
             Editor = (val, onChange) =>
             {
                 var c = (RgbColor)val;
-                return Factories.Text(c.ToString()).SemiBold();
+                return TextBlock(c.ToString()).SemiBold();
             },
             Decompose = val =>
             {
@@ -198,7 +198,7 @@ class PropertyGridDemo : Component
 
             // Item selector
             HStack(8,
-                Factories.Text("Select target:"),
+                TextBlock("Select target:"),
                 ComboBox(new[] { "Sprite", "Material", "Color" },
                     selectedItem switch { "Sprite" => 0, "Material" => 1, "Color" => 2, _ => 0 },
                     i => setSelectedItem(i switch { 0 => "Sprite", 1 => "Material", 2 => "Color", _ => "Sprite" }))
@@ -207,9 +207,9 @@ class PropertyGridDemo : Component
             // Description
             selectedItem switch
             {
-                "Sprite" => Factories.Text("Reflection-based: INPC model with Reactor attributes, categories, hidden/read-only props").Foreground(SecondaryText),
-                "Material" => Factories.Text("Reflection-based: INPC class with enum (ComboBox), bool (ToggleSwitch), double (NumberBox)").Foreground(SecondaryText),
-                "Color" => Factories.Text("Custom TypeMetadata: immutable record with Editor + Decompose + Compose, OnRootChanged").Foreground(SecondaryText),
+                "Sprite" => TextBlock("Reflection-based: INPC model with Reactor attributes, categories, hidden/read-only props").Foreground(SecondaryText),
+                "Material" => TextBlock("Reflection-based: INPC class with enum (ComboBox), bool (ToggleSwitch), double (NumberBox)").Foreground(SecondaryText),
+                "Color" => TextBlock("Custom TypeMetadata: immutable record with Editor + Decompose + Compose, OnRootChanged").Foreground(SecondaryText),
                 _ => Empty()
             },
 
@@ -221,18 +221,18 @@ class PropertyGridDemo : Component
             // Live readback
             Border(
                 VStack(4,
-                    Factories.Text("Live values (updated via INPC / OnRootChanged):").SemiBold(),
+                    TextBlock("Live values (updated via INPC / OnRootChanged):").SemiBold(),
                     selectedItem switch
                     {
-                        "Sprite" => Factories.Text($"Name={spriteRef.Current.Name}, Visible={spriteRef.Current.Visible}, " +
+                        "Sprite" => TextBlock($"Name={spriteRef.Current.Name}, Visible={spriteRef.Current.Visible}, " +
                                          $"X={spriteRef.Current.X:F1}, Y={spriteRef.Current.Y:F1}, " +
                                          $"Rotation={spriteRef.Current.Rotation:F1}, " +
                                          $"Bounds={spriteRef.Current.Bounds}"),
-                        "Material" => Factories.Text($"Material={materialRef.Current.MaterialName}, " +
+                        "Material" => TextBlock($"Material={materialRef.Current.MaterialName}, " +
                                            $"Blend={materialRef.Current.Blend}, " +
                                            $"Opacity={materialRef.Current.Opacity:F2}, " +
                                            $"Shadow={materialRef.Current.CastShadow}"),
-                        "Color" => Factories.Text($"Color = {color}"),
+                        "Color" => TextBlock($"Color = {color}"),
                         _ => Empty()
                     }
                 )

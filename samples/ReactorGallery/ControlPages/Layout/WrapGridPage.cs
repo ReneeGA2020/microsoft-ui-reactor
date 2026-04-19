@@ -23,14 +23,14 @@ class WrapGridPage : Component
                     WrapGrid(
                         Enumerable.Range(1, (int)count)
                             .Select(i =>
-                                Border(Factories.Text($"{i}").Center().Foreground("#FFFFFF"))
+                                Border(TextBlock($"{i}").Center().Foreground("#FFFFFF"))
                                     .Background(colors[(i - 1) % colors.Length])
                                     .Size(70, 70).CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft).Margin(4)
                             ).ToArray()
                     ),
-                    @"WrapGrid(\n    items.Select(i =>\n        Border(Factories.Text($""{i}"")).Size(70,70).Margin(4)\n    ).ToArray()\n)",
+                    @"WrapGrid(\n    items.Select(i =>\n        Border(TextBlock($""{i}"")).Size(70,70).Margin(4)\n    ).ToArray()\n)",
                     OptionPanel(
-                        Factories.Text($"Item count: {(int)count}"),
+                        TextBlock($"Item count: {(int)count}"),
                         Slider(count, 1, 24, setCount)
                     )),
 
@@ -38,11 +38,11 @@ class WrapGridPage : Component
                     WrapGrid(4,
                         Enumerable.Range(1, 12)
                             .Select(i =>
-                                Border(Factories.Text($"#{i}").Center().Foreground("#FFFFFF"))
+                                Border(TextBlock($"#{i}").Center().Foreground("#FFFFFF"))
                                     .Background("#5B6ABF").Size(80, 50).CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft).Margin(2)
                             ).ToArray()
                     ),
-                    @"WrapGrid(4,  // max 4 per row\n    items.Select(i => Border(Factories.Text($""#{i}"")).Size(80,50)).ToArray()\n)")
+                    @"WrapGrid(4,  // max 4 per row\n    items.Select(i => Border(TextBlock($""#{i}"")).Size(80,50)).ToArray()\n)")
             ).Margin(36, 24, 36, 36)
         );
     }

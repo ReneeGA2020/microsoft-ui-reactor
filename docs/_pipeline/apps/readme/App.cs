@@ -15,8 +15,8 @@ class HelloWorld : Component
     public override Element Render()
     {
         return VStack(12,
-            Text("Hello from Reactor!").FontSize(24).Bold(),
-            Text("No XAML. No data binding. Just C#.")
+            TextBlock("Hello from Reactor!").FontSize(24).Bold(),
+            TextBlock("No XAML. No data binding. Just C#.")
         ).Padding(24);
     }
 }
@@ -31,7 +31,7 @@ class QuickCounter : Component
 
         return HStack(8,
             Button("- 1", () => setCount(count - 1)),
-            Text($"{count}").FontSize(20).SemiBold().Width(40)
+            TextBlock($"{count}").FontSize(20).SemiBold().Width(40)
                 .HAlign(HorizontalAlignment.Center),
             Button("+ 1", () => setCount(count + 1))
         ).Padding(24);
@@ -47,7 +47,7 @@ class StyledText : Component
         return VStack(8,
             Heading("Heading element"),
             SubHeading("SubHeading element"),
-            Text("Regular text with modifiers")
+            TextBlock("Regular text with modifiers")
                 .FontSize(14).Foreground("#0078D4"),
             Caption("Caption for fine print")
         ).Padding(24);
@@ -62,14 +62,14 @@ class ReadmeShowcase : Component
     {
         return ScrollView(
             VStack(24,
-                Text("Reactor Framework").FontSize(28).Bold(),
-                Text("Declarative UI for native Windows apps"),
+                TextBlock("Reactor Framework").FontSize(28).Bold(),
+                TextBlock("Declarative UI for native Windows apps"),
                 Func(ctx =>
                 {
                     var (name, setName) = ctx.UseState("World");
                     return VStack(8,
                         SubHeading("Interactive greeting"),
-                        Text($"Hello, {name}!").FontSize(18),
+                        TextBlock($"Hello, {name}!").FontSize(18),
                         TextField(name, setName, placeholder: "Your name")
                             .Width(250)
                     );
@@ -80,7 +80,7 @@ class ReadmeShowcase : Component
                     return HStack(8,
                         SubHeading("Counter:"),
                         Button("-", () => setN(n - 1)),
-                        Text($"{n}").FontSize(18).SemiBold(),
+                        TextBlock($"{n}").FontSize(18).SemiBold(),
                         Button("+", () => setN(n + 1))
                     );
                 })

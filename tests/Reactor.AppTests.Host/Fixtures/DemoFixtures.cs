@@ -15,7 +15,7 @@ internal static class DemoFixtures
             var (count, setCount) = UseState(0);
 
             return VStack(12,
-                Factories.Text($"Current count: {count}")
+                TextBlock($"Current count: {count}")
                     .FontSize(24)
                     .AutomationId("CountDisplay"),
 
@@ -30,11 +30,11 @@ internal static class DemoFixtures
                 // Conditional text based on count
                 (count switch
                 {
-                    0 => Factories.Text("Try clicking the buttons!").AutomationId("CountMessage"),
-                    > 0 and < 10 => Factories.Text("Going up...").AutomationId("CountMessage"),
-                    >= 10 => Factories.Text("That's a lot!").AutomationId("CountMessage"),
-                    < 0 and > -10 => Factories.Text("Going negative...").AutomationId("CountMessage"),
-                    _ => Factories.Text("Way down!").AutomationId("CountMessage"),
+                    0 => TextBlock("Try clicking the buttons!").AutomationId("CountMessage"),
+                    > 0 and < 10 => TextBlock("Going up...").AutomationId("CountMessage"),
+                    >= 10 => TextBlock("That's a lot!").AutomationId("CountMessage"),
+                    < 0 and > -10 => TextBlock("Going negative...").AutomationId("CountMessage"),
+                    _ => TextBlock("Way down!").AutomationId("CountMessage"),
                 })
             );
         }
@@ -57,9 +57,9 @@ internal static class DemoFixtures
 
                 showAdvanced
                     ? VStack(8,
-                        Factories.Text("Advanced Settings").AutomationId("AdvancedTitle"),
-                        Factories.Text("Debug mode: ON").AutomationId("DebugMode"),
-                        Factories.Text("Verbose logging: ON").AutomationId("VerboseLogging")
+                        TextBlock("Advanced Settings").AutomationId("AdvancedTitle"),
+                        TextBlock("Debug mode: ON").AutomationId("DebugMode"),
+                        TextBlock("Verbose logging: ON").AutomationId("VerboseLogging")
                     ).AutomationId("AdvancedPanel")
                     : Empty()
             );
@@ -90,14 +90,14 @@ internal static class DemoFixtures
                     tab switch
                     {
                         "Home" => VStack(
-                            Factories.Text("Welcome Home").AutomationId("DemoHomeTitle"),
-                            Factories.Text("Home page content.").AutomationId("DemoHomeContent")),
+                            TextBlock("Welcome Home").AutomationId("DemoHomeTitle"),
+                            TextBlock("Home page content.").AutomationId("DemoHomeContent")),
                         "Settings" => VStack(
-                            Factories.Text("Settings Page").AutomationId("DemoSettingsTitle"),
-                            Factories.Text("Configure your preferences.").AutomationId("DemoSettingsContent")),
+                            TextBlock("Settings Page").AutomationId("DemoSettingsTitle"),
+                            TextBlock("Configure your preferences.").AutomationId("DemoSettingsContent")),
                         "About" => VStack(
-                            Factories.Text("About Page").AutomationId("DemoAboutTitle"),
-                            Factories.Text("Version 1.0").AutomationId("DemoAboutVersion")),
+                            TextBlock("About Page").AutomationId("DemoAboutTitle"),
+                            TextBlock("Version 1.0").AutomationId("DemoAboutVersion")),
                         _ => Empty()
                     }
                 ).Padding(16).AutomationId("DemoTabContent")

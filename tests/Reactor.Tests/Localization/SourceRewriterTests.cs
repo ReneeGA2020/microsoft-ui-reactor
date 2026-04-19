@@ -26,7 +26,7 @@ public class SourceRewriterTests : IDisposable
         var source = """
             class App : Component {
                 public override Element Render() {
-                    return Text("Hello");
+                    return TextBlock("Hello");
                 }
             }
             """;
@@ -51,7 +51,7 @@ public class SourceRewriterTests : IDisposable
         var source = """
             class App : Component {
                 public override Element Render() {
-                    return Text($"Hello, {user.Name}");
+                    return TextBlock($"Hello, {user.Name}");
                 }
             }
             """;
@@ -76,7 +76,7 @@ public class SourceRewriterTests : IDisposable
         var source = """
             class App : Component {
                 public override Element Render() {
-                    return Text($"Current count: {count}");
+                    return TextBlock($"Current count: {count}");
                 }
             }
             """;
@@ -99,7 +99,7 @@ public class SourceRewriterTests : IDisposable
         var source = """
             class App : Component {
                 public override Element Render() {
-                    return Text($"Hello {user.Name}, you have {count} items");
+                    return TextBlock($"Hello {user.Name}, you have {count} items");
                 }
             }
             """;
@@ -123,7 +123,7 @@ public class SourceRewriterTests : IDisposable
         var source = """
             class App : Component {
                 public override Element Render() {
-                    return Text("Hello");
+                    return TextBlock("Hello");
                 }
             }
             """;
@@ -146,7 +146,7 @@ public class SourceRewriterTests : IDisposable
             class App : Component {
                 public override Element Render() {
                     var t = UseIntl();
-                    return Text("Hello");
+                    return TextBlock("Hello");
                 }
             }
             """;

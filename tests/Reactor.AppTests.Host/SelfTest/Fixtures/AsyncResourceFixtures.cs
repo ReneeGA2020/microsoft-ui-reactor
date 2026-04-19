@@ -36,7 +36,7 @@ internal static class AsyncResourceFixtures
             host.Mount(ctx =>
             {
                 var value = ctx.UseResource(_ => tcs.Task, cache, Array.Empty<object>());
-                return Factories.Text(Describe(value));
+                return TextBlock(Describe(value));
             });
 
             await Harness.Render();
@@ -76,7 +76,7 @@ internal static class AsyncResourceFixtures
                     cache,
                     Array.Empty<object>());
                 if (v is AsyncValue<string>.Loading) sawLoading = true;
-                return Factories.Text(Describe(v));
+                return TextBlock(Describe(v));
             });
 
             // Render several frames; the hook should stabilize on Data immediately.
@@ -124,7 +124,7 @@ internal static class AsyncResourceFixtures
                     new ResourceOptions(
                         StaleTime: TimeSpan.FromSeconds(1),
                         CacheKey: "swr/shared"));
-                return Factories.Text(Describe(v));
+                return TextBlock(Describe(v));
             });
 
             // First fetch resolves → Data("v1").
@@ -192,7 +192,7 @@ internal static class AsyncResourceFixtures
                     },
                     cache,
                     new object[] { dep });
-                return Factories.Text($"dep={dep}:{Describe(v)}");
+                return TextBlock($"dep={dep}:{Describe(v)}");
             });
 
             await Harness.Render();
@@ -257,7 +257,7 @@ internal static class AsyncResourceFixtures
                     var (visible, set) = ctx.UseState(true);
                     setVisible = set;
 
-                    if (!visible) return Factories.Text("hidden");
+                    if (!visible) return TextBlock("hidden");
 
                     // Child component does the fetch.
                     return Factories.Component<FetchChild, FetchChildProps>(
@@ -319,7 +319,7 @@ internal static class AsyncResourceFixtures
                     props.Cache,
                     // Make the cache key unique per mount so we always start fresh.
                     new object[] { Guid.NewGuid() });
-                return Factories.Text(Describe(v));
+                return TextBlock(Describe(v));
             }
         }
     }
@@ -393,7 +393,7 @@ internal static class AsyncResourceFixtures
                     CacheKey: "focus/target",
                     StaleTime: TimeSpan.FromMilliseconds(100),
                     RefetchOnWindowFocus: true));
-            return Factories.Text(v switch
+            return TextBlock(v switch
             {
                 AsyncValue<string>.Loading => "loading",
                 AsyncValue<string>.Data d => $"data: {d.Value}",

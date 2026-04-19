@@ -67,10 +67,10 @@ internal class EmployeeGrid : Component<EmployeeGridProps>
         return (FlexRow(
             // Left column: person info
             (FlexColumn(
-                Factories.Text($"{Get("first_name")} {Get("last_name")}").FontSize(16).Bold(),
-                Factories.Text(Get("title")).Opacity(0.7),
-                Factories.Text(Get("email")).FontSize(12).Opacity(0.5),
-                Factories.Text(Get("phone")).FontSize(12).Opacity(0.5)
+                TextBlock($"{Get("first_name")} {Get("last_name")}").FontSize(16).Bold(),
+                TextBlock(Get("title")).Opacity(0.7),
+                TextBlock(Get("email")).FontSize(12).Opacity(0.5),
+                TextBlock(Get("phone")).FontSize(12).Opacity(0.5)
             ) with { RowGap = 2 }).Flex(grow: 1),
 
             // Middle column: org info
@@ -98,8 +98,8 @@ internal class EmployeeGrid : Component<EmployeeGridProps>
     private static Element DetailField(string label, string value)
     {
         return (FlexRow(
-            Factories.Text($"{label}: ").FontSize(12).Opacity(0.5),
-            Factories.Text(value).FontSize(12)
+            TextBlock($"{label}: ").FontSize(12).Opacity(0.5),
+            TextBlock(value).FontSize(12)
         ) with { ColumnGap = 4 });
     }
 
@@ -115,14 +115,14 @@ internal class EmployeeGrid : Component<EmployeeGridProps>
             ? $"Server: {string.Join(", ", parts)}"
             : "Client-side only";
 
-        return Factories.Text(label).FontSize(11).Opacity(0.4);
+        return TextBlock(label).FontSize(11).Opacity(0.4);
     }
 
     private static Element LoadingIndicator()
     {
         return (FlexColumn(
             ProgressRing().Width(32).Height(32),
-            Factories.Text("Loading employee data...").Opacity(0.6).Margin(8, 0, 0, 0)
+            TextBlock("Loading employee data...").Opacity(0.6).Margin(8, 0, 0, 0)
         ) with { AlignItems = FlexAlign.Center, JustifyContent = FlexJustify.Center })
             .Flex(grow: 1);
     }
@@ -130,8 +130,8 @@ internal class EmployeeGrid : Component<EmployeeGridProps>
     private static Element EmptyState()
     {
         return (FlexColumn(
-            Factories.Text("No employees found").FontSize(16).Bold(),
-            Factories.Text("Try adjusting your filters or generate sample data.").Opacity(0.6)
+            TextBlock("No employees found").FontSize(16).Bold(),
+            TextBlock("Try adjusting your filters or generate sample data.").Opacity(0.6)
         ) with { AlignItems = FlexAlign.Center, JustifyContent = FlexJustify.Center })
             .Flex(grow: 1);
     }

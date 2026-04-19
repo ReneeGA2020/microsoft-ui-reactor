@@ -28,7 +28,7 @@ class CommandBarFlyoutPage : Component
                                 AppBarButton("Copy", () => setLastAction("Copy"), icon: "Copy"),
                                 AppBarButton("Paste", () => setLastAction("Paste"), icon: "Paste"),
                             }),
-                        Factories.Text($"Last action: {lastAction}").Foreground(Theme.SecondaryText)
+                        TextBlock($"Last action: {lastAction}").Foreground(Theme.SecondaryText)
                     ),
                     @"CommandBarFlyout(
     Button(""Show Commands""),

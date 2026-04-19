@@ -178,7 +178,7 @@ class WordPuzzleApp : Component
             VStack(8,
                 Button(randomizeCmd)
                     .HAlign(HorizontalAlignment.Center),
-                Factories.Text(timeDisplay).FontSize(26).Bold()
+                TextBlock(timeDisplay).FontSize(26).Bold()
                     .HAlign(HorizontalAlignment.Center)
             ).Margin(0, 12, 0, 4),
 

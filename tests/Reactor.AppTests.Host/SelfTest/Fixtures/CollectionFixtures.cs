@@ -27,14 +27,14 @@ internal static class CollectionFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Animals List"),
+                    TextBlock("Animals List"),
                     ListView(Animals,
                         keySelector: a => a.Name,
                         viewBuilder: (animal, idx) =>
                             HStack(
-                                Factories.Text($"{idx + 1}."),
-                                Factories.Text(animal.Name),
-                                Factories.Text($"({animal.Species})")
+                                TextBlock($"{idx + 1}."),
+                                TextBlock(animal.Name),
+                                TextBlock($"({animal.Species})")
                             )
                     ).Height(300)
                 )

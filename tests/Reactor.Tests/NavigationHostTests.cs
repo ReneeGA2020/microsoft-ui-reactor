@@ -27,11 +27,11 @@ public class NavigationHostTests
 
     private static Element RouteToElement(Route route) => route switch
     {
-        Home => Factories.Text("Home Page"),
-        Detail d => Factories.Text($"Detail #{d.Id}"),
-        Settings => Factories.Text("Settings Page"),
-        Profile p => Factories.Text($"Profile: {p.Name}"),
-        _ => Factories.Text("Unknown"),
+        Home => TextBlock("Home Page"),
+        Detail d => TextBlock($"Detail #{d.Id}"),
+        Settings => TextBlock("Settings Page"),
+        Profile p => TextBlock($"Profile: {p.Name}"),
+        _ => TextBlock("Unknown"),
     };
 
     // ════════════════════════════════════════════════════════════════
@@ -90,11 +90,11 @@ public class NavigationHostTests
         var element = new NavigationHostElement(handle, r => RouteToElement((Route)r));
 
         var homeResult = element.RouteMap(new Home());
-        Assert.IsType<TextElement>(homeResult);
-        Assert.Equal("Home Page", ((TextElement)homeResult).Content);
+        Assert.IsType<TextBlockElement>(homeResult);
+        Assert.Equal("Home Page", ((TextBlockElement)homeResult).Content);
 
         var detailResult = element.RouteMap(new Detail(42));
-        Assert.Equal("Detail #42", ((TextElement)detailResult).Content);
+        Assert.Equal("Detail #42", ((TextBlockElement)detailResult).Content);
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -136,8 +136,8 @@ public class NavigationHostTests
 
         // The type-erased routeMap should correctly handle boxed Route values
         var result = element.RouteMap(new Detail(7));
-        Assert.IsType<TextElement>(result);
-        Assert.Equal("Detail #7", ((TextElement)result).Content);
+        Assert.IsType<TextBlockElement>(result);
+        Assert.Equal("Detail #7", ((TextBlockElement)result).Content);
     }
 
     [Fact]
@@ -291,11 +291,11 @@ public class NavigationHostTests
         };
 
         var homeElement = node.RouteMap(new Home());
-        Assert.IsType<TextElement>(homeElement);
-        Assert.Equal("Home Page", ((TextElement)homeElement).Content);
+        Assert.IsType<TextBlockElement>(homeElement);
+        Assert.Equal("Home Page", ((TextBlockElement)homeElement).Content);
 
         var detailElement = node.RouteMap(new Detail(42));
-        Assert.Equal("Detail #42", ((TextElement)detailElement).Content);
+        Assert.Equal("Detail #42", ((TextBlockElement)detailElement).Content);
     }
 
     // ════════════════════════════════════════════════════════════════

@@ -15,7 +15,7 @@ public static class PropertyGridDefaults
     public static Element PropertyLabelTemplate(
         FieldDescriptor descriptor, int indentLevel)
     =>
-        Factories.Text(descriptor.DisplayName ?? descriptor.Name)
+        TextBlock(descriptor.DisplayName ?? descriptor.Name)
             .ToolTip(descriptor.Description ?? "")
             .VAlign(VerticalAlignment.Center)
             .Margin(indentLevel * 4, 0, 0, 0)
@@ -34,7 +34,7 @@ public static class PropertyGridDefaults
         string propertyName, int count, Func<Task>? onAdd)
     =>
         FlexRow(
-            Factories.Text($"{propertyName} ({count})").SemiBold(),
+            TextBlock($"{propertyName} ({count})").SemiBold(),
             onAdd is not null
                 ? Button("+", async () => { try { await onAdd(); } catch (Exception ex) { global::System.Diagnostics.Debug.WriteLine($"PropertyGrid Add failed: {ex}"); } })
                     .Width(28).Height(28)
@@ -49,8 +49,8 @@ public static class PropertyGridDefaults
         FlexRow(
             Button(isExpanded ? "\u25BC" : "\u25B6", () => onExpandedChanged(!isExpanded))
                 .Width(24).Height(24),
-            Factories.Text($"[{index}]").Flex(basis: 40, shrink: 0),
-            Factories.Text(summary).Flex(grow: 1),
+            TextBlock($"[{index}]").Flex(basis: 40, shrink: 0),
+            TextBlock(summary).Flex(grow: 1),
             onMoveUp is not null
                 ? Button("\u25B2", onMoveUp).Width(28).Height(28)
                     .AutomationName($"Move item {index} up")

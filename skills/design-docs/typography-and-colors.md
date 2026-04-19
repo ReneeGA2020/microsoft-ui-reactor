@@ -11,7 +11,7 @@ Windows 11 defines a type ramp of semantic text styles. In Reactor, use the buil
 | Factory | Size | Weight | Use Case |
 |---------|------|--------|----------|
 | `Caption("text")` | 12px | Regular (400) | Small labels, timestamps, metadata |
-| `Text("text")` | 14px | Regular (400) | Default body text |
+| `TextBlock("text")` | 14px | Regular (400) | Default body text |
 | `SubHeading("text")` | 20px | SemiBold (600) | Section headers, card titles |
 | `Heading("text")` | 28px | Bold (700) | Page titles |
 
@@ -22,8 +22,8 @@ For sizes not covered by the factories, apply a WinUI style:
 | WinUI Style | Size | Weight | Reactor Equivalent |
 |-------------|------|--------|-----------------|
 | `CaptionTextBlockStyle` | 12px | Regular | `Caption()` |
-| `BodyTextBlockStyle` | 14px | Regular | `Text()` (default) |
-| `BodyStrongTextBlockStyle` | 14px | SemiBold | `Text().SemiBold()` |
+| `BodyTextBlockStyle` | 14px | Regular | `TextBlock()` (default) |
+| `BodyStrongTextBlockStyle` | 14px | SemiBold | `TextBlock().SemiBold()` |
 | `BodyLargeTextBlockStyle` | 18px | Regular | Apply via `.Set()` |
 | `SubtitleTextBlockStyle` | 20px | SemiBold | `SubHeading()` |
 | `TitleTextBlockStyle` | 28px | SemiBold | `Heading()` |
@@ -34,16 +34,16 @@ For sizes not covered by the factories, apply a WinUI style:
 
 ```csharp
 // For styles not covered by factories
-Text("Large title").Set(tb =>
+TextBlock("Large title").Set(tb =>
     tb.Style = (Style)Application.Current.Resources["TitleLargeTextBlockStyle"])
 
-Text("Display text").Set(tb =>
+TextBlock("Display text").Set(tb =>
     tb.Style = (Style)Application.Current.Resources["DisplayTextBlockStyle"])
 
-Text("Body strong").SemiBold()
+TextBlock("Body strong").SemiBold()
 
 // BodyLargeTextBlockStyle
-Text("Prominent text").Set(tb =>
+TextBlock("Prominent text").Set(tb =>
     tb.Style = (Style)Application.Current.Resources["BodyLargeTextBlockStyle"])
 ```
 
@@ -58,17 +58,17 @@ Text("Prominent text").Set(tb =>
    Caption("Last updated: 2 hours ago")
 
    // Wrong
-   Text("Settings").FontSize(28).FontWeight(new FontWeight(700))
+   TextBlock("Settings").FontSize(28).FontWeight(new FontWeight(700))
    ```
 
 2. **SemiBold (600), not Bold (700)** — Bold is not part of the Windows 11 design language. Exception: `Heading()` intentionally uses 700 for page titles.
 
    ```csharp
    // Correct: SemiBold for emphasis
-   Text("Important").SemiBold()
+   TextBlock("Important").SemiBold()
 
    // Wrong: Bold
-   Text("Important").Bold()
+   TextBlock("Important").Bold()
    ```
 
 3. **Minimum font size: 12px** — Anything below 12px makes complex Asian characters unreadable. `Caption()` at 12px is the smallest acceptable body text size.
@@ -76,7 +76,7 @@ Text("Prominent text").Set(tb =>
 4. **Icon font family** — Never hardcode `"Segoe Fluent Icons"`. Use the system resource:
 
    ```csharp
-   Text("\uE710").Set(tb =>
+   TextBlock("\uE710").Set(tb =>
        tb.FontFamily = (FontFamily)Application.Current.Resources["SymbolThemeFontFamily"])
        .Set(tb => tb.IsTextScaleFactorEnabled = false)
    ```
@@ -84,7 +84,7 @@ Text("Prominent text").Set(tb =>
 5. **Icon TextBlocks should not scale with text settings:**
 
    ```csharp
-   Text("\uE710")
+   TextBlock("\uE710")
        .Set(tb => tb.IsTextScaleFactorEnabled = false)
        .VAlign(VerticalAlignment.Center)
    ```
@@ -92,7 +92,7 @@ Text("Prominent text").Set(tb =>
 6. **Tabular numerals for changing numbers** — Prevents width jitter on clocks, percentages, counters:
 
    ```csharp
-   Text($"{batteryPercent}%").Set(tb =>
+   TextBlock($"{batteryPercent}%").Set(tb =>
        tb.Typography.NumeralAlignment = FontNumeralAlignment.Tabular)
    ```
 
@@ -103,7 +103,7 @@ Text("Prominent text").Set(tb =>
        columns: ["Auto", "*"],
        rows: ["Auto"],
        Image(avatar).Size(32, 32).Grid(column: 0),
-       Text(longTitle)
+       TextBlock(longTitle)
            .TextTrimming(TextTrimming.CharacterEllipsis)
            .Grid(column: 1))
    ```
@@ -111,7 +111,7 @@ Text("Prominent text").Set(tb =>
 8. **Smart tooltips for trimmed text** — When text is trimmed, add a tooltip so the user can read the full content on hover:
 
    ```csharp
-   Text(longTitle)
+   TextBlock(longTitle)
        .TextTrimming(TextTrimming.CharacterEllipsis)
        .ToolTip(longTitle)
    ```
@@ -121,18 +121,18 @@ Text("Prominent text").Set(tb =>
 10. **TextWrapping** — `NoWrap` is the default (do not set it explicitly). Choose `Wrap` when text should flow to multiple lines, or `WrapWholeWords` for body text to avoid mid-word breaks:
 
     ```csharp
-    Text(paragraph).Set(tb => tb.TextWrapping = TextWrapping.WrapWholeWords)
+    TextBlock(paragraph).Set(tb => tb.TextWrapping = TextWrapping.WrapWholeWords)
     ```
 
 11. **Top-align icons with text** — When icons and text are paired in wrapping layouts, prefer top alignment for both. At larger text scales, center-aligned icons drift visually:
 
     ```csharp
     HStack(8,
-        Text("\uE710")
+        TextBlock("\uE710")
             .Set(tb => tb.FontFamily = (FontFamily)Application.Current.Resources["SymbolThemeFontFamily"])
             .Set(tb => tb.IsTextScaleFactorEnabled = false)
             .VAlign(VerticalAlignment.Top),
-        Text(description)
+        TextBlock(description)
             .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
             .VAlign(VerticalAlignment.Top))
     ```
@@ -149,7 +149,7 @@ Colors are applied via three mechanisms:
 
 ```csharp
 // Theme token — auto-updates with theme
-Text("Hello").Foreground(Theme.PrimaryText)
+TextBlock("Hello").Foreground(Theme.PrimaryText)
 
 // Theme reference — any WinUI resource
 Border(child).Background(Theme.Ref("CardBackgroundFillColorDefaultBrush"))

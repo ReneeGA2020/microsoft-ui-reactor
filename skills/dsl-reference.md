@@ -1,7 +1,7 @@
 ---
 name: reactor-dsl-reference
 description: >
-  Exhaustive DSL catalog for Reactor — every factory (Text, Button, Grid,
+  Exhaustive DSL catalog for Reactor — every factory (TextBlock, Button, Grid,
   Flex, NavigationView, TabView, ContentDialog, MenuBar, DataGrid, ...),
   every fluent modifier (.Margin, .Padding, .Background, .Grid, .Flex,
   .Set, ...), and all WinUI enums used by the API. Load this when you
@@ -17,13 +17,13 @@ All factories live on `Microsoft.UI.Reactor.Factories` — use
 
 | Factory | Description | Signature |
 |---------|-------------|-----------|
-| `Text(content)` | Basic text | `string → TextElement` |
-| `Heading(content)` | 28px bold | `string → TextElement` |
-| `SubHeading(content)` | 20px semi-bold | `string → TextElement` |
-| `Caption(content)` | 12px | `string → TextElement` |
+| `TextBlock(content)` | Basic text | `string → TextBlockElement` |
+| `Heading(content)` | 28px bold | `string → TextBlockElement` |
+| `SubHeading(content)` | 20px semi-bold | `string → TextBlockElement` |
+| `Caption(content)` | 12px | `string → TextBlockElement` |
 | `RichText(text)` | Rich text block | `string → RichTextBlockElement` |
 
-**Implicit conversion:** `string` implicitly converts to `TextElement`, so
+**Implicit conversion:** `string` implicitly converts to `TextBlockElement`, so
 `VStack("Hello", "World")` works.
 
 ## Buttons
@@ -104,8 +104,8 @@ All factories live on `Microsoft.UI.Reactor.Factories` — use
 Grid(
     columns: ["*", "*", "200"],      // Star, Star, 200px fixed
     rows: ["Auto", "*"],              // Auto-height, fill remaining
-    Text("A").Grid(row: 0, column: 0),
-    Text("Wide").Grid(row: 1, column: 0, columnSpan: 3)
+    TextBlock("A").Grid(row: 0, column: 0),
+    TextBlock("Wide").Grid(row: 1, column: 0, columnSpan: 3)
 )
 ```
 
@@ -133,13 +133,13 @@ Child `.Flex()` parameters: `grow` (default 0), `shrink` (default 1),
 ```csharp
 // Holy-grail layout
 FlexColumn(
-    Flex(Text("Header")).Flex(shrink: 0),
+    Flex(TextBlock("Header")).Flex(shrink: 0),
     FlexRow(
-        Text("Nav").Flex(basis: 200, shrink: 0),
-        Text("Main").Flex(grow: 1),
-        Text("Aside").Flex(basis: 150, shrink: 0)
+        TextBlock("Nav").Flex(basis: 200, shrink: 0),
+        TextBlock("Main").Flex(grow: 1),
+        TextBlock("Aside").Flex(basis: 150, shrink: 0)
     ).Flex(grow: 1),
-    Flex(Text("Footer")).Flex(shrink: 0))
+    Flex(TextBlock("Footer")).Flex(shrink: 0))
 ```
 
 **When to use what:** `VStack`/`HStack` for simple stacks. `Grid` for 2D
@@ -320,7 +320,7 @@ Modifiers return `Element`, so type-specific sugar (`.Bold()`,
 ### Type-Specific Sugar (call BEFORE generic modifiers)
 
 ```csharp
-Text("Hello").Bold() / .SemiBold() / .FontSize(24) / .FontStyle(style)
+TextBlock("Hello").Bold() / .SemiBold() / .FontSize(24) / .FontStyle(style)
 Button("Click").Disabled() / .Disabled(condition)
 Border(child).CornerRadius(8).Background("#f5f5f5").WithBorder("#ccc", 1)
 VStack(...).Spacing(16)
@@ -349,7 +349,7 @@ element.WithKey("stable-id")  // always last
 
 ```csharp
 Button("Go", fn).Set(b => b.FlowDirection = FlowDirection.RightToLeft)
-Text("Hello").Set(tb => tb.TextWrapping = TextWrapping.Wrap)
+TextBlock("Hello").Set(tb => tb.TextWrapping = TextWrapping.Wrap)
 ```
 
 The lambda parameter is the real WinUI control — full IntelliSense.

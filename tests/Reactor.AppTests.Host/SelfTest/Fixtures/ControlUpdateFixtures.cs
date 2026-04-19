@@ -34,8 +34,8 @@ internal static class ControlUpdateFixtures
             {
                 var (phase, set) = ctx.UseState(0);
                 var text = phase == 0
-                    ? Factories.Text("Before").FontSize(14)
-                    : Factories.Text("After").FontSize(20).Bold().TextWrapping(TextWrapping.Wrap);
+                    ? TextBlock("Before").FontSize(14)
+                    : TextBlock("After").FontSize(20).Bold().TextWrapping(TextWrapping.Wrap);
                 return VStack(Button("UpdText", () => set(1)), text);
             });
 
@@ -200,12 +200,12 @@ internal static class ControlUpdateFixtures
                 var (phase, set) = ctx.UseState(0);
                 return VStack(
                     Button("UpdContainers", () => set(1)),
-                    Border(phase == 0 ? Factories.Text("BdrChild1") : Factories.Text("BdrChild2")),
-                    ScrollView(phase == 0 ? Factories.Text("SvChild1") : Factories.Text("SvChild2")),
-                    Expander("Exp", phase == 0 ? Factories.Text("ExpChild1") : Factories.Text("ExpChild2"), isExpanded: true),
-                    VStack(phase == 0 ? Factories.Text("StackChild1") : Factories.Text("StackChild2")),
-                    Canvas(phase == 0 ? Factories.Text("CanvasChild1") : Factories.Text("CanvasChild2")),
-                    WrapGrid(phase == 0 ? Factories.Text("WrapChild1") : Factories.Text("WrapChild2"))
+                    Border(phase == 0 ? TextBlock("BdrChild1") : TextBlock("BdrChild2")),
+                    ScrollView(phase == 0 ? TextBlock("SvChild1") : TextBlock("SvChild2")),
+                    Expander("Exp", phase == 0 ? TextBlock("ExpChild1") : TextBlock("ExpChild2"), isExpanded: true),
+                    VStack(phase == 0 ? TextBlock("StackChild1") : TextBlock("StackChild2")),
+                    Canvas(phase == 0 ? TextBlock("CanvasChild1") : TextBlock("CanvasChild2")),
+                    WrapGrid(phase == 0 ? TextBlock("WrapChild1") : TextBlock("WrapChild2"))
                 );
             });
 
@@ -240,14 +240,14 @@ internal static class ControlUpdateFixtures
                 return VStack(
                     Button("UpdColl", () => set(1)),
                     ListView(phase == 0
-                        ? [Factories.Text("LV_A"), Factories.Text("LV_B")]
-                        : [Factories.Text("LV_A"), Factories.Text("LV_B"), Factories.Text("LV_C")]),
+                        ? [TextBlock("LV_A"), TextBlock("LV_B")]
+                        : [TextBlock("LV_A"), TextBlock("LV_B"), TextBlock("LV_C")]),
                     TreeView(phase == 0
                         ? [TreeNode("TV_Root")]
                         : [TreeNode("TV_Root", TreeNode("TV_Child"))]),
                     FlipView(phase == 0
-                        ? [Factories.Text("FV_1")]
-                        : [Factories.Text("FV_1"), Factories.Text("FV_2")])
+                        ? [TextBlock("FV_1")]
+                        : [TextBlock("FV_1"), TextBlock("FV_2")])
                 );
             });
 
@@ -342,7 +342,7 @@ internal static class ControlUpdateFixtures
 
                 return VStack(
                     Button("UpdMods", () => set(1)),
-                    Factories.Text("ModTarget") with { Modifiers = mods }
+                    TextBlock("ModTarget") with { Modifiers = mods }
                 );
             });
 
@@ -377,7 +377,7 @@ internal static class ControlUpdateFixtures
                 var padding = phase == 0 ? new Thickness(4) : new Thickness(16);
                 return VStack(
                     Button("UpdPad", () => set(1)),
-                    Border(Factories.Text("PadBorder"))
+                    Border(TextBlock("PadBorder"))
                         .Padding(padding.Left)
                         .CornerRadius(phase == 0 ? 0 : 8),
                     Button("PadBtn") with
@@ -479,12 +479,12 @@ internal static class ControlUpdateFixtures
                     Button("UpdGrid", () => set(1)),
                     phase == 0
                         ? Grid(["*", "*"], ["*"],
-                            Factories.Text("G_A").Grid(row: 0, column: 0),
-                            Factories.Text("G_B").Grid(row: 0, column: 1))
+                            TextBlock("G_A").Grid(row: 0, column: 0),
+                            TextBlock("G_B").Grid(row: 0, column: 1))
                         : Grid(["*", "*", "*"], ["*"],
-                            Factories.Text("G_A").Grid(row: 0, column: 0),
-                            Factories.Text("G_B").Grid(row: 0, column: 1),
-                            Factories.Text("G_C").Grid(row: 0, column: 2))
+                            TextBlock("G_A").Grid(row: 0, column: 0),
+                            TextBlock("G_B").Grid(row: 0, column: 1),
+                            TextBlock("G_C").Grid(row: 0, column: 2))
                 );
             });
 
@@ -518,8 +518,8 @@ internal static class ControlUpdateFixtures
                 return VStack(
                     Button("UpdModified", () => set(1)),
                     phase == 0
-                        ? Factories.Text("MW_Before").Width(100).Margin(4)
-                        : Factories.Text("MW_After").Width(200).Margin(8)
+                        ? TextBlock("MW_Before").Width(100).Margin(4)
+                        : TextBlock("MW_After").Width(200).Margin(8)
                 );
             });
 

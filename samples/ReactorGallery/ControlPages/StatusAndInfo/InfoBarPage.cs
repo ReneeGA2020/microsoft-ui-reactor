@@ -50,7 +50,7 @@ class InfoBarPage : Component
                     VStack(8,
                         showClosable
                             ? InfoBar("Closable", "Click the close button to dismiss.").Closable()
-                            : Factories.Text("InfoBar was closed.").Foreground(Theme.SecondaryText),
+                            : TextBlock("InfoBar was closed.").Foreground(Theme.SecondaryText),
                         Button("Reset", () => setShowClosable(true))
                     ),
                     @"InfoBar(""Closable"", ""Click close to dismiss."").Closable()")

@@ -53,20 +53,20 @@ public class DeclarativeModifierTests
     }
 
     [Fact]
-    public void FontSize_On_TextElement_Uses_General_Modifier()
+    public void FontSize_On_TextBlockElement_Uses_General_Modifier()
     {
         // The general FontSize modifier stores on ElementModifiers
-        // (different from TextElement's typed FontSize property)
-        var el = (Element)Factories.Text("Hi").FontSize(20);
-        // TextElement.FontSize() returns TextElement with the TextElement.FontSize property set
-        var textEl = (TextElement)el;
+        // (different from TextBlockElement's typed FontSize property)
+        var el = (Element)TextBlock("Hi").FontSize(20);
+        // TextBlockElement.FontSize() returns TextBlockElement with the TextBlockElement.FontSize property set
+        var textEl = (TextBlockElement)el;
         Assert.Equal(20, textEl.FontSize); // typed property
     }
 
     [Fact]
     public void General_FontSize_On_Non_Text_Element()
     {
-        // Using the generic extension on a non-TextElement
+        // Using the generic extension on a non-TextBlockElement
         Element el = CheckBox(true).FontSize(16);
         Assert.Equal(16.0, el.Modifiers!.FontSize);
     }
@@ -81,7 +81,7 @@ public class DeclarativeModifierTests
     public void OnSizeChanged_Stores_Handler_In_Modifiers()
     {
         Action<object, SizeChangedEventArgs> handler = (s, e) => { };
-        var el = Border(Factories.Text("x")).OnSizeChanged(handler);
+        var el = Border(TextBlock("x")).OnSizeChanged(handler);
         Assert.NotNull(el.Modifiers);
         Assert.Same(handler, el.Modifiers!.OnSizeChanged);
     }
@@ -90,7 +90,7 @@ public class DeclarativeModifierTests
     public void OnPointerPressed_Stores_Handler()
     {
         Action<object, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs> handler = (s, e) => { };
-        var el = Border(Factories.Text("x")).OnPointerPressed(handler);
+        var el = Border(TextBlock("x")).OnPointerPressed(handler);
         Assert.Same(handler, el.Modifiers!.OnPointerPressed);
     }
 
@@ -98,7 +98,7 @@ public class DeclarativeModifierTests
     public void OnPointerMoved_Stores_Handler()
     {
         Action<object, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs> handler = (s, e) => { };
-        var el = Border(Factories.Text("x")).OnPointerMoved(handler);
+        var el = Border(TextBlock("x")).OnPointerMoved(handler);
         Assert.Same(handler, el.Modifiers!.OnPointerMoved);
     }
 
@@ -106,7 +106,7 @@ public class DeclarativeModifierTests
     public void OnPointerReleased_Stores_Handler()
     {
         Action<object, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs> handler = (s, e) => { };
-        var el = Border(Factories.Text("x")).OnPointerReleased(handler);
+        var el = Border(TextBlock("x")).OnPointerReleased(handler);
         Assert.Same(handler, el.Modifiers!.OnPointerReleased);
     }
 
@@ -122,7 +122,7 @@ public class DeclarativeModifierTests
     public void OnKeyDown_Stores_Handler()
     {
         Action<object, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs> handler = (s, e) => { };
-        var el = Border(Factories.Text("x")).OnKeyDown(handler);
+        var el = Border(TextBlock("x")).OnKeyDown(handler);
         Assert.Same(handler, el.Modifiers!.OnKeyDown);
     }
 
@@ -132,7 +132,7 @@ public class DeclarativeModifierTests
         Action<object, SizeChangedEventArgs> sizeHandler = (s, e) => { };
         Action<object, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs> tapHandler = (s, e) => { };
 
-        var el = Border(Factories.Text("x"))
+        var el = Border(TextBlock("x"))
             .Padding(8)
             .OnSizeChanged(sizeHandler)
             .OnTapped(tapHandler)
@@ -298,13 +298,13 @@ public class DeclarativeModifierTests
     [Fact]
     public void InterspersedGrid_Horizontal_Creates_Correct_Columns()
     {
-        var items = new[] { Factories.Text("A"), Factories.Text("B"), Factories.Text("C") };
+        var items = new[] { TextBlock("A"), TextBlock("B"), TextBlock("C") };
         var proportions = new[] { 1.0, 1.0, 1.0 };
 
         var grid = InterspersedGrid(
             Orientation.Horizontal,
             items, proportions, 6.0,
-            i => Factories.Text($"sep-{i}"));
+            i => TextBlock($"sep-{i}"));
 
         // 3 items + 2 separators = 5 columns
         Assert.Equal(5, grid.Definition.Columns.Length);
@@ -322,13 +322,13 @@ public class DeclarativeModifierTests
     [Fact]
     public void InterspersedGrid_Vertical_Creates_Correct_Rows()
     {
-        var items = new[] { Factories.Text("A"), Factories.Text("B") };
+        var items = new[] { TextBlock("A"), TextBlock("B") };
         var proportions = new[] { 0.7, 0.3 };
 
         var grid = InterspersedGrid(
             Orientation.Vertical,
             items, proportions, 4.0,
-            i => Factories.Text("---"));
+            i => TextBlock("---"));
 
         // 2 items + 1 separator = 3 rows
         Assert.Equal(3, grid.Definition.Rows.Length);
@@ -343,13 +343,13 @@ public class DeclarativeModifierTests
     [Fact]
     public void InterspersedGrid_Single_Item_No_Separators()
     {
-        var items = new[] { Factories.Text("Only") };
+        var items = new[] { TextBlock("Only") };
         var proportions = new[] { 1.0 };
 
         var grid = InterspersedGrid(
             Orientation.Horizontal,
             items, proportions, 6.0,
-            i => Factories.Text("sep"));
+            i => TextBlock("sep"));
 
         Assert.Single(grid.Definition.Columns);
         Assert.Single(grid.Children);
@@ -361,7 +361,7 @@ public class DeclarativeModifierTests
         var grid = InterspersedGrid(
             Orientation.Horizontal,
             [], [], 6.0,
-            i => Factories.Text("sep"));
+            i => TextBlock("sep"));
 
         Assert.Empty(grid.Definition.Columns);
         Assert.Empty(grid.Definition.Rows);
@@ -374,22 +374,22 @@ public class DeclarativeModifierTests
         Assert.Throws<ArgumentException>(() =>
             InterspersedGrid(
                 Orientation.Horizontal,
-                [Factories.Text("A"), Factories.Text("B")],
+                [TextBlock("A"), TextBlock("B")],
                 [1.0],  // wrong length
                 6.0,
-                i => Factories.Text("sep")));
+                i => TextBlock("sep")));
     }
 
     [Fact]
     public void InterspersedGrid_Children_Have_Correct_Grid_Attached()
     {
-        var items = new[] { Factories.Text("A"), Factories.Text("B") };
+        var items = new[] { TextBlock("A"), TextBlock("B") };
         var proportions = new[] { 0.5, 0.5 };
 
         var grid = InterspersedGrid(
             Orientation.Horizontal,
             items, proportions, 6.0,
-            i => Factories.Text("sep"));
+            i => TextBlock("sep"));
 
         // Item A at column 0, separator at column 1, Item B at column 2
         var itemA = grid.Children[0];
@@ -404,7 +404,7 @@ public class DeclarativeModifierTests
     [Fact]
     public void UniformGrid_Horizontal_Creates_Equal_Columns()
     {
-        var grid = UniformGrid(Orientation.Horizontal, Factories.Text("A"), Factories.Text("B"), Factories.Text("C"));
+        var grid = UniformGrid(Orientation.Horizontal, TextBlock("A"), TextBlock("B"), TextBlock("C"));
 
         Assert.Equal(3, grid.Definition.Columns.Length);
         Assert.All(grid.Definition.Columns, col => Assert.Equal("*", col));
@@ -415,7 +415,7 @@ public class DeclarativeModifierTests
     [Fact]
     public void UniformGrid_Vertical_Creates_Equal_Rows()
     {
-        var grid = UniformGrid(Orientation.Vertical, Factories.Text("A"), Factories.Text("B"));
+        var grid = UniformGrid(Orientation.Vertical, TextBlock("A"), TextBlock("B"));
 
         Assert.Equal(2, grid.Definition.Rows.Length);
         Assert.All(grid.Definition.Rows, row => Assert.Equal("*", row));
@@ -425,7 +425,7 @@ public class DeclarativeModifierTests
     [Fact]
     public void UniformGrid_Filters_Nulls()
     {
-        var grid = UniformGrid(Orientation.Horizontal, Factories.Text("A"), null, Factories.Text("B"));
+        var grid = UniformGrid(Orientation.Horizontal, TextBlock("A"), null, TextBlock("B"));
         Assert.Equal(2, grid.Children.Length);
         Assert.Equal(2, grid.Definition.Columns.Length);
     }

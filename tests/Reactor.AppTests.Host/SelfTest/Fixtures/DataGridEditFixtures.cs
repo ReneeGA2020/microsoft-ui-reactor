@@ -159,7 +159,7 @@ internal static class DataGridEditFixtures
                 var (sel, setSel) = ctx.UseState<IReadOnlySet<RowKey>>(new HashSet<RowKey>());
 
                 return VStack(
-                    Factories.Text($"Selected: {sel.Count}"),
+                    TextBlock($"Selected: {sel.Count}"),
                     DataGridDsl.DataGrid(
                         source: source,
                         columns: CreateEditableColumns(),
@@ -330,7 +330,7 @@ internal static class DataGridEditFixtures
                 {
                     ColumnDsl.Column<TestProduct>("Id", p => p.Id, width: 60),
                     (ColumnDsl.Column<TestProduct>("Name", p => p.Name, width: 160)
-                        .CellRenderer(val => Factories.Text((string)val).FontSize(fontSize))).Build(),
+                        .CellRenderer(val => TextBlock((string)val).FontSize(fontSize))).Build(),
                     ColumnDsl.Column<TestProduct>("Category", p => p.Category, width: 120),
                 };
 

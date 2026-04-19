@@ -15,7 +15,7 @@ public class LocalizableStringScannerTests
             using static Microsoft.UI.Reactor.Factories;
             class MyPage : Component {
                 public override Element Render() {
-                    return Factories.Text("Hello");
+                    return TextBlock("Hello");
                 }
             }
             """;
@@ -24,7 +24,7 @@ public class LocalizableStringScannerTests
 
         Assert.Single(results);
         Assert.Equal("Hello", results[0].Value);
-        Assert.Equal("Text", results[0].Context);
+        Assert.Equal("TextBlock", results[0].Context);
         Assert.Equal("MyPage", results[0].ClassName);
     }
 
@@ -70,7 +70,7 @@ public class LocalizableStringScannerTests
         var source = """
             class App : Component {
                 public override Element Render() {
-                    return Factories.Text($"Hello, {name}");
+                    return TextBlock($"Hello, {name}");
                 }
             }
             """;
@@ -88,7 +88,7 @@ public class LocalizableStringScannerTests
         var source = """
             class Cart : Component {
                 public override Element Render() {
-                    return Factories.Text($"Total: {price:C}");
+                    return TextBlock($"Total: {price:C}");
                 }
             }
             """;
@@ -105,7 +105,7 @@ public class LocalizableStringScannerTests
         var source = """
             class Dashboard : Component {
                 public override Element Render() {
-                    return Factories.Text($"Score: {pct:P0}");
+                    return TextBlock($"Score: {pct:P0}");
                 }
             }
             """;
@@ -122,7 +122,7 @@ public class LocalizableStringScannerTests
         var source = """
             class App : Component {
                 public override Element Render() {
-                    return Factories.Text($"Due: {date:d}");
+                    return TextBlock($"Due: {date:d}");
                 }
             }
             """;
@@ -139,7 +139,7 @@ public class LocalizableStringScannerTests
         var source = """
             class App : Component {
                 public override Element Render() {
-                    return Factories.Text($"Hello, {user.Name}");
+                    return TextBlock($"Hello, {user.Name}");
                 }
             }
             """;
@@ -158,7 +158,7 @@ public class LocalizableStringScannerTests
         var source = """
             class App : Component {
                 public override Element Render() {
-                    return Factories.Text(isVisible ? "Show" : "Hide");
+                    return TextBlock(isVisible ? "Show" : "Hide");
                 }
             }
             """;
@@ -178,7 +178,7 @@ public class LocalizableStringScannerTests
         var source = """
             class App : Component {
                 public override Element Render() {
-                    return Factories.Text(val ?? "Default");
+                    return TextBlock(val ?? "Default");
                 }
             }
             """;
@@ -195,7 +195,7 @@ public class LocalizableStringScannerTests
         var source = """
             class App : Component {
                 public override Element Render() {
-                    return Factories.Text(t.Message(Loc.App.Hello));
+                    return TextBlock(t.Message(Loc.App.Hello));
                 }
             }
             """;
@@ -266,7 +266,7 @@ public class LocalizableStringScannerTests
         var source = """
             class App : Component {
                 public override Element Render() {
-                    return Factories.Text("");
+                    return TextBlock("");
                 }
             }
             """;
@@ -282,7 +282,7 @@ public class LocalizableStringScannerTests
         var source = """
             class App : Component {
                 public override Element Render() {
-                    return Factories.Text("   ");
+                    return TextBlock("   ");
                 }
             }
             """;
@@ -300,7 +300,7 @@ public class LocalizableStringScannerTests
                 public override Element Render() {
                     return VStack(
                         Heading("Inbox"),
-                        Factories.Text("Welcome back"),
+                        TextBlock("Welcome back"),
                         Button("Compose", OnCompose)
                     );
                 }
@@ -321,7 +321,7 @@ public class LocalizableStringScannerTests
         var source = """
             class Settings : Component {
                 public override Element Render() {
-                    return Expander("Advanced Settings", Factories.Text("Content"));
+                    return Expander("Advanced Settings", TextBlock("Content"));
                 }
             }
             """;

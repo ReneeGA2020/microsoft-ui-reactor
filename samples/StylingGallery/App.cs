@@ -37,7 +37,7 @@ class StylingGalleryApp : Component
                     2 => Component<ColorSchemeDemo>(),
                     3 => Component<LightweightStylingDemo>(),
                     4 => Component<StyleCachingDemo>(),
-                    _ => Factories.Text("Unknown tab"),
+                    _ => TextBlock("Unknown tab"),
                 }
             )
         );
@@ -71,11 +71,11 @@ class ThemeTokensDemo : Component
 
             SubHeading("Text Colors"),
             VStack(8,
-                Factories.Text("PrimaryText").Foreground(Theme.PrimaryText),
-                Factories.Text("SecondaryText").Foreground(Theme.SecondaryText),
-                Factories.Text("TertiaryText").Foreground(Theme.TertiaryText),
-                Factories.Text("DisabledText").Foreground(Theme.DisabledText),
-                Factories.Text("AccentText").Foreground(Theme.AccentText).SemiBold()
+                TextBlock("PrimaryText").Foreground(Theme.PrimaryText),
+                TextBlock("SecondaryText").Foreground(Theme.SecondaryText),
+                TextBlock("TertiaryText").Foreground(Theme.TertiaryText),
+                TextBlock("DisabledText").Foreground(Theme.DisabledText),
+                TextBlock("AccentText").Foreground(Theme.AccentText).SemiBold()
             ),
 
             SubHeading("Accent Colors"),
@@ -114,7 +114,7 @@ class ThemeTokensDemo : Component
 
     static Element ColorSwatch(string label, ThemeRef color) =>
         VStack(4,
-            Border(Factories.Text(""))
+            Border(TextBlock(""))
                 .Background(color)
                 .Width(80).Height(40)
                 .CornerRadius(6)
@@ -145,10 +145,10 @@ class RequestedThemeDemo : Component
                 // Dark sidebar — native controls get dark styling automatically.
                 // Use a static dark background; text/buttons adopt dark theme natively.
                 VStack(12,
-                    Factories.Text("Sidebar").Bold(),
-                    Factories.Text("Navigation").Opacity(0.7),
-                    Factories.Text("Settings").Opacity(0.7),
-                    Factories.Text("Profile").Opacity(0.7)
+                    TextBlock("Sidebar").Bold(),
+                    TextBlock("Navigation").Opacity(0.7),
+                    TextBlock("Settings").Opacity(0.7),
+                    TextBlock("Profile").Opacity(0.7)
                 ).Padding(16)
                  .Background("#1E1E1E")
                  .RequestedTheme(ElementTheme.Dark)
@@ -156,8 +156,8 @@ class RequestedThemeDemo : Component
 
                 // Light content (system theme)
                 VStack(12,
-                    Factories.Text("Main Content").Bold(),
-                    Factories.Text("This area uses the system theme."),
+                    TextBlock("Main Content").Bold(),
+                    TextBlock("This area uses the system theme."),
                     Button("Action", () => { })
                 ).Padding(16)
                  .Background(Theme.CardBackground)
@@ -172,8 +172,8 @@ class RequestedThemeDemo : Component
             // Background uses a static color matching the theme variant.
             Border(
                 VStack(12,
-                    Factories.Text("This panel follows the toggle."),
-                    Factories.Text("Native controls adapt automatically."),
+                    TextBlock("This panel follows the toggle."),
+                    TextBlock("Native controls adapt automatically."),
                     HStack(8,
                         Button("Primary", () => { }),
                         Button("Secondary", () => { }),
@@ -185,7 +185,7 @@ class RequestedThemeDemo : Component
              .RequestedTheme(isDark ? ElementTheme.Dark : ElementTheme.Light),
 
             SubHeading("ElementTheme.Default (System Inheritance)"),
-            Factories.Text("Setting RequestedTheme to Default restores the system theme:"),
+            TextBlock("Setting RequestedTheme to Default restores the system theme:"),
             HStack(12,
                 ThemeBox("Dark", ElementTheme.Dark, "#2D2D2D"),
                 ThemeBox("Default", ElementTheme.Default, null),
@@ -197,8 +197,8 @@ class RequestedThemeDemo : Component
     static Element ThemeBox(string label, ElementTheme theme, string? bg) =>
         Border(
             VStack(4,
-                Factories.Text(label).Bold(),
-                Factories.Text("Sample text"),
+                TextBlock(label).Bold(),
+                TextBlock("Sample text"),
                 Button("Button", () => { })
             ).Padding(12)
         ).Background(bg ?? "#F9F9F9")
@@ -229,16 +229,16 @@ class ColorSchemeDemo : Component
             ),
 
             SubHeading("Adaptive Component"),
-            Factories.Text("This component adjusts its presentation based on the detected color scheme:")
+            TextBlock("This component adjusts its presentation based on the detected color scheme:")
                 .Foreground(Theme.SecondaryText),
 
             Border(
                 HStack(16,
-                    Factories.Text(isDark ? "\U0001F319" : "\u2600\uFE0F").FontSize(48),
+                    TextBlock(isDark ? "\U0001F319" : "\u2600\uFE0F").FontSize(48),
                     VStack(4,
-                        Factories.Text(isDark ? "Dark Mode Active" : "Light Mode Active")
+                        TextBlock(isDark ? "Dark Mode Active" : "Light Mode Active")
                             .Bold().Foreground(Theme.PrimaryText),
-                        Factories.Text(isDark
+                        TextBlock(isDark
                                 ? "UI is optimized for low-light viewing"
                                 : "UI is optimized for well-lit environments")
                             .Foreground(Theme.SecondaryText)
@@ -249,7 +249,7 @@ class ColorSchemeDemo : Component
              .WithBorder(Theme.CardStroke),
 
             SubHeading("Opacity Adjustment"),
-            Factories.Text("Decorative elements use lower opacity in light mode to reduce visual noise:")
+            TextBlock("Decorative elements use lower opacity in light mode to reduce visual noise:")
                 .Foreground(Theme.SecondaryText),
             HStack(12,
                 DecorativeBox("Normal", 1.0),
@@ -258,7 +258,7 @@ class ColorSchemeDemo : Component
             ),
 
             SubHeading("RequestedTheme Awareness"),
-            Factories.Text("UseColorScheme reads the app-level theme. Components inside a RequestedTheme " +
+            TextBlock("UseColorScheme reads the app-level theme. Components inside a RequestedTheme " +
                  "subtree see that override reflected in the actual theme of their mounted control.")
                 .Foreground(Theme.SecondaryText)
         ).Padding(24);
@@ -268,7 +268,7 @@ class ColorSchemeDemo : Component
         Border(
             VStack(4,
                 Caption(label).Foreground(Theme.SecondaryText),
-                Factories.Text(value).FontSize(20).Bold().Foreground(Theme.AccentText)
+                TextBlock(value).FontSize(20).Bold().Foreground(Theme.AccentText)
             ).Padding(12)
         ).Background(Theme.CardBackground)
          .CornerRadius(6)
@@ -277,7 +277,7 @@ class ColorSchemeDemo : Component
 
     static Element DecorativeBox(string label, double opacity) =>
         VStack(4,
-            Border(Factories.Text(""))
+            Border(TextBlock(""))
                 .Background(Theme.Accent)
                 .Width(80).Height(50)
                 .CornerRadius(6)
@@ -301,7 +301,7 @@ class LightweightStylingDemo : Component
                 "picks up the overrides — hover, pressed, and disabled states all work automatically."),
 
             SubHeading("Brand-Colored Buttons"),
-            Factories.Text("Override ButtonBackground, ButtonBackgroundPointerOver, and ButtonBackgroundPressed " +
+            TextBlock("Override ButtonBackground, ButtonBackgroundPointerOver, and ButtonBackgroundPressed " +
                  "to create branded buttons without custom templates.")
                 .Foreground(Theme.SecondaryText),
             HStack(12,
@@ -340,7 +340,7 @@ class LightweightStylingDemo : Component
             ),
 
             SubHeading("Theme-Reactive Resources"),
-            Factories.Text("Use ThemeRef values in .Resources() — they re-resolve automatically on theme change.")
+            TextBlock("Use ThemeRef values in .Resources() — they re-resolve automatically on theme change.")
                 .Foreground(Theme.SecondaryText),
             HStack(12,
                 Button("Accent from Theme", () => { })
@@ -357,7 +357,7 @@ class LightweightStylingDemo : Component
             ),
 
             SubHeading("Numeric & CornerRadius Overrides"),
-            Factories.Text("Override non-brush resources like border thickness and corner radius.")
+            TextBlock("Override non-brush resources like border thickness and corner radius.")
                 .Foreground(Theme.SecondaryText),
             HStack(12,
                 Button("Rounded", () => { })
@@ -370,7 +370,7 @@ class LightweightStylingDemo : Component
             ),
 
             SubHeading("Cascading from Parent"),
-            Factories.Text("Resources set on a parent panel cascade to all child controls.")
+            TextBlock("Resources set on a parent panel cascade to all child controls.")
                 .Foreground(Theme.SecondaryText),
             Border(
                 HStack(12,
@@ -407,20 +407,20 @@ class StyleCachingDemo : Component
                 "only parses XAML once."),
 
             SubHeading("Cached Theme Binding Grid"),
-            Factories.Text($"Each card below uses .Background(Theme.CardBackground) — all {count} share " +
+            TextBlock($"Each card below uses .Background(Theme.CardBackground) — all {count} share " +
                  "a single cached Style object. Try increasing the count.")
                 .Foreground(Theme.SecondaryText),
 
             HStack(12,
                 Button("-10", () => setCount(Math.Max(10, count - 10))),
-                Factories.Text($"{count} items").Foreground(Theme.PrimaryText).VAlign(VerticalAlignment.Center),
+                TextBlock($"{count} items").Foreground(Theme.PrimaryText).VAlign(VerticalAlignment.Center),
                 Button("+10", () => setCount(Math.Min(200, count + 10)))
             ),
 
             WrapGrid(
                 Enumerable.Range(0, count).Select(i =>
                     Border(
-                        Factories.Text($"#{i + 1}").Foreground(Theme.SecondaryText).FontSize(11)
+                        TextBlock($"#{i + 1}").Foreground(Theme.SecondaryText).FontSize(11)
                             .HAlign(HorizontalAlignment.Center)
                             .VAlign(VerticalAlignment.Center)
                     ).Background(Theme.CardBackground)
@@ -431,7 +431,7 @@ class StyleCachingDemo : Component
             ),
 
             SubHeading("Cache Invalidation"),
-            Factories.Text("The cache is cleared on theme change (Light/Dark toggle). This is conservative " +
+            TextBlock("The cache is cleared on theme change (Light/Dark toggle). This is conservative " +
                  "memory cleanup — WinUI's {ThemeResource} setters handle the actual theme switch " +
                  "natively. Clearing the cache just frees memory from the old theme's compiled styles.")
                 .Foreground(Theme.SecondaryText)
@@ -449,6 +449,6 @@ static class StylingHelpers
     public static Element SectionHeader(string title, string description) =>
         VStack(8,
             Heading(title),
-            Factories.Text(description).Foreground(Theme.SecondaryText)
+            TextBlock(description).Foreground(Theme.SecondaryText)
         );
 }

@@ -57,7 +57,7 @@ using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Layout;   // FlexDirection, FlexJustify, ... (if using Flex)
 using Microsoft.UI.Xaml;             // Thickness, HorizontalAlignment, VerticalAlignment
 using Microsoft.UI.Xaml.Controls;    // Orientation, InfoBarSeverity, etc.
-using static Microsoft.UI.Reactor.Factories;   // Text(), Button(), VStack() bare calls
+using static Microsoft.UI.Reactor.Factories;   // TextBlock(), Button(), VStack() bare calls
 ```
 
 ### App entry point
@@ -70,7 +70,7 @@ ReactorApp.Run<MyRoot>("Title", width: 1024, height: 768);
 ReactorApp.Run("Title", ctx =>
 {
     var (msg, setMsg) = ctx.UseState("Hello!");
-    return VStack(Text(msg), Button("Change", () => setMsg("Changed!")));
+    return VStack(TextBlock(msg), Button("Change", () => setMsg("Changed!")));
 });
 ```
 
@@ -85,7 +85,7 @@ class Counter : Component
     {
         var (count, setCount) = UseState(0);
         return VStack(
-            Text($"Count: {count}"),
+            TextBlock($"Count: {count}"),
             Button("+1", () => setCount(count + 1)));
     }
 }
@@ -116,8 +116,8 @@ Component<UserCard, UserCardProps>(new UserCardProps("Alice", "Admin"))
 ### Memoized function component
 
 ```csharp
-Memo(ctx => Text("Stable"))           // render once + own state
-Memo(ctx => Text($"Hi, {name}"), name) // re-render when deps change
+Memo(ctx => TextBlock("Stable"))           // render once + own state
+Memo(ctx => TextBlock($"Hi, {name}"), name) // re-render when deps change
 ```
 
 Propless `Component` skips parent-triggered re-renders by default.
@@ -184,7 +184,7 @@ For the complete catalog (every factory, modifier, enum) see
 ```csharp
 // Text + layout
 VStack(spacing, children...)    HStack(spacing, children...)
-Text("hi")  Heading("Title")    SubHeading("Section")  Caption("note")
+TextBlock("hi")  Heading("Title")    SubHeading("Section")  Caption("note")
 Border(child).CornerRadius(8).Background(Theme.CardBackground).Padding(16)
 ScrollView(VStack(...))
 Grid(columns: ["*", "200"], rows: ["Auto", "*"], cells.Grid(row, column))
@@ -194,25 +194,25 @@ Button("Click", () => ...)      TextField(value, setValue, placeholder)
 CheckBox(isChecked, setChecked) ToggleSwitch(on, setOn)
 Slider(v, 0, 100, setV)         ComboBox(items, index, setIndex)
 
-// Strings auto-convert to TextElement: VStack("A", "B") works.
+// Strings auto-convert to TextBlockElement: VStack("A", "B") works.
 ```
 
 ### Conditional rendering
 
 ```csharp
-isLoggedIn ? Text($"Hi, {name}") : Button("Log in", onLogin)
-VStack(Text("always"), showExtra ? Text("maybe") : null) // null filtered
-When(items.Any(), () => Text($"{items.Count} items"))
+isLoggedIn ? TextBlock($"Hi, {name}") : Button("Log in", onLogin)
+VStack(TextBlock("always"), showExtra ? TextBlock("maybe") : null) // null filtered
+When(items.Any(), () => TextBlock($"{items.Count} items"))
 If(isError, () => InfoBar("Error", msg).Severity(InfoBarSeverity.Error),
-            () => Text("OK"))
+            () => TextBlock("OK"))
 status switch {
     Status.Loading => ProgressIndeterminate(),
-    Status.Error   => Text("Oops"),
+    Status.Error   => TextBlock("Oops"),
     Status.Success => Component<SuccessView>(),
     _ => Empty()
 }
-ForEach(items, item => Text(item.Name))
-// Or LINQ: VStack(items.Select(i => Text(i.Name)).ToArray())
+ForEach(items, item => TextBlock(item.Name))
+// Or LINQ: VStack(items.Select(i => TextBlock(i.Name)).ToArray())
 ```
 
 ## Critical gotchas
@@ -220,8 +220,8 @@ ForEach(items, item => Text(item.Name))
 1. **Hook order is constant.** No hooks inside `if`/`for`. Call them all
    unconditionally; conditionally use the result.
 2. **Type-specific sugar before generic modifiers.**
-   `Text("Hi").Bold().Margin(10)` ✓ — `.Bold()` needs `TextElement`.
-   `Text("Hi").Margin(10).Bold()` ✗ — `.Margin()` returns `Element`.
+   `TextBlock("Hi").Bold().Margin(10)` ✓ — `.Bold()` needs `TextBlockElement`.
+   `TextBlock("Hi").Margin(10).Bold()` ✗ — `.Margin()` returns `Element`.
 3. **List mutations use `UseReducer`.** `UseState(new List<T>())` + `list.Add()`
    won't re-render — same reference. Use `UseReducer(list => [.. list, item])`.
 4. **Null children are filtered.** `VStack(a, condition ? b : null, c)` is safe.
@@ -260,7 +260,7 @@ class App : Component
             {
                 "Home"     => Component<HomePage>(),
                 "Settings" => Component<SettingsPage>(),
-                _ => Text("Not found")
+                _ => TextBlock("Not found")
             }).Padding(24).Grid(row: 1));
     }
 
@@ -309,7 +309,7 @@ using static Microsoft.UI.Reactor.Factories;
 ReactorApp.Run("Hello", ctx =>
 {
     var (count, setCount) = ctx.UseState(0);
-    return VStack(Text($"Count: {count}"), Button("+1", () => setCount(count + 1)));
+    return VStack(TextBlock($"Count: {count}"), Button("+1", () => setCount(count + 1)));
 });
 ```
 
@@ -330,7 +330,7 @@ with `dotnet --info`.
 | `useEffect(() => {}, [dep])` | `UseEffect(() => {}, dep)` |
 | `useMemo(() => val, [dep])` | `UseMemo(() => val, dep)` |
 | `<div>` | `VStack() / HStack() / Border() / Flex()` |
-| `<span>text</span>` | `Text("text")` |
+| `<span>text</span>` | `TextBlock("text")` |
 | `<button onClick={fn}>` | `Button("label", fn)` |
 | `<input value={v} onChange={fn}>` | `TextField(v, fn)` |
 | `{cond && <X/>}` | `cond ? X() : null` |

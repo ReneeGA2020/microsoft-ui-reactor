@@ -67,7 +67,7 @@ internal static class AsyncInfiniteResourceFixtures
                     deps: Array.Empty<object>(),
                     options: new InfiniteResourceOptions(PageSize: 25, CacheKeyPrefix: "basic"));
                 res = r;
-                return Factories.Text($"count: {r.Items.Count} total: {r.TotalCount?.ToString() ?? "?"}");
+                return TextBlock($"count: {r.Items.Count} total: {r.TotalCount?.ToString() ?? "?"}");
             });
 
             // Let the first page resolve.
@@ -119,7 +119,7 @@ internal static class AsyncInfiniteResourceFixtures
                     deps: Array.Empty<object>(),
                     options: new InfiniteResourceOptions(PageSize: 25, CacheKeyPrefix: "placeholder"));
                 res = r;
-                return Factories.Text($"count: {r.Items.Count}");
+                return TextBlock($"count: {r.Items.Count}");
             });
 
             // Let page 1 load.
@@ -180,7 +180,7 @@ internal static class AsyncInfiniteResourceFixtures
                     deps: Array.Empty<object>(),
                     options: new InfiniteResourceOptions(PageSize: 20, CacheKeyPrefix: "refresh"));
                 res = r;
-                return Factories.Text($"items: {r.Items.Count}");
+                return TextBlock($"items: {r.Items.Count}");
             });
 
             await Harness.Render();
@@ -249,7 +249,7 @@ internal static class AsyncInfiniteResourceFixtures
                     deps: new object[] { query },
                     options: new InfiniteResourceOptions(PageSize: 25, CacheKeyPrefix: "depschange"));
                 res = r;
-                return Factories.Text($"q={query}|count={r.Items.Count}");
+                return TextBlock($"q={query}|count={r.Items.Count}");
             });
 
             await Harness.Render();

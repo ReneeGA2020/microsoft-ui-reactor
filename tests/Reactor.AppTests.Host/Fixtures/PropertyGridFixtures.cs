@@ -146,7 +146,7 @@ internal static class PropertyGridFixtures
             return VStack(
                 PropertyGridDsl.PropertyGrid(_model, _registry)
                     .AutomationId("MutableObjectGrid"),
-                Factories.Text($"Live: {_model.Name},{_model.Age},{_model.Active}")
+                TextBlock($"Live: {_model.Name},{_model.Age},{_model.Active}")
                     .AutomationId("MutableObjectLive")
             );
         }
@@ -177,7 +177,7 @@ internal static class PropertyGridFixtures
             return VStack(
                 PropertyGridDsl.PropertyGrid(_model, _registry)
                     .AutomationId("NestedRecordGrid"),
-                Factories.Text($"Pos: {_model.Position}").AutomationId("NestedRecordPos")
+                TextBlock($"Pos: {_model.Position}").AutomationId("NestedRecordPos")
             );
         }
     }
@@ -197,7 +197,7 @@ internal static class PropertyGridFixtures
                 PropertyGridDsl.PropertyGrid(point, _registry,
                     onRootChanged: obj => setPoint((Point2D)obj))
                     .AutomationId("ImmutableRootGrid"),
-                Factories.Text($"Current: {point}").AutomationId("ImmutableRootValue")
+                TextBlock($"Current: {point}").AutomationId("ImmutableRootValue")
             );
         }
     }
@@ -214,7 +214,7 @@ internal static class PropertyGridFixtures
             Editor = (val, onChange) =>
             {
                 var p = (Point2D)val;
-                return Factories.Text($"Custom: {p.X},{p.Y}").AutomationId("CustomEditorText");
+                return TextBlock($"Custom: {p.X},{p.Y}").AutomationId("CustomEditorText");
             },
             Decompose = val =>
             {
@@ -297,7 +297,7 @@ internal static class PropertyGridFixtures
                 PropertyGridDsl.PropertyGrid(c, _registry,
                     onRootChanged: obj => setC((AppConfig)obj))
                     .AutomationId("DeepNestingGrid"),
-                Factories.Text($"Config: {c.Label}, {c.Theme.Name}, ({c.Theme.Origin.X},{c.Theme.Origin.Y})")
+                TextBlock($"Config: {c.Label}, {c.Theme.Name}, ({c.Theme.Origin.X},{c.Theme.Origin.Y})")
                     .AutomationId("DeepNestingValue")
             );
         }
@@ -318,7 +318,7 @@ internal static class PropertyGridFixtures
             return VStack(
                 PropertyGridDsl.PropertyGrid(_person, _registry)
                     .AutomationId("INPCGrid"),
-                Factories.Text($"Live: {_person.Name}").AutomationId("INPCLive"),
+                TextBlock($"Live: {_person.Name}").AutomationId("INPCLive"),
                 Button("MutateName", () => _person.Name = "Bob").AutomationId("INPCMutateBtn")
             );
         }

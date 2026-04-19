@@ -275,7 +275,7 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
         if (state.TotalCount is not null)
         {
             gridChildren.Add(
-                Factories.Text($"{state.TotalCount:N0} items").Opacity(0.5).FontSize(12)
+                TextBlock($"{state.TotalCount:N0} items").Opacity(0.5).FontSize(12)
                     .Padding(8, 2, 8, 2).Grid(row: gridRow, column: 0)
             );
             gridRow++;
@@ -518,7 +518,7 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
             var expandIcon = isExpanded ? "\u25BC" : "\u25B6";
             var capturedKeyForExpand = rowKey;
             var capturedIsPlaceholder2 = isPlaceholder;
-            cells[0] = Factories.Text(expandIcon)
+            cells[0] = TextBlock(expandIcon)
                 .FontSize(10).Opacity(0.6)
                 .HAlign(HorizontalAlignment.Center)
                 .VAlign(VerticalAlignment.Center)
@@ -535,7 +535,7 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
 
         if (selectable)
         {
-            cells[expandOffset] = Factories.Text(isSelected ? "\u2713" : "")
+            cells[expandOffset] = TextBlock(isSelected ? "\u2713" : "")
                 .FontSize(12)
                 .HAlign(HorizontalAlignment.Center)
                 .VAlign(VerticalAlignment.Center)
@@ -732,7 +732,7 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
 
             row = FlexColumn(
                 row,
-                Factories.Text(errorSummary).Foreground("#c62828").FontSize(11).Padding(8, 2)
+                TextBlock(errorSummary).Foreground("#c62828").FontSize(11).Padding(8, 2)
             );
         }
 
@@ -750,7 +750,7 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
             row = FlexColumn(
                 row,
                 FlexRow(
-                    Factories.Text(commitError).Foreground("#c62828").FontSize(11).Flex(grow: 1),
+                    TextBlock(commitError).Foreground("#c62828").FontSize(11).Flex(grow: 1),
                     Button("Dismiss", () =>
                     {
                         Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread()?.TryEnqueue(() =>
@@ -789,7 +789,7 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
             return col.CellRenderer(value).Padding(8, 4);
 
         if (col.FormatValue is not null)
-            return Factories.Text(col.FormatValue(value)).Padding(8, 4);
+            return TextBlock(col.FormatValue(value)).Padding(8, 4);
 
         var registryRenderer = registry.GetCellRenderer(col.FieldType);
         if (registryRenderer is not null && value is not null)
@@ -797,18 +797,18 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
 
         var registryFormatter = registry.GetFormatter(col.FieldType);
         if (registryFormatter is not null)
-            return Factories.Text(registryFormatter(value)).Padding(8, 4);
+            return TextBlock(registryFormatter(value)).Padding(8, 4);
 
         if (value is bool boolVal)
-            return Factories.Text(boolVal ? "\u2713" : "").Padding(8, 4);
+            return TextBlock(boolVal ? "\u2713" : "").Padding(8, 4);
 
         if (value is double d)
-            return Factories.Text(d.ToString("G")).Padding(8, 4);
+            return TextBlock(d.ToString("G")).Padding(8, 4);
 
         if (value is float f)
-            return Factories.Text(f.ToString("G")).Padding(8, 4);
+            return TextBlock(f.ToString("G")).Padding(8, 4);
 
-        return Factories.Text(value?.ToString() ?? "").Padding(8, 4);
+        return TextBlock(value?.ToString() ?? "").Padding(8, 4);
     }
 
     private static Element RenderEditingCell(
@@ -939,7 +939,7 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
         if (hasRowEditActions)
         {
             headerCells.Add(
-                Factories.Text("").Padding(4, 6)
+                TextBlock("").Padding(4, 6)
                     .Grid(row: 0, column: colCount + cellOffset));
         }
 
@@ -1137,7 +1137,7 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
 
         var hasActiveFilter = state?.GetFilter(col.Name) is not null;
         var filterIcon = showFilter && col.Filterable
-            ? Factories.Text(hasActiveFilter ? "\u2BC7" : "\u2BC6")
+            ? TextBlock(hasActiveFilter ? "\u2BC7" : "\u2BC6")
                 .FontSize(10).Opacity(hasActiveFilter ? 1.0 : 0.4).Padding(2, 0)
             : null;
 
@@ -1145,9 +1145,9 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
         {
             return Button(
                 FlexRow(
-                    Factories.Text(label).SemiBold().Flex(grow: 1),
+                    TextBlock(label).SemiBold().Flex(grow: 1),
                     sortIndicator.Length > 0
-                        ? Factories.Text(sortIndicator).FontSize(10).Opacity(0.7)
+                        ? TextBlock(sortIndicator).FontSize(10).Opacity(0.7)
                         : null,
                     filterIcon
                 ) with { AlignItems = FlexAlign.Center },
@@ -1165,9 +1165,9 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
         }
 
         if (filterIcon is not null)
-            return FlexRow(Factories.Text(label).SemiBold().Flex(grow: 1), filterIcon).Padding(8, 6);
+            return FlexRow(TextBlock(label).SemiBold().Flex(grow: 1), filterIcon).Padding(8, 6);
 
-        return Factories.Text(label).SemiBold().Padding(8, 6);
+        return TextBlock(label).SemiBold().Padding(8, 6);
     }
 
     // ── Keyboard handling ───────────────────────────────────────────
@@ -1262,24 +1262,24 @@ public class DataGridComponent<T> : Component<DataGridElement<T>>
     {
         // Vary the bar width per column so it looks organic, not uniform
         var barText = new string('\u2003', Math.Max(1, (int)(colWidth / 24)));
-        return Factories.Text(barText).Padding(8, 4)
+        return TextBlock(barText).Padding(8, 4)
             .Background("#e0e0e0").Opacity(0.5);
     }
 
     private static Element RenderDefaultLoading()
-        => Factories.Text("Loading...").Opacity(0.5).Padding(16)
+        => TextBlock("Loading...").Opacity(0.5).Padding(16)
             .HAlign(HorizontalAlignment.Center);
 
     private static Element RenderDefaultEmpty()
-        => Factories.Text("No data to display").Opacity(0.5).Padding(16)
+        => TextBlock("No data to display").Opacity(0.5).Padding(16)
             .HAlign(HorizontalAlignment.Center);
 
     private static Element RenderDefaultError(Exception ex)
     {
         return FlexColumn(
-            Factories.Text("Failed to load data").FontSize(14).Bold().Foreground("#c62828"),
-            Factories.Text(ex.GetType().Name).FontSize(11).Opacity(0.6),
-            Factories.Text(ex.Message).FontSize(12).Opacity(0.8)
+            TextBlock("Failed to load data").FontSize(14).Bold().Foreground("#c62828"),
+            TextBlock(ex.GetType().Name).FontSize(11).Opacity(0.6),
+            TextBlock(ex.Message).FontSize(12).Opacity(0.8)
         ).Padding(16);
     }
 

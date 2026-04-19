@@ -105,21 +105,21 @@ public class PanelChildReconciliationTests
     {
         var result = InvokeFilter([
             null!,
-            new TextElement("A"),
+            new TextBlockElement("A"),
             new EmptyElement(),
-            new TextElement("B"),
+            new TextBlockElement("B"),
             null!,
             new EmptyElement(),
         ]);
         Assert.Equal(2, result.Length);
-        Assert.Equal("A", ((TextElement)result[0]).Content);
-        Assert.Equal("B", ((TextElement)result[1]).Content);
+        Assert.Equal("A", ((TextBlockElement)result[0]).Content);
+        Assert.Equal("B", ((TextBlockElement)result[1]).Content);
     }
 
     [Fact]
     public void Filter_No_Nulls_Returns_Same_Array()
     {
-        var elements = new Element[] { new TextElement("A"), new TextElement("B") };
+        var elements = new Element[] { new TextBlockElement("A"), new TextBlockElement("B") };
         var result = InvokeFilter(elements);
         Assert.Same(elements, result); // fast path: same reference
     }
@@ -127,7 +127,7 @@ public class PanelChildReconciliationTests
     [Fact]
     public void Filter_Single_Null_Among_Real()
     {
-        var result = InvokeFilter([new TextElement("A"), null!, new TextElement("B")]);
+        var result = InvokeFilter([new TextBlockElement("A"), null!, new TextBlockElement("B")]);
         Assert.Equal(2, result.Length);
     }
 
@@ -200,8 +200,8 @@ public class PanelChildReconciliationTests
     public void HasAnyKeys_All_Keyed_Returns_True()
     {
         Assert.True(InvokeHasAnyKeys([
-            new TextElement("A") { Key = "k1" },
-            new TextElement("B") { Key = "k2" },
+            new TextBlockElement("A") { Key = "k1" },
+            new TextBlockElement("B") { Key = "k2" },
         ]));
     }
 
@@ -209,8 +209,8 @@ public class PanelChildReconciliationTests
     public void HasAnyKeys_Some_Keyed_Returns_True()
     {
         Assert.True(InvokeHasAnyKeys([
-            new TextElement("A"),
-            new TextElement("B") { Key = "k2" },
+            new TextBlockElement("A"),
+            new TextBlockElement("B") { Key = "k2" },
         ]));
     }
 
@@ -218,8 +218,8 @@ public class PanelChildReconciliationTests
     public void HasAnyKeys_None_Keyed_Returns_False()
     {
         Assert.False(InvokeHasAnyKeys([
-            new TextElement("A"),
-            new TextElement("B"),
+            new TextBlockElement("A"),
+            new TextBlockElement("B"),
         ]));
     }
 
@@ -243,19 +243,19 @@ public class PanelChildReconciliationTests
     [Fact]
     public void GetKey_With_Explicit_Key()
     {
-        Assert.Equal("my-key", InvokeGetKey(new TextElement("A") { Key = "my-key" }, 5));
+        Assert.Equal("my-key", InvokeGetKey(new TextBlockElement("A") { Key = "my-key" }, 5));
     }
 
     [Fact]
     public void GetKey_Without_Key_Uses_Positional()
     {
-        Assert.Equal("__pos_3_TextElement", InvokeGetKey(new TextElement("A"), 3));
+        Assert.Equal("__pos_3_TextBlockElement", InvokeGetKey(new TextBlockElement("A"), 3));
     }
 
     [Fact]
     public void GetKey_Different_Types_Different_Positional_Keys()
     {
-        var textKey = InvokeGetKey(new TextElement("A"), 0);
+        var textKey = InvokeGetKey(new TextBlockElement("A"), 0);
         var buttonKey = InvokeGetKey(new ButtonElement("A"), 0);
         Assert.NotEqual(textKey, buttonKey);
     }
@@ -263,8 +263,8 @@ public class PanelChildReconciliationTests
     [Fact]
     public void GetKey_Same_Type_Different_Positions_Different_Keys()
     {
-        var key0 = InvokeGetKey(new TextElement("A"), 0);
-        var key1 = InvokeGetKey(new TextElement("A"), 1);
+        var key0 = InvokeGetKey(new TextBlockElement("A"), 0);
+        var key1 = InvokeGetKey(new TextBlockElement("A"), 1);
         Assert.NotEqual(key0, key1);
     }
 
@@ -283,38 +283,38 @@ public class PanelChildReconciliationTests
     public void KeyMatch_Same_Type_Same_Key_Returns_True()
     {
         Assert.True(InvokeKeyMatch(
-            new TextElement("A") { Key = "k1" },
-            new TextElement("B") { Key = "k1" }));
+            new TextBlockElement("A") { Key = "k1" },
+            new TextBlockElement("B") { Key = "k1" }));
     }
 
     [Fact]
     public void KeyMatch_Same_Type_Different_Key_Returns_False()
     {
         Assert.False(InvokeKeyMatch(
-            new TextElement("A") { Key = "k1" },
-            new TextElement("B") { Key = "k2" }));
+            new TextBlockElement("A") { Key = "k1" },
+            new TextBlockElement("B") { Key = "k2" }));
     }
 
     [Fact]
     public void KeyMatch_Different_Type_Same_Key_Returns_False()
     {
         Assert.False(InvokeKeyMatch(
-            new TextElement("A") { Key = "k1" },
+            new TextBlockElement("A") { Key = "k1" },
             new ButtonElement("A") { Key = "k1" }));
     }
 
     [Fact]
     public void KeyMatch_Both_Null_Keys_Same_Type_Returns_True()
     {
-        Assert.True(InvokeKeyMatch(new TextElement("A"), new TextElement("B")));
+        Assert.True(InvokeKeyMatch(new TextBlockElement("A"), new TextBlockElement("B")));
     }
 
     [Fact]
     public void KeyMatch_One_Keyed_One_Not_Returns_False()
     {
         Assert.False(InvokeKeyMatch(
-            new TextElement("A") { Key = "k1" },
-            new TextElement("B")));
+            new TextBlockElement("A") { Key = "k1" },
+            new TextBlockElement("B")));
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -387,63 +387,63 @@ public class PanelChildReconciliationTests
     [Fact]
     public void VStack_DSL_Filters_Null_Children()
     {
-        var el = VStack(Factories.Text("A"), null, Factories.Text("B"), null);
+        var el = VStack(TextBlock("A"), null, TextBlock("B"), null);
         Assert.Equal(2, el.Children.Length);
     }
 
     [Fact]
     public void HStack_DSL_Filters_Null_Children()
     {
-        var el = HStack(null, Factories.Text("A"), null);
+        var el = HStack(null, TextBlock("A"), null);
         Assert.Single(el.Children);
     }
 
     [Fact]
     public void Flex_DSL_Filters_Null_Children()
     {
-        var el = Factories.Flex(Factories.Text("A"), null, Factories.Text("B"), null, Factories.Text("C"));
+        var el = Factories.Flex(TextBlock("A"), null, TextBlock("B"), null, TextBlock("C"));
         Assert.Equal(3, el.Children.Length);
     }
 
     [Fact]
     public void FlexRow_DSL_Filters_Null_Children()
     {
-        var el = FlexRow(null, null, Factories.Text("A"));
+        var el = FlexRow(null, null, TextBlock("A"));
         Assert.Single(el.Children);
     }
 
     [Fact]
     public void FlexColumn_DSL_Filters_Null_Children()
     {
-        var el = FlexColumn(null, Factories.Text("A"), null);
+        var el = FlexColumn(null, TextBlock("A"), null);
         Assert.Single(el.Children);
     }
 
     [Fact]
     public void Grid_DSL_Filters_Null_Children()
     {
-        var el = Grid(["*", "*"], ["*"], Factories.Text("A"), null, Factories.Text("B"));
+        var el = Grid(["*", "*"], ["*"], TextBlock("A"), null, TextBlock("B"));
         Assert.Equal(2, el.Children.Length);
     }
 
     [Fact]
     public void WrapGrid_DSL_Filters_Null_Children()
     {
-        var el = WrapGrid(Factories.Text("A"), null, Factories.Text("B"));
+        var el = WrapGrid(TextBlock("A"), null, TextBlock("B"));
         Assert.Equal(2, el.Children.Length);
     }
 
     [Fact]
     public void Canvas_DSL_Filters_Null_Children()
     {
-        var el = Canvas(null, Factories.Text("A"), null);
+        var el = Canvas(null, TextBlock("A"), null);
         Assert.Single(el.Children);
     }
 
     [Fact]
     public void RelativePanel_DSL_Filters_Null_Children()
     {
-        var el = RelativePanel(Factories.Text("A"), null, Factories.Text("B"));
+        var el = RelativePanel(TextBlock("A"), null, TextBlock("B"));
         Assert.Equal(2, el.Children.Length);
     }
 
@@ -483,24 +483,24 @@ public class PanelChildReconciliationTests
     public void CanUpdate_Stack_Elements_Same_Type()
     {
         var reconciler = new Reconciler();
-        Assert.True(reconciler.CanUpdate(VStack(Factories.Text("A")), VStack(Factories.Text("B"))));
-        Assert.True(reconciler.CanUpdate(HStack(Factories.Text("A")), HStack(Factories.Text("B"))));
+        Assert.True(reconciler.CanUpdate(VStack(TextBlock("A")), VStack(TextBlock("B"))));
+        Assert.True(reconciler.CanUpdate(HStack(TextBlock("A")), HStack(TextBlock("B"))));
     }
 
     [Fact]
     public void CanUpdate_Flex_Elements_Same_Type()
     {
         var reconciler = new Reconciler();
-        Assert.True(reconciler.CanUpdate(Factories.Flex(Factories.Text("A")), Factories.Flex(Factories.Text("B"))));
-        Assert.True(reconciler.CanUpdate(FlexRow(Factories.Text("A")), FlexColumn(Factories.Text("B"))));
+        Assert.True(reconciler.CanUpdate(Factories.Flex(TextBlock("A")), Factories.Flex(TextBlock("B"))));
+        Assert.True(reconciler.CanUpdate(FlexRow(TextBlock("A")), FlexColumn(TextBlock("B"))));
     }
 
     [Fact]
     public void CanUpdate_Grid_Elements_Same_Type()
     {
         var reconciler = new Reconciler();
-        var a = Grid(["*"], ["*"], Factories.Text("A"));
-        var b = Grid(["*", "*"], ["*"], Factories.Text("B"));
+        var a = Grid(["*"], ["*"], TextBlock("A"));
+        var b = Grid(["*", "*"], ["*"], TextBlock("B"));
         Assert.True(reconciler.CanUpdate(a, b));
     }
 
@@ -508,33 +508,33 @@ public class PanelChildReconciliationTests
     public void CanUpdate_WrapGrid_Elements_Same_Type()
     {
         var reconciler = new Reconciler();
-        Assert.True(reconciler.CanUpdate(WrapGrid(Factories.Text("A")), WrapGrid(Factories.Text("B"))));
+        Assert.True(reconciler.CanUpdate(WrapGrid(TextBlock("A")), WrapGrid(TextBlock("B"))));
     }
 
     [Fact]
     public void CanUpdate_Canvas_Elements_Same_Type()
     {
         var reconciler = new Reconciler();
-        Assert.True(reconciler.CanUpdate(Canvas(Factories.Text("A")), Canvas(Factories.Text("B"))));
+        Assert.True(reconciler.CanUpdate(Canvas(TextBlock("A")), Canvas(TextBlock("B"))));
     }
 
     [Fact]
     public void CanUpdate_RelativePanel_Elements_Same_Type()
     {
         var reconciler = new Reconciler();
-        Assert.True(reconciler.CanUpdate(RelativePanel(Factories.Text("A")), RelativePanel(Factories.Text("B"))));
+        Assert.True(reconciler.CanUpdate(RelativePanel(TextBlock("A")), RelativePanel(TextBlock("B"))));
     }
 
     [Fact]
     public void CanUpdate_Cross_Panel_Types_Returns_False()
     {
         var reconciler = new Reconciler();
-        Assert.False(reconciler.CanUpdate(VStack(Factories.Text("A")), Factories.Flex(Factories.Text("A"))));
-        Assert.False(reconciler.CanUpdate(Factories.Flex(Factories.Text("A")), WrapGrid(Factories.Text("A"))));
-        Assert.False(reconciler.CanUpdate(WrapGrid(Factories.Text("A")), Canvas(Factories.Text("A"))));
+        Assert.False(reconciler.CanUpdate(VStack(TextBlock("A")), Factories.Flex(TextBlock("A"))));
+        Assert.False(reconciler.CanUpdate(Factories.Flex(TextBlock("A")), WrapGrid(TextBlock("A"))));
+        Assert.False(reconciler.CanUpdate(WrapGrid(TextBlock("A")), Canvas(TextBlock("A"))));
         Assert.False(reconciler.CanUpdate(
-            Grid(["*"], ["*"], Factories.Text("A")),
-            VStack(Factories.Text("A"))));
+            Grid(["*"], ["*"], TextBlock("A")),
+            VStack(TextBlock("A"))));
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -545,14 +545,14 @@ public class PanelChildReconciliationTests
     public void CanUpdate_Text_Vs_Button_Returns_False()
     {
         var reconciler = new Reconciler();
-        Assert.False(reconciler.CanUpdate(new TextElement("A"), new ButtonElement("A")));
+        Assert.False(reconciler.CanUpdate(new TextBlockElement("A"), new ButtonElement("A")));
     }
 
     [Fact]
     public void CanUpdate_Text_Vs_Text_Returns_True()
     {
         var reconciler = new Reconciler();
-        Assert.True(reconciler.CanUpdate(new TextElement("A"), new TextElement("B")));
+        Assert.True(reconciler.CanUpdate(new TextBlockElement("A"), new TextBlockElement("B")));
     }
 
     [Fact]
@@ -560,8 +560,8 @@ public class PanelChildReconciliationTests
     {
         var reconciler = new Reconciler();
         Assert.False(reconciler.CanUpdate(
-            new TextElement("A") { Key = "k1" },
-            new TextElement("B")));
+            new TextBlockElement("A") { Key = "k1" },
+            new TextBlockElement("B")));
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -621,30 +621,30 @@ public class PanelChildReconciliationTests
     [Fact]
     public void ShallowEquals_Stack_Different_Children_Count()
     {
-        var a = VStack(Factories.Text("A"));
-        var b = VStack(Factories.Text("A"), Factories.Text("B"));
+        var a = VStack(TextBlock("A"));
+        var b = VStack(TextBlock("A"), TextBlock("B"));
         Assert.False(Element.ShallowEquals(a, b));
     }
 
     [Fact]
     public void ShallowEquals_Stack_Same_Reference_Returns_True()
     {
-        var a = VStack(Factories.Text("A"));
+        var a = VStack(TextBlock("A"));
         Assert.True(Element.ShallowEquals(a, a));
     }
 
     [Fact]
     public void ShallowEquals_Flex_Different_Direction()
     {
-        var a = FlexRow(Factories.Text("A"));
-        var b = FlexColumn(Factories.Text("A"));
+        var a = FlexRow(TextBlock("A"));
+        var b = FlexColumn(TextBlock("A"));
         Assert.False(Element.ShallowEquals(a, b));
     }
 
     [Fact]
     public void ShallowEquals_Flex_Same_Instance_Returns_True()
     {
-        var a = FlexRow(Factories.Text("A"));
+        var a = FlexRow(TextBlock("A"));
         Assert.True(Element.ShallowEquals(a, a));
     }
 
@@ -1409,7 +1409,7 @@ public class YogaWinUILayoutInteractionTests
     [Fact]
     public void FlexElement_Default_Properties()
     {
-        var el = Factories.Flex(Factories.Text("A"));
+        var el = Factories.Flex(TextBlock("A"));
         Assert.Equal(Microsoft.UI.Reactor.Layout.FlexDirection.Row, el.Direction);
         Assert.Equal(Microsoft.UI.Reactor.Layout.FlexJustify.FlexStart, el.JustifyContent);
         Assert.Equal(Microsoft.UI.Reactor.Layout.FlexAlign.Stretch, el.AlignItems);
@@ -1422,21 +1422,21 @@ public class YogaWinUILayoutInteractionTests
     [Fact]
     public void FlexRow_Sets_Row_Direction()
     {
-        var el = FlexRow(Factories.Text("A"));
+        var el = FlexRow(TextBlock("A"));
         Assert.Equal(Microsoft.UI.Reactor.Layout.FlexDirection.Row, el.Direction);
     }
 
     [Fact]
     public void FlexColumn_Sets_Column_Direction()
     {
-        var el = FlexColumn(Factories.Text("A"));
+        var el = FlexColumn(TextBlock("A"));
         Assert.Equal(Microsoft.UI.Reactor.Layout.FlexDirection.Column, el.Direction);
     }
 
     [Fact]
     public void FlexElement_WithInit_Overrides()
     {
-        var el = Factories.Flex(Factories.Text("A")) with
+        var el = Factories.Flex(TextBlock("A")) with
         {
             Direction = Microsoft.UI.Reactor.Layout.FlexDirection.ColumnReverse,
             JustifyContent = Microsoft.UI.Reactor.Layout.FlexJustify.SpaceAround,

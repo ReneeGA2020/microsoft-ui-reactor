@@ -72,7 +72,7 @@ public class DirtyTrackingApp : Component
         {
             int col = i % Cols;
             int row = i / Cols;
-            cells[i] = Factories.Text($"Counter {i}: {values[i]}")
+            cells[i] = TextBlock($"Counter {i}: {values[i]}")
                 .FontSize(10)
                 .Grid(row: row, column: col);
         }
@@ -80,7 +80,7 @@ public class DirtyTrackingApp : Component
         // HUD overlay
         cells[Total] = Opts.Headless
             ? null!
-            : Factories.Text(hudText)
+            : TextBlock(hudText)
                 .Foreground("Yellow")
                 .FontSize(14);
 

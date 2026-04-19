@@ -51,7 +51,7 @@ internal static class ModifierEventFixtures
 
                 return VStack(
                     Button("UpdEvents", () => set(1)),
-                    Factories.Text("EventTarget") with { Modifiers = mods }
+                    TextBlock("EventTarget") with { Modifiers = mods }
                 );
             });
 
@@ -92,7 +92,7 @@ internal static class ModifierEventFixtures
 
                 return VStack(
                     Button("UpdBrush", () => set(1)),
-                    Factories.Text("BrushTarget") with
+                    TextBlock("BrushTarget") with
                     {
                         Modifiers = new ElementModifiers
                         {
@@ -135,7 +135,7 @@ internal static class ModifierEventFixtures
                 var (phase, set) = ctx.UseState(0);
                 return VStack(
                     Button("UpdTip", () => set(1)),
-                    Factories.Text("TipTarget") with
+                    TextBlock("TipTarget") with
                     {
                         Modifiers = new ElementModifiers
                         {
@@ -176,7 +176,7 @@ internal static class ModifierEventFixtures
                 var (phase, set) = ctx.UseState(0);
                 return VStack(
                     Button("UpdAuto", () => set(1)),
-                    Factories.Text("AutoTarget") with
+                    TextBlock("AutoTarget") with
                     {
                         Modifiers = new ElementModifiers
                         {
@@ -217,7 +217,7 @@ internal static class ModifierEventFixtures
                 var (phase, set) = ctx.UseState(0);
                 return VStack(
                     Button("UpdTrans", () => set(1)),
-                    Factories.Text("TransTarget") with
+                    TextBlock("TransTarget") with
                     {
                         ImplicitTransitions = new ImplicitTransitions
                         {
@@ -265,7 +265,7 @@ internal static class ModifierEventFixtures
 
                 return VStack(
                     Button("UpdBorderMod", () => set(1)),
-                    Border(Factories.Text("BdrModTarget")) with
+                    Border(TextBlock("BdrModTarget")) with
                     {
                         Modifiers = new ElementModifiers
                         {
@@ -310,7 +310,7 @@ internal static class ModifierEventFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
             {
-                return Factories.Text("MountActionTarget") with
+                return TextBlock("MountActionTarget") with
                 {
                     Modifiers = new ElementModifiers
                     {

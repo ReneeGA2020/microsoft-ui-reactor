@@ -53,7 +53,7 @@ class TypographyPage : Component
     {
         return SampleCard("Type Ramp",
             VStack(8,
-                Factories.Text("WinUI defines a set of TextBlock styles that map to Segoe UI Variable at specific sizes and weights. Use these styles rather than setting font size and weight manually to stay consistent with the system type ramp.")
+                TextBlock("WinUI defines a set of TextBlock styles that map to Segoe UI Variable at specific sizes and weights. Use these styles rather than setting font size and weight manually to stay consistent with the system type ramp.")
                     .Foreground(Theme.SecondaryText)
                     .FontSize(13)
                     .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
@@ -62,7 +62,7 @@ class TypographyPage : Component
                 VStack(0, TypeRamp.Select(TypeRampRow).ToArray())
             ),
             string.Join("\n", TypeRamp.Select(e =>
-                $"Factories.Text(\"{e.ExampleText}\").ApplyStyle(\"{e.StyleName}\")  // {e.Size}px {e.Weight}")));
+                $"TextBlock(\"{e.ExampleText}\").ApplyStyle(\"{e.StyleName}\")  // {e.Size}px {e.Weight}")));
     }
 
     static Element TypeRampRow(TypeRampEntry entry) =>
@@ -71,7 +71,7 @@ class TypographyPage : Component
                 columns: ["*", "220", "200"], rows: ["Auto"],
 
                 // Live preview
-                Factories.Text(entry.ExampleText)
+                TextBlock(entry.ExampleText)
                     .ApplyStyle(entry.StyleName)
                     .Foreground(Theme.PrimaryText)
                     .VAlign(VerticalAlignment.Center)
@@ -79,17 +79,17 @@ class TypographyPage : Component
 
                 // Metadata
                 VStack(0,
-                    Factories.Text(entry.StyleName)
+                    TextBlock(entry.StyleName)
                         .FontSize(11)
                         .Foreground(Theme.TertiaryText)
                         .Set(tb => tb.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Cascadia Code, Consolas, monospace")),
-                    Factories.Text($"{entry.Size}px · {entry.Weight} · {entry.VariableFont}")
+                    TextBlock($"{entry.Size}px · {entry.Weight} · {entry.VariableFont}")
                         .FontSize(11)
                         .Foreground(Theme.SecondaryText)
                 ).VAlign(VerticalAlignment.Center).Grid(column: 1),
 
                 // Recommendation
-                Factories.Text(entry.Recommendation)
+                TextBlock(entry.Recommendation)
                     .FontSize(12)
                     .Foreground(Theme.SecondaryText)
                     .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
@@ -109,7 +109,7 @@ class TypographyPage : Component
     static Element TextHierarchySection() =>
         SampleCard("Text Hierarchy Helpers",
             VStack(12,
-                Factories.Text("Reactor provides shorthand helpers that map to common type ramp levels without requiring ApplyStyle. These set font size and weight directly.")
+                TextBlock("Reactor provides shorthand helpers that map to common type ramp levels without requiring ApplyStyle. These set font size and weight directly.")
                     .Foreground(Theme.SecondaryText)
                     .FontSize(13)
                     .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
@@ -118,25 +118,25 @@ class TypographyPage : Component
                 VStack(8,
                     HStack(12,
                         Heading("Heading").Foreground(Theme.PrimaryText),
-                        Factories.Text("— 28px Bold").FontSize(12).Foreground(Theme.TertiaryText).VAlign(VerticalAlignment.Bottom)
+                        TextBlock("— 28px Bold").FontSize(12).Foreground(Theme.TertiaryText).VAlign(VerticalAlignment.Bottom)
                     ),
                     HStack(12,
                         SubHeading("SubHeading").Foreground(Theme.PrimaryText),
-                        Factories.Text("— 20px SemiBold").FontSize(12).Foreground(Theme.TertiaryText).VAlign(VerticalAlignment.Bottom)
+                        TextBlock("— 20px SemiBold").FontSize(12).Foreground(Theme.TertiaryText).VAlign(VerticalAlignment.Bottom)
                     ),
                     HStack(12,
-                        Factories.Text("Body Text").Foreground(Theme.PrimaryText),
-                        Factories.Text("— 14px Normal (default)").FontSize(12).Foreground(Theme.TertiaryText).VAlign(VerticalAlignment.Bottom)
+                        TextBlock("Body Text").Foreground(Theme.PrimaryText),
+                        TextBlock("— 14px Normal (default)").FontSize(12).Foreground(Theme.TertiaryText).VAlign(VerticalAlignment.Bottom)
                     ),
                     HStack(12,
                         Caption("Caption").Foreground(Theme.SecondaryText),
-                        Factories.Text("— 12px Normal").FontSize(12).Foreground(Theme.TertiaryText).VAlign(VerticalAlignment.Bottom)
+                        TextBlock("— 12px Normal").FontSize(12).Foreground(Theme.TertiaryText).VAlign(VerticalAlignment.Bottom)
                     )
                 )
             ),
             @"Heading(""Heading"")       // 28px Bold
 SubHeading(""SubHeading"") // 20px SemiBold
-Factories.Text(""Body Text"")        // 14px Normal
+TextBlock(""Body Text"")        // 14px Normal
 Caption(""Caption"")       // 12px Normal");
 
     // ── Section 3: Font sizes (kept from original) ───────────────────
@@ -144,70 +144,70 @@ Caption(""Caption"")       // 12px Normal");
     static Element FontSizesSection() =>
         SampleCard("Font Sizes",
             VStack(4,
-                Factories.Text("10px").FontSize(10).Foreground(Theme.PrimaryText),
-                Factories.Text("12px").FontSize(12).Foreground(Theme.PrimaryText),
-                Factories.Text("14px (default)").FontSize(14).Foreground(Theme.PrimaryText),
-                Factories.Text("16px").FontSize(16).Foreground(Theme.PrimaryText),
-                Factories.Text("20px").FontSize(20).Foreground(Theme.PrimaryText),
-                Factories.Text("24px").FontSize(24).Foreground(Theme.PrimaryText),
-                Factories.Text("32px").FontSize(32).Foreground(Theme.PrimaryText)
+                TextBlock("10px").FontSize(10).Foreground(Theme.PrimaryText),
+                TextBlock("12px").FontSize(12).Foreground(Theme.PrimaryText),
+                TextBlock("14px (default)").FontSize(14).Foreground(Theme.PrimaryText),
+                TextBlock("16px").FontSize(16).Foreground(Theme.PrimaryText),
+                TextBlock("20px").FontSize(20).Foreground(Theme.PrimaryText),
+                TextBlock("24px").FontSize(24).Foreground(Theme.PrimaryText),
+                TextBlock("32px").FontSize(32).Foreground(Theme.PrimaryText)
             ),
-            @"Factories.Text(""14px"").FontSize(14)
-Factories.Text(""20px"").FontSize(20)
-Factories.Text(""32px"").FontSize(32)");
+            @"TextBlock(""14px"").FontSize(14)
+TextBlock(""20px"").FontSize(20)
+TextBlock(""32px"").FontSize(32)");
 
     // ── Section 4: Font weights (kept from original) ─────────────────
 
     static Element FontWeightsSection() =>
         SampleCard("Font Weights",
             VStack(4,
-                Factories.Text("Normal weight").Foreground(Theme.PrimaryText),
-                Factories.Text("SemiBold weight").Foreground(Theme.PrimaryText).SemiBold(),
-                Factories.Text("Bold weight").Foreground(Theme.PrimaryText).Bold()
+                TextBlock("Normal weight").Foreground(Theme.PrimaryText),
+                TextBlock("SemiBold weight").Foreground(Theme.PrimaryText).SemiBold(),
+                TextBlock("Bold weight").Foreground(Theme.PrimaryText).Bold()
             ),
-            @"Factories.Text(""Normal weight"")
-Factories.Text(""SemiBold"").SemiBold()
-Factories.Text(""Bold"").Bold()");
+            @"TextBlock(""Normal weight"")
+TextBlock(""SemiBold"").SemiBold()
+TextBlock(""Bold"").Bold()");
 
     // ── Section 5: ApplyStyle usage ──────────────────────────────────
 
     static Element ApplyStyleSection() =>
         SampleCard("Applying XAML Text Styles",
             VStack(12,
-                Factories.Text("Use .ApplyStyle() with any WinUI TextBlock style key to apply the full type ramp settings (size, weight, line height, and optical sizing) in one call.")
+                TextBlock("Use .ApplyStyle() with any WinUI TextBlock style key to apply the full type ramp settings (size, weight, line height, and optical sizing) in one call.")
                     .Foreground(Theme.SecondaryText)
                     .FontSize(13)
                     .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
                     .Margin(0, 0, 0, 4),
 
                 VStack(8,
-                    Factories.Text("Title style").ApplyStyle("TitleTextBlockStyle").Foreground(Theme.PrimaryText),
-                    Factories.Text("Subtitle style").ApplyStyle("SubtitleTextBlockStyle").Foreground(Theme.PrimaryText),
-                    Factories.Text("Body Strong style").ApplyStyle("BodyStrongTextBlockStyle").Foreground(Theme.PrimaryText),
-                    Factories.Text("Body style").ApplyStyle("BodyTextBlockStyle").Foreground(Theme.PrimaryText),
-                    Factories.Text("Caption style").ApplyStyle("CaptionTextBlockStyle").Foreground(Theme.SecondaryText)
+                    TextBlock("Title style").ApplyStyle("TitleTextBlockStyle").Foreground(Theme.PrimaryText),
+                    TextBlock("Subtitle style").ApplyStyle("SubtitleTextBlockStyle").Foreground(Theme.PrimaryText),
+                    TextBlock("Body Strong style").ApplyStyle("BodyStrongTextBlockStyle").Foreground(Theme.PrimaryText),
+                    TextBlock("Body style").ApplyStyle("BodyTextBlockStyle").Foreground(Theme.PrimaryText),
+                    TextBlock("Caption style").ApplyStyle("CaptionTextBlockStyle").Foreground(Theme.SecondaryText)
                 )
             ),
-            @"Factories.Text(""Title"").ApplyStyle(""TitleTextBlockStyle"")
-Factories.Text(""Subtitle"").ApplyStyle(""SubtitleTextBlockStyle"")
-Factories.Text(""Body Strong"").ApplyStyle(""BodyStrongTextBlockStyle"")
-Factories.Text(""Body"").ApplyStyle(""BodyTextBlockStyle"")
-Factories.Text(""Caption"").ApplyStyle(""CaptionTextBlockStyle"")");
+            @"TextBlock(""Title"").ApplyStyle(""TitleTextBlockStyle"")
+TextBlock(""Subtitle"").ApplyStyle(""SubtitleTextBlockStyle"")
+TextBlock(""Body Strong"").ApplyStyle(""BodyStrongTextBlockStyle"")
+TextBlock(""Body"").ApplyStyle(""BodyTextBlockStyle"")
+TextBlock(""Caption"").ApplyStyle(""CaptionTextBlockStyle"")");
 
     // ── Section 6: Text wrapping & trimming ──────────────────────────
 
     static Element TextWrappingSection() =>
         SampleCard("Text Wrapping & Trimming",
             VStack(16,
-                Factories.Text("Control how text behaves when it exceeds the available width. Wrapping moves overflow to the next line; trimming truncates with an ellipsis.")
+                TextBlock("Control how text behaves when it exceeds the available width. Wrapping moves overflow to the next line; trimming truncates with an ellipsis.")
                     .Foreground(Theme.SecondaryText)
                     .FontSize(13)
                     .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
                     .Margin(0, 0, 0, 4),
 
-                Factories.Text("Wrapping").SemiBold().Foreground(Theme.PrimaryText),
+                TextBlock("Wrapping").SemiBold().Foreground(Theme.PrimaryText),
                 Border(
-                    Factories.Text("This is a long paragraph of text that wraps to the next line when it exceeds the available width of its container, creating a natural reading flow.")
+                    TextBlock("This is a long paragraph of text that wraps to the next line when it exceeds the available width of its container, creating a natural reading flow.")
                         .Foreground(Theme.PrimaryText)
                         .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
                 )
@@ -217,9 +217,9 @@ Factories.Text(""Caption"").ApplyStyle(""CaptionTextBlockStyle"")");
                 .Padding(12)
                 .Width(280),
 
-                Factories.Text("Trimming").SemiBold().Foreground(Theme.PrimaryText),
+                TextBlock("Trimming").SemiBold().Foreground(Theme.PrimaryText),
                 Border(
-                    Factories.Text("This is a long line of text that will be trimmed with an ellipsis when it reaches the edge of its container.")
+                    TextBlock("This is a long line of text that will be trimmed with an ellipsis when it reaches the edge of its container.")
                         .Foreground(Theme.PrimaryText)
                         .Set(tb =>
                         {
@@ -233,9 +233,9 @@ Factories.Text(""Caption"").ApplyStyle(""CaptionTextBlockStyle"")");
                 .Padding(12)
                 .Width(280),
 
-                Factories.Text("Max Lines").SemiBold().Foreground(Theme.PrimaryText),
+                TextBlock("Max Lines").SemiBold().Foreground(Theme.PrimaryText),
                 Border(
-                    Factories.Text("This paragraph wraps but is limited to two lines. Any additional content beyond the second line is trimmed with an ellipsis to keep the layout compact and predictable.")
+                    TextBlock("This paragraph wraps but is limited to two lines. Any additional content beyond the second line is trimmed with an ellipsis to keep the layout compact and predictable.")
                         .Foreground(Theme.PrimaryText)
                         .Set(tb =>
                         {
@@ -251,18 +251,18 @@ Factories.Text(""Caption"").ApplyStyle(""CaptionTextBlockStyle"")");
                 .Width(280)
             ),
             @"// Wrapping
-Factories.Text(""Long text..."")
+TextBlock(""Long text..."")
     .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
 
 // Trimming with ellipsis
-Factories.Text(""Long text..."")
+TextBlock(""Long text..."")
     .Set(tb => {
         tb.TextWrapping = TextWrapping.NoWrap;
         tb.TextTrimming = TextTrimming.CharacterEllipsis;
     })
 
 // Max lines with trimming
-Factories.Text(""Long text..."")
+TextBlock(""Long text..."")
     .Set(tb => {
         tb.TextWrapping = TextWrapping.Wrap;
         tb.TextTrimming = TextTrimming.CharacterEllipsis;
@@ -274,7 +274,7 @@ Factories.Text(""Long text..."")
     static Element TextColorSection() =>
         SampleCard("Text Color & Hierarchy",
             VStack(12,
-                Factories.Text("Combine type ramp levels with text color tokens to build clear visual hierarchy. Use primary text for main content, secondary for supporting info, and accent for interactive or highlighted text.")
+                TextBlock("Combine type ramp levels with text color tokens to build clear visual hierarchy. Use primary text for main content, secondary for supporting info, and accent for interactive or highlighted text.")
                     .Foreground(Theme.SecondaryText)
                     .FontSize(13)
                     .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
@@ -283,22 +283,22 @@ Factories.Text(""Long text..."")
                 // Practical hierarchy example
                 Border(
                     VStack(8,
-                        Factories.Text("Notifications").ApplyStyle("SubtitleTextBlockStyle").Foreground(Theme.PrimaryText),
+                        TextBlock("Notifications").ApplyStyle("SubtitleTextBlockStyle").Foreground(Theme.PrimaryText),
                         Border(VStack()).Height(1).Background(Theme.DividerStroke).HAlign(HorizontalAlignment.Stretch),
                         VStack(4,
-                            Factories.Text("New update available").SemiBold().Foreground(Theme.PrimaryText),
-                            Factories.Text("Version 2.5 includes performance improvements and bug fixes.")
+                            TextBlock("New update available").SemiBold().Foreground(Theme.PrimaryText),
+                            TextBlock("Version 2.5 includes performance improvements and bug fixes.")
                                 .FontSize(13).Foreground(Theme.SecondaryText)
                                 .Set(tb => tb.TextWrapping = TextWrapping.Wrap),
-                            Factories.Text("Install now").FontSize(13).Foreground(Theme.AccentText)
+                            TextBlock("Install now").FontSize(13).Foreground(Theme.AccentText)
                         ),
                         Border(VStack()).Height(1).Background(Theme.DividerStroke).HAlign(HorizontalAlignment.Stretch),
                         VStack(4,
-                            Factories.Text("Scheduled maintenance").SemiBold().Foreground(Theme.PrimaryText),
-                            Factories.Text("The system will be briefly unavailable on Sunday at 2:00 AM.")
+                            TextBlock("Scheduled maintenance").SemiBold().Foreground(Theme.PrimaryText),
+                            TextBlock("The system will be briefly unavailable on Sunday at 2:00 AM.")
                                 .FontSize(13).Foreground(Theme.SecondaryText)
                                 .Set(tb => tb.TextWrapping = TextWrapping.Wrap),
-                            Factories.Text("3 hours ago").FontSize(12).Foreground(Theme.TertiaryText)
+                            TextBlock("3 hours ago").FontSize(12).Foreground(Theme.TertiaryText)
                         )
                     ).Margin(16)
                 )
@@ -308,23 +308,23 @@ Factories.Text(""Long text..."")
                 .Width(360)
             ),
             @"// Heading — Subtitle style, primary color
-Factories.Text(""Notifications"")
+TextBlock(""Notifications"")
     .ApplyStyle(""SubtitleTextBlockStyle"")
     .Foreground(Theme.PrimaryText)
 
 // Title — SemiBold, primary color
-Factories.Text(""New update"").SemiBold()
+TextBlock(""New update"").SemiBold()
     .Foreground(Theme.PrimaryText)
 
 // Description — smaller, secondary color
-Factories.Text(""Details..."").FontSize(13)
+TextBlock(""Details..."").FontSize(13)
     .Foreground(Theme.SecondaryText)
 
 // Action link — accent color
-Factories.Text(""Install now"").FontSize(13)
+TextBlock(""Install now"").FontSize(13)
     .Foreground(Theme.AccentText)
 
 // Timestamp — smallest, tertiary color
-Factories.Text(""3 hours ago"").FontSize(12)
+TextBlock(""3 hours ago"").FontSize(12)
     .Foreground(Theme.TertiaryText)");
 }

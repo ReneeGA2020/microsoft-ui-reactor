@@ -47,10 +47,10 @@ class AsyncValueSamplesDemo : Component
 
         return ScrollView(VStack(12,
             Heading("UseResource scenarios"),
-            Text("Every arm of the AsyncValue<T> state machine exercised under a real dispatcher."),
+            TextBlock("Every arm of the AsyncValue<T> state machine exercised under a real dispatcher."),
 
             ComboBox(
-                Scenarios.Select(s => Text(s.Label) as Element).ToArray(),
+                Scenarios.Select(s => TextBlock(s.Label) as Element).ToArray(),
                 Array.IndexOf(Scenarios, Scenarios.First(s => s.Key == scenario)),
                 i => setScenario(Scenarios[i].Key)
             ).Width(460),
@@ -67,7 +67,7 @@ class AsyncValueSamplesDemo : Component
                     AsyncValueScenario.SearchInfinite => Component<SearchInfiniteScenario>(),
                     AsyncValueScenario.InfiniteRefresh => Component<InfiniteRefreshScenario>(),
                     AsyncValueScenario.DataSourceAdapter => Component<DataSourceAdapterScenario>(),
-                    _ => Text("Select a scenario"),
+                    _ => TextBlock("Select a scenario"),
                 }
             ).Padding(16).CornerRadius(8).Background(SubtleFill).Margin(0, 8)
         ));
@@ -106,7 +106,7 @@ class DeterministicFetcherScenario : Component
                 Button("Fail", () => { setMode(Mode.Fail); setRunId(runId + 1); }),
                 Button("Slow", () => { setMode(Mode.Slow); setRunId(runId + 1); })
             ),
-            Text(DescribeValue(result)).SemiBold()
+            TextBlock(DescribeValue(result)).SemiBold()
         );
     }
 
@@ -134,8 +134,8 @@ class SyncCompleteScenario : Component
 
         return VStack(8,
             SubHeading("1b. Sync-complete fetcher"),
-            Text("A fetcher returning an already-completed task skips the Loading state entirely."),
-            Text(result switch
+            TextBlock("A fetcher returning an already-completed task skips the Loading state entirely."),
+            TextBlock(result switch
             {
                 AsyncValue<string>.Loading => "⏳ Loading… (should not appear!)",
                 AsyncValue<string>.Data d => $"✅ {d.Value}",
@@ -166,9 +166,9 @@ class DepsChangeCancelScenario : Component
 
         return VStack(8,
             SubHeading("1c. Deps-change cancellation"),
-            Text("Each keystroke cancels the previous fetch and starts a new one — only the last lands."),
+            TextBlock("Each keystroke cancels the previous fetch and starts a new one — only the last lands."),
             TextField(query, v => setQuery(v ?? ""), placeholder: "type here…"),
-            Text(result switch
+            TextBlock(result switch
             {
                 AsyncValue<string>.Loading => "⏳ Loading…",
                 AsyncValue<string>.Data d => $"✅ {d.Value}",
@@ -192,7 +192,7 @@ class SiblingsSharedKeyScenario : Component
     {
         return VStack(8,
             SubHeading("1d. Siblings share cache via explicit CacheKey"),
-            Text($"Total fetcher invocations across both siblings: {_sharedCallCount}"),
+            TextBlock($"Total fetcher invocations across both siblings: {_sharedCallCount}"),
             Component<SharedKeySibling>(),
             Component<SharedKeySibling>()
         );
@@ -212,7 +212,7 @@ class SiblingsSharedKeyScenario : Component
             new ResourceOptions(CacheKey: "demo/shared", StaleTime: TimeSpan.FromMinutes(5)));
 
             return Border(
-                Text(result switch
+                TextBlock(result switch
                 {
                     AsyncValue<string>.Loading => "⏳ Loading…",
                     AsyncValue<string>.Data d => $"✅ {d.Value}",
@@ -237,11 +237,11 @@ class CacheHitRemountScenario : Component
 
         return VStack(8,
             SubHeading("1e. Cache hit across remount"),
-            Text("Hide the fetcher component, then show it again within StaleTime — the cached value returns synchronously with no Loading flash."),
+            TextBlock("Hide the fetcher component, then show it again within StaleTime — the cached value returns synchronously with no Loading flash."),
             Button(visible ? "Hide" : "Show", () => setVisible(!visible)),
             visible
                 ? (Element)Component<RemountChild>()
-                : Text("(hidden)").Foreground(TertiaryText)
+                : TextBlock("(hidden)").Foreground(TertiaryText)
         );
     }
 
@@ -261,7 +261,7 @@ class CacheHitRemountScenario : Component
                 CacheTime: TimeSpan.FromMinutes(5)));
 
             return Border(
-                Text(result switch
+                TextBlock(result switch
                 {
                     AsyncValue<string>.Loading => "⏳ First load — takes 600ms.",
                     AsyncValue<string>.Data d => $"✅ {d.Value} (cached)",
@@ -334,7 +334,7 @@ class InfiniteScrollScenario : Component
 
         return VStack(8,
             SubHeading("2a. Infinite scroll (UseInfiniteResource)"),
-            Text($"Server has {resource.TotalCount?.ToString() ?? "?"} rows. LoadState = {LoadLabel(resource.LoadState)}. Scroll to page in more."),
+            TextBlock($"Server has {resource.TotalCount?.ToString() ?? "?"} rows. LoadState = {LoadLabel(resource.LoadState)}. Scroll to page in more."),
 
             Border(
                 VirtualListDsl.VirtualList(
@@ -344,8 +344,8 @@ class InfiniteScrollScenario : Component
                         var value = resource.ItemAt(i);
                         var label = value ?? "⏳ loading…";
                         return HStack(8,
-                            Text($"{i,5}").Width(60).Foreground(TertiaryText),
-                            Text(label).Flex(grow: 1)
+                            TextBlock($"{i,5}").Width(60).Foreground(TertiaryText),
+                            TextBlock(label).Flex(grow: 1)
                         );
                     },
                     itemHeight: 28,
@@ -387,9 +387,9 @@ class SearchInfiniteScenario : Component
 
         return VStack(8,
             SubHeading("2b. Search-as-you-type"),
-            Text("Type to filter. Each keystroke cancels the pending fetch; only the matching deps' pages land."),
+            TextBlock("Type to filter. Each keystroke cancels the pending fetch; only the matching deps' pages land."),
             TextField(query, v => setQuery(v ?? ""), placeholder: "e.g. Seattle"),
-            Text($"Matches: {resource.TotalCount?.ToString() ?? "…"}  /  LoadState: {SearchInfiniteLabel(resource.LoadState)}"),
+            TextBlock($"Matches: {resource.TotalCount?.ToString() ?? "…"}  /  LoadState: {SearchInfiniteLabel(resource.LoadState)}"),
 
             Border(
                 VirtualListDsl.VirtualList(
@@ -398,8 +398,8 @@ class SearchInfiniteScenario : Component
                     {
                         var value = resource.ItemAt(i);
                         return HStack(8,
-                            Text($"{i,4}").Width(50).Foreground(TertiaryText),
-                            Text(value ?? "⏳ loading…").Flex(grow: 1)
+                            TextBlock($"{i,4}").Width(50).Foreground(TertiaryText),
+                            TextBlock(value ?? "⏳ loading…").Flex(grow: 1)
                         );
                     },
                     itemHeight: 28,
@@ -447,7 +447,7 @@ class InfiniteRefreshScenario : Component
 
         return VStack(8,
             SubHeading("2c. Refresh() an infinite list"),
-            Text("Refresh cancels in-flight fetches, clears the page table, and restarts from page 0."),
+            TextBlock("Refresh cancels in-flight fetches, clears the page table, and restarts from page 0."),
 
             HStack(8,
                 Button("Refresh", () =>
@@ -455,13 +455,13 @@ class InfiniteRefreshScenario : Component
                     epoch.Current = epoch.Current + 1;
                     resource.Refresh();
                 }),
-                Text($"LoadState: {RefreshLabel(resource.LoadState)}    epoch: {epoch.Current}")
+                TextBlock($"LoadState: {RefreshLabel(resource.LoadState)}    epoch: {epoch.Current}")
             ),
 
             Border(
                 VirtualListDsl.VirtualList(
                     itemCount: Math.Max(resource.Items.Count, 1),
-                    renderItem: i => Text(resource.ItemAt(i) ?? "⏳ loading…"),
+                    renderItem: i => TextBlock(resource.ItemAt(i) ?? "⏳ loading…"),
                     itemHeight: 28,
                     spacing: 1,
                     getItemKey: i => i.ToString()
@@ -547,14 +547,14 @@ class DataSourceAdapterScenario : Component
 
         return VStack(8,
             SubHeading("2d. UseDataSource (IDataSource adapter)"),
-            Text("UseDataSource projects any IDataSource<T> into an InfiniteResource<T> — existing data-ecosystem interfaces work with the hook surface."),
+            TextBlock("UseDataSource projects any IDataSource<T> into an InfiniteResource<T> — existing data-ecosystem interfaces work with the hook surface."),
             TextField(search, v => setSearch(v ?? ""), placeholder: "search rows…"),
-            Text($"Matches: {resource.TotalCount?.ToString() ?? "…"}"),
+            TextBlock($"Matches: {resource.TotalCount?.ToString() ?? "…"}"),
 
             Border(
                 VirtualListDsl.VirtualList(
                     itemCount: listLen,
-                    renderItem: i => Text(resource.ItemAt(i) ?? "⏳ loading…"),
+                    renderItem: i => TextBlock(resource.ItemAt(i) ?? "⏳ loading…"),
                     itemHeight: 28,
                     spacing: 1,
                     getItemKey: i => i.ToString()

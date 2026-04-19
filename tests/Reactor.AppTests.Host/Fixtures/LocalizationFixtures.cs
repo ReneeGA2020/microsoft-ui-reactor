@@ -134,24 +134,24 @@ internal static class LocalizationFixtures
 
                 // Main content panel
                 VStack(8,
-                    Factories.Text(t.Message(AppTitle)).Set(tb => tb.FontSize = 24).AutomationId("LocTitle"),
-                    Factories.Text(t.Message(Welcome)).AutomationId("LocWelcome"),
-                    Factories.Text(t.Message(Greeting, new { name = "World" })).AutomationId("LocGreeting"),
+                    TextBlock(t.Message(AppTitle)).Set(tb => tb.FontSize = 24).AutomationId("LocTitle"),
+                    TextBlock(t.Message(Welcome)).AutomationId("LocWelcome"),
+                    TextBlock(t.Message(Greeting, new { name = "World" })).AutomationId("LocGreeting"),
 
                     // Plural scenarios
-                    Factories.Text(t.Message(ItemCount, new { count = 0 })).AutomationId("LocPluralZero"),
-                    Factories.Text(t.Message(ItemCount, new { count = 5 })).AutomationId("LocPluralFive"),
+                    TextBlock(t.Message(ItemCount, new { count = 0 })).AutomationId("LocPluralZero"),
+                    TextBlock(t.Message(ItemCount, new { count = 5 })).AutomationId("LocPluralFive"),
 
                     // Search-results with multiple plural + param
-                    Factories.Text(t.Message(SearchResults, new { count = 0, query = locale == "ko-KR" ? "\ud14c\uc2a4\ud2b8" : "test" }))
+                    TextBlock(t.Message(SearchResults, new { count = 0, query = locale == "ko-KR" ? "\ud14c\uc2a4\ud2b8" : "test" }))
                         .AutomationId("LocSearchZero"),
-                    Factories.Text(t.Message(SearchResults, new { count = 1, query = locale == "ko-KR" ? "\ud14c\uc2a4\ud2b8" : "test" }))
+                    TextBlock(t.Message(SearchResults, new { count = 1, query = locale == "ko-KR" ? "\ud14c\uc2a4\ud2b8" : "test" }))
                         .AutomationId("LocSearchOne"),
-                    Factories.Text(t.Message(SearchResults, new { count = 42, query = locale == "ko-KR" ? "\ud14c\uc2a4\ud2b8" : "test" }))
+                    TextBlock(t.Message(SearchResults, new { count = 42, query = locale == "ko-KR" ? "\ud14c\uc2a4\ud2b8" : "test" }))
                         .AutomationId("LocSearchMany"),
 
                     // Direction label
-                    Factories.Text(t.Message(DirectionLabel)).AutomationId("LocDirection")
+                    TextBlock(t.Message(DirectionLabel)).AutomationId("LocDirection")
                 )
                 .Set(sp => sp.FlowDirection = t.Direction)
                 .AutomationId("LocContentRoot")

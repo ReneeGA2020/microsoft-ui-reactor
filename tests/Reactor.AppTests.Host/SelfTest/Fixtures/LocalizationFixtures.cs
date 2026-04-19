@@ -137,18 +137,18 @@ internal static class LocalizationFixtures
                     ),
 
                     VStack(8,
-                        Factories.Text(t.Message(AppTitle)).Set(tb => tb.FontSize = 24),
-                        Factories.Text(t.Message(Welcome)),
-                        Factories.Text(t.Message(Greeting, new { name = "World" })),
+                        TextBlock(t.Message(AppTitle)).Set(tb => tb.FontSize = 24),
+                        TextBlock(t.Message(Welcome)),
+                        TextBlock(t.Message(Greeting, new { name = "World" })),
 
-                        Factories.Text(t.Message(ItemCount, new { count = 0 })),
-                        Factories.Text(t.Message(ItemCount, new { count = 5 })),
+                        TextBlock(t.Message(ItemCount, new { count = 0 })),
+                        TextBlock(t.Message(ItemCount, new { count = 5 })),
 
-                        Factories.Text(t.Message(SearchResults, new { count = 0, query = locale == "ko-KR" ? "\ud14c\uc2a4\ud2b8" : "test" })),
-                        Factories.Text(t.Message(SearchResults, new { count = 1, query = locale == "ko-KR" ? "\ud14c\uc2a4\ud2b8" : "test" })),
-                        Factories.Text(t.Message(SearchResults, new { count = 42, query = locale == "ko-KR" ? "\ud14c\uc2a4\ud2b8" : "test" })),
+                        TextBlock(t.Message(SearchResults, new { count = 0, query = locale == "ko-KR" ? "\ud14c\uc2a4\ud2b8" : "test" })),
+                        TextBlock(t.Message(SearchResults, new { count = 1, query = locale == "ko-KR" ? "\ud14c\uc2a4\ud2b8" : "test" })),
+                        TextBlock(t.Message(SearchResults, new { count = 42, query = locale == "ko-KR" ? "\ud14c\uc2a4\ud2b8" : "test" })),
 
-                        Factories.Text(t.Message(DirectionLabel))
+                        TextBlock(t.Message(DirectionLabel))
                     )
                     .Set(sp => sp.FlowDirection = t.Direction)
                     .Set(sp => sp.Tag = "ContentRoot")

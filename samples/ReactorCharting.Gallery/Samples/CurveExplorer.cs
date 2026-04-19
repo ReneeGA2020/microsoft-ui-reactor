@@ -101,16 +101,16 @@ public sealed class CurveExplorerSample : GallerySample
             return VStack(12,
                 HStack(16,
                     HStack(8,
-                        Factories.Text("Curve:") with { FontSize = 12 },
+                        TextBlock("Curve:") with { FontSize = 12 },
                         ComboBox(CurveNames, curveIdx, setCurveIdx).Width(160)
                     ).VAlign(VerticalAlignment.Center),
                     HStack(8,
-                        (Factories.Text("Tension:") with { FontSize = 12 }).Opacity(hasTension ? 1 : 0.4),
+                        (TextBlock("Tension:") with { FontSize = 12 }).Opacity(hasTension ? 1 : 0.4),
                         Slider(tension, 0, 1, setTension)
                             .StepFrequency(0.05)
                             .Width(160)
                             .Disabled(!hasTension),
-                        (Factories.Text($"{tension:F2}") with { FontSize = 11 }).Opacity(hasTension ? 1 : 0.4)
+                        (TextBlock($"{tension:F2}") with { FontSize = 11 }).Opacity(hasTension ? 1 : 0.4)
                     ).VAlign(VerticalAlignment.Center)
                 ).Padding(8, 0, 8, 0),
                 chart

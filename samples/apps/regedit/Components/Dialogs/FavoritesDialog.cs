@@ -22,7 +22,7 @@ internal sealed class AddFavoriteDialog : Component<AddFavoriteDialogProps>
         return ContentDialog(
             Strings.AddFavoriteTitle,
             VStack(8,
-                Factories.Text(Strings.FavoriteName),
+                TextBlock(Strings.FavoriteName),
                 TextField(Props.FavoriteName, Props.OnNameChanged)
             ).Width(350),
             Strings.OK
@@ -54,7 +54,7 @@ internal sealed class RemoveFavoriteDialog : Component<RemoveFavoriteDialogProps
         return ContentDialog(
             Strings.RemoveFavoriteTitle,
             VStack(8,
-                Factories.Text(Strings.SelectFavorite),
+                TextBlock(Strings.SelectFavorite),
                 ListBox(
                     Props.FavoriteNames,
                     Props.SelectedIndex,

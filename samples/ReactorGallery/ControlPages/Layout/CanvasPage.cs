@@ -33,16 +33,16 @@ class CanvasPage : Component
                     VStack(8,
                         Border(
                             Canvas(
-                                Border(Factories.Text("Drag me!").Center().Foreground("#FFFFFF"))
+                                Border(TextBlock("Drag me!").Center().Foreground("#FFFFFF"))
                                     .Size(100, 40).Background("#5B6ABF").CornerRadius(ThemeResource.CornerRadius("OverlayCornerRadius").TopLeft)
                                     .Canvas(left: offsetX, top: offsetY)
                             )
                         ).Size(300, 150).Background(Theme.SubtleFill).CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft)
                     ),
-                    @"Border(Factories.Text(""Move"")).Canvas(left: offsetX, top: offsetY)",
+                    @"Border(TextBlock(""Move"")).Canvas(left: offsetX, top: offsetY)",
                     OptionPanel(
-                        Factories.Text("Left"), Slider(offsetX, 0, 200, setOffsetX),
-                        Factories.Text("Top"), Slider(offsetY, 0, 100, setOffsetY)
+                        TextBlock("Left"), Slider(offsetX, 0, 200, setOffsetX),
+                        TextBlock("Top"), Slider(offsetY, 0, 100, setOffsetY)
                     ))
             ).Margin(36, 24, 36, 36)
         );

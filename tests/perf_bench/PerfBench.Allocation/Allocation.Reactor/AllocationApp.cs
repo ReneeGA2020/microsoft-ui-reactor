@@ -87,7 +87,7 @@ public class AllocationApp : Component
         {
             int col = i % Cols;
             int row = i / Cols;
-            elements[i] = Factories.Text((cells[i].Value % 1000).ToString())
+            elements[i] = TextBlock((cells[i].Value % 1000).ToString())
                 .FontSize(8)
                 .Foreground(cells[i].Color)
                 .Grid(row: row, column: col);
@@ -96,7 +96,7 @@ public class AllocationApp : Component
         // HUD overlay
         elements[Total] = Opts.Headless
             ? null!
-            : Factories.Text(hudText)
+            : TextBlock(hudText)
                 .Foreground("Yellow")
                 .FontSize(14);
 

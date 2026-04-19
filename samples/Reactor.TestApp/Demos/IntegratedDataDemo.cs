@@ -232,7 +232,7 @@ class IntegratedDataDemo : Microsoft.UI.Reactor.Core.Component
                 // FormField section — red border on invalid
                 Border(
                     VStack(4,
-                        Factories.Text("FormField (first property)").SemiBold(),
+                        TextBlock("FormField (first property)").SemiBold(),
                         Caption("Task Name *"),
                         nameEditor,
                         nameErrors.Count > 0
@@ -242,28 +242,28 @@ class IntegratedDataDemo : Microsoft.UI.Reactor.Core.Component
                 ).Padding(12).Background(SubtleFill).CornerRadius(4),
 
                 // PropertyGrid section — plain, no inline validation
-                Factories.Text("PropertyGrid (selected item)").SemiBold(),
+                TextBlock("PropertyGrid (selected item)").SemiBold(),
                 PropertyGridDsl.PropertyGrid(selectedItem, registry),
 
                 // Form-level validation summary
                 allErrors.Count > 0
                     ? Border(
                         VStack(4, new Element?[] {
-                            Factories.Text($"Validation ({allErrors.Count} error{(allErrors.Count != 1 ? "s" : "")})")
+                            TextBlock($"Validation ({allErrors.Count} error{(allErrors.Count != 1 ? "s" : "")})")
                                 .SemiBold().Foreground(Theme.Ref("SystemFillColorCriticalBrush"))
                         }.Concat(allErrors.Select(e => (Element?)
                             Caption($"\u2022 {e!.Field}: {e.Text}").Foreground(Theme.Ref("SystemFillColorCriticalBrush"))
                         )).ToArray())
                     ).Padding(12).WithBorder(Theme.Ref("SystemFillColorCriticalBrush"), 1).CornerRadius(4)
                     : (Element)Border(
-                        Factories.Text("\u2713 All fields valid").Foreground(Theme.Ref("SystemFillColorSuccessBrush")).SemiBold()
+                        TextBlock("\u2713 All fields valid").Foreground(Theme.Ref("SystemFillColorSuccessBrush")).SemiBold()
                     ).Padding(12).WithBorder(Theme.Ref("SystemFillColorSuccessBrush"), 1).CornerRadius(4)
             );
         }
         else
         {
             rightPanel = Border(
-                Factories.Text("Select a row in the DataGrid to see its details here.")
+                TextBlock("Select a row in the DataGrid to see its details here.")
                     .Foreground(TertiaryText).Padding(20)
             ).Background(SubtleFill).CornerRadius(4).VAlign(VerticalAlignment.Center);
         }
@@ -271,7 +271,7 @@ class IntegratedDataDemo : Microsoft.UI.Reactor.Core.Component
         // ── Layout ────────────────────────────────────────────────
         return FlexColumn(
             Heading("Integrated Data Demo").Flex(shrink: 0),
-            Factories.Text("All 4 data system pieces: FieldDescriptor defines fields + validation once. " +
+            TextBlock("All 4 data system pieces: FieldDescriptor defines fields + validation once. " +
                  "DataGrid, PropertyGrid, and FormField all share the same definitions. " +
                  "Edit in any view — changes sync to the other two.")
                 .Foreground(SecondaryText).Flex(shrink: 0),
@@ -279,7 +279,7 @@ class IntegratedDataDemo : Microsoft.UI.Reactor.Core.Component
             (FlexRow(
                 // Left: DataGrid (60%)
                 (FlexColumn(
-                    Factories.Text("DataGrid").SemiBold().Flex(shrink: 0),
+                    TextBlock("DataGrid").SemiBold().Flex(shrink: 0),
                     Caption("Click a row to select. Double-click or press F2 to edit a cell.").Foreground(TertiaryText).Flex(shrink: 0),
                     DataGridDsl.DataGrid(
                         source: source,

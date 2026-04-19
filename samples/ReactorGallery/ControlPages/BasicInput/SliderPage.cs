@@ -21,7 +21,7 @@ class SliderPage: Component
             SampleCard("Basic Slider",
                 VStack(8,
                     Slider(value, 0, 100, v => setValue(v)).Header("Volume"),
-                    Factories.Text($"Value: {value:F0}").Foreground(Theme.SecondaryText)),
+                    TextBlock($"Value: {value:F0}").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 Slider(value, 0, 100, v => setValue(v)).Header(""Volume"")
 "),
@@ -29,7 +29,7 @@ Slider(value, 0, 100, v => setValue(v)).Header(""Volume"")
             SampleCard("Slider with Step Frequency",
                 VStack(8,
                     Slider(stepValue, 0, 100, v => setStepValue(v)).StepFrequency(10).Header("Step by 10"),
-                    Factories.Text($"Value: {stepValue:F0}").Foreground(Theme.SecondaryText)),
+                    TextBlock($"Value: {stepValue:F0}").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 Slider(stepValue, 0, 100, v => setStepValue(v)).StepFrequency(10).Header(""Step by 10"")
 "),

@@ -43,8 +43,8 @@ class ListViewDemo : Component
                 c => c.Id,
                 (contact, index) =>
                     HStack(12,
-                        Text(contact.Name).Bold(),
-                        Text(contact.Email).Opacity(0.6)
+                        TextBlock(contact.Name).Bold(),
+                        TextBlock(contact.Email).Opacity(0.6)
                     ).Padding(8)
             ).Height(300)
         ).Padding(24);
@@ -77,9 +77,9 @@ class LazyVStackDemo : Component
                 c => c.Id,
                 (contact, index) =>
                     HStack(12,
-                        Text($"{index + 1}.").Width(30),
-                        Text(contact.Name).Bold(),
-                        Text(contact.Email).Opacity(0.6)
+                        TextBlock($"{index + 1}.").Width(30),
+                        TextBlock(contact.Name).Bold(),
+                        TextBlock(contact.Email).Opacity(0.6)
                     ).Padding(8)
             ).Height(300)
         ).Padding(24);
@@ -120,8 +120,8 @@ class GridViewDemo : Component
                 c => c.Id,
                 (contact, index) =>
                     VStack(4,
-                        Text(contact.Name).Bold(),
-                        Text(contact.Email).FontSize(12).Opacity(0.6)
+                        TextBlock(contact.Name).Bold(),
+                        TextBlock(contact.Email).FontSize(12).Opacity(0.6)
                     ).Padding(12)
                      .Background("#f5f5f5")
                      .CornerRadius(8)
@@ -155,9 +155,9 @@ class VirtualListDemo : Component
                 itemCount: 10_000,
                 renderItem: index =>
                     HStack(12,
-                        Text($"{index + 1}.").Width(50),
-                        Text($"Item {index + 1}").Bold(),
-                        Text($"data-{index}@example.com").Opacity(0.6)
+                        TextBlock($"{index + 1}.").Width(50),
+                        TextBlock($"Item {index + 1}").Bold(),
+                        TextBlock($"data-{index}@example.com").Opacity(0.6)
                     ).Padding(8),
                 getItemKey: index => $"item-{index}",
                 itemHeight: 40
@@ -197,7 +197,7 @@ class VirtualListRefDemo : Component
             VirtualList(
                 itemCount: 10_000,
                 renderItem: index =>
-                    Text($"Row {index + 1}").Padding(8),
+                    TextBlock($"Row {index + 1}").Padding(8),
                 getItemKey: index => $"row-{index}",
                 itemHeight: 36,
                 @ref: r => listRef.Current = r
@@ -238,7 +238,7 @@ class ForEachDemo : Component
             SubHeading("ForEach (non-virtualized)"),
             HStack(8,
                 ForEach(colors, ((string Name, string Hex) color) =>
-                    Text(color.Name)
+                    TextBlock(color.Name)
                         .Padding(8, 16)
                         .Background(color.Hex)
                         .CornerRadius(4)
@@ -284,7 +284,7 @@ class WithKeyDemo : Component
             ),
             VStack(4, items.Select((item, i) =>
                 HStack(8,
-                    Text(item),
+                    TextBlock(item),
                     Button("Remove", () => updateItems(
                         l => l.Where((_, idx) => idx != i).ToList()))
                 ).WithKey($"item-{item}-{i}")

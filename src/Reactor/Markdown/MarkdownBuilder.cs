@@ -404,10 +404,10 @@ internal sealed class MarkdownBuilder
         else if (frame.Children.Count > 1)
             content = VStack(4, frame.Children.ToArray());
         else
-            content = Factories.Text(""); // empty fallback
+            content = TextBlock(""); // empty fallback
 
         Element element = HStack(4,
-            Factories.Text(marker).VAlign(VerticalAlignment.Top),
+            TextBlock(marker).VAlign(VerticalAlignment.Top),
             content
         );
 
@@ -474,7 +474,7 @@ internal sealed class MarkdownBuilder
         if (_options.HtmlBlock is not null)
             element = _options.HtmlBlock(html);
         else
-            element = Factories.Text(html).Foreground("#888888");
+            element = TextBlock(html).Foreground("#888888");
 
         AddToParent(element);
     }

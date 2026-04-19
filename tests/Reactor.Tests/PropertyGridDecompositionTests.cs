@@ -1,6 +1,7 @@
 using Microsoft.UI.Reactor.Data;
 using Microsoft.UI.Reactor.Controls;
 using Xunit;
+using static Microsoft.UI.Reactor.Factories;
 
 namespace Microsoft.UI.Reactor.Tests;
 
@@ -223,7 +224,7 @@ public class PropertyGridDecompositionTests
             Editor = (val, onChange) =>
             {
                 var p = (ImmutablePoint)val;
-                return Factories.Text($"({p.X}, {p.Y})");
+                return TextBlock($"({p.X}, {p.Y})");
             },
             Decompose = val =>
             {

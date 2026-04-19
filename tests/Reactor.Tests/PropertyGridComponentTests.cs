@@ -4,6 +4,7 @@ using Microsoft.UI.Reactor.Data;
 using Microsoft.UI.Reactor.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Xunit;
+using static Microsoft.UI.Reactor.Factories;
 
 namespace Microsoft.UI.Reactor.Tests;
 
@@ -268,7 +269,7 @@ public class PropertyGridComponentTests
         var label = PropertyGridDefaults.PropertyLabelTemplate(desc, 0);
         Assert.NotNull(label);
 
-        var editor = Microsoft.UI.Reactor.Factories.Text("test");
+        var editor = TextBlock("test");
         var row = PropertyGridDefaults.PropertyRowTemplate(desc, label, editor, 0);
         Assert.NotNull(row);
     }
@@ -285,11 +286,11 @@ public class PropertyGridComponentTests
     {
         var registry = new TypeRegistry();
         Func<object, Action<object>, Element> fullEditor =
-            (val, onChange) => Factories.Text($"Full: {val}");
+            (val, onChange) => TextBlock($"Full: {val}");
 
         registry.Register<ExpandableValue>(new TypeMetadata
         {
-            Editor = (val, onChange) => Factories.Text($"Compact: {val}"),
+            Editor = (val, onChange) => TextBlock($"Compact: {val}"),
             FullEditor = fullEditor,
         });
 
@@ -301,7 +302,7 @@ public class PropertyGridComponentTests
 
         // Verify FullEditor produces valid Element
         var element = meta.FullEditor!(new ExpandableValue("test"), _ => { });
-        Assert.IsType<TextElement>(element);
+        Assert.IsType<TextBlockElement>(element);
     }
 
     [Fact]
@@ -310,7 +311,7 @@ public class PropertyGridComponentTests
         var registry = new TypeRegistry();
         registry.Register<ExpandableValue>(new TypeMetadata
         {
-            Editor = (val, onChange) => Factories.Text($"Standard: {val}"),
+            Editor = (val, onChange) => TextBlock($"Standard: {val}"),
             // No FullEditor registered
         });
 
@@ -329,11 +330,11 @@ public class PropertyGridComponentTests
 
         registry.Register<ExpandableValue>(new TypeMetadata
         {
-            Editor = (val, onChange) => Factories.Text("inline"),
+            Editor = (val, onChange) => TextBlock("inline"),
             FullEditor = (val, onChange) =>
             {
                 receivedValue = val;
-                return Factories.Text($"Full editor for: {val}");
+                return TextBlock($"Full editor for: {val}");
             },
         });
 
@@ -344,7 +345,7 @@ public class PropertyGridComponentTests
         var fullEditorElement = meta.FullEditor!(testValue, _ => { });
 
         Assert.Equal(testValue, receivedValue);
-        Assert.IsType<TextElement>(fullEditorElement);
+        Assert.IsType<TextBlockElement>(fullEditorElement);
 
         // Verify ContentFlyout wraps the FullEditor content
         var flyout = Microsoft.UI.Reactor.Factories.ContentFlyout(fullEditorElement,

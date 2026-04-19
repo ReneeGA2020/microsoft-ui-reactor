@@ -167,8 +167,8 @@ public class ReconcilerCorrectnessTests
     public void CanUpdate_Null_Keys_Both_Sides_Returns_True()
     {
         var reconciler = new Reconciler();
-        var a = new TextElement("a"); // Key is null
-        var b = new TextElement("b"); // Key is null
+        var a = new TextBlockElement("a"); // Key is null
+        var b = new TextBlockElement("b"); // Key is null
         Assert.True(reconciler.CanUpdate(a, b));
     }
 
@@ -176,8 +176,8 @@ public class ReconcilerCorrectnessTests
     public void CanUpdate_One_Keyed_One_Not_Returns_False()
     {
         var reconciler = new Reconciler();
-        var a = new TextElement("a") { Key = "k1" };
-        var b = new TextElement("b"); // null key
+        var a = new TextBlockElement("a") { Key = "k1" };
+        var b = new TextBlockElement("b"); // null key
         Assert.False(reconciler.CanUpdate(a, b));
     }
 
@@ -220,7 +220,7 @@ public class ReconcilerCorrectnessTests
             global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Static);
         Assert.NotNull(method);
 
-        var elements = new Element[] { new TextElement("A"), new TextElement("B") };
+        var elements = new Element[] { new TextBlockElement("A"), new TextBlockElement("B") };
         var result = (Element[])method!.Invoke(null, [elements])!;
 
         // No filtering needed — should return same array (fast path)
@@ -235,17 +235,17 @@ public class ReconcilerCorrectnessTests
 
         var elements = new Element[]
         {
-            new TextElement("A"),
+            new TextBlockElement("A"),
             null!,
             new EmptyElement(),
-            new TextElement("B"),
+            new TextBlockElement("B"),
             null!,
         };
         var result = (Element[])method!.Invoke(null, [elements])!;
 
         Assert.Equal(2, result.Length);
-        Assert.Equal("A", ((TextElement)result[0]).Content);
-        Assert.Equal("B", ((TextElement)result[1]).Content);
+        Assert.Equal("A", ((TextBlockElement)result[0]).Content);
+        Assert.Equal("B", ((TextBlockElement)result[1]).Content);
     }
 
     [Fact]
@@ -329,10 +329,10 @@ public class ReconcilerCorrectnessTests
     }
 
     [Fact]
-    public void ShallowEquals_TextElements_With_Different_Content()
+    public void ShallowEquals_TextBlockElements_With_Different_Content()
     {
-        var a = new TextElement("hello");
-        var b = new TextElement("world");
+        var a = new TextBlockElement("hello");
+        var b = new TextBlockElement("world");
 
         Assert.False(Element.ShallowEquals(a, b));
     }
@@ -340,14 +340,14 @@ public class ReconcilerCorrectnessTests
     [Fact]
     public void ShallowEquals_Same_Reference_Returns_True()
     {
-        var a = new TextElement("hello");
+        var a = new TextBlockElement("hello");
         Assert.True(Element.ShallowEquals(a, a));
     }
 
     [Fact]
     public void ShallowEquals_Different_Types_Returns_False()
     {
-        var a = new TextElement("hello");
+        var a = new TextBlockElement("hello");
         var b = new ButtonElement("hello");
         Assert.False(Element.ShallowEquals(a, b));
     }
@@ -404,8 +404,8 @@ public class ReconcilerCorrectnessTests
             global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Static);
         Assert.NotNull(method);
 
-        var a = new TextElement("A") { Key = "k1" };
-        var b = new TextElement("B") { Key = "k1" };
+        var a = new TextBlockElement("A") { Key = "k1" };
+        var b = new TextBlockElement("B") { Key = "k1" };
         Assert.True((bool)method!.Invoke(null, [a, b])!);
     }
 
@@ -415,8 +415,8 @@ public class ReconcilerCorrectnessTests
         var method = typeof(ChildReconciler).GetMethod("KeyMatch",
             global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Static);
 
-        var a = new TextElement("A") { Key = "k1" };
-        var b = new TextElement("B") { Key = "k2" };
+        var a = new TextBlockElement("A") { Key = "k1" };
+        var b = new TextBlockElement("B") { Key = "k2" };
         Assert.False((bool)method!.Invoke(null, [a, b])!);
     }
 
@@ -426,7 +426,7 @@ public class ReconcilerCorrectnessTests
         var method = typeof(ChildReconciler).GetMethod("KeyMatch",
             global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Static);
 
-        var a = new TextElement("A") { Key = "k1" };
+        var a = new TextBlockElement("A") { Key = "k1" };
         var b = new ButtonElement("B") { Key = "k1" };
         Assert.False((bool)method!.Invoke(null, [a, b])!);
     }
@@ -437,8 +437,8 @@ public class ReconcilerCorrectnessTests
         var method = typeof(ChildReconciler).GetMethod("KeyMatch",
             global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Static);
 
-        var a = new TextElement("A");
-        var b = new TextElement("B");
+        var a = new TextBlockElement("A");
+        var b = new TextBlockElement("B");
         Assert.True((bool)method!.Invoke(null, [a, b])!);
     }
 
@@ -453,7 +453,7 @@ public class ReconcilerCorrectnessTests
             global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Static);
         Assert.NotNull(method);
 
-        var el = new TextElement("A") { Key = "my-key" };
+        var el = new TextBlockElement("A") { Key = "my-key" };
         var result = (string)method!.Invoke(null, [el, 5])!;
         Assert.Equal("my-key", result);
     }
@@ -464,9 +464,9 @@ public class ReconcilerCorrectnessTests
         var method = typeof(ChildReconciler).GetMethod("GetKey",
             global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Static);
 
-        var el = new TextElement("A"); // no key
+        var el = new TextBlockElement("A"); // no key
         var result = (string)method!.Invoke(null, [el, 3])!;
-        Assert.Equal("__pos_3_TextElement", result);
+        Assert.Equal("__pos_3_TextBlockElement", result);
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -491,11 +491,11 @@ public class ReconcilerCorrectnessTests
 
     private class TestComponent : Component
     {
-        public override Element Render() => new TextElement("test");
+        public override Element Render() => new TextBlockElement("test");
     }
 
     private class TestComponent2 : Component
     {
-        public override Element Render() => new TextElement("test2");
+        public override Element Render() => new TextBlockElement("test2");
     }
 }

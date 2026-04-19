@@ -21,7 +21,7 @@ class CommandingDemoApp : Component
         var tabs = new[] { "Standard Commands", "Async / UseCommand", "Parameterized", "CommandHost", "Per-Site Override", "Context Sharing" };
 
         return VStack(
-            Factories.Text("Reactor Commanding Demo").FontSize(24).Bold().Margin(16, 16, 16, 8),
+            TextBlock("Reactor Commanding Demo").FontSize(24).Bold().Margin(16, 16, 16, 8),
             HStack(8,
                 tabs.Select((tab, i) =>
                     Button(tab, () => setSelectedTab(i))
@@ -104,7 +104,7 @@ class StandardCommandsDemo : Component
         });
 
         return VStack(8,
-            Factories.Text("Standard Commands — define once, use everywhere").Bold().Margin(16, 8),
+            TextBlock("Standard Commands — define once, use everywhere").Bold().Margin(16, 8),
 
             // CommandBar with same commands
             CommandBar(primaryCommands: [
@@ -140,9 +140,9 @@ class StandardCommandsDemo : Component
             }).Margin(16, 8),
 
             // Status
-            Factories.Text($"Clipboard: \"{clipboard}\"").Margin(16, 4).FontSize(12),
-            Factories.Text($"Selected: \"{selectedText}\"").Margin(16, 4).FontSize(12),
-            Factories.Text($"Has selection: {hasSelection}").Margin(16, 4).FontSize(12)
+            TextBlock($"Clipboard: \"{clipboard}\"").Margin(16, 4).FontSize(12),
+            TextBlock($"Selected: \"{selectedText}\"").Margin(16, 4).FontSize(12),
+            TextBlock($"Has selection: {hasSelection}").Margin(16, 4).FontSize(12)
         );
     }
 }
@@ -166,7 +166,7 @@ class AsyncCommandDemo : Component
         }));
 
         return VStack(8,
-            Factories.Text("Async Commands — UseCommand auto-tracks IsExecuting").Bold().Margin(16, 8),
+            TextBlock("Async Commands — UseCommand auto-tracks IsExecuting").Bold().Margin(16, 8),
 
             HStack(8,
                 Button(saveCmd).Margin(16, 0),
@@ -175,10 +175,10 @@ class AsyncCommandDemo : Component
                     : Empty()
             ),
 
-            Factories.Text($"Status: {lastStatus}").Margin(16, 4),
-            Factories.Text($"IsExecuting: {saveCmd.IsExecuting}").Margin(16, 4).FontSize(12),
-            Factories.Text($"IsEnabled: {saveCmd.IsEnabled}").Margin(16, 4).FontSize(12),
-            Factories.Text("Try clicking Save — the button auto-disables during the 2-second operation.").Margin(16, 8).FontSize(12)
+            TextBlock($"Status: {lastStatus}").Margin(16, 4),
+            TextBlock($"IsExecuting: {saveCmd.IsExecuting}").Margin(16, 4).FontSize(12),
+            TextBlock($"IsEnabled: {saveCmd.IsEnabled}").Margin(16, 4).FontSize(12),
+            TextBlock("Try clicking Save — the button auto-disables during the 2-second operation.").Margin(16, 8).FontSize(12)
         );
     }
 }
@@ -206,16 +206,16 @@ class ParameterizedCommandDemo : Component
         };
 
         return VStack(8,
-            Factories.Text("Parameterized Commands — Command<T> with per-item binding").Bold().Margin(16, 8),
+            TextBlock("Parameterized Commands — Command<T> with per-item binding").Bold().Margin(16, 8),
 
             ForEach(items, (item, i) =>
                 HStack(8,
-                    Factories.Text($"{item.Name}").Width(120),
+                    TextBlock($"{item.Name}").Width(120),
                     Button($"Delete {item.Name}", () => deleteCmd.Execute?.Invoke(item))
                 ).Margin(16, 2)
             ),
 
-            Factories.Text($"Items remaining: {items.Length}").Margin(16, 8).FontSize(12)
+            TextBlock($"Items remaining: {items.Length}").Margin(16, 8).FontSize(12)
         );
     }
 }
@@ -233,14 +233,14 @@ class CommandHostDemo : Component
         var redo = StandardCommand.Redo(() => setLog($"[{DateTime.Now:HH:mm:ss}] Redo triggered via Ctrl+Y"));
 
         return VStack(8,
-            Factories.Text("CommandHost — keyboard accelerators scoped to a subtree").Bold().Margin(16, 8),
+            TextBlock("CommandHost — keyboard accelerators scoped to a subtree").Bold().Margin(16, 8),
 
             // INSIDE scope — shortcuts should work here
             CommandHost([save, undo, redo],
                 VStack(8,
-                    Factories.Text("INSIDE CommandHost scope (blue) — Ctrl+S / Ctrl+Z / Ctrl+Y work here:").Bold(),
+                    TextBlock("INSIDE CommandHost scope (blue) — Ctrl+S / Ctrl+Z / Ctrl+Y work here:").Bold(),
                     TextField("", _ => { }, placeholder: "Click here and press Ctrl+S..."),
-                    Factories.Text(log).FontSize(12)
+                    TextBlock(log).FontSize(12)
                 ).Padding(16).Background(new Microsoft.UI.Xaml.Media.SolidColorBrush(
                     global::Windows.UI.Color.FromArgb(30, 100, 149, 237)))
                 .CornerRadius(8)
@@ -248,7 +248,7 @@ class CommandHostDemo : Component
 
             // OUTSIDE scope — shortcuts should NOT work here
             VStack(8,
-                Factories.Text("OUTSIDE CommandHost scope (red) — Ctrl+S / Ctrl+Z / Ctrl+Y should NOT work here:").Bold(),
+                TextBlock("OUTSIDE CommandHost scope (red) — Ctrl+S / Ctrl+Z / Ctrl+Y should NOT work here:").Bold(),
                 TextField("", _ => { }, placeholder: "Click here and press Ctrl+S — nothing should happen...")
             ).Padding(16).Margin(16, 0).Background(new Microsoft.UI.Xaml.Media.SolidColorBrush(
                 global::Windows.UI.Color.FromArgb(30, 237, 100, 100)))
@@ -268,17 +268,17 @@ class PerSiteOverrideDemo : Component
         var deleteCmd = StandardCommand.Delete(() => setLastAction("Deleted!"));
 
         return VStack(8,
-            Factories.Text("Per-Site Overrides — same command, different presentation with `with`").Bold().Margin(16, 8),
+            TextBlock("Per-Site Overrides — same command, different presentation with `with`").Bold().Margin(16, 8),
 
             HStack(16,
                 VStack(4,
-                    Factories.Text("Toolbar:").FontSize(12),
+                    TextBlock("Toolbar:").FontSize(12),
                     CommandBar(primaryCommands: [
                         AppBarButton(deleteCmd),  // Shows "Delete" with icon
                     ])
                 ),
                 VStack(4,
-                    Factories.Text("Context menu (overridden label):").FontSize(12),
+                    TextBlock("Context menu (overridden label):").FontSize(12),
                     MenuBar(
                         Menu("Actions",
                             MenuItem(deleteCmd with { Label = "Remove selected item" }),
@@ -288,7 +288,7 @@ class PerSiteOverrideDemo : Component
                 )
             ).Margin(16, 0),
 
-            Factories.Text($"Last action: {lastAction}").Margin(16, 8)
+            TextBlock($"Last action: {lastAction}").Margin(16, 8)
         );
     }
 }
@@ -309,10 +309,10 @@ class ToolbarComponent : Component
         var commands = UseContext(EditorCommandsContext.Instance);
 
         if (commands is null)
-            return Factories.Text("No editor commands available").FontSize(12);
+            return TextBlock("No editor commands available").FontSize(12);
 
         return VStack(4,
-            Factories.Text("Toolbar (consumes commands via context):").FontSize(12).Bold(),
+            TextBlock("Toolbar (consumes commands via context):").FontSize(12).Bold(),
             CommandBar(primaryCommands: [
                 AppBarButton(commands.Save),
                 AppBarButton(commands.Undo),
@@ -330,7 +330,7 @@ class EditorComponent : Component
         var (history, updateHistory) = UseReducer(new string[] { "Edit this text..." });
 
         return VStack(4,
-            Factories.Text("Editor (provides text + history state):").FontSize(12).Bold(),
+            TextBlock("Editor (provides text + history state):").FontSize(12).Bold(),
             TextField(content, newText =>
             {
                 setContent(newText);
@@ -370,23 +370,23 @@ class ContextSharingDemo : Component
 
         // Provide context so both toolbar and editor can access commands
         return VStack(8,
-            Factories.Text("Context Sharing — parent provides, children consume").Bold().Margin(16, 8),
+            TextBlock("Context Sharing — parent provides, children consume").Bold().Margin(16, 8),
 
             VStack(8,
                 Component<ToolbarComponent>(),
                 VStack(4,
-                    Factories.Text("Editor:").FontSize(12).Bold(),
+                    TextBlock("Editor:").FontSize(12).Bold(),
                     TextField(content, newText =>
                     {
                         setContent(newText);
                         updateHistory(h => [.. h, newText]);
                     })
                 ),
-                saveStatus.Length > 0 ? Factories.Text(saveStatus).Margin(0, 4).FontSize(12) : Empty()
+                saveStatus.Length > 0 ? TextBlock(saveStatus).Margin(0, 4).FontSize(12) : Empty()
             ).Margin(16, 0).Provide(EditorCommandsContext.Instance, commands),
 
-            Factories.Text("The parent component owns the commands and provides them via Context.").Margin(16, 8).FontSize(12),
-            Factories.Text("The toolbar consumes them via UseContext — no prop drilling needed.").Margin(16, 4).FontSize(12)
+            TextBlock("The parent component owns the commands and provides them via Context.").Margin(16, 8).FontSize(12),
+            TextBlock("The toolbar consumes them via UseContext — no prop drilling needed.").Margin(16, 4).FontSize(12)
         );
     }
 }

@@ -31,10 +31,10 @@ public sealed class WorkflowPipelineSample : GallerySample
 
         Element StageCard(stage) =>
             Border(VStack(2,
-                Factories.Text(stage.Icon).Set(tb => tb.FontFamily = mdl2),
-                Factories.Text(stage.Name).SemiBold(),
+                TextBlock(stage.Icon).Set(tb => tb.FontFamily = mdl2),
+                TextBlock(stage.Name).SemiBold(),
                 Progress(stage.Progress),
-                Factories.Text(stage.Status),
+                TextBlock(stage.Status),
             )) with { CornerRadius = 8, BorderBrush = statusColor, ... };
         """;
 
@@ -92,13 +92,13 @@ public sealed class WorkflowPipelineSample : GallerySample
 
         return (Border(
             VStack(2,
-                (Factories.Text(s.Icon) with { FontSize = 18 })
+                (TextBlock(s.Icon) with { FontSize = 18 })
                     .FontFamily("Segoe MDL2 Assets")
                     .Foreground(color).HAlign(HorizontalAlignment.Center),
-                (Factories.Text(s.Name) with { FontSize = 11 })
+                (TextBlock(s.Name) with { FontSize = 11 })
                     .SemiBold().HAlign(HorizontalAlignment.Center),
                 Progress(s.Progress).Width(80).Height(4).Margin(0, 4, 0, 0),
-                (Factories.Text(s.Status) with { FontSize = 9 })
+                (TextBlock(s.Status) with { FontSize = 9 })
                     .Foreground(color).HAlign(HorizontalAlignment.Center)
             ).HAlign(HorizontalAlignment.Center)
         ) with

@@ -39,7 +39,7 @@ class GeometryPage : Component
     static Element CornerRadiusResourcesSection(RadiusEntry[] entries) =>
         SampleCard("Corner Radius Resources",
             VStack(12,
-                Factories.Text("WinUI provides two corner radius theme resources. Using these instead of hard-coded values ensures your UI stays consistent with the system design language and adapts if the values are customized.")
+                TextBlock("WinUI provides two corner radius theme resources. Using these instead of hard-coded values ensures your UI stays consistent with the system design language and adapts if the values are customized.")
                     .Foreground(Theme.SecondaryText)
                     .FontSize(13)
                     .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
@@ -67,19 +67,19 @@ Border(dialog).CornerRadius(overlayRadius.TopLeft)");
 
                 VStack(2,
                     HStack(8,
-                        Factories.Text(entry.Name)
+                        TextBlock(entry.Name)
                             .SemiBold()
                             .FontSize(14)
                             .Foreground(Theme.PrimaryText),
-                        Factories.Text($"{entry.Value}px")
+                        TextBlock($"{entry.Value}px")
                             .FontSize(13)
                             .Foreground(Theme.AccentText)
                     ),
-                    Factories.Text(entry.ResourceKey)
+                    TextBlock(entry.ResourceKey)
                         .FontSize(11)
                         .Foreground(Theme.TertiaryText)
                         .Set(tb => tb.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Cascadia Code, Consolas, monospace")),
-                    Factories.Text(entry.Recommendation)
+                    TextBlock(entry.Recommendation)
                         .FontSize(12)
                         .Foreground(Theme.SecondaryText)
                         .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
@@ -95,14 +95,14 @@ Border(dialog).CornerRadius(overlayRadius.TopLeft)");
     static Element ControlCornerRadiusSection(CornerRadius cr) =>
         SampleCard("ControlCornerRadius",
             VStack(16,
-                Factories.Text("ControlCornerRadius is used by interactive controls to maintain a consistent, compact rounding. Apply it to buttons, inputs, cards, and other standard controls.")
+                TextBlock("ControlCornerRadius is used by interactive controls to maintain a consistent, compact rounding. Apply it to buttons, inputs, cards, and other standard controls.")
                     .Foreground(Theme.SecondaryText)
                     .FontSize(13)
                     .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
                     .Margin(0, 0, 0, 4),
 
                 // Buttons
-                Factories.Text("Buttons").SemiBold().Foreground(Theme.PrimaryText),
+                TextBlock("Buttons").SemiBold().Foreground(Theme.PrimaryText),
                 HStack(12,
                     Button("Standard", () => { })
                         .CornerRadius(cr.TopLeft),
@@ -115,17 +115,17 @@ Border(dialog).CornerRadius(overlayRadius.TopLeft)");
                 ),
 
                 // Text inputs
-                Factories.Text("Text Input").SemiBold().Foreground(Theme.PrimaryText),
+                TextBlock("Text Input").SemiBold().Foreground(Theme.PrimaryText),
                 TextField("", placeholder: "Type here...")
                     .Width(280)
                     .CornerRadius(cr.TopLeft),
 
                 // Card
-                Factories.Text("Card Surface").SemiBold().Foreground(Theme.PrimaryText),
+                TextBlock("Card Surface").SemiBold().Foreground(Theme.PrimaryText),
                 Border(
                     VStack(4,
-                        Factories.Text("Card Title").SemiBold().Foreground(Theme.PrimaryText),
-                        Factories.Text("Card content using ControlCornerRadius for its border rounding.")
+                        TextBlock("Card Title").SemiBold().Foreground(Theme.PrimaryText),
+                        TextBlock("Card content using ControlCornerRadius for its border rounding.")
                             .FontSize(13)
                             .Foreground(Theme.SecondaryText)
                             .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
@@ -137,17 +137,17 @@ Border(dialog).CornerRadius(overlayRadius.TopLeft)");
                 .Width(320),
 
                 // Chip / tag
-                Factories.Text("Tags & Badges").SemiBold().Foreground(Theme.PrimaryText),
+                TextBlock("Tags & Badges").SemiBold().Foreground(Theme.PrimaryText),
                 HStack(8,
-                    Border(Factories.Text("Info").FontSize(12).Foreground(Theme.PrimaryText).Margin(6, 2, 6, 2))
+                    Border(TextBlock("Info").FontSize(12).Foreground(Theme.PrimaryText).Margin(6, 2, 6, 2))
                         .Background(Theme.SubtleFill)
                         .WithBorder(Theme.ControlStroke)
                         .CornerRadius(cr.TopLeft),
-                    Border(Factories.Text("Success").FontSize(12).Foreground(Theme.PrimaryText).Margin(6, 2, 6, 2))
+                    Border(TextBlock("Success").FontSize(12).Foreground(Theme.PrimaryText).Margin(6, 2, 6, 2))
                         .Background(Theme.SystemSuccessBackground)
                         .WithBorder(Theme.ControlStroke)
                         .CornerRadius(cr.TopLeft),
-                    Border(Factories.Text("Warning").FontSize(12).Foreground(Theme.PrimaryText).Margin(6, 2, 6, 2))
+                    Border(TextBlock("Warning").FontSize(12).Foreground(Theme.PrimaryText).Margin(6, 2, 6, 2))
                         .Background(Theme.SystemCautionBackground)
                         .WithBorder(Theme.ControlStroke)
                         .CornerRadius(cr.TopLeft)
@@ -168,7 +168,7 @@ Border(content)
     .CornerRadius(cr.TopLeft)
 
 // Tags
-Border(Factories.Text(""Tag"").Padding(6, 2, 6, 2))
+Border(TextBlock(""Tag"").Padding(6, 2, 6, 2))
     .Background(Theme.SubtleFill)
     .WithBorder(Theme.ControlStroke)
     .CornerRadius(cr.TopLeft)");
@@ -178,19 +178,19 @@ Border(Factories.Text(""Tag"").Padding(6, 2, 6, 2))
     static Element OverlayCornerRadiusSection(CornerRadius or) =>
         SampleCard("OverlayCornerRadius",
             VStack(16,
-                Factories.Text("OverlayCornerRadius is larger than ControlCornerRadius and is used for surfaces that float above the app layer — dialogs, flyouts, menus, teaching tips, and modal overlays.")
+                TextBlock("OverlayCornerRadius is larger than ControlCornerRadius and is used for surfaces that float above the app layer — dialogs, flyouts, menus, teaching tips, and modal overlays.")
                     .Foreground(Theme.SecondaryText)
                     .FontSize(13)
                     .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
                     .Margin(0, 0, 0, 4),
 
                 // Dialog mock
-                Factories.Text("Dialog").SemiBold().Foreground(Theme.PrimaryText),
+                TextBlock("Dialog").SemiBold().Foreground(Theme.PrimaryText),
                 Border(
                     VStack(12,
-                        Factories.Text("Delete this item?")
+                        TextBlock("Delete this item?")
                             .FontSize(16).SemiBold().Foreground(Theme.PrimaryText),
-                        Factories.Text("This action cannot be undone. The item will be permanently removed.")
+                        TextBlock("This action cannot be undone. The item will be permanently removed.")
                             .FontSize(13)
                             .Foreground(Theme.SecondaryText)
                             .Set(tb => tb.TextWrapping = TextWrapping.Wrap),
@@ -207,7 +207,7 @@ Border(Factories.Text(""Tag"").Padding(6, 2, 6, 2))
                 .Width(400),
 
                 // Flyout mock
-                Factories.Text("Flyout / Menu").SemiBold().Foreground(Theme.PrimaryText),
+                TextBlock("Flyout / Menu").SemiBold().Foreground(Theme.PrimaryText),
                 Border(
                     VStack(2,
                         FlyoutMenuItem("Cut", "\uE8C6"),
@@ -226,16 +226,16 @@ Border(Factories.Text(""Tag"").Padding(6, 2, 6, 2))
                 .Width(200),
 
                 // Teaching tip mock
-                Factories.Text("Teaching Tip").SemiBold().Foreground(Theme.PrimaryText),
+                TextBlock("Teaching Tip").SemiBold().Foreground(Theme.PrimaryText),
                 Border(
                     VStack(8,
-                        Factories.Text("Did you know?")
+                        TextBlock("Did you know?")
                             .FontSize(14).SemiBold().Foreground(Theme.PrimaryText),
-                        Factories.Text("You can use OverlayCornerRadius to round any floating surface so it matches the system style for popups and overlays.")
+                        TextBlock("You can use OverlayCornerRadius to round any floating surface so it matches the system style for popups and overlays.")
                             .FontSize(13)
                             .Foreground(Theme.SecondaryText)
                             .Set(tb => tb.TextWrapping = TextWrapping.Wrap),
-                        Factories.Text("Got it").Foreground(Theme.AccentText).FontSize(13)
+                        TextBlock("Got it").Foreground(Theme.AccentText).FontSize(13)
                     ).Margin(20)
                 )
                 .Background(Theme.LayerFill)
@@ -268,7 +268,7 @@ Border(tipContent)
     static Element MixedRadiiSection(CornerRadius cr, CornerRadius or) =>
         SampleCard("Comparing Radii",
             VStack(12,
-                Factories.Text("Nesting controls inside overlay surfaces is a common pattern. The outer container uses OverlayCornerRadius, while the inner controls use ControlCornerRadius.")
+                TextBlock("Nesting controls inside overlay surfaces is a common pattern. The outer container uses OverlayCornerRadius, while the inner controls use ControlCornerRadius.")
                     .Foreground(Theme.SecondaryText)
                     .FontSize(13)
                     .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
@@ -277,7 +277,7 @@ Border(tipContent)
                 // A dialog-like container with inner controls
                 Border(
                     VStack(12,
-                        Factories.Text("Sign In")
+                        TextBlock("Sign In")
                             .FontSize(16).SemiBold().Foreground(Theme.PrimaryText),
                         TextField("", placeholder: "Username")
                             .CornerRadius(cr.TopLeft),
@@ -298,14 +298,14 @@ Border(tipContent)
                     VStack(4,
                         Border(VStack()).Width(40).Height(40)
                             .Background(Theme.Accent).CornerRadius(cr.TopLeft),
-                        Factories.Text($"Control\n{cr.TopLeft}px")
+                        TextBlock($"Control\n{cr.TopLeft}px")
                             .FontSize(11).Foreground(Theme.SecondaryText)
                             .HAlign(HorizontalAlignment.Center)
                     ),
                     VStack(4,
                         Border(VStack()).Width(40).Height(40)
                             .Background(Theme.Accent).CornerRadius(or.TopLeft),
-                        Factories.Text($"Overlay\n{or.TopLeft}px")
+                        TextBlock($"Overlay\n{or.TopLeft}px")
                             .FontSize(11).Foreground(Theme.SecondaryText)
                             .HAlign(HorizontalAlignment.Center)
                     )
@@ -332,12 +332,12 @@ Border(
     static Element FlyoutMenuItem(string label, string glyph) =>
         Border(
             HStack(10,
-                Factories.Text(glyph)
+                TextBlock(glyph)
                     .FontSize(14)
                     .Set(t => t.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe MDL2 Assets"))
                     .Foreground(Theme.PrimaryText)
                     .VAlign(VerticalAlignment.Center),
-                Factories.Text(label)
+                TextBlock(label)
                     .FontSize(13)
                     .Foreground(Theme.PrimaryText)
                     .VAlign(VerticalAlignment.Center)

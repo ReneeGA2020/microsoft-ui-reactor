@@ -14,12 +14,12 @@ internal static class DynamicFixtures
             var (count, setCount) = UseState(3);
             return VStack(
                 HStack(
-                    Factories.Text($"Items: {count}").AutomationId("ItemCount"),
+                    TextBlock($"Items: {count}").AutomationId("ItemCount"),
                     Button("Add", () => setCount(count + 1)).AutomationId("AddBtn"),
                     Button("Remove", () => setCount(Math.Max(0, count - 1))).AutomationId("RemoveBtn")
                 ),
                 VStack(Enumerable.Range(0, count)
-                    .Select(i => Factories.Text($"Item #{i}").WithKey($"item-{i}").AutomationId($"ListItem{i}"))
+                    .Select(i => TextBlock($"Item #{i}").WithKey($"item-{i}").AutomationId($"ListItem{i}"))
                     .ToArray())
             );
         }
@@ -39,9 +39,9 @@ internal static class DynamicFixtures
                     .AutomationId("ShowDetailsCheckBox"),
                 showAdvanced
                     ? VStack(
-                        Factories.Text("Advanced Settings").AutomationId("AdvancedSettings"),
-                        Factories.Text("Debug mode: ON").AutomationId("DebugMode"),
-                        Factories.Text("Verbose logging: ON").AutomationId("VerboseLogging")
+                        TextBlock("Advanced Settings").AutomationId("AdvancedSettings"),
+                        TextBlock("Debug mode: ON").AutomationId("DebugMode"),
+                        TextBlock("Verbose logging: ON").AutomationId("VerboseLogging")
                     )
                     : Empty()
             );

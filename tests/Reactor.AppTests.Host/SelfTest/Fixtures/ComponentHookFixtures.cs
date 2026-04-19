@@ -24,7 +24,7 @@ internal static class ComponentHookFixtures
         {
             var (count, update) = UseReducer(0);
             return VStack(
-                Factories.Text($"Reducer: {count}"),
+                TextBlock($"Reducer: {count}"),
                 Button("Inc", () => update(c => c + 1)),
                 Button("Dec", () => update(c => c - 1))
             );
@@ -71,7 +71,7 @@ internal static class ComponentHookFixtures
                 10);
 
             return VStack(
-                Factories.Text($"Redux: {state}"),
+                TextBlock($"Redux: {state}"),
                 Button("Add5", () => dispatch(new CounterAction("add5"))),
                 Button("Reset", () => dispatch(new CounterAction("reset")))
             );
@@ -127,8 +127,8 @@ internal static class ComponentHookFixtures
             renderCount.Current++;
 
             return VStack(
-                Factories.Text(expensive),
-                Factories.Text($"Renders: {renderCount.Current}"),
+                TextBlock(expensive),
+                TextBlock($"Renders: {renderCount.Current}"),
                 Button("MemoInc", stableCallback)
             );
         }
@@ -177,8 +177,8 @@ internal static class ComponentHookFixtures
             }, value);
 
             return VStack(
-                Factories.Text($"Val: {value}"),
-                Factories.Text($"Effects: {EffectRunCount}"),
+                TextBlock($"Val: {value}"),
+                TextBlock($"Effects: {EffectRunCount}"),
                 Button("SetB", () => setValue("B")),
                 Button("SetA", () => setValue("A"))
             );
@@ -215,7 +215,7 @@ internal static class ComponentHookFixtures
     {
         public override Element Render()
         {
-            return Factories.Text($"Hello {Props.Name} x{Props.Count}");
+            return TextBlock($"Hello {Props.Name} x{Props.Count}");
         }
     }
 
@@ -254,7 +254,7 @@ internal static class ComponentHookFixtures
             host.Mount(ctx =>
             {
                 var (w, h2) = ctx.UseWindowSize(H.Window);
-                return Factories.Text($"Window: {w:F0}x{h2:F0}");
+                return TextBlock($"Window: {w:F0}x{h2:F0}");
             });
 
             await Harness.Render();
@@ -280,8 +280,8 @@ internal static class ComponentHookFixtures
                 var isWide = ctx.UseBreakpoint(H.Window, 100); // 100px should always be true
                 var isHuge = ctx.UseBreakpoint(H.Window, 100000); // 100000px should always be false
                 return VStack(
-                    Factories.Text(isWide ? "Wide: true" : "Wide: false"),
-                    Factories.Text(isHuge ? "Huge: true" : "Huge: false")
+                    TextBlock(isWide ? "Wide: true" : "Wide: false"),
+                    TextBlock(isHuge ? "Huge: true" : "Huge: false")
                 );
             });
 
@@ -301,7 +301,7 @@ internal static class ComponentHookFixtures
         {
             var (n, set) = UseState(0);
             return VStack(
-                Factories.Text($"CounterA: {n}"),
+                TextBlock($"CounterA: {n}"),
                 Button("IncA", () => set(n + 1))
             );
         }
@@ -313,7 +313,7 @@ internal static class ComponentHookFixtures
         {
             var (n, set) = UseState(100);
             return VStack(
-                Factories.Text($"CounterB: {n}"),
+                TextBlock($"CounterB: {n}"),
                 Button("IncB", () => set(n + 1))
             );
         }

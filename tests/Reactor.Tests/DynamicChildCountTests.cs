@@ -30,8 +30,8 @@ public class DynamicChildCountTests
     public void CanUpdate_Grid_DifferentChildCounts_Returns_True()
     {
         var reconciler = new Reconciler();
-        var oldEl = Grid(["*"], ["*"], Factories.Text("A"));
-        var newEl = Grid(["*", "*"], ["*"], Factories.Text("A"), Factories.Text("B"));
+        var oldEl = Grid(["*"], ["*"], TextBlock("A"));
+        var newEl = Grid(["*", "*"], ["*"], TextBlock("A"), TextBlock("B"));
         Assert.True(reconciler.CanUpdate(oldEl, newEl));
     }
 
@@ -40,7 +40,7 @@ public class DynamicChildCountTests
     {
         var reconciler = new Reconciler();
         var oldEl = Grid(["*"], ["*"]);
-        var newEl = Grid(["*", "*"], ["*"], Factories.Text("A"), Factories.Text("B"));
+        var newEl = Grid(["*", "*"], ["*"], TextBlock("A"), TextBlock("B"));
         Assert.True(reconciler.CanUpdate(oldEl, newEl));
     }
 
@@ -48,7 +48,7 @@ public class DynamicChildCountTests
     public void CanUpdate_Grid_ShrinkToEmpty_Returns_True()
     {
         var reconciler = new Reconciler();
-        var oldEl = Grid(["*", "*"], ["*"], Factories.Text("A"), Factories.Text("B"));
+        var oldEl = Grid(["*", "*"], ["*"], TextBlock("A"), TextBlock("B"));
         var newEl = Grid(["*"], ["*"]);
         Assert.True(reconciler.CanUpdate(oldEl, newEl));
     }
@@ -57,8 +57,8 @@ public class DynamicChildCountTests
     public void CanUpdate_Stack_DifferentChildCounts_Returns_True()
     {
         var reconciler = new Reconciler();
-        var oldEl = VStack(Factories.Text("A"));
-        var newEl = VStack(Factories.Text("A"), Factories.Text("B"));
+        var oldEl = VStack(TextBlock("A"));
+        var newEl = VStack(TextBlock("A"), TextBlock("B"));
         Assert.True(reconciler.CanUpdate(oldEl, newEl));
     }
 
@@ -67,7 +67,7 @@ public class DynamicChildCountTests
     {
         var reconciler = new Reconciler();
         var oldEl = VStack();
-        var newEl = VStack(Factories.Text("A"), Factories.Text("B"));
+        var newEl = VStack(TextBlock("A"), TextBlock("B"));
         Assert.True(reconciler.CanUpdate(oldEl, newEl));
     }
 
@@ -75,8 +75,8 @@ public class DynamicChildCountTests
     public void CanUpdate_Flex_DifferentChildCounts_Returns_True()
     {
         var reconciler = new Reconciler();
-        var oldEl = FlexRow(Factories.Text("A"));
-        var newEl = FlexRow(Factories.Text("A"), Factories.Text("B"));
+        var oldEl = FlexRow(TextBlock("A"));
+        var newEl = FlexRow(TextBlock("A"), TextBlock("B"));
         Assert.True(reconciler.CanUpdate(oldEl, newEl));
     }
 
@@ -84,8 +84,8 @@ public class DynamicChildCountTests
     public void CanUpdate_WrapGrid_DifferentChildCounts_Returns_True()
     {
         var reconciler = new Reconciler();
-        var oldEl = WrapGrid(Factories.Text("A"));
-        var newEl = WrapGrid(Factories.Text("A"), Factories.Text("B"));
+        var oldEl = WrapGrid(TextBlock("A"));
+        var newEl = WrapGrid(TextBlock("A"), TextBlock("B"));
         Assert.True(reconciler.CanUpdate(oldEl, newEl));
     }
 
@@ -93,8 +93,8 @@ public class DynamicChildCountTests
     public void CanUpdate_Canvas_DifferentChildCounts_Returns_True()
     {
         var reconciler = new Reconciler();
-        var oldEl = Canvas(Factories.Text("A"));
-        var newEl = Canvas(Factories.Text("A"), Factories.Text("B"));
+        var oldEl = Canvas(TextBlock("A"));
+        var newEl = Canvas(TextBlock("A"), TextBlock("B"));
         Assert.True(reconciler.CanUpdate(oldEl, newEl));
     }
 
@@ -108,21 +108,21 @@ public class DynamicChildCountTests
     public void CanUpdate_TextToGrid_Returns_False()
     {
         var reconciler = new Reconciler();
-        Assert.False(reconciler.CanUpdate(Factories.Text("A"), Grid(["*"], ["*"], Factories.Text("A"))));
+        Assert.False(reconciler.CanUpdate(TextBlock("A"), Grid(["*"], ["*"], TextBlock("A"))));
     }
 
     [Fact]
     public void CanUpdate_GridToText_Returns_False()
     {
         var reconciler = new Reconciler();
-        Assert.False(reconciler.CanUpdate(Grid(["*"], ["*"], Factories.Text("A")), Factories.Text("A")));
+        Assert.False(reconciler.CanUpdate(Grid(["*"], ["*"], TextBlock("A")), TextBlock("A")));
     }
 
     [Fact]
     public void CanUpdate_StackToFlex_Returns_False()
     {
         var reconciler = new Reconciler();
-        Assert.False(reconciler.CanUpdate(VStack(Factories.Text("A")), FlexRow(Factories.Text("A"))));
+        Assert.False(reconciler.CanUpdate(VStack(TextBlock("A")), FlexRow(TextBlock("A"))));
     }
 
     [Fact]
@@ -130,8 +130,8 @@ public class DynamicChildCountTests
     {
         var reconciler = new Reconciler();
         Assert.False(reconciler.CanUpdate(
-            Grid(["*"], ["*"], Factories.Text("A")),
-            VStack(Factories.Text("A"))));
+            Grid(["*"], ["*"], TextBlock("A")),
+            VStack(TextBlock("A"))));
     }
 
     [Fact]
@@ -139,8 +139,8 @@ public class DynamicChildCountTests
     {
         var reconciler = new Reconciler();
         Assert.False(reconciler.CanUpdate(
-            Canvas(Factories.Text("A")),
-            Grid(["*"], ["*"], Factories.Text("A"))));
+            Canvas(TextBlock("A")),
+            Grid(["*"], ["*"], TextBlock("A"))));
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -152,39 +152,39 @@ public class DynamicChildCountTests
     [Fact]
     public void Grid_DifferentChildCounts_Are_Not_Equal()
     {
-        var el1 = Grid(["*"], ["*"], Factories.Text("A"));
-        var el2 = Grid(["*", "*"], ["*"], Factories.Text("A"), Factories.Text("B"));
+        var el1 = Grid(["*"], ["*"], TextBlock("A"));
+        var el2 = Grid(["*", "*"], ["*"], TextBlock("A"), TextBlock("B"));
         Assert.NotEqual(el1, el2);
     }
 
     [Fact]
     public void Grid_SameChildCount_DifferentContent_Are_Not_Equal()
     {
-        var el1 = Grid(["*", "*"], ["*"], Factories.Text("A"), Factories.Text("B"));
-        var el2 = Grid(["*", "*"], ["*"], Factories.Text("A"), Factories.Text("C"));
+        var el1 = Grid(["*", "*"], ["*"], TextBlock("A"), TextBlock("B"));
+        var el2 = Grid(["*", "*"], ["*"], TextBlock("A"), TextBlock("C"));
         Assert.NotEqual(el1, el2);
     }
 
     [Fact]
     public void Grid_Same_Reference_Is_Equal()
     {
-        var el = Grid(["*", "*"], ["*"], Factories.Text("A"), Factories.Text("B"));
+        var el = Grid(["*", "*"], ["*"], TextBlock("A"), TextBlock("B"));
         Assert.Equal(el, el);
     }
 
     [Fact]
     public void Stack_DifferentChildCounts_Are_Not_Equal()
     {
-        var el1 = VStack(Factories.Text("A"));
-        var el2 = VStack(Factories.Text("A"), Factories.Text("B"));
+        var el1 = VStack(TextBlock("A"));
+        var el2 = VStack(TextBlock("A"), TextBlock("B"));
         Assert.NotEqual(el1, el2);
     }
 
     [Fact]
     public void Flex_DifferentChildCounts_Are_Not_Equal()
     {
-        var el1 = FlexRow(Factories.Text("A"));
-        var el2 = FlexRow(Factories.Text("A"), Factories.Text("B"));
+        var el1 = FlexRow(TextBlock("A"));
+        var el2 = FlexRow(TextBlock("A"), TextBlock("B"));
         Assert.NotEqual(el1, el2);
     }
 

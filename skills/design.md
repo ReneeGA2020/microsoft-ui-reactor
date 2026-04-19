@@ -43,12 +43,12 @@ Use `Theme.*` tokens for all colors and brushes. Never hardcode hex colors for t
 
 ```csharp
 // Correct: theme tokens
-Text("Hello").Foreground(Theme.PrimaryText)
+TextBlock("Hello").Foreground(Theme.PrimaryText)
 Border(child).Background(Theme.CardBackground)
 Button("Action").Background(Theme.Accent)
 
 // Wrong: hardcoded colors on themed surfaces
-Text("Hello").Foreground("#000000")
+TextBlock("Hello").Foreground("#000000")
 Border(child).Background("#FFFFFF")
 ```
 
@@ -174,7 +174,7 @@ Use the predefined text factories or WinUI style tokens. Never set `FontSize` an
 | Factory | Size | Weight | Use Case |
 |---------|------|--------|----------|
 | `Caption("text")` | 12px | Regular | Small labels, timestamps |
-| `Text("text")` | 14px | Regular | Default body text |
+| `TextBlock("text")` | 14px | Regular | Default body text |
 | `SubHeading("text")` | 20px | 600 | Section headers, card titles |
 | `Heading("text")` | 28px | 700 | Page titles |
 
@@ -195,7 +195,7 @@ For sizes not covered by the factories, apply a WinUI style:
 
 ```csharp
 // Correct: apply WinUI style for BodyLarge
-Text("Prominent text").Set(tb => tb.Style =
+TextBlock("Prominent text").Set(tb => tb.Style =
     (Style)Application.Current.Resources["BodyLargeTextBlockStyle"])
 
 // Also correct: use the Reactor factories for common sizes
@@ -204,7 +204,7 @@ SubHeading("Section")
 Caption("Fine print")
 
 // Wrong: raw font properties for standard UI text
-Text("Title").FontSize(28).FontWeight(new FontWeight(700))
+TextBlock("Title").FontSize(28).FontWeight(new FontWeight(700))
 ```
 
 **Rules:**
@@ -212,14 +212,14 @@ Text("Title").FontSize(28).FontWeight(new FontWeight(700))
 - Minimum font size: 12px. Anything smaller makes complex scripts unreadable.
 - Use `{ThemeResource SymbolThemeFontFamily}` for icon fonts via `.Set()`:
   ```csharp
-  Text("\uE710").Set(tb =>
+  TextBlock("\uE710").Set(tb =>
       tb.FontFamily = (FontFamily)Application.Current.Resources["SymbolThemeFontFamily"])
   ```
 - When icons and text are paired, **top-align both** in wrapping scenarios to prevent visual drift at larger text scales.
 - **TextWrapping:** `NoWrap` is the default — use `TextWrapping.Wrap` or `TextWrapping.WrapWholeWords` when text should flow to multiple lines. Choose `WrapWholeWords` for body text to avoid mid-word breaks.
 - **Smart tooltips for trimmed text:** When text is trimmed with `TextTrimming`, add a tooltip that only appears when the text is actually trimmed:
   ```csharp
-  Text(longText)
+  TextBlock(longText)
       .TextTrimming(TextTrimming.CharacterEllipsis)
       .ToolTip(longText)
   ```
@@ -299,12 +299,12 @@ Grid(
     columns: ["Auto", "*"],
     rows: ["Auto"],
     Image(source).Size(32, 32).Grid(column: 0),
-    Text(title).TextTrimming(TextTrimming.CharacterEllipsis).Grid(column: 1))
+    TextBlock(title).TextTrimming(TextTrimming.CharacterEllipsis).Grid(column: 1))
 
 // Wrong: TextTrimming never fires inside HStack
 HStack(8,
     Image(source).Size(32, 32),
-    Text(title).TextTrimming(TextTrimming.CharacterEllipsis))
+    TextBlock(title).TextTrimming(TextTrimming.CharacterEllipsis))
 ```
 
 #### ScrollView Configuration
@@ -328,13 +328,13 @@ Use `VStack(spacing, ...)` / `HStack(spacing, ...)` or Grid `RowSpacing`/`Column
 
 ```csharp
 // Correct
-VStack(8, Text("A"), Text("B"), Text("C"))
+VStack(8, TextBlock("A"), TextBlock("B"), TextBlock("C"))
 
 // Wrong: spacer element for spacing
 VStack(
-    Text("A"),
+    TextBlock("A"),
     Border(null).Height(8),  // Don't do this
-    Text("B"))
+    TextBlock("B"))
 ```
 
 #### Shadows
@@ -374,7 +374,7 @@ var filtered = UseMemo(() =>
 return VStack(
     TextField(filter, setFilter, placeholder: "Filter..."),
     VStack(filtered.Select(item =>
-        Text(item.Name).WithKey(item.Id)
+        TextBlock(item.Name).WithKey(item.Id)
     ).ToArray()));
 ```
 
@@ -386,7 +386,7 @@ When integrating with existing `INotifyPropertyChanged` objects:
 var model = UseObservable(externalModel);
 
 return VStack(
-    Text(model.Title),
+    TextBlock(model.Title),
     Slider(model.Volume, 0, 100, v => model.Volume = v));
 ```
 
@@ -437,7 +437,7 @@ Button("Tab stop", onClick)
 ```csharp
 // Position-in-set for screen readers
 items.Select((item, i) =>
-    Text(item.Name)
+    TextBlock(item.Name)
         .PositionInSet(i + 1, items.Count)
         .WithKey(item.Id))
 ```
@@ -446,7 +446,7 @@ items.Select((item, i) =>
 
 ```csharp
 // Announce dynamic content changes to screen readers
-Text(statusMessage)
+TextBlock(statusMessage)
     .LiveRegion(AutomationLiveSetting.Polite)
 ```
 
@@ -538,7 +538,7 @@ Animate children being added, removed, or repositioned:
 
 ```csharp
 VStack(items.Select(item =>
-    Text(item.Name).WithKey(item.Id)
+    TextBlock(item.Name).WithKey(item.Id)
 ).ToArray()).LayoutAnimation()
 ```
 
@@ -568,7 +568,7 @@ Always set `.WithKey()` on items in dynamic lists. Without keys, the reconciler 
 VStack(items.Select(item =>
     HStack(8,
         Image(item.Avatar).Size(32, 32),
-        Text(item.Name)
+        TextBlock(item.Name)
     ).WithKey(item.Id)
 ).ToArray())
 
@@ -576,7 +576,7 @@ VStack(items.Select(item =>
 VStack(items.Select(item =>
     HStack(8,
         Image(item.Avatar).Size(32, 32),
-        Text(item.Name)
+        TextBlock(item.Name)
     ).ToArray())
 ```
 
@@ -596,12 +596,12 @@ Flatten visual tree depth where possible. Use `Border` instead of single-child `
 
 ```csharp
 // Correct: flat
-Border(Text("Hello")).Background(Theme.CardBackground).Padding(16)
+Border(TextBlock("Hello")).Background(Theme.CardBackground).Padding(16)
 
 // Wrong: unnecessary nesting
 VStack(
     Grid(["*"], ["*"],
-        Text("Hello")
+        TextBlock("Hello")
     ).Background(Theme.CardBackground)
 ).Padding(16)
 ```
@@ -612,10 +612,10 @@ VStack(
 
 ```csharp
 // Good: property not exposed by Reactor
-Text("Clock").Set(tb => tb.Typography.NumeralAlignment = FontNumeralAlignment.Tabular)
+TextBlock("Clock").Set(tb => tb.Typography.NumeralAlignment = FontNumeralAlignment.Tabular)
 
 // Bad: property that Reactor exposes as a modifier
-Text("Hello").Set(tb => tb.Margin = new Thickness(16))  // Use .Margin(16) instead
+TextBlock("Hello").Set(tb => tb.Margin = new Thickness(16))  // Use .Margin(16) instead
 ```
 
 ### 11. Formatting Conventions
@@ -630,7 +630,7 @@ Text("Hello").Set(tb => tb.Margin = new Thickness(16))  // Use .Margin(16) inste
 Border(
     VStack(16,
         Heading("Title"),
-        Text("Description").Foreground(Theme.SecondaryText),
+        TextBlock("Description").Foreground(Theme.SecondaryText),
         HStack(8,
             Button("Cancel", onCancel),
             Button("Save", onSave).Resources(r => r
@@ -655,7 +655,7 @@ Every UI change must survive text scaling and long strings:
 - Use `VAlign(VerticalAlignment.Center)` instead of margin-based centering.
 - Use tabular numerals for changing numbers (clock, battery, progress):
   ```csharp
-  Text($"{percent}%").Set(tb =>
+  TextBlock($"{percent}%").Set(tb =>
       tb.Typography.NumeralAlignment = FontNumeralAlignment.Tabular)
   ```
 

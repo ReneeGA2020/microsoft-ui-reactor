@@ -17,7 +17,7 @@ internal static class LayoutAnimationFixtures
             host.Mount(ctx =>
             {
                 return VStack(
-                    Border(Factories.Text("Animated Item"))
+                    Border(TextBlock("Animated Item"))
                         .LayoutAnimation()
                         .AutomationId("layout-anim-target")
                 );
@@ -55,7 +55,7 @@ internal static class LayoutAnimationFixtures
             host.Mount(ctx =>
             {
                 return VStack(
-                    Border(Factories.Text("Spring Item"))
+                    Border(TextBlock("Spring Item"))
                         .SpringLayoutAnimation(dampingRatio: 0.8f, period: 0.1f)
                         .AutomationId("spring-anim-target")
                 );
@@ -93,7 +93,7 @@ internal static class LayoutAnimationFixtures
             host.Mount(ctx =>
             {
                 return VStack(
-                    Border(Factories.Text("Size Animated"))
+                    Border(TextBlock("Size Animated"))
                         .LayoutAnimation(new LayoutAnimationConfig { AnimateSize = true })
                         .AutomationId("size-anim-target")
                 );
@@ -142,15 +142,15 @@ internal static class LayoutAnimationFixtures
                 {
                     return new FlexElement(new Element[]
                     {
-                        Border(Factories.Text("A")).ConnectedAnimation("ca-test-a").AutomationId("ca-a"),
-                        Border(Factories.Text("B")).ConnectedAnimation("ca-test-b").AutomationId("ca-b"),
+                        Border(TextBlock("A")).ConnectedAnimation("ca-test-a").AutomationId("ca-a"),
+                        Border(TextBlock("B")).ConnectedAnimation("ca-test-b").AutomationId("ca-b"),
                     });
                 }
                 else
                 {
                     return VStack(
-                        Border(Factories.Text("A")).ConnectedAnimation("ca-test-a").AutomationId("ca-a2"),
-                        Border(Factories.Text("B")).ConnectedAnimation("ca-test-b").AutomationId("ca-b2")
+                        Border(TextBlock("A")).ConnectedAnimation("ca-test-a").AutomationId("ca-a2"),
+                        Border(TextBlock("B")).ConnectedAnimation("ca-test-b").AutomationId("ca-b2")
                     );
                 }
             });
@@ -166,8 +166,8 @@ internal static class LayoutAnimationFixtures
             host.Mount(ctx =>
             {
                 return VStack(
-                    Border(Factories.Text("A")).ConnectedAnimation("ca-test-a").AutomationId("ca-a2"),
-                    Border(Factories.Text("B")).ConnectedAnimation("ca-test-b").AutomationId("ca-b2")
+                    Border(TextBlock("A")).ConnectedAnimation("ca-test-a").AutomationId("ca-a2"),
+                    Border(TextBlock("B")).ConnectedAnimation("ca-test-b").AutomationId("ca-b2")
                 );
             });
 

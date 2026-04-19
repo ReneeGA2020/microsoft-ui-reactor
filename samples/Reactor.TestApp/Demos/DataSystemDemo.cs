@@ -49,10 +49,10 @@ class DataSystemDemo : Microsoft.UI.Reactor.Core.Component
 
         return FlexColumn(
             Heading("Data System Demo").Flex(shrink: 0),
-            Factories.Text("Phase 0 + Phase 1: FieldDescriptor, PropertyGrid FullEditor, VirtualList, ListDataSource, FormField").Foreground(SecondaryText).Flex(shrink: 0),
+            TextBlock("Phase 0 + Phase 1: FieldDescriptor, PropertyGrid FullEditor, VirtualList, ListDataSource, FormField").Foreground(SecondaryText).Flex(shrink: 0),
 
             HStack(8,
-                Factories.Text("Demo:"),
+                TextBlock("Demo:"),
                 ComboBox(SectionLabels, (int)section, i => setSection((DataDemoSection)i)).Width(280)
             ).Margin(0, 8, 0, 0).Flex(shrink: 0),
 
@@ -140,23 +140,23 @@ class PropertyGridFullEditorDemo : Microsoft.UI.Reactor.Core.Component
                 Editor = (val, onChange) =>
                 {
                     var c = (RgbColor)val;
-                    return Factories.Text(c.ToString()).SemiBold();
+                    return TextBlock(c.ToString()).SemiBold();
                 },
                 FullEditor = (val, onChange) =>
                 {
                     var c = (RgbColor)val;
                     return FlexColumn(
-                        Factories.Text("RGB Color Editor").SemiBold(),
+                        TextBlock("RGB Color Editor").SemiBold(),
                         FlexRow(
-                            Factories.Text("R:").Width(20),
+                            TextBlock("R:").Width(20),
                             NumberBox(c.R, v => onChange(new RgbColor((byte)v, c.G, c.B))).Width(100)
                         ) with { AlignItems = FlexAlign.Center, ColumnGap = 8 },
                         FlexRow(
-                            Factories.Text("G:").Width(20),
+                            TextBlock("G:").Width(20),
                             NumberBox(c.G, v => onChange(new RgbColor(c.R, (byte)v, c.B))).Width(100)
                         ) with { AlignItems = FlexAlign.Center, ColumnGap = 8 },
                         FlexRow(
-                            Factories.Text("B:").Width(20),
+                            TextBlock("B:").Width(20),
                             NumberBox(c.B, v => onChange(new RgbColor(c.R, c.G, (byte)v))).Width(100)
                         ) with { AlignItems = FlexAlign.Center, ColumnGap = 8 },
                         Border(Empty())
@@ -192,8 +192,8 @@ class PropertyGridFullEditorDemo : Microsoft.UI.Reactor.Core.Component
 
         return FlexColumn(
             SubHeading("PropertyGrid with FullEditor Expand").Flex(shrink: 0),
-            Factories.Text("The Tint property has a FullEditor registered. Look for the \"\u2026\" button next to the color value.").Foreground(SecondaryText).Flex(shrink: 0),
-            Factories.Text("Clicking \"\u2026\" opens a flyout with individual R/G/B NumberBox editors and a live preview.").Foreground(SecondaryText).Flex(shrink: 0),
+            TextBlock("The Tint property has a FullEditor registered. Look for the \"\u2026\" button next to the color value.").Foreground(SecondaryText).Flex(shrink: 0),
+            TextBlock("Clicking \"\u2026\" opens a flyout with individual R/G/B NumberBox editors and a live preview.").Foreground(SecondaryText).Flex(shrink: 0),
 
             ScrollView(
                 PropertyGridDsl.PropertyGrid(spriteRef.Current, registry)
@@ -201,8 +201,8 @@ class PropertyGridFullEditorDemo : Microsoft.UI.Reactor.Core.Component
 
             Border(
                 VStack(4,
-                    Factories.Text("Live values:").SemiBold(),
-                    Factories.Text($"Name={spriteRef.Current.Name}, Health={spriteRef.Current.Health}, " +
+                    TextBlock("Live values:").SemiBold(),
+                    TextBlock($"Name={spriteRef.Current.Name}, Health={spriteRef.Current.Health}, " +
                          $"Speed={spriteRef.Current.Speed:F1}, Visible={spriteRef.Current.Visible}, " +
                          $"Tint={spriteRef.Current.Tint}")
                 )
@@ -224,10 +224,10 @@ class VirtualListFixedDemo : Microsoft.UI.Reactor.Core.Component
 
         return FlexColumn(
             SubHeading($"VirtualList — Fixed Height ({count:N0} items)").Flex(shrink: 0),
-            Factories.Text("Fixed-height mode: ItemHeight=32px, O(1) offset calculation, smooth scrolling.").Foreground(SecondaryText).Flex(shrink: 0),
+            TextBlock("Fixed-height mode: ItemHeight=32px, O(1) offset calculation, smooth scrolling.").Foreground(SecondaryText).Flex(shrink: 0),
 
             HStack(8,
-                Factories.Text("Items:"),
+                TextBlock("Items:"),
                 Button("100", () => setCount(100)),
                 Button("1K", () => setCount(1000)),
                 Button("10K", () => setCount(10000)),
@@ -244,9 +244,9 @@ class VirtualListFixedDemo : Microsoft.UI.Reactor.Core.Component
             VirtualListDsl.VirtualList(
                 itemCount: count,
                 renderItem: i => FlexRow(
-                    Factories.Text($"{i:N0}").Width(80).Foreground(TertiaryText),
-                    Factories.Text($"Item {i:N0}").Flex(grow: 1),
-                    Factories.Text(i % 2 == 0 ? "Even" : "Odd").Width(60).Foreground(SecondaryText)
+                    TextBlock($"{i:N0}").Width(80).Foreground(TertiaryText),
+                    TextBlock($"Item {i:N0}").Flex(grow: 1),
+                    TextBlock(i % 2 == 0 ? "Even" : "Odd").Width(60).Foreground(SecondaryText)
                 ) with { AlignItems = FlexAlign.Center, ColumnGap = 8 },
                 itemHeight: 32,
                 spacing: 1,
@@ -269,10 +269,10 @@ class VirtualListVariableDemo : Microsoft.UI.Reactor.Core.Component
 
         return FlexColumn(
             SubHeading($"VirtualList — Variable Height ({count:N0} items)").Flex(shrink: 0),
-            Factories.Text("Variable-height mode: each item renders at its natural size. EstimatedItemHeight=50px.").Foreground(SecondaryText).Flex(shrink: 0),
+            TextBlock("Variable-height mode: each item renders at its natural size. EstimatedItemHeight=50px.").Foreground(SecondaryText).Flex(shrink: 0),
 
             HStack(8,
-                Factories.Text("Items:"),
+                TextBlock("Items:"),
                 Button("100", () => setCount(100)),
                 Button("1K", () => setCount(1000)),
                 Button("10K", () => setCount(10000))
@@ -288,11 +288,11 @@ class VirtualListVariableDemo : Microsoft.UI.Reactor.Core.Component
                     return Border(
                         FlexColumn(
                             FlexRow(
-                                Factories.Text($"#{i:N0}").SemiBold(),
-                                Factories.Text(DataDemoHelpers.GetDepartment(i)).Foreground(SecondaryText)
+                                TextBlock($"#{i:N0}").SemiBold(),
+                                TextBlock(DataDemoHelpers.GetDepartment(i)).Foreground(SecondaryText)
                             ) with { ColumnGap = 12, AlignItems = FlexAlign.Center },
                             isExpanded
-                                ? Factories.Text($"This is an expanded item with more detail. " +
+                                ? TextBlock($"This is an expanded item with more detail. " +
                                        $"Employee #{i} works in {DataDemoHelpers.GetDepartment(i)} and has been " +
                                        $"with the company for {(i % 20) + 1} years.").Foreground(SecondaryText)
                                 : null
@@ -365,10 +365,10 @@ class DataSourceDemo : Microsoft.UI.Reactor.Core.Component
 
         return FlexColumn(
             SubHeading("ListDataSource — Paging, Sorting, Filtering").Flex(shrink: 0),
-            Factories.Text($"500 employees. Capabilities: {source.Capabilities}").Foreground(SecondaryText).Flex(shrink: 0),
+            TextBlock($"500 employees. Capabilities: {source.Capabilities}").Foreground(SecondaryText).Flex(shrink: 0),
 
             HStack(8,
-                Factories.Text("Sort:"),
+                TextBlock("Sort:"),
                 ComboBox(sortFields, Array.IndexOf(sortFields, sortField),
                     i => { setToken(null); setSortField(sortFields[i]); }).Width(120),
                 Button(sortDir == SortDirection.Ascending ? "\u25B2 Asc" : "\u25BC Desc",
@@ -376,25 +376,25 @@ class DataSourceDemo : Microsoft.UI.Reactor.Core.Component
             ).Flex(shrink: 0),
 
             HStack(8,
-                Factories.Text("Dept:"),
+                TextBlock("Dept:"),
                 ComboBox(departments, Math.Max(0, Array.IndexOf(departments, filterDept)),
                     i => { setToken(null); setFilterDept(departments[i]); }).Width(140),
-                Factories.Text("Search:"),
+                TextBlock("Search:"),
                 TextField(searchQuery, s => { setToken(null); setSearchQuery(s); }, placeholder: "Search...").Width(180)
             ).Flex(shrink: 0),
 
             loading
-                ? Factories.Text("Loading...").Foreground(SecondaryText)
+                ? TextBlock("Loading...").Foreground(SecondaryText)
                 : page is not null
                     ? FlexColumn(
                         Caption($"Showing {page.Items.Count} of {page.TotalCount} results").Foreground(SecondaryText).Flex(shrink: 0),
 
                         FlexRow(
-                            Factories.Text("ID").Width(50).SemiBold(),
-                            Factories.Text("Name").Width(180).SemiBold(),
-                            Factories.Text("Department").Width(120).SemiBold(),
-                            Factories.Text("Age").Width(50).SemiBold(),
-                            Factories.Text("Salary").Width(100).SemiBold()
+                            TextBlock("ID").Width(50).SemiBold(),
+                            TextBlock("Name").Width(180).SemiBold(),
+                            TextBlock("Department").Width(120).SemiBold(),
+                            TextBlock("Age").Width(50).SemiBold(),
+                            TextBlock("Salary").Width(100).SemiBold()
                         ) with { ColumnGap = 8 },
 
                         VirtualListDsl.VirtualList(
@@ -403,11 +403,11 @@ class DataSourceDemo : Microsoft.UI.Reactor.Core.Component
                             {
                                 var emp = page.Items[i];
                                 return FlexRow(
-                                    Factories.Text($"{emp.Id}").Width(50).Foreground(TertiaryText),
-                                    Factories.Text(emp.Name).Width(180),
-                                    Factories.Text(emp.Department).Width(120).Foreground(SecondaryText),
-                                    Factories.Text($"{emp.Age}").Width(50),
-                                    Factories.Text($"${emp.Salary:N0}").Width(100)
+                                    TextBlock($"{emp.Id}").Width(50).Foreground(TertiaryText),
+                                    TextBlock(emp.Name).Width(180),
+                                    TextBlock(emp.Department).Width(120).Foreground(SecondaryText),
+                                    TextBlock($"{emp.Age}").Width(50),
+                                    TextBlock($"${emp.Salary:N0}").Width(100)
                                 ) with { ColumnGap = 8, AlignItems = FlexAlign.Center };
                             },
                             itemHeight: 28,
@@ -418,12 +418,12 @@ class DataSourceDemo : Microsoft.UI.Reactor.Core.Component
                         FlexRow(
                             Button("\u25C0 Previous", () => setToken(null))
                                 .Disabled(token is null),
-                            Factories.Text($"Page size: {pageSize}"),
+                            TextBlock($"Page size: {pageSize}"),
                             Button("Next \u25B6", () => setToken(page.ContinuationToken))
                                 .Disabled(page.ContinuationToken is null)
                         ) with { ColumnGap = 8, AlignItems = FlexAlign.Center }
                       ) with { RowGap = 4 }
-                    : Factories.Text("No data")
+                    : TextBlock("No data")
         ) with { RowGap = 8 };
     }
 }
@@ -473,7 +473,7 @@ class FormFieldDemo : Microsoft.UI.Reactor.Core.Component
 
         return FlexColumn(
             SubHeading("FormField Auto-Wired from FieldDescriptor"),
-            Factories.Text("FormField overload resolves editors from TypeRegistry, sets label/description from FieldDescriptor, detects Required from validators.").Foreground(SecondaryText),
+            TextBlock("FormField overload resolves editors from TypeRegistry, sets label/description from FieldDescriptor, detects Required from validators.").Foreground(SecondaryText),
 
             FormField(nameField, name, v => setName((string)v), registry).Margin(0, 8),
             FormField(ageField, age, v => setAge(v), registry).Margin(0, 8),
@@ -481,8 +481,8 @@ class FormFieldDemo : Microsoft.UI.Reactor.Core.Component
 
             Border(
                 VStack(4,
-                    Factories.Text("Current values:").SemiBold(),
-                    Factories.Text($"Name=\"{name}\", Age={age}, Department=\"{dept}\"")
+                    TextBlock("Current values:").SemiBold(),
+                    TextBlock($"Name=\"{name}\", Age={age}, Department=\"{dept}\"")
                 )
             ).Padding(12).Background(SubtleFill).Margin(0, 8, 0, 0)
         ) with { RowGap = 4 };

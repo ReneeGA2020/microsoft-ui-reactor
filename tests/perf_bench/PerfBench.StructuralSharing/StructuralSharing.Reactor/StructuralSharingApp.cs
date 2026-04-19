@@ -88,10 +88,10 @@ public class StructuralSharingApp : Component
         for (int p = 0; p < PanelCount; p++)
         {
             var items = new Element[ItemsPerPanel + 1];
-            items[0] = Factories.Text($"Panel {p}").FontSize(12).Bold();
+            items[0] = TextBlock($"Panel {p}").FontSize(12).Bold();
             for (int i = 0; i < ItemsPerPanel; i++)
             {
-                items[i + 1] = Factories.Text($"Item {i}: {panelData[p][i]:F2}").FontSize(10);
+                items[i + 1] = TextBlock($"Item {i}: {panelData[p][i]:F2}").FontSize(10);
             }
             panels[p] = VStack(2, items);
         }
@@ -100,7 +100,7 @@ public class StructuralSharingApp : Component
             HStack(8, panels),
             Opts.Headless
                 ? null!
-                : Factories.Text(hudText).Foreground("Yellow").FontSize(14)
+                : TextBlock(hudText).Foreground("Yellow").FontSize(14)
         );
     }
 }

@@ -18,7 +18,7 @@ public class WrapGridElementTests
     [Fact]
     public void WrapGrid_Creates_With_Children()
     {
-        var el = WrapGrid(Factories.Text("A"), Factories.Text("B"), Factories.Text("C"));
+        var el = WrapGrid(TextBlock("A"), TextBlock("B"), TextBlock("C"));
         Assert.IsType<WrapGridElement>(el);
         Assert.Equal(3, el.Children.Length);
     }
@@ -26,14 +26,14 @@ public class WrapGridElementTests
     [Fact]
     public void WrapGrid_Filters_Null_Children()
     {
-        var el = WrapGrid(Factories.Text("A"), null, Factories.Text("B"));
+        var el = WrapGrid(TextBlock("A"), null, TextBlock("B"));
         Assert.Equal(2, el.Children.Length);
     }
 
     [Fact]
     public void WrapGrid_Default_Properties()
     {
-        var el = WrapGrid(Factories.Text("A"));
+        var el = WrapGrid(TextBlock("A"));
         Assert.Equal(-1, el.MaximumRowsOrColumns);
         Assert.Equal(Orientation.Horizontal, el.Orientation);
         Assert.True(double.IsNaN(el.ItemWidth));
@@ -43,7 +43,7 @@ public class WrapGridElementTests
     [Fact]
     public void WrapGrid_With_MaxRowsOrColumns()
     {
-        var el = WrapGrid(3, Factories.Text("A"), Factories.Text("B"), Factories.Text("C"));
+        var el = WrapGrid(3, TextBlock("A"), TextBlock("B"), TextBlock("C"));
         Assert.Equal(3, el.MaximumRowsOrColumns);
         Assert.Equal(3, el.Children.Length);
     }
@@ -51,14 +51,14 @@ public class WrapGridElementTests
     [Fact]
     public void WrapGrid_Orientation_Via_Init()
     {
-        var el = WrapGrid(Factories.Text("A")) with { Orientation = Orientation.Vertical };
+        var el = WrapGrid(TextBlock("A")) with { Orientation = Orientation.Vertical };
         Assert.Equal(Orientation.Vertical, el.Orientation);
     }
 
     [Fact]
     public void WrapGrid_ItemSize_Via_Init()
     {
-        var el = WrapGrid(Factories.Text("A")) with { ItemWidth = 50, ItemHeight = 50 };
+        var el = WrapGrid(TextBlock("A")) with { ItemWidth = 50, ItemHeight = 50 };
         Assert.Equal(50, el.ItemWidth);
         Assert.Equal(50, el.ItemHeight);
     }
@@ -66,14 +66,14 @@ public class WrapGridElementTests
     [Fact]
     public void WrapGrid_Is_Element()
     {
-        Element el = WrapGrid(Factories.Text("A"));
+        Element el = WrapGrid(TextBlock("A"));
         Assert.IsAssignableFrom<Element>(el);
     }
 
     [Fact]
     public void WrapGrid_Record_Equality_Same_Array()
     {
-        var children = new Element[] { Factories.Text("A") };
+        var children = new Element[] { TextBlock("A") };
         var a = new WrapGridElement(children) { MaximumRowsOrColumns = 3 };
         var b = new WrapGridElement(children) { MaximumRowsOrColumns = 3 };
         Assert.Equal(a, b);
@@ -82,7 +82,7 @@ public class WrapGridElementTests
     [Fact]
     public void WrapGrid_Record_Inequality_Different_MaxRows()
     {
-        var children = new Element[] { Factories.Text("A") };
+        var children = new Element[] { TextBlock("A") };
         var a = new WrapGridElement(children) { MaximumRowsOrColumns = 3 };
         var b = new WrapGridElement(children) { MaximumRowsOrColumns = 4 };
         Assert.NotEqual(a, b);
@@ -95,9 +95,9 @@ public class WrapGridElementTests
     [Fact]
     public void Set_Adds_Setter_To_WrapGridElement()
     {
-        var el = WrapGrid(Factories.Text("A"))
+        var el = WrapGrid(TextBlock("A"))
             .Set(wg => wg.HorizontalChildrenAlignment = Microsoft.UI.Xaml.HorizontalAlignment.Center);
-        Assert.NotEqual(WrapGrid(Factories.Text("A")), el);
+        Assert.NotEqual(WrapGrid(TextBlock("A")), el);
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -107,7 +107,7 @@ public class WrapGridElementTests
     [Fact]
     public void Modifiers_Work_On_WrapGrid()
     {
-        var el = WrapGrid(Factories.Text("A")).Margin(8).Width(400);
+        var el = WrapGrid(TextBlock("A")).Margin(8).Width(400);
         Assert.NotNull(el.Modifiers);
         Assert.Equal(400, el.Modifiers!.Width);
     }
@@ -120,8 +120,8 @@ public class WrapGridElementTests
     public void CanUpdate_Same_WrapGrid_Elements()
     {
         var reconciler = new Reconciler();
-        var a = WrapGrid(Factories.Text("A"));
-        var b = WrapGrid(Factories.Text("B"));
+        var a = WrapGrid(TextBlock("A"));
+        var b = WrapGrid(TextBlock("B"));
         Assert.True(reconciler.CanUpdate(a, b));
     }
 
@@ -129,7 +129,7 @@ public class WrapGridElementTests
     public void CanUpdate_WrapGrid_Vs_Stack_Returns_False()
     {
         var reconciler = new Reconciler();
-        Assert.False(reconciler.CanUpdate(WrapGrid(Factories.Text("A")), VStack(Factories.Text("A"))));
+        Assert.False(reconciler.CanUpdate(WrapGrid(TextBlock("A")), VStack(TextBlock("A"))));
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public class WrapGridElementTests
         var reconciler = new Reconciler();
         try
         {
-            var ctrl = reconciler.Mount(WrapGrid(3, Factories.Text("A"), Factories.Text("B")), () => { });
+            var ctrl = reconciler.Mount(WrapGrid(3, TextBlock("A"), TextBlock("B")), () => { });
             Assert.NotNull(ctrl);
             Assert.IsType<VariableSizedWrapGrid>(ctrl);
         }
@@ -162,7 +162,7 @@ public class WrapGridElementTests
     [Fact]
     public void WrapGrid_WithKey_Sets_Key()
     {
-        var el = WrapGrid(Factories.Text("A")).WithKey("grid-1");
+        var el = WrapGrid(TextBlock("A")).WithKey("grid-1");
         Assert.Equal("grid-1", el.Key);
     }
 }

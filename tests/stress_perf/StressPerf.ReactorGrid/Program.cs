@@ -157,11 +157,11 @@ class StockGridApp : Component
         return VStack(
             HStack(12,
                 Button(running ? "Stop" : "Start", () => setRunning(!running)),
-                Factories.Text("Update %:").VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center),
+                TextBlock("Update %:").VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center),
                 Slider(percent, 0, 100, v => setPercent(v)).Width(200),
-                Factories.Text(fps).VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center).Width(100),
-                Factories.Text(updateMs).VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center).Width(120),
-                Factories.Text(mem).VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center).Width(120)
+                TextBlock(fps).VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center).Width(100),
+                TextBlock(updateMs).VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center).Width(120),
+                TextBlock(mem).VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center).Width(120)
             ).Padding(8),
             DataGridDsl.DataGrid(
                 source: source,
@@ -171,8 +171,8 @@ class StockGridApp : Component
                 cellTemplate: ctx =>
                 {
                     if (ctx.Value is not StockItem item)
-                        return Factories.Text("").FontSize(8);
-                    return Factories.Text(StockDataSource.FormatCell(in item))
+                        return TextBlock("").FontSize(8);
+                    return TextBlock(StockDataSource.FormatCell(in item))
                         .FontSize(8)
                         .Foreground(item.IsUp ? GreenBrush : RedBrush)
                         .Padding(2, 1, 2, 1);

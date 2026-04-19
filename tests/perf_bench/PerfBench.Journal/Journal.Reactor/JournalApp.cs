@@ -75,7 +75,7 @@ public class JournalApp : Component
         var elements = new Element[Count];
         for (int i = 0; i < Count; i++)
         {
-            elements[i] = Factories.Text(cells[i].Text)
+            elements[i] = TextBlock(cells[i].Text)
                 .FontSize(8)
                 .Foreground(cells[i].Color)
                 .Grid(row: i / Columns, column: i % Columns);
@@ -86,9 +86,9 @@ public class JournalApp : Component
 
         return VStack(
             HStack(
-                Factories.Text($"FPS: {_tracker.CurrentFps:F0}").Width(120),
-                Factories.Text($"Update: {_tracker.LastUpdateMs:F2}ms").Width(150),
-                Factories.Text($"Mem: {_tracker.CurrentMemoryMB}MB").Width(150)
+                TextBlock($"FPS: {_tracker.CurrentFps:F0}").Width(120),
+                TextBlock($"Update: {_tracker.LastUpdateMs:F2}ms").Width(150),
+                TextBlock($"Mem: {_tracker.CurrentMemoryMB}MB").Width(150)
             ).Padding(4),
             Grid(colDefs, rowDefs, elements)
         );

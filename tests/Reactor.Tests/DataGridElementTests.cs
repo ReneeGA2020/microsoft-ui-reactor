@@ -3,6 +3,7 @@ using Microsoft.UI.Reactor.Data;
 using Microsoft.UI.Reactor.Data.Providers;
 using Microsoft.UI.Reactor.Controls;
 using Xunit;
+using static Microsoft.UI.Reactor.Factories;
 
 namespace Microsoft.UI.Reactor.Tests;
 
@@ -112,7 +113,7 @@ public class DataGridElementTests
     {
         var item = new TestItem(1, "Test");
         var key = (RowKey)1;
-        var cells = new Element[] { Factories.Text("cell1") };
+        var cells = new Element[] { TextBlock("cell1") };
 
         var ctx = new RowContext<TestItem>(item, key, 0, true, false, cells);
 

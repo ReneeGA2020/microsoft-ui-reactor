@@ -61,7 +61,7 @@ class DemoApp : Component
     static readonly Element[] TabElements = TabItems
         .Select(t => HStack(8,
             Image(IconPath(t.Icon)).Width(20).Height(20),
-            Text(t.Label).VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center)
+            TextBlock(t.Label).VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center)
         ) as Element).ToArray();
 
     public override Element Render()
@@ -105,7 +105,7 @@ class DemoApp : Component
                     Tab.Slots => Component<SlotsDemo>(),
                     Tab.Navigation => Component<NavigationDemo>(),
                     Tab.Commanding => Component<CommandingTestDemo>(),
-                    _ => Text("Select a tab")
+                    _ => TextBlock("Select a tab")
                 }
             ).Padding(24).Margin(16).Flex(grow: 1)
         );

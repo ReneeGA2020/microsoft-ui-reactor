@@ -24,19 +24,19 @@ class SampleReactorComponent : Component
         return Grid(["*"], ["*"],
           VStack(
             // ── Header ─────────────────────────────────────
-            Factories.Text("Reactor Component (via XAML Island)")
+            TextBlock("Reactor Component (via XAML Island)")
                 .FontSize(22)
                 .FontWeight(Microsoft.UI.Text.FontWeights.Bold)
                 .Margin(0, 0, 0, 4),
 
-            Factories.Text("This Reactor/WinUI component is rendered inside a XAML Island hosted in a WinForms window.")
+            TextBlock("This Reactor/WinUI component is rendered inside a XAML Island hosted in a WinForms window.")
                 .Opacity(0.6)
                 .Margin(0, 0, 0, 20),
 
             // ── Counter ────────────────────────────────────
             HStack(
                 Button("-", () => setCount(count - 1)),
-                Factories.Text($"  {count}  ")
+                TextBlock($"  {count}  ")
                     .FontSize(20)
                     .VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center),
                 Button("+", () => setCount(count + 1))
@@ -44,13 +44,13 @@ class SampleReactorComponent : Component
 
             // ── Text input ─────────────────────────────────
             HStack(
-                Factories.Text("Name: ")
+                TextBlock("Name: ")
                     .VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center),
                 TextField(name, setName)
                     .Width(200)
             ).Margin(0, 0, 0, 8),
 
-            Factories.Text($"Hello, {name}! (count={count})")
+            TextBlock($"Hello, {name}! (count={count})")
                 .FontSize(16)
                 .Margin(0, 0, 0, 16),
 
@@ -59,13 +59,13 @@ class SampleReactorComponent : Component
                 .Width(300)
                 .Margin(0, 0, 0, 4),
 
-            Factories.Text($"Slider: {sliderValue:F0}%")
+            TextBlock($"Slider: {sliderValue:F0}%")
                 .FontSize(12)
                 .Opacity(0.5)
                 .Margin(0, 0, 0, 20),
 
             // ── Visual proof of WinUI rendering ────────────
-            Factories.Text("WinUI CornerRadius + accent colors:")
+            TextBlock("WinUI CornerRadius + accent colors:")
                 .FontSize(11)
                 .Opacity(0.4)
                 .Margin(0, 0, 0, 6),
@@ -73,7 +73,7 @@ class SampleReactorComponent : Component
             HStack(
                 Enumerable.Range(0, 5).Select(i =>
                     Border(
-                        Factories.Text($"{i + 1}")
+                        TextBlock($"{i + 1}")
                             .HAlign(XamlAlignment.Center)
                             .VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center)
                     )
@@ -84,7 +84,7 @@ class SampleReactorComponent : Component
                 ).ToArray()
             ),
 
-            Factories.Text("These rounded boxes use WinUI rendering — not possible in WinForms.")
+            TextBlock("These rounded boxes use WinUI rendering — not possible in WinForms.")
                 .FontSize(11)
                 .Opacity(0.35)
                 .Margin(0, 8, 0, 0)

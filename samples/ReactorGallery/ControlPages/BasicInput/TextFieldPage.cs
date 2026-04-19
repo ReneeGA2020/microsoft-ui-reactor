@@ -21,7 +21,7 @@ class TextFieldPage: Component
             SampleCard("Basic TextField",
                 VStack(8,
                     TextField(text, v => setText(v), "Type here..."),
-                    Factories.Text($"Characters: {text.Length}").Foreground(Theme.SecondaryText)),
+                    TextBlock($"Characters: {text.Length}").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 TextField(text, v => setText(v), ""Type here..."")
 "),

@@ -380,7 +380,7 @@ public sealed partial class Reconciler : IDisposable
         catch (Exception ex) when (_errorBoundaryDepth == 0 && ex is not OutOfMemoryException and not StackOverflowException)
         {
             _logger.LogError(ex, "Component Render() threw: {ComponentName}", newEl.GetType().Name);
-            newChildElement = new TextElement($"⚠ Render error: {ex.Message}");
+            newChildElement = new TextBlockElement($"⚠ Render error: {ex.Message}");
         }
 
         // Dereference the Border wrapper to get the actual child control.
@@ -828,7 +828,7 @@ public sealed partial class Reconciler : IDisposable
 
     internal static string? ExtractElementCaption(Element? element) => element switch
     {
-        TextElement te => te.Content,
+        TextBlockElement te => te.Content,
         null => null,
         _ => null,
     };
@@ -840,7 +840,7 @@ public sealed partial class Reconciler : IDisposable
     // controls is one place to change.
     internal static string? ResolveCaptionForElement(Element element) => element switch
     {
-        TextElement te => te.Content,
+        TextBlockElement te => te.Content,
         ButtonElement be => be.Label ?? ExtractElementCaption(be.ContentElement),
         HyperlinkButtonElement hle => hle.Content,
         RepeatButtonElement rbe => rbe.Label,

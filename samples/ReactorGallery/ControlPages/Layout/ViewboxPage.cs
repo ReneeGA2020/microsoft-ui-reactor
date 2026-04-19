@@ -22,36 +22,36 @@ class ViewboxPage : Component
                     Border(
                         Viewbox(
                             VStack(4,
-                                Factories.Text("Hello").Bold(),
-                                Factories.Text("Scaled content")
+                                TextBlock("Hello").Bold(),
+                                TextBlock("Scaled content")
                             )
                         )
                     ).Size(size, size).Background(Theme.SubtleFill).CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft),
-                    @"Viewbox(\n    VStack(4, Factories.Text(""Hello"").Bold(), Factories.Text(""Scaled""))\n)",
+                    @"Viewbox(\n    VStack(4, TextBlock(""Hello"").Bold(), TextBlock(""Scaled""))\n)",
                     OptionPanel(
-                        Factories.Text($"Container size: {(int)size}px"),
+                        TextBlock($"Container size: {(int)size}px"),
                         Slider(size, 50, 300, setSize)
                     )),
 
                 SampleCard("Viewbox Comparison",
                     HStack(16,
                         VStack(4,
-                            Factories.Text("100x100").ApplyStyle("CaptionTextBlockStyle"),
-                            Border(Viewbox(Factories.Text("ABC").Bold()))
+                            TextBlock("100x100").ApplyStyle("CaptionTextBlockStyle"),
+                            Border(Viewbox(TextBlock("ABC").Bold()))
                                 .Size(100, 100).Background(Theme.SubtleFill).CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft)
                         ),
                         VStack(4,
-                            Factories.Text("150x80").ApplyStyle("CaptionTextBlockStyle"),
-                            Border(Viewbox(Factories.Text("ABC").Bold()))
+                            TextBlock("150x80").ApplyStyle("CaptionTextBlockStyle"),
+                            Border(Viewbox(TextBlock("ABC").Bold()))
                                 .Size(150, 80).Background(Theme.SubtleFill).CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft)
                         ),
                         VStack(4,
-                            Factories.Text("60x150").ApplyStyle("CaptionTextBlockStyle"),
-                            Border(Viewbox(Factories.Text("ABC").Bold()))
+                            TextBlock("60x150").ApplyStyle("CaptionTextBlockStyle"),
+                            Border(Viewbox(TextBlock("ABC").Bold()))
                                 .Size(60, 150).Background(Theme.SubtleFill).CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft)
                         )
                     ),
-                    @"// Same content at different sizes:\nBorder(Viewbox(Factories.Text(""ABC""))).Size(100, 100)\nBorder(Viewbox(Factories.Text(""ABC""))).Size(150, 80)")
+                    @"// Same content at different sizes:\nBorder(Viewbox(TextBlock(""ABC""))).Size(100, 100)\nBorder(Viewbox(TextBlock(""ABC""))).Size(150, 80)")
             ).Margin(36, 24, 36, 36)
         );
     }

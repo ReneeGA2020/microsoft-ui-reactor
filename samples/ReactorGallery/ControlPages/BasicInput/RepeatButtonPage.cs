@@ -20,13 +20,13 @@ class RepeatButtonPage: Component
                 VStack(8,
                     HStack(8,
                         RepeatButton("-", () => setCount(count - 1)),
-                        Factories.Text($"{count}").ApplyStyle("SubtitleTextBlockStyle").VAlign(VerticalAlignment.Center),
+                        TextBlock($"{count}").ApplyStyle("SubtitleTextBlockStyle").VAlign(VerticalAlignment.Center),
                         RepeatButton("+", () => setCount(count + 1))),
-                    Factories.Text("Hold the button to repeat").Foreground(Theme.SecondaryText)),
+                    TextBlock("Hold the button to repeat").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 HStack(8,
     RepeatButton(""-"", () => setCount(count - 1)),
-    Factories.Text($""{count}""),
+    TextBlock($""{count}""),
     RepeatButton(""+"", () => setCount(count + 1)))
 ")
         ).Margin(36, 24, 36, 36));

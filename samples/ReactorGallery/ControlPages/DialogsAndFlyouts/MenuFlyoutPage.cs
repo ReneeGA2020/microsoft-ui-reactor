@@ -25,7 +25,7 @@ class MenuFlyoutPage : Component
                             MenuItem("Cut", () => setLastAction("Cut"), icon: "Cut"),
                             MenuItem("Copy", () => setLastAction("Copy"), icon: "Copy"),
                             MenuItem("Paste", () => setLastAction("Paste"), icon: "Paste")),
-                        Factories.Text($"Last action: {lastAction}").Foreground(Theme.SecondaryText)
+                        TextBlock($"Last action: {lastAction}").Foreground(Theme.SecondaryText)
                     ),
                     @"MenuFlyout(
     Button(""Open Menu""),

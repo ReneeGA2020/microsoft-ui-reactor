@@ -144,7 +144,7 @@ class StockGridApp : Component
             int r = i / StockDataSource.Columns;
             int c = i % StockDataSource.Columns;
             ref readonly var item = ref data[i];
-            children[i] = Factories.Text(StockDataSource.FormatCell(in item))
+            children[i] = TextBlock(StockDataSource.FormatCell(in item))
                 .FontSize(8)
                 .Foreground(item.IsUp ? GreenBrush : RedBrush)
                 .Padding(2, 1, 2, 1)
@@ -154,11 +154,11 @@ class StockGridApp : Component
         return VStack(
             HStack(12,
                 Button(running ? "Stop" : "Start", () => setRunning(!running)),
-                Factories.Text("Update %:").VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center),
+                TextBlock("Update %:").VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center),
                 Slider(percent, 0, 100, v => setPercent(v)).Width(200),
-                Factories.Text(fps).VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center).Width(100),
-                Factories.Text(updateMs).VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center).Width(120),
-                Factories.Text(mem).VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center).Width(120)
+                TextBlock(fps).VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center).Width(100),
+                TextBlock(updateMs).VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center).Width(120),
+                TextBlock(mem).VAlign(Microsoft.UI.Xaml.VerticalAlignment.Center).Width(120)
             ).Padding(8),
             ScrollView(
                 Grid(Cols, RowDefs, children)

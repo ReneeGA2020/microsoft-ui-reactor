@@ -37,7 +37,7 @@ internal static class CoreCoverageFixtures2
                 var persistKey = "selftest_persisted_hook";
                 var (val, setVal) = ctx.UsePersisted(persistKey, 42);
                 return VStack(
-                    Factories.Text($"Persisted:{val}"),
+                    TextBlock($"Persisted:{val}"),
                     Button("Set100", () => setVal(100))
                 );
             });
@@ -80,7 +80,7 @@ internal static class CoreCoverageFixtures2
                 }, dep);
 
                 return VStack(
-                    Factories.Text($"Effect:{effectCount} Cleanup:{cleanupCount}"),
+                    TextBlock($"Effect:{effectCount} Cleanup:{cleanupCount}"),
                     Button("Change", () => setDep(dep + 1))
                 );
             });
@@ -136,7 +136,7 @@ internal static class CoreCoverageFixtures2
             host.Mount(ctx =>
             {
                 var observed = ctx.UseObservableTree(model);
-                return Factories.Text($"Tree:{observed.Child.Name}");
+                return TextBlock($"Tree:{observed.Child.Name}");
             });
 
             await Harness.Render();
@@ -203,9 +203,9 @@ internal static class CoreCoverageFixtures2
                     Button(cut.Label, () => cut.Execute!()),
                     Button(save.Label, () => save.Execute!()),
                     Button(play.Label, () => play.Execute!()),
-                    Factories.Text($"Commands:{cut.Label},{copy.Label},{paste.Label},{undo.Label},{redo.Label}"),
-                    Factories.Text($"More:{del.Label},{selectAll.Label},{open.Label},{close.Label},{share.Label}"),
-                    Factories.Text($"Media:{pause.Label},{stop.Label},{fwd.Label},{bwd.Label}")
+                    TextBlock($"Commands:{cut.Label},{copy.Label},{paste.Label},{undo.Label},{redo.Label}"),
+                    TextBlock($"More:{del.Label},{selectAll.Label},{open.Label},{close.Label},{share.Label}"),
+                    TextBlock($"Media:{pause.Label},{stop.Label},{fwd.Label},{bwd.Label}")
                 );
             });
 
@@ -285,7 +285,7 @@ internal static class CoreCoverageFixtures2
                     {
                         typedCmd.Execute?.Invoke("hello");
                     }),
-                    Factories.Text($"CanExec:{ductCmd.CanExecute}")
+                    TextBlock($"CanExec:{ductCmd.CanExecute}")
                 );
             });
 
@@ -323,7 +323,7 @@ internal static class CoreCoverageFixtures2
                         OnClosed = () => { },
                     },
                     Button("Update", () => set(1)),
-                    Factories.Text($"Phase:{phase}")
+                    TextBlock($"Phase:{phase}")
                 );
             });
 
@@ -419,7 +419,7 @@ internal static class CoreCoverageFixtures2
             host.Mount(ctx =>
             {
                 return ParallaxView(
-                    Factories.Text("Parallax content"),
+                    TextBlock("Parallax content"),
                     verticalShift: 100,
                     horizontalShift: 50
                 );
@@ -474,7 +474,7 @@ internal static class CoreCoverageFixtures2
     {
         public override Element Render()
         {
-            return Factories.Text($"Typed:{Props.Label}={Props.Count}");
+            return TextBlock($"Typed:{Props.Label}={Props.Count}");
         }
     }
 
@@ -514,7 +514,7 @@ internal static class CoreCoverageFixtures2
             {
                 var scheme = ctx.UseColorScheme();
                 var isDark = ctx.UseIsDarkTheme();
-                return Factories.Text($"Scheme:{scheme},Dark:{isDark}");
+                return TextBlock($"Scheme:{scheme},Dark:{isDark}");
             });
 
             await Harness.Render();
@@ -547,7 +547,7 @@ internal static class CoreCoverageFixtures2
                     Func(inner =>
                     {
                         var theme = inner.UseContext(ThemeContext);
-                        return Factories.Text($"Theme:{theme}");
+                        return TextBlock($"Theme:{theme}");
                     }),
                     Button("Switch", () => set(1))
                 ).Provide(ThemeContext, themeValue);
@@ -588,7 +588,7 @@ internal static class CoreCoverageFixtures2
 
                 return VStack(
                     Button(cmd.Label, () => cmd.Execute?.Invoke()),
-                    Factories.Text($"Executing:{cmd.IsExecuting}")
+                    TextBlock($"Executing:{cmd.IsExecuting}")
                 );
             });
 
@@ -628,7 +628,7 @@ internal static class CoreCoverageFixtures2
 
                 return VStack(
                     Button("Run", () => cmd.Execute?.Invoke("test-param")),
-                    Factories.Text($"TypedExec:{cmd.IsExecuting}")
+                    TextBlock($"TypedExec:{cmd.IsExecuting}")
                 );
             });
 
@@ -654,7 +654,7 @@ internal static class CoreCoverageFixtures2
         {
             RenderCount++;
             var (val, _) = UseState(0);
-            return Factories.Text($"AlwaysUpdate:{RenderCount}");
+            return TextBlock($"AlwaysUpdate:{RenderCount}");
         }
     }
 

@@ -14,21 +14,21 @@ public class RequestedThemeTests
     [Fact]
     public void RequestedTheme_Extension_Sets_Modifier()
     {
-        var el = Border(Factories.Text("x")).RequestedTheme(ElementTheme.Dark);
+        var el = Border(TextBlock("x")).RequestedTheme(ElementTheme.Dark);
         Assert.Equal(ElementTheme.Dark, el.Modifiers!.RequestedTheme);
     }
 
     [Fact]
     public void RequestedTheme_Default_Restores_Inheritance()
     {
-        var el = Border(Factories.Text("x")).RequestedTheme(ElementTheme.Default);
+        var el = Border(TextBlock("x")).RequestedTheme(ElementTheme.Default);
         Assert.Equal(ElementTheme.Default, el.Modifiers!.RequestedTheme);
     }
 
     [Fact]
     public void RequestedTheme_Light_Sets_Correctly()
     {
-        var el = VStack(Factories.Text("x")).RequestedTheme(ElementTheme.Light);
+        var el = VStack(TextBlock("x")).RequestedTheme(ElementTheme.Light);
         Assert.Equal(ElementTheme.Light, el.Modifiers!.RequestedTheme);
     }
 
@@ -53,7 +53,7 @@ public class RequestedThemeTests
     [Fact]
     public void RequestedTheme_Chains_With_Other_Modifiers()
     {
-        var el = Border(Factories.Text("x"))
+        var el = Border(TextBlock("x"))
             .Padding(16)
             .RequestedTheme(ElementTheme.Dark)
             .Opacity(0.8);

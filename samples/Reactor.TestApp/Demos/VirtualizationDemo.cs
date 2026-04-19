@@ -36,7 +36,7 @@ class VirtualizationDemo : Component
                             Caption($"{item.Id}")
                         ).Background(SubtleFill).CornerRadius(4).Width(48).MinHeight(32).HAlign(HorizontalAlignment.Center),
                         VStack(4,
-                            Factories.Text(item.Title).SemiBold(),
+                            TextBlock(item.Title).SemiBold(),
                             Caption(item.Subtitle).Foreground(SecondaryText)
                         )
                     )
@@ -50,7 +50,7 @@ class VirtualizationDemo : Component
                             Caption($"{item.Id}")
                         ).Background(SubtleFill).CornerRadius(4).Width(48).MinHeight(32).HAlign(HorizontalAlignment.Center),
                         VStack(4,
-                            Factories.Text(item.Title).SemiBold(),
+                            TextBlock(item.Title).SemiBold(),
                             Caption(item.Subtitle).Foreground(SecondaryText)
                         )
                     )
@@ -63,12 +63,12 @@ class VirtualizationDemo : Component
 
         return VStack(12,
             Heading("Virtualization Test"),
-            Factories.Text($"Renders {itemCount} items. If virtualization is working, scrolling should be smooth " +
+            TextBlock($"Renders {itemCount} items. If virtualization is working, scrolling should be smooth " +
                  "and only visible items should be realized in the visual tree."),
 
             HStack(12,
                 VStack(4,
-                    Factories.Text("Mode:"),
+                    TextBlock("Mode:"),
                     HStack(8,
                         Button("LazyVStack", () => setMode("LazyVStack"))
                             .Disabled(mode == "LazyVStack"),
@@ -77,7 +77,7 @@ class VirtualizationDemo : Component
                     )
                 ),
                 VStack(4,
-                    Factories.Text("Items:"),
+                    TextBlock("Items:"),
                     HStack(8,
                         Button("100", () => setItemCount(100)).Disabled(itemCount == 100),
                         Button("1000", () => setItemCount(1000)).Disabled(itemCount == 1000),
@@ -87,7 +87,7 @@ class VirtualizationDemo : Component
                 )
             ),
 
-            Factories.Text($"Mode: {mode} | Items: {itemCount}").Foreground(SecondaryText),
+            TextBlock($"Mode: {mode} | Items: {itemCount}").Foreground(SecondaryText),
 
             // The list itself
             Border(list)

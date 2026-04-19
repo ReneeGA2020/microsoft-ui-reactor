@@ -38,7 +38,7 @@ class WinFormsHostDemo : Component
 
         return VStack(12,
             Heading("Reactor in WinForms"),
-            Text($"Count: {count}").FontSize(24),
+            TextBlock($"Count: {count}").FontSize(24),
             Button("+1", () => setCount(count + 1))
         ).Padding(24).Background(SolidBackground);
     }
@@ -115,8 +115,8 @@ class BackgroundDemo : Component
         // XAML Islands have no default background — without this,
         // content renders on a transparent surface.
         return VStack(12,
-            Text("Theme-aware background").Bold(),
-            Text($"Count: {count}"),
+            TextBlock("Theme-aware background").Bold(),
+            TextBlock($"Count: {count}"),
             Button("Increment", () => setCount(count + 1))
         ).Padding(24).Background(SolidBackground);
     }
@@ -143,7 +143,7 @@ class ConfigurableComponent : Component
         var (count, setCount) = UseState(0);
         return VStack(12,
             Heading("Dashboard"),
-            Text($"Value: {count}"),
+            TextBlock($"Value: {count}"),
             Button("+1", () => setCount(count + 1))
         ).Padding(24).Background(SolidBackground);
     }

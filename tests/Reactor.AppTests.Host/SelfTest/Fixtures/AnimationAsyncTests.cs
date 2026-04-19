@@ -17,7 +17,7 @@ internal static class AnimationAsyncTests
             host.Mount(ctx =>
             {
                 return VStack(
-                    Border(Factories.Text("Async Target"))
+                    Border(TextBlock("Async Target"))
                         .AutomationId("async-target")
                 );
             });
@@ -55,7 +55,7 @@ internal static class AnimationAsyncTests
             host.Mount(ctx =>
             {
                 return VStack(
-                    Border(Factories.Text("Seq Target"))
+                    Border(TextBlock("Seq Target"))
                         .AutomationId("seq-target")
                 );
             });
@@ -100,7 +100,7 @@ internal static class AnimationAsyncTests
             host.Mount(ctx =>
             {
                 return VStack(
-                    Border(Factories.Text("Parallel Target"))
+                    Border(TextBlock("Parallel Target"))
                         .AutomationId("parallel-target")
                 );
             });

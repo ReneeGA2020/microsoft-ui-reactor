@@ -21,7 +21,7 @@ class CalendarDatePickerPage : Component
                 SampleCard("Basic CalendarDatePicker",
                     VStack(8,
                         CalendarDatePicker(date, d => setDate(d)),
-                        Factories.Text($"Selected: {date?.ToString("d") ?? "(none)"}")
+                        TextBlock($"Selected: {date?.ToString("d") ?? "(none)"}")
                             .Foreground(Theme.SecondaryText)
                     ),
                     @"CalendarDatePicker(date, d => setDate(d))"),
@@ -30,7 +30,7 @@ class CalendarDatePickerPage : Component
                     VStack(8,
                         CalendarDatePicker(date, d => setDate(d)),
                         Button("Clear Date", () => setDate(null)),
-                        Factories.Text($"Selected: {date?.ToString("D") ?? "No date selected"}")
+                        TextBlock($"Selected: {date?.ToString("D") ?? "No date selected"}")
                             .Foreground(Theme.SecondaryText)
                     ),
                     @"CalendarDatePicker(date, d => setDate(d))

@@ -8,7 +8,7 @@ internal static class ReconcilerFixtures
 {
     // Static: just mounts text
     internal static Element MountText(RenderContext ctx) =>
-        Factories.Text("Hello from Reactor").AutomationId("MountedText");
+        TextBlock("Hello from Reactor").AutomationId("MountedText");
 
     // Interactive: button changes text
     internal class UpdateTextComponent : Component
@@ -17,7 +17,7 @@ internal static class ReconcilerFixtures
         {
             var (text, setText) = UseState("Before");
             return VStack(
-                Factories.Text(text).AutomationId("DisplayText"),
+                TextBlock(text).AutomationId("DisplayText"),
                 Button("Change", () => setText("After")).AutomationId("ChangeBtn")
             );
         }
@@ -38,7 +38,7 @@ internal static class ReconcilerFixtures
                     Button("Remove", () => setCount(Math.Max(0, count - 1))).AutomationId("RemoveBtn")
                 ),
                 VStack(Enumerable.Range(0, count)
-                    .Select(i => Factories.Text($"Item {i}").AutomationId($"Item{i}"))
+                    .Select(i => TextBlock($"Item {i}").AutomationId($"Item{i}"))
                     .ToArray())
             );
         }
@@ -54,7 +54,7 @@ internal static class ReconcilerFixtures
         {
             var (count, setCount) = UseState(0);
             return VStack(
-                Factories.Text($"Count: {count}").AutomationId("CountText"),
+                TextBlock($"Count: {count}").AutomationId("CountText"),
                 Button("Increment", () => setCount(count + 1)).AutomationId("IncrementBtn")
             );
         }
@@ -75,7 +75,7 @@ internal static class ReconcilerFixtures
             return VStack(
                 Button("Reverse", () => setReversed(!reversed)).AutomationId("ReverseBtn"),
                 VStack(ordered.Select(item =>
-                    Factories.Text(item).WithKey(item).AutomationId($"Key_{item}")
+                    TextBlock(item).WithKey(item).AutomationId($"Key_{item}")
                 ).ToArray())
             );
         }
@@ -92,7 +92,7 @@ internal static class ReconcilerFixtures
             var (paneCount, setPaneCount) = UseState(1);
 
             var panes = Enumerable.Range(0, paneCount)
-                .Select(i => Factories.Text($"Pane {i}").Grid(row: 0, column: i).AutomationId($"Pane{i}"))
+                .Select(i => TextBlock($"Pane {i}").Grid(row: 0, column: i).AutomationId($"Pane{i}"))
                 .ToArray();
             var cols = Enumerable.Range(0, Math.Max(1, paneCount)).Select(_ => "*").ToArray();
 
@@ -100,7 +100,7 @@ internal static class ReconcilerFixtures
                 HStack(
                     Button("Split", () => setPaneCount(paneCount + 1)).AutomationId("SplitBtn"),
                     Button("Collapse", () => setPaneCount(Math.Max(0, paneCount - 1))).AutomationId("CollapseBtn"),
-                    Factories.Text($"Panes: {paneCount}").AutomationId("PaneCount")
+                    TextBlock($"Panes: {paneCount}").AutomationId("PaneCount")
                 ),
                 Grid(cols, ["*"], panes).AutomationId("DockGrid")
             );
@@ -118,10 +118,10 @@ internal static class ReconcilerFixtures
             var (count, setCount) = UseState(2);
 
             var children = Enumerable.Range(0, count)
-                .Select(i => Factories.Text($"Item {i}"))
+                .Select(i => TextBlock($"Item {i}"))
                 .ToArray();
             var gridChildren = Enumerable.Range(0, count)
-                .Select(i => Factories.Text($"G{i}").Grid(row: 0, column: i))
+                .Select(i => TextBlock($"G{i}").Grid(row: 0, column: i))
                 .ToArray();
             var cols = Enumerable.Range(0, Math.Max(1, count)).Select(_ => "*").ToArray();
 
@@ -129,17 +129,17 @@ internal static class ReconcilerFixtures
                 HStack(
                     Button("Add", () => setCount(count + 1)).AutomationId("LayoutAddBtn"),
                     Button("Remove", () => setCount(Math.Max(0, count - 1))).AutomationId("LayoutRemoveBtn"),
-                    Factories.Text($"Count: {count}").AutomationId("LayoutCount")
+                    TextBlock($"Count: {count}").AutomationId("LayoutCount")
                 ),
-                Factories.Text("Stack:"),
+                TextBlock("Stack:"),
                 VStack(children),
-                Factories.Text("Grid:"),
+                TextBlock("Grid:"),
                 Grid(cols, ["*"], gridChildren),
-                Factories.Text("Flex:"),
+                TextBlock("Flex:"),
                 FlexRow(children),
-                Factories.Text("WrapGrid:"),
+                TextBlock("WrapGrid:"),
                 WrapGrid(children),
-                Factories.Text("Canvas:"),
+                TextBlock("Canvas:"),
                 Canvas(children)
             );
         }

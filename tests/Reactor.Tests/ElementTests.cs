@@ -20,17 +20,17 @@ public class ElementTests
     // ════════════════════════════════════════════════════════════════
 
     [Fact]
-    public void Text_Creates_TextElement_With_Content()
+    public void Text_Creates_TextBlockElement_With_Content()
     {
-        var el = Factories.Text("Hello");
-        Assert.IsType<TextElement>(el);
+        var el = TextBlock("Hello");
+        Assert.IsType<TextBlockElement>(el);
         Assert.Equal("Hello", el.Content);
         Assert.Null(el.FontSize);
         Assert.Null(el.Weight);
     }
 
     [Fact]
-    public void Heading_Creates_TextElement_With_Bold_And_Size28()
+    public void Heading_Creates_TextBlockElement_With_Bold_And_Size28()
     {
         var el = Heading("Title");
         Assert.Equal("Title", el.Content);
@@ -40,7 +40,7 @@ public class ElementTests
     }
 
     [Fact]
-    public void SubHeading_Creates_TextElement_With_SemiBold_And_Size20()
+    public void SubHeading_Creates_TextBlockElement_With_SemiBold_And_Size20()
     {
         var el = SubHeading("Sub");
         Assert.Equal(20, el.FontSize);
@@ -49,7 +49,7 @@ public class ElementTests
     }
 
     [Fact]
-    public void Caption_Creates_TextElement_With_Size12()
+    public void Caption_Creates_TextBlockElement_With_Size12()
     {
         var el = Caption("cap");
         Assert.Equal(12, el.FontSize);
@@ -59,8 +59,8 @@ public class ElementTests
     public void String_Implicit_Conversion_To_Element()
     {
         Element el = "hello";
-        Assert.IsType<TextElement>(el);
-        Assert.Equal("hello", ((TextElement)el).Content);
+        Assert.IsType<TextBlockElement>(el);
+        Assert.Equal("hello", ((TextBlockElement)el).Content);
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -274,7 +274,7 @@ public class ElementTests
     [Fact]
     public void VStack_Creates_Vertical_Stack_Filtering_Nulls()
     {
-        var el = VStack(Factories.Text("A"), null, Factories.Text("B"));
+        var el = VStack(TextBlock("A"), null, TextBlock("B"));
         Assert.Equal(Orientation.Vertical, el.Orientation);
         Assert.Equal(2, el.Children.Length);
         Assert.Equal(8, el.Spacing); // default
@@ -283,7 +283,7 @@ public class ElementTests
     [Fact]
     public void VStack_With_Custom_Spacing()
     {
-        var el = VStack(16, Factories.Text("A"), Factories.Text("B"));
+        var el = VStack(16, TextBlock("A"), TextBlock("B"));
         Assert.Equal(16, el.Spacing);
         Assert.Equal(2, el.Children.Length);
     }
@@ -291,14 +291,14 @@ public class ElementTests
     [Fact]
     public void HStack_Creates_Horizontal_Stack()
     {
-        var el = HStack(Factories.Text("A"), Factories.Text("B"));
+        var el = HStack(TextBlock("A"), TextBlock("B"));
         Assert.Equal(Orientation.Horizontal, el.Orientation);
     }
 
     [Fact]
     public void Border_Creates_With_Child()
     {
-        var child = Factories.Text("inner");
+        var child = TextBlock("inner");
         var el = Border(child);
         Assert.Same(child, el.Child);
         Assert.Null(el.CornerRadius);
@@ -309,7 +309,7 @@ public class ElementTests
     public void Border_Fluent_Extensions_CornerRadius_And_Thickness()
     {
         // CornerRadius is now stored on ElementModifiers (works on Control and Border)
-        var el = Border(Factories.Text("x"))
+        var el = Border(TextBlock("x"))
             .CornerRadius(8);
         Assert.Equal(new Microsoft.UI.Xaml.CornerRadius(8), el.Modifiers!.CornerRadius);
     }
@@ -319,7 +319,7 @@ public class ElementTests
     [Fact]
     public void ScrollView_Creates_With_Defaults()
     {
-        var el = ScrollView(Factories.Text("scrollable"));
+        var el = ScrollView(TextBlock("scrollable"));
         Assert.Equal(ScrollBarVisibility.Auto, el.HorizontalScrollBarVisibility);
         Assert.Equal(ScrollBarVisibility.Auto, el.VerticalScrollBarVisibility);
     }
@@ -329,8 +329,8 @@ public class ElementTests
     {
         var el = Grid(
             ["*", "Auto"], ["*"],
-            Factories.Text("A").Grid(row: 0, column: 0),
-            Factories.Text("B").Grid(row: 0, column: 1)
+            TextBlock("A").Grid(row: 0, column: 0),
+            TextBlock("B").Grid(row: 0, column: 1)
         );
         Assert.Equal(2, el.Definition.Columns.Length);
         Assert.Single(el.Definition.Rows);
@@ -340,7 +340,7 @@ public class ElementTests
     [Fact]
     public void Expander_Creates_With_Header_And_Content()
     {
-        var el = Expander("Header", Factories.Text("Content"), isExpanded: true);
+        var el = Expander("Header", TextBlock("Content"), isExpanded: true);
         Assert.Equal("Header", el.Header);
         Assert.True(el.IsExpanded);
         Assert.Equal(ExpandDirection.Down, el.ExpandDirection);
@@ -362,7 +362,7 @@ public class ElementTests
     [Fact]
     public void TabView_Creates_With_Tabs()
     {
-        var el = TabView(Tab("Tab1", Factories.Text("Content1")), Tab("Tab2", Factories.Text("Content2")));
+        var el = TabView(Tab("Tab1", TextBlock("Content1")), Tab("Tab2", TextBlock("Content2")));
         Assert.Equal(2, el.Tabs.Length);
         Assert.Equal(0, el.SelectedIndex);
     }
@@ -381,7 +381,7 @@ public class ElementTests
     [Fact]
     public void ListView_Creates_With_Items()
     {
-        var el = ListView(Factories.Text("A"), Factories.Text("B"), Factories.Text("C"));
+        var el = ListView(TextBlock("A"), TextBlock("B"), TextBlock("C"));
         Assert.Equal(3, el.Items.Length);
         Assert.Equal(-1, el.SelectedIndex);
         Assert.Equal(ListViewSelectionMode.Single, el.SelectionMode);
@@ -407,7 +407,7 @@ public class ElementTests
     [Fact]
     public void ContentDialog_Creates_With_Defaults()
     {
-        var el = ContentDialog("Title", Factories.Text("Body"));
+        var el = ContentDialog("Title", TextBlock("Body"));
         Assert.Equal("Title", el.Title);
         Assert.Equal("OK", el.PrimaryButtonText);
         Assert.False(el.IsOpen);
@@ -454,8 +454,8 @@ public class ElementTests
     [Fact]
     public void Margin_Stores_Inline_On_Element()
     {
-        var el = Factories.Text("Hi").Margin(10);
-        Assert.IsType<TextElement>(el);
+        var el = TextBlock("Hi").Margin(10);
+        Assert.IsType<TextBlockElement>(el);
         Assert.NotNull(el.Modifiers);
         Assert.Equal(new Thickness(10), el.Modifiers!.Margin);
     }
@@ -463,8 +463,8 @@ public class ElementTests
     [Fact]
     public void Multiple_Modifiers_Merge()
     {
-        var el = Factories.Text("Hi").Margin(10).Width(200).Opacity(0.5);
-        Assert.IsType<TextElement>(el);
+        var el = TextBlock("Hi").Margin(10).Width(200).Opacity(0.5);
+        Assert.IsType<TextBlockElement>(el);
         Assert.NotNull(el.Modifiers);
         Assert.Equal(new Thickness(10), el.Modifiers!.Margin);
         Assert.Equal(200, el.Modifiers.Width);
@@ -474,8 +474,8 @@ public class ElementTests
     [Fact]
     public void Width_And_Height_Via_Size()
     {
-        var el = Factories.Text("Hi").Size(100, 50);
-        Assert.IsType<TextElement>(el);
+        var el = TextBlock("Hi").Size(100, 50);
+        Assert.IsType<TextBlockElement>(el);
         Assert.NotNull(el.Modifiers);
         Assert.Equal(100, el.Modifiers!.Width);
         Assert.Equal(50, el.Modifiers.Height);
@@ -484,8 +484,8 @@ public class ElementTests
     [Fact]
     public void Center_Sets_Both_Alignments()
     {
-        var el = Factories.Text("Hi").Center();
-        Assert.IsType<TextElement>(el);
+        var el = TextBlock("Hi").Center();
+        Assert.IsType<TextBlockElement>(el);
         Assert.NotNull(el.Modifiers);
         Assert.Equal(HorizontalAlignment.Center, el.Modifiers!.HorizontalAlignment);
         Assert.Equal(VerticalAlignment.Center, el.Modifiers.VerticalAlignment);
@@ -494,8 +494,8 @@ public class ElementTests
     [Fact]
     public void Visible_False_Sets_IsVisible()
     {
-        var el = Factories.Text("Hi").Visible(false);
-        Assert.IsType<TextElement>(el);
+        var el = TextBlock("Hi").Visible(false);
+        Assert.IsType<TextBlockElement>(el);
         Assert.NotNull(el.Modifiers);
         Assert.False(el.Modifiers!.IsVisible);
     }
@@ -503,8 +503,8 @@ public class ElementTests
     [Fact]
     public void ToolTip_Sets_ToolTip()
     {
-        var el = Factories.Text("Hi").ToolTip("Help text");
-        Assert.IsType<TextElement>(el);
+        var el = TextBlock("Hi").ToolTip("Help text");
+        Assert.IsType<TextBlockElement>(el);
         Assert.NotNull(el.Modifiers);
         Assert.Equal("Help text", el.Modifiers!.ToolTip);
     }
@@ -512,7 +512,7 @@ public class ElementTests
     [Fact]
     public void WithKey_Sets_Key_On_Element()
     {
-        var el = Factories.Text("Hi").WithKey("item-1");
+        var el = TextBlock("Hi").WithKey("item-1");
         Assert.Equal("item-1", el.Key);
     }
 
@@ -532,11 +532,11 @@ public class ElementTests
     [Fact]
     public void Set_Chains_Multiple_Setters()
     {
-        var el = Factories.Text("Hi")
+        var el = TextBlock("Hi")
             .Selectable()
             .TextWrapping();
         // Fluent methods create new record instances with the properties set
-        Assert.NotEqual(Factories.Text("Hi"), el);
+        Assert.NotEqual(TextBlock("Hi"), el);
     }
 
     [Fact]
@@ -554,42 +554,42 @@ public class ElementTests
     [Fact]
     public void When_True_Returns_Element()
     {
-        var el = When(true, () => Factories.Text("yes"));
-        Assert.IsType<TextElement>(el);
+        var el = When(true, () => TextBlock("yes"));
+        Assert.IsType<TextBlockElement>(el);
     }
 
     [Fact]
     public void When_False_Returns_Empty()
     {
-        var el = When(false, () => Factories.Text("no"));
+        var el = When(false, () => TextBlock("no"));
         Assert.IsType<EmptyElement>(el);
     }
 
     [Fact]
     public void If_True_Returns_Then()
     {
-        var el = If(true, () => Factories.Text("then"), () => Factories.Text("else"));
-        Assert.Equal("then", ((TextElement)el).Content);
+        var el = If(true, () => TextBlock("then"), () => TextBlock("else"));
+        Assert.Equal("then", ((TextBlockElement)el).Content);
     }
 
     [Fact]
     public void If_False_Returns_Otherwise()
     {
-        var el = If(false, () => Factories.Text("then"), () => Factories.Text("else"));
-        Assert.Equal("else", ((TextElement)el).Content);
+        var el = If(false, () => TextBlock("then"), () => TextBlock("else"));
+        Assert.Equal("else", ((TextBlockElement)el).Content);
     }
 
     [Fact]
     public void If_False_No_Otherwise_Returns_Empty()
     {
-        var el = If(false, () => Factories.Text("then"));
+        var el = If(false, () => TextBlock("then"));
         Assert.IsType<EmptyElement>(el);
     }
 
     [Fact]
     public void ForEach_Maps_Items_To_Group()
     {
-        var el = ForEach(new[] { "A", "B", "C" }, item => Factories.Text(item));
+        var el = ForEach(new[] { "A", "B", "C" }, item => TextBlock(item));
         Assert.IsType<GroupElement>(el);
         var group = (GroupElement)el;
         Assert.Equal(3, group.Children.Length);
@@ -598,26 +598,26 @@ public class ElementTests
     [Fact]
     public void ForEach_With_Index()
     {
-        var el = ForEach(new[] { "A", "B" }, (item, i) => Factories.Text($"{i}:{item}"));
+        var el = ForEach(new[] { "A", "B" }, (item, i) => TextBlock($"{i}:{item}"));
         var group = (GroupElement)el;
         Assert.Equal(2, group.Children.Length);
-        Assert.Equal("0:A", ((TextElement)group.Children[0]).Content);
+        Assert.Equal("0:A", ((TextBlockElement)group.Children[0]).Content);
     }
 
     [Fact]
     public void ForEach_Group_Flattened_In_Parent()
     {
         var el = HStack(
-            Factories.Text("before"),
-            ForEach(new[] { "A", "B" }, item => Factories.Text(item)),
-            Factories.Text("after")
+            TextBlock("before"),
+            ForEach(new[] { "A", "B" }, item => TextBlock(item)),
+            TextBlock("after")
         );
         // GroupElement should be flattened: before, A, B, after
         Assert.Equal(4, el.Children.Length);
-        Assert.Equal("before", ((TextElement)el.Children[0]).Content);
-        Assert.Equal("A", ((TextElement)el.Children[1]).Content);
-        Assert.Equal("B", ((TextElement)el.Children[2]).Content);
-        Assert.Equal("after", ((TextElement)el.Children[3]).Content);
+        Assert.Equal("before", ((TextBlockElement)el.Children[0]).Content);
+        Assert.Equal("A", ((TextBlockElement)el.Children[1]).Content);
+        Assert.Equal("B", ((TextBlockElement)el.Children[2]).Content);
+        Assert.Equal("after", ((TextBlockElement)el.Children[3]).Content);
     }
 
     [Fact]
@@ -635,8 +635,8 @@ public class ElementTests
     [Fact]
     public void ErrorBoundary_Creates_Element_With_Child_And_Fallback()
     {
-        var child = Factories.Text("Hello");
-        var eb = ErrorBoundary(child, ex => Factories.Text($"Error: {ex.Message}"));
+        var child = TextBlock("Hello");
+        var eb = ErrorBoundary(child, ex => TextBlock($"Error: {ex.Message}"));
         Assert.IsType<ErrorBoundaryElement>(eb);
         Assert.Same(child, eb.Child);
     }
@@ -644,22 +644,22 @@ public class ElementTests
     [Fact]
     public void ErrorBoundary_Static_Fallback_Overload()
     {
-        var child = Factories.Text("Hello");
-        var fallback = Factories.Text("Something went wrong");
+        var child = TextBlock("Hello");
+        var fallback = TextBlock("Something went wrong");
         var eb = ErrorBoundary(child, fallback);
         Assert.IsType<ErrorBoundaryElement>(eb);
 
         // The static overload wraps in a lambda — verify it returns the fallback
         var result = eb.Fallback(new Exception("test"));
-        Assert.IsType<TextElement>(result);
-        Assert.Equal("Something went wrong", ((TextElement)result).Content);
+        Assert.IsType<TextBlockElement>(result);
+        Assert.Equal("Something went wrong", ((TextBlockElement)result).Content);
     }
 
     [Fact]
     public void ErrorBoundary_ShallowEquals_Always_Returns_False()
     {
-        var child = Factories.Text("Hello");
-        Func<Exception, Element> fallback = ex => Factories.Text("err");
+        var child = TextBlock("Hello");
+        Func<Exception, Element> fallback = ex => TextBlock("err");
         var a = new ErrorBoundaryElement(child, fallback);
         var b = new ErrorBoundaryElement(child, fallback);
         // Delegates can't be reliably compared, so ShallowEquals returns false
@@ -674,7 +674,7 @@ public class ElementTests
     public void Element_With_Expression_Creates_New_Instance()
     {
         // Use record with-expression directly to avoid FontWeights.Bold COMException
-        var original = Factories.Text("Hello");
+        var original = TextBlock("Hello");
         var modified = original with { Weight = new global::Windows.UI.Text.FontWeight { Weight = 700 } };
         Assert.NotSame(original, modified);
         Assert.Null(original.Weight);
@@ -697,15 +697,15 @@ public class ElementTests
     {
         // CanUpdate is internal — we verify the underlying logic:
         // same element type → can update (same .GetType())
-        var a = Factories.Text("a");
-        var b = Factories.Text("b");
+        var a = TextBlock("a");
+        var b = TextBlock("b");
         Assert.Equal(a.GetType(), b.GetType());
     }
 
     [Fact]
     public void CanUpdate_Different_Type_Verified_By_Record_Type()
     {
-        var a = (Element)Factories.Text("a");
+        var a = (Element)TextBlock("a");
         var b = (Element)Button("b");
         Assert.NotEqual(a.GetType(), b.GetType());
     }
@@ -790,11 +790,11 @@ public class ElementTests
 
     private class TestComponent : Component
     {
-        public override Element Render() => Factories.Text("test");
+        public override Element Render() => TextBlock("test");
     }
 
     private class TestComponent2 : Component
     {
-        public override Element Render() => Factories.Text("test2");
+        public override Element Render() => TextBlock("test2");
     }
 }

@@ -22,7 +22,7 @@ class ProgressBarPage : Component
                 SampleCard("Determinate ProgressBar",
                     VStack(8,
                         Progress(value).Width(300),
-                        Factories.Text($"Progress: {value:F0}%").Foreground(Theme.SecondaryText),
+                        TextBlock($"Progress: {value:F0}%").Foreground(Theme.SecondaryText),
                         Slider(value, 0, 100, v => setValue(v)).Width(300)
                     ),
                     @"Progress(value).Width(300)",

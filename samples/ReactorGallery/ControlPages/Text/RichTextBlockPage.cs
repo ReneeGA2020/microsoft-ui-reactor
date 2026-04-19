@@ -22,7 +22,7 @@ class RichTextBlockPage : Component
                     RichText("This is a simple rich text block displaying read-only content.").FontSize(fontSize),
                     @"RichText(""This is a simple rich text block..."")",
                     OptionPanel(
-                        Factories.Text("Font Size"),
+                        TextBlock("Font Size"),
                         Slider(fontSize, 10, 28, setFontSize)
                     )),
 

@@ -16,7 +16,7 @@ public class ComponentPropsTests
     {
         public override Element Render()
         {
-            return new TextElement($"Hello, {Props}!");
+            return new TextBlockElement($"Hello, {Props}!");
         }
     }
 
@@ -24,13 +24,13 @@ public class ComponentPropsTests
     {
         public override Element Render()
         {
-            return new TextElement($"Count: {Props}");
+            return new TextBlockElement($"Count: {Props}");
         }
     }
 
     private class NoPropsComponent : Component
     {
-        public override Element Render() => new TextElement("no props");
+        public override Element Render() => new TextBlockElement("no props");
     }
 
     [Fact]
@@ -47,8 +47,8 @@ public class ComponentPropsTests
         var comp = new GreetingComponent { Props = "Alice" };
         comp.Context.BeginRender(() => { });
         var el = comp.Render();
-        Assert.IsType<TextElement>(el);
-        Assert.Equal("Hello, Alice!", ((TextElement)el).Content);
+        Assert.IsType<TextBlockElement>(el);
+        Assert.Equal("Hello, Alice!", ((TextBlockElement)el).Content);
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public class ComponentPropsTests
         var comp = new CounterPropsComponent { Props = 42 };
         comp.Context.BeginRender(() => { });
         var el = comp.Render();
-        Assert.Equal("Count: 42", ((TextElement)el).Content);
+        Assert.Equal("Count: 42", ((TextBlockElement)el).Content);
     }
 
     [Fact]

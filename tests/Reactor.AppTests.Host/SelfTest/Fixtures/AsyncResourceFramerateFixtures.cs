@@ -80,7 +80,7 @@ internal static class AsyncResourceFramerateFixtures
                         cache,
                         new object[] { dep });
 
-                    return Factories.Text(v is AsyncValue<string>.Data d ? d.Value : "loading");
+                    return TextBlock(v is AsyncValue<string>.Data d ? d.Value : "loading");
                 });
 
                 await Harness.Render();
@@ -195,7 +195,7 @@ internal static class AsyncResourceFramerateFixtures
                 Array.Empty<object>(), // deps stable — cache hit after first render
                 new ResourceOptions(StaleTime: Props.StaleTime, CacheKey: "shortcircuit/shared"));
             // Include Tick so the parent's re-render actually produces a different Element identity.
-            return Factories.Text($"t={Props.Tick} v={(v is AsyncValue<string>.Data d ? d.Value : "?")}");
+            return TextBlock($"t={Props.Tick} v={(v is AsyncValue<string>.Data d ? d.Value : "?")}");
         }
     }
 
@@ -281,7 +281,7 @@ internal static class AsyncResourceFramerateFixtures
                     // Zero cache time → evictable on next sweep once last subscriber leaves.
                     CacheTime: TimeSpan.Zero,
                     StaleTime: TimeSpan.FromSeconds(5)));
-            return Factories.Text(v is AsyncValue<string>.Data d ? d.Value : "loading");
+            return TextBlock(v is AsyncValue<string>.Data d ? d.Value : "loading");
         }
     }
 
@@ -318,7 +318,7 @@ internal static class AsyncResourceFramerateFixtures
                 {
                     var (visible, set) = ctx.UseState(true);
                     setVisible = set;
-                    if (!visible) return Factories.Text("off");
+                    if (!visible) return TextBlock("off");
                     return Component<RemountChild, RemountChildProps>(
                         new RemountChildProps(cache,
                             () => Interlocked.Increment(ref started),
@@ -375,7 +375,7 @@ internal static class AsyncResourceFramerateFixtures
                 Props.Cache,
                 // Unique cache key per mount to force a fresh fetch each cycle.
                 new object[] { Guid.NewGuid() });
-            return Factories.Text(v is AsyncValue<string>.Data ? "done" : "loading");
+            return TextBlock(v is AsyncValue<string>.Data ? "done" : "loading");
         }
     }
 
@@ -466,7 +466,7 @@ internal static class AsyncResourceFramerateFixtures
                     mutationRef = mutation;
                     fire = delta => _ = mutation.RunAsync(delta);
 
-                    return Factories.Text($"v={localValue} p={mutation.IsPending}");
+                    return TextBlock($"v={localValue} p={mutation.IsPending}");
                 });
 
                 await Harness.Render();
@@ -552,7 +552,7 @@ internal static class AsyncResourceFramerateFixtures
                     _ => tcs.Current!.Task,
                     cache,
                     Array.Empty<object>());
-                return Factories.Text(v is AsyncValue<string>.Data d ? d.Value : "loading");
+                return TextBlock(v is AsyncValue<string>.Data d ? d.Value : "loading");
             });
 
             await Harness.Render();

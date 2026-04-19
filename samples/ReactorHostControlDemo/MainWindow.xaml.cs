@@ -26,7 +26,7 @@ public sealed partial class MainWindow : Window
             var (draft, setDraft) = ctx.UseState("");
 
             return VStack(12,
-                Factories.Text("Todo List").FontSize(20).Bold().Margin(16, 16, 16, 0),
+                TextBlock("Todo List").FontSize(20).Bold().Margin(16, 16, 16, 0),
 
                 HStack(8,
                     TextField(draft, onChanged: setDraft, placeholder: "What needs doing?"),
@@ -41,15 +41,15 @@ public sealed partial class MainWindow : Window
                 VStack(4,
                     items.Select((item, i) =>
                         HStack(8,
-                            Factories.Text(item).VAlign(VerticalAlignment.Center),
+                            TextBlock(item).VAlign(VerticalAlignment.Center),
                             Button("x", () => setItems(items.Where((_, j) => j != i).ToList()))
                         ) with { Key = $"todo-{i}-{item}" }
                     ).ToArray()
                 ).Margin(16, 8, 16, 16),
 
                 items.Count == 0
-                    ? Factories.Text("All done!").Foreground("#888").HAlign(HorizontalAlignment.Center).Margin(16)
-                    : Factories.Text($"{items.Count} item{(items.Count == 1 ? "" : "s")} remaining")
+                    ? TextBlock("All done!").Foreground("#888").HAlign(HorizontalAlignment.Center).Margin(16)
+                    : TextBlock($"{items.Count} item{(items.Count == 1 ? "" : "s")} remaining")
                         .Foreground("#888").HAlign(HorizontalAlignment.Center).Margin(0, 0, 0, 16)
             );
         });

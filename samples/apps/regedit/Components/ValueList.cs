@@ -31,9 +31,9 @@ internal sealed class ValueList : Component<ValueListProps>
         var header = Grid(
             ["2*", "*", "3*"],
             ["32"],
-            Factories.Text(Strings.ColumnName).SemiBold().VAlign(VerticalAlignment.Center).Grid(row: 0, column: 0),
-            Factories.Text(Strings.ColumnType).SemiBold().VAlign(VerticalAlignment.Center).Grid(row: 0, column: 1),
-            Factories.Text(Strings.ColumnData).SemiBold().VAlign(VerticalAlignment.Center).Grid(row: 0, column: 2)
+            TextBlock(Strings.ColumnName).SemiBold().VAlign(VerticalAlignment.Center).Grid(row: 0, column: 0),
+            TextBlock(Strings.ColumnType).SemiBold().VAlign(VerticalAlignment.Center).Grid(row: 0, column: 1),
+            TextBlock(Strings.ColumnData).SemiBold().VAlign(VerticalAlignment.Center).Grid(row: 0, column: 2)
         ).Set(g =>
         {
             g.Padding = new Thickness(8, 0, 8, 0);
@@ -57,7 +57,7 @@ internal sealed class ValueList : Component<ValueListProps>
 
     private Element RenderValueRow(RegistryValueEntry value, int index)
     {
-        var icon = Factories.Text(GetValueIcon(value.Kind))
+        var icon = TextBlock(GetValueIcon(value.Kind))
             .Set(tb =>
             {
                 tb.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe MDL2 Assets");
@@ -69,12 +69,12 @@ internal sealed class ValueList : Component<ValueListProps>
             ["28"],
             HStack(6,
                 icon.VAlign(VerticalAlignment.Center),
-                Factories.Text(value.DisplayName).VAlign(VerticalAlignment.Center)
+                TextBlock(value.DisplayName).VAlign(VerticalAlignment.Center)
             ).Grid(row: 0, column: 0),
-            Factories.Text(value.TypeName)
+            TextBlock(value.TypeName)
                 .VAlign(VerticalAlignment.Center)
                 .Grid(row: 0, column: 1),
-            Factories.Text(value.DisplayData)
+            TextBlock(value.DisplayData)
                 .Set(tb =>
                 {
                     tb.TextTrimming = TextTrimming.CharacterEllipsis;

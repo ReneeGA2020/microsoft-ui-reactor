@@ -22,11 +22,11 @@ class MemoDemo : Component
 
         return ScrollView(VStack(12,
             Heading("Component Memoization"),
-            Factories.Text("Memo skips re-rendering children when their inputs haven't changed."),
+            TextBlock("Memo skips re-rendering children when their inputs haven't changed."),
 
             // Parent controls
             SubHeading("Parent state"),
-            Factories.Text($"Parent has rendered {parentRenders + 1} time(s)."),
+            TextBlock($"Parent has rendered {parentRenders + 1} time(s)."),
             HStack(8,
                 Button("Re-render parent", BumpParent),
                 Button($"Change child prop (now \"{childProp}\")",
@@ -35,46 +35,46 @@ class MemoDemo : Component
 
             // 1. Memoized class component
             SubHeading("1. Memoized class component (ShouldUpdate)"),
-            Factories.Text("Component<TProps> uses record equality by default. Renders only when Props changes."),
+            TextBlock("Component<TProps> uses record equality by default. Renders only when Props changes."),
             Component<RenderCounter, RenderCounterProps>(new(childProp)),
 
             // 2. Propless component
             SubHeading("2. Propless component (auto-memo)"),
-            Factories.Text("Components without props return ShouldUpdate() => false — never re-render from parent."),
+            TextBlock("Components without props return ShouldUpdate() => false — never re-render from parent."),
             Component<ProplessCounter>(),
 
             // 3. Memo() with deps
             SubHeading("3. Memo() function component with deps"),
-            Factories.Text("Re-renders only when the dependency (childProp) changes."),
+            TextBlock("Re-renders only when the dependency (childProp) changes."),
             Memo(ctx =>
             {
                 var count = ctx.UseRef(0);
                 count.Current++;
                 return Border(
-                    Factories.Text($"Memo(dep: \"{childProp}\") — rendered {count.Current} time(s)").SemiBold()
+                    TextBlock($"Memo(dep: \"{childProp}\") — rendered {count.Current} time(s)").SemiBold()
                 ).Padding(8).CornerRadius(4).Background(SubtleFill);
             }, childProp),
 
             // 4. Memo() with no deps
             SubHeading("4. Memo() with no deps (render once)"),
-            Factories.Text("No dependencies = renders once on mount, then only from own state changes."),
+            TextBlock("No dependencies = renders once on mount, then only from own state changes."),
             Memo(ctx =>
             {
                 var count = ctx.UseRef(0);
                 count.Current++;
                 var (localCount, setLocal) = ctx.UseState(0);
                 return VStack(4,
-                    Factories.Text($"Memo(no deps) — rendered {count.Current} time(s)").SemiBold(),
+                    TextBlock($"Memo(no deps) — rendered {count.Current} time(s)").SemiBold(),
                     HStack(8,
                         Button("Self-trigger", () => setLocal(localCount + 1)),
-                        Factories.Text($"Local state: {localCount}")
+                        TextBlock($"Local state: {localCount}")
                     )
                 );
             }),
 
             // 5. UseCallback
             SubHeading("5. UseCallback stabilizes delegates"),
-            Factories.Text("Without UseCallback, new Action instances defeat memo on every parent render."),
+            TextBlock("Without UseCallback, new Action instances defeat memo on every parent render."),
             Component<RenderCounter, RenderCounterProps>(
                 new(childProp, UseCallback(BumpParent, parentRenders)))
         ));
@@ -91,7 +91,7 @@ class MemoDemo : Component
             _renderCount++;
             return Border(
                 VStack(4,
-                    Factories.Text($"Prop=\"{Props.Label}\"  rendered {_renderCount} time(s)").SemiBold(),
+                    TextBlock($"Prop=\"{Props.Label}\"  rendered {_renderCount} time(s)").SemiBold(),
                     When(Props.OnClick is not null,
                         () => Button("Invoke callback", Props.OnClick!))
                 )
@@ -107,7 +107,7 @@ class MemoDemo : Component
         {
             _renderCount++;
             return Border(
-                Factories.Text($"ProplessCounter — rendered {_renderCount} time(s)").SemiBold()
+                TextBlock($"ProplessCounter — rendered {_renderCount} time(s)").SemiBold()
             ).Padding(8).CornerRadius(4).Background(SubtleFill);
         }
     }

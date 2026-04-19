@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Microsoft.UI.Reactor.Data;
 using Microsoft.UI.Reactor.Controls;
 using Xunit;
+using static Microsoft.UI.Reactor.Factories;
 
 namespace Microsoft.UI.Reactor.Tests;
 
@@ -393,7 +394,7 @@ public class PropertyGridTypeRegistryTests
     public void RegisterCellRenderer_Stores_And_Retrieves()
     {
         var registry = new TypeRegistry();
-        Func<object, Microsoft.UI.Reactor.Core.Element> renderer = val => Factories.Text(val?.ToString() ?? "");
+        Func<object, Microsoft.UI.Reactor.Core.Element> renderer = val => TextBlock(val?.ToString() ?? "");
         registry.RegisterCellRenderer<string>(renderer);
 
         var result = registry.GetCellRenderer(typeof(string));
@@ -416,7 +417,7 @@ public class PropertyGridTypeRegistryTests
     {
         var registry = new TypeRegistry();
         var editorFunc = new Func<object, Action<object>, Microsoft.UI.Reactor.Core.Element>(
-            (val, onChange) => Factories.Text("standard"));
+            (val, onChange) => TextBlock("standard"));
         registry.Register<SimpleModel>(new TypeMetadata { Editor = editorFunc });
 
         var compactEditor = registry.ResolveEditor(typeof(SimpleModel), EditorTier.Compact);
@@ -428,9 +429,9 @@ public class PropertyGridTypeRegistryTests
     {
         var registry = new TypeRegistry();
         var editorFunc = new Func<object, Action<object>, Microsoft.UI.Reactor.Core.Element>(
-            (val, onChange) => Factories.Text("standard"));
+            (val, onChange) => TextBlock("standard"));
         var compactFunc = new Func<object, Action<object>, Microsoft.UI.Reactor.Core.Element>(
-            (val, onChange) => Factories.Text("compact"));
+            (val, onChange) => TextBlock("compact"));
         registry.Register<SimpleModel>(new TypeMetadata { Editor = editorFunc, CompactEditor = compactFunc });
 
         var resolved = registry.ResolveEditor(typeof(SimpleModel), EditorTier.Compact);
@@ -443,7 +444,7 @@ public class PropertyGridTypeRegistryTests
         var registry = new TypeRegistry();
         registry.Register<SimpleModel>(new TypeMetadata
         {
-            Editor = (val, onChange) => Factories.Text("standard")
+            Editor = (val, onChange) => TextBlock("standard")
         });
 
         var fullEditor = registry.ResolveEditor(typeof(SimpleModel), EditorTier.Full);
@@ -455,10 +456,10 @@ public class PropertyGridTypeRegistryTests
     {
         var registry = new TypeRegistry();
         var fullFunc = new Func<object, Action<object>, Microsoft.UI.Reactor.Core.Element>(
-            (val, onChange) => Factories.Text("full"));
+            (val, onChange) => TextBlock("full"));
         registry.Register<SimpleModel>(new TypeMetadata
         {
-            Editor = (val, onChange) => Factories.Text("standard"),
+            Editor = (val, onChange) => TextBlock("standard"),
             FullEditor = fullFunc,
         });
 

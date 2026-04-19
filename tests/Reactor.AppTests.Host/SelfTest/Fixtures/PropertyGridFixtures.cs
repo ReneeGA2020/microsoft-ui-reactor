@@ -148,7 +148,7 @@ internal static class PropertyGridFixtures
                 ctx.UseObservable(model);
                 return VStack(
                     PropertyGridDsl.PropertyGrid(model, registry),
-                    Factories.Text($"Live: {model.Name},{model.Age},{model.Active}")
+                    TextBlock($"Live: {model.Name},{model.Age},{model.Active}")
                 );
             });
             await Harness.Render();
@@ -216,7 +216,7 @@ internal static class PropertyGridFixtures
                 ctx.UseObservable(model);
                 return VStack(
                     PropertyGridDsl.PropertyGrid(model, registry),
-                    Factories.Text($"Pos: {model.Position}")
+                    TextBlock($"Pos: {model.Position}")
                 );
             });
             await Harness.Render();
@@ -257,7 +257,7 @@ internal static class PropertyGridFixtures
                 return VStack(
                     PropertyGridDsl.PropertyGrid(point, registry,
                         onRootChanged: obj => setPoint((Point2D)obj)),
-                    Factories.Text($"Current: {point}")
+                    TextBlock($"Current: {point}")
                 );
             });
             await Harness.Render();
@@ -279,7 +279,7 @@ internal static class PropertyGridFixtures
                 Editor = (val, onChange) =>
                 {
                     var p = (Point2D)val;
-                    return Factories.Text($"Custom: {p.X},{p.Y}");
+                    return TextBlock($"Custom: {p.X},{p.Y}");
                 },
                 Decompose = val =>
                 {
@@ -431,7 +431,7 @@ internal static class PropertyGridFixtures
                 return VStack(
                     PropertyGridDsl.PropertyGrid(c, registry,
                         onRootChanged: obj => setC((AppConfig)obj)),
-                    Factories.Text($"Config: {c.Label}, {c.Theme.Name}, ({c.Theme.Origin.X},{c.Theme.Origin.Y})")
+                    TextBlock($"Config: {c.Label}, {c.Theme.Name}, ({c.Theme.Origin.X},{c.Theme.Origin.Y})")
                 );
             });
             await Harness.Render();
@@ -456,7 +456,7 @@ internal static class PropertyGridFixtures
                 ctx.UseObservable(person);
                 return VStack(
                     PropertyGridDsl.PropertyGrid(person, registry),
-                    Factories.Text($"Live: {person.Name}"),
+                    TextBlock($"Live: {person.Name}"),
                     Button("MutateName", () => person.Name = "Bob")
                 );
             });

@@ -76,7 +76,7 @@ sealed class App : Component
                     Image("ms-appx:///Assets/logo.png").Size(28, 28),
 
                     // A11Y_004: Large bold text styled as heading but no HeadingLevel set
-                    Factories.Text("Task Tracker").Bold().FontSize(24),
+                    TextBlock("Task Tracker").Bold().FontSize(24),
 
                     HStack(4,
                         // A11Y_001: Icon-only buttons without AutomationName
@@ -117,7 +117,7 @@ sealed class App : Component
                     }),
 
                     // Status text (no LiveRegion — screen readers won't hear updates)
-                    Factories.Text(statusMsg).Opacity(0.6).HAlign(HorizontalAlignment.Right)
+                    TextBlock(statusMsg).Opacity(0.6).HAlign(HorizontalAlignment.Right)
                 ).Padding(12, 8, 12, 8)
             ).Background(Theme.LayerFill).WithBorder(Theme.Ref("DividerStrokeColorDefaultBrush"), 1),
 
@@ -141,7 +141,7 @@ sealed class App : Component
                 HStack(12,
                     // A11Y_003 + A11Y_008: TextField with .LabeledBy()
                     // referencing a missing AutomationId (typo in the ID)
-                    Factories.Text("Quick note:"),
+                    TextBlock("Quick note:"),
                     TextField("", _ => { })
                         .LabeledBy("FooterNoteLabel_TYPO")
                         .Width(300),
@@ -198,7 +198,7 @@ sealed class App : Component
                 }),
 
                 VStack(2,
-                    Factories.Text(task.Title).SemiBold()
+                    TextBlock(task.Title).SemiBold()
                         .Opacity(task.Done ? 0.5 : 1.0),
                     Caption($"{task.Assignee} · {task.Priority}")
                         .Opacity(0.6)

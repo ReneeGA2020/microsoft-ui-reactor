@@ -21,7 +21,7 @@ public class ReconcilerRegressionTests
 
     private class CounterComponent : Component
     {
-        public override Element Render() => new TextElement("test");
+        public override Element Render() => new TextBlockElement("test");
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public class ReconcilerRegressionTests
     {
         // A stable function reference (method group, cached delegate) used with Func()
         // would produce equal FuncElements. These must still re-render.
-        static Element renderFunc(RenderContext ctx) => new TextElement("hello");
+        static Element renderFunc(RenderContext ctx) => new TextBlockElement("hello");
 
         var a = new FuncElement(renderFunc);
         var b = new FuncElement(renderFunc);
@@ -183,19 +183,19 @@ public class ReconcilerRegressionTests
     }
 
     [Fact]
-    public void TextElement_Same_Content_IS_Equal()
+    public void TextBlockElement_Same_Content_IS_Equal()
     {
         // Static text that hasn't changed is safely equal.
-        var a = new TextElement("Hello");
-        var b = new TextElement("Hello");
+        var a = new TextBlockElement("Hello");
+        var b = new TextBlockElement("Hello");
         Assert.Equal(a, b);
     }
 
     [Fact]
-    public void TextElement_Different_Content_Not_Equal()
+    public void TextBlockElement_Different_Content_Not_Equal()
     {
-        var a = new TextElement("Count: 0");
-        var b = new TextElement("Count: 1");
+        var a = new TextBlockElement("Count: 0");
+        var b = new TextBlockElement("Count: 1");
         Assert.NotEqual(a, b);
     }
 
@@ -264,7 +264,7 @@ public class ReconcilerRegressionTests
 
     private class InnerComponent : Component
     {
-        public override Element Render() => new TextElement("Hello from inner");
+        public override Element Render() => new TextBlockElement("Hello from inner");
     }
 
     private class OuterComponent : Component

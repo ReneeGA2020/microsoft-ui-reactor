@@ -63,14 +63,14 @@ public sealed class DonutMixerSample : GallerySample
                         Fill = Brush(Palette[i % Palette.Count]),
                         RadiusX = 2, RadiusY = 2,
                     },
-                    (Factories.Text(label) with { FontSize = 11 }).Width(70),
+                    (TextBlock(label) with { FontSize = 11 }).Width(70),
                     Slider(values[i], 10, 200, v =>
                     {
                         var copy = values.ToArray();
                         copy[i] = v;
                         setValues(copy);
                     }).StepFrequency(5).Width(140),
-                    (Factories.Text($"{values[i] / total * 100:F0}%") with { FontSize = 11 }).Width(36)
+                    (TextBlock($"{values[i] / total * 100:F0}%") with { FontSize = 11 }).Width(36)
                 ).VAlign(VerticalAlignment.Center)
             ).ToArray();
 
@@ -101,7 +101,7 @@ public sealed class DonutMixerSample : GallerySample
                     SubHeading("Inner Radius").Margin(12, 0),
                     HStack(8,
                         Slider(innerR, 0, 130, setInnerR).StepFrequency(5).Width(180),
-                        Factories.Text($"{innerR:F0}px") with { FontSize = 11 }
+                        TextBlock($"{innerR:F0}px") with { FontSize = 11 }
                     )
                 ).Padding(8)
             ).Padding(16);

@@ -43,7 +43,7 @@ internal static class D3ChartCoverageFixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Scatterplot"),
+                    TextBlock("Scatterplot"),
                     D3Canvas(cw, ch,
                         [.. D3Grid(ys, left, pw),
                          .. D3Axes(xs, ys, left, top, pw, ph),
@@ -98,7 +98,7 @@ internal static class D3ChartCoverageFixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Histogram"),
+                    TextBlock("Histogram"),
                     D3Canvas(cw, ch,
                         [.. D3Grid(ys, left, pw),
                          .. bins.Select(bin =>
@@ -138,7 +138,7 @@ internal static class D3ChartCoverageFixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Donut Chart"),
+                    TextBlock("Donut Chart"),
                     D3Canvas(cw, ch,
                         D3Pie(data, d => d, cx, cy,
                             outerRadius: 150, innerRadius: 80,
@@ -178,7 +178,7 @@ internal static class D3ChartCoverageFixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Horizontal Bar Chart"),
+                    TextBlock("Horizontal Bar Chart"),
                     D3Canvas(cw, ch,
                         [.. categories.Select((cat, i) =>
                             (Element)(D3Rect(left, band.Map(cat), xs.Map(values[i]) - left, band.Bandwidth)
@@ -239,7 +239,7 @@ internal static class D3ChartCoverageFixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Treemap"),
+                    TextBlock("Treemap"),
                     D3Canvas(cw, ch,
                         [.. root.Leaves()
                             .Where(leaf => leaf.Width >= 1 && leaf.Height >= 1)
@@ -301,7 +301,7 @@ internal static class D3ChartCoverageFixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Sunburst"),
+                    TextBlock("Sunburst"),
                     D3Canvas(cw, ch,
                         [.. allNodes
                             .Where(node => node.Parent != null)
@@ -369,7 +369,7 @@ internal static class D3ChartCoverageFixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Sankey Diagram"),
+                    TextBlock("Sankey Diagram"),
                     D3Canvas(cw, ch,
                         [.. graph.Links.Select(link =>
                             (Element)D3PathTranslated(SankeyLayout.LinkPath(link), pad, pad,
@@ -425,7 +425,7 @@ internal static class D3ChartCoverageFixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Chord Diagram"),
+                    TextBlock("Chord Diagram"),
                     D3Canvas(cw, ch,
                         [.. data.Groups.Select(g =>
                         {
@@ -502,7 +502,7 @@ internal static class D3ChartCoverageFixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Stacked Area"),
+                    TextBlock("Stacked Area"),
                     D3Canvas(cw, ch,
                         [.. Enumerable.Range(0, 3).Select(s =>
                         {
@@ -540,7 +540,7 @@ internal static class D3ChartCoverageFixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("D3 Primitives"),
+                    TextBlock("D3 Primitives"),
                     D3Canvas(400, 300, [
                         D3Rect(10, 10, 80, 60) with { Fill = Brush(Palette[0]), RadiusX = 4, RadiusY = 4 },
                         D3Circle(200, 100, 40) with { Fill = Brush(Palette[1]), Stroke = Brush(Palette[2]) },
@@ -605,7 +605,7 @@ internal static class D3ChartCoverageFixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Multi-Line Chart"),
+                    TextBlock("Multi-Line Chart"),
                     D3Canvas(cw, ch,
                         [D3LinePath(series1, d => xs.Map(d.x), d => ys.Map(d.y),
                             stroke: Brush(Palette[0]), strokeWidth: 2),
@@ -667,7 +667,7 @@ internal static class D3ChartCoverageFixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Circle Packing"),
+                    TextBlock("Circle Packing"),
                     D3Canvas(cw, ch,
                         [.. allNodes
                             .Where(node => node.R > 1)
@@ -741,7 +741,7 @@ internal static class D3ChartCoverageFixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Scales"),
+                    TextBlock("Scales"),
                     D3Canvas(cw, ch,
                         [.. cats.Select((c, i) =>
                         {

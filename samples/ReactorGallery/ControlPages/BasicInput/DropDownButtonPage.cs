@@ -22,7 +22,7 @@ class DropDownButtonPage: Component
                         MenuItem("Option A", () => setSelected("Option A")),
                         MenuItem("Option B", () => setSelected("Option B")),
                         MenuItem("Option C", () => setSelected("Option C")))),
-                    Factories.Text($"Selected: {selected}").Foreground(Theme.SecondaryText)),
+                    TextBlock($"Selected: {selected}").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 DropDownButton(""Choose"", MenuItems(
     MenuItem(""Option A"", () => setSelected(""Option A"")),

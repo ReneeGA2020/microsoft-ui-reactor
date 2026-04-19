@@ -180,15 +180,15 @@ class EditorApp : Component
             Button(openCmd),
             Button(saveCmd),
             Button(saveAsCmd),
-            Factories.Text("").Flex(grow: 1),
-            Factories.Text("Language:").VAlign(VerticalAlignment.Center),
+            TextBlock("").Flex(grow: 1),
+            TextBlock("Language:").VAlign(VerticalAlignment.Center),
             ComboBox(
                 Languages.Select(l => l.Label).ToArray(),
                 langIndex,
                 i => setLangIndex(i)
             ).Width(160),
-            Factories.Text("").Width(8),
-            Factories.Text("Theme:").VAlign(VerticalAlignment.Center),
+            TextBlock("").Width(8),
+            TextBlock("Theme:").VAlign(VerticalAlignment.Center),
             ComboBox(
                 ["Light", "Dark", "High Contrast"],
                 theme switch { "vs" => 0, "vs-dark" => 1, "hc-black" => 2, _ => 1 },
@@ -199,9 +199,9 @@ class EditorApp : Component
         .Grid(row: 1, columnSpan: columns.Length);
 
         var statusBar = (FlexRow(
-            Factories.Text(title).FontSize(12),
-            Factories.Text("").Flex(grow: 1),
-            Factories.Text(status).FontSize(12).Opacity(0.7)
+            TextBlock(title).FontSize(12),
+            TextBlock("").Flex(grow: 1),
+            TextBlock(status).FontSize(12).Opacity(0.7)
         ) with { ColumnGap = 12 })
         .Padding(8, 4)
         .Grid(row: 3, columnSpan: columns.Length);

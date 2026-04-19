@@ -96,7 +96,7 @@ internal static class ValidationCoverageFixtures
             H.Check("ValCtx_VersionPositive", ctx.Version > 0);
 
             var host = H.CreateHost();
-            host.Mount(c => Factories.Text("Validation done"));
+            host.Mount(c => TextBlock("Validation done"));
             await Harness.Render();
         }
     }
@@ -178,7 +178,7 @@ internal static class ValidationCoverageFixtures
             H.Check("Val_MustAsync_Pass", asyncPass is null);
 
             var host = H.CreateHost();
-            host.Mount(c => Factories.Text("Validators done"));
+            host.Mount(c => TextBlock("Validators done"));
             await Harness.Render();
         }
     }
@@ -192,7 +192,7 @@ internal static class ValidationCoverageFixtures
         public override async Task RunAsync()
         {
             // Attach validators to an element
-            var el = Factories.Text("")
+            var el = TextBlock("")
                 .Validate("username", Validate.Required(), Validate.MinLength(3))
                 .Validate("username", "testval", Validate.MaxLength(20));
 
@@ -210,7 +210,7 @@ internal static class ValidationCoverageFixtures
             H.Check("ValExt_RunValidatorsPass", passMessages.Count == 0);
 
             // Async validators
-            var asyncEl = Factories.Text("")
+            var asyncEl = TextBlock("")
                 .ValidateAsync("email", Validate.MustAsync<string>(async s =>
                 {
                     await Task.Delay(1);
@@ -230,7 +230,7 @@ internal static class ValidationCoverageFixtures
             H.Check("ValExt_AsyncFail", asyncMsgs.Count >= 1);
 
             var host = H.CreateHost();
-            host.Mount(c => Factories.Text("Extensions done"));
+            host.Mount(c => TextBlock("Extensions done"));
             await Harness.Render();
         }
     }
@@ -260,7 +260,7 @@ internal static class ValidationCoverageFixtures
                         fieldName: "amount",
                         showWhen: ShowWhen.Always
                     ),
-                    Factories.Text($"Valid:{valCtx.IsValid()}")
+                    TextBlock($"Valid:{valCtx.IsValid()}")
                 ).Provide(ValidationContexts.Current, valCtx);
             });
 
@@ -269,7 +269,7 @@ internal static class ValidationCoverageFixtures
             H.Check("FormField_Mounted", H.FindTextContaining("Amount") is not null);
 
             var host2 = H.CreateHost();
-            host2.Mount(c => Factories.Text("FormField done"));
+            host2.Mount(c => TextBlock("FormField done"));
             await Harness.Render();
         }
     }
@@ -315,7 +315,7 @@ internal static class ValidationCoverageFixtures
             H.Check("ValRule_SyncFallback", ctx.HasError("field3"));
 
             var host = H.CreateHost();
-            host.Mount(c => Factories.Text("Rules done"));
+            host.Mount(c => TextBlock("Rules done"));
             await Harness.Render();
         }
     }
@@ -340,10 +340,10 @@ internal static class ValidationCoverageFixtures
             H.Check("FFH_AutoNameNull", FormFieldHelpers.GetAutomationName(null) is null);
 
             // DetectFieldName
-            var elWithVal = Factories.Text("").Validate("email", Validate.Required());
+            var elWithVal = TextBlock("").Validate("email", Validate.Required());
             H.Check("FFH_DetectField", FormFieldHelpers.DetectFieldName(elWithVal) == "email");
 
-            var elWithout = Factories.Text("");
+            var elWithout = TextBlock("");
             H.Check("FFH_DetectFieldNull", FormFieldHelpers.DetectFieldName(elWithout) is null);
 
             // ResolveFieldName
@@ -367,7 +367,7 @@ internal static class ValidationCoverageFixtures
             H.Check("FFH_NullCtx", text3 == "desc" && !isErr3);
 
             var host = H.CreateHost();
-            host.Mount(c => Factories.Text("Helpers done"));
+            host.Mount(c => TextBlock("Helpers done"));
             await Harness.Render();
         }
     }

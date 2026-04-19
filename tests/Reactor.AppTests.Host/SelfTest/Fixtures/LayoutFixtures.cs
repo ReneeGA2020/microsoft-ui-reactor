@@ -18,9 +18,9 @@ internal static class LayoutFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
                 FlexRow(
-                    Factories.Text("A").Flex(grow: 1).Background("Red"),
-                    Factories.Text("B").Flex(grow: 2).Background("Green"),
-                    Factories.Text("C").Flex(grow: 1).Background("Blue")
+                    TextBlock("A").Flex(grow: 1).Background("Red"),
+                    TextBlock("B").Flex(grow: 2).Background("Green"),
+                    TextBlock("C").Flex(grow: 1).Background("Blue")
                 ).Width(600).Height(100)
             );
 
@@ -50,7 +50,7 @@ internal static class LayoutFixtures
             host.Mount(ctx =>
             {
                 var children = Enumerable.Range(0, 8)
-                    .Select(i => Factories.Text($"Box {i}").Width(80).Height(80))
+                    .Select(i => TextBlock($"Box {i}").Width(80).Height(80))
                     .ToArray();
                 return new FlexElement(children)
                 {
@@ -81,10 +81,10 @@ internal static class LayoutFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
                 Grid(["200", "*"], ["Auto", "*"],
-                    Factories.Text("TopLeft").Grid(row: 0, column: 0),
-                    Factories.Text("TopRight").Grid(row: 0, column: 1),
-                    Factories.Text("BottomLeft").Grid(row: 1, column: 0),
-                    Factories.Text("BottomRight").Grid(row: 1, column: 1)
+                    TextBlock("TopLeft").Grid(row: 0, column: 0),
+                    TextBlock("TopRight").Grid(row: 0, column: 1),
+                    TextBlock("BottomLeft").Grid(row: 1, column: 0),
+                    TextBlock("BottomRight").Grid(row: 1, column: 1)
                 ).Width(600).Height(400)
             );
 
@@ -126,16 +126,16 @@ internal static class LayoutFixtures
                 VStack(8,
                     // Grid with 1* / 2* / 1* star columns
                     Grid(["*", "2*", "*"], ["*"],
-                        Factories.Text("G1").Grid(row: 0, column: 0).Background("LightCoral"),
-                        Factories.Text("G2").Grid(row: 0, column: 1).Background("LightGreen"),
-                        Factories.Text("G3").Grid(row: 0, column: 2).Background("LightBlue")
+                        TextBlock("G1").Grid(row: 0, column: 0).Background("LightCoral"),
+                        TextBlock("G2").Grid(row: 0, column: 1).Background("LightGreen"),
+                        TextBlock("G3").Grid(row: 0, column: 2).Background("LightBlue")
                     ).Width(ContainerWidth).Height(80),
 
                     // FlexRow with grow 1 / 2 / 1 (basis:0 to match star behavior)
                     FlexRow(
-                        Factories.Text("F1").Flex(grow: 1, basis: 0).Background("LightCoral"),
-                        Factories.Text("F2").Flex(grow: 2, basis: 0).Background("LightGreen"),
-                        Factories.Text("F3").Flex(grow: 1, basis: 0).Background("LightBlue")
+                        TextBlock("F1").Flex(grow: 1, basis: 0).Background("LightCoral"),
+                        TextBlock("F2").Flex(grow: 2, basis: 0).Background("LightGreen"),
+                        TextBlock("F3").Flex(grow: 1, basis: 0).Background("LightBlue")
                     ).Width(ContainerWidth).Height(80)
                 ).Width(ContainerWidth).Height(ContainerHeight * 2)
             );
@@ -186,16 +186,16 @@ internal static class LayoutFixtures
                 VStack(8,
                     // Grid: auto-height row, star columns
                     Grid(["*", "2*", "*"], ["Auto"],
-                        Factories.Text("Left").Grid(row: 0, column: 0).Background("LightCoral"),
-                        Factories.Text(longText).Grid(row: 0, column: 1).Background("LightGreen"),
-                        Factories.Text("Right").Grid(row: 0, column: 2).Background("LightBlue")
+                        TextBlock("Left").Grid(row: 0, column: 0).Background("LightCoral"),
+                        TextBlock(longText).Grid(row: 0, column: 1).Background("LightGreen"),
+                        TextBlock("Right").Grid(row: 0, column: 2).Background("LightBlue")
                     ).Width(ContainerWidth),
 
                     // Flex: same ratios with long text
                     FlexRow(
-                        Factories.Text("Left").Flex(grow: 1, basis: 0).Background("LightCoral"),
-                        Factories.Text(longText).Flex(grow: 2, basis: 0).Background("LightGreen"),
-                        Factories.Text("Right").Flex(grow: 1, basis: 0).Background("LightBlue")
+                        TextBlock("Left").Flex(grow: 1, basis: 0).Background("LightCoral"),
+                        TextBlock(longText).Flex(grow: 2, basis: 0).Background("LightGreen"),
+                        TextBlock("Right").Flex(grow: 1, basis: 0).Background("LightBlue")
                     ).Width(ContainerWidth)
                 ).Width(ContainerWidth)
             );

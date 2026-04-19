@@ -131,54 +131,54 @@ class ColorPage : Component
         SampleCard("Applying Theme Colors",
             VStack(16,
                 // Foreground
-                Factories.Text("Foreground")
+                TextBlock("Foreground")
                     .ApplyStyle("BodyStrongTextBlockStyle"),
                 VStack(4,
-                    Factories.Text("Accent colored text").Foreground(Theme.Accent),
-                    Factories.Text("Primary text on any surface").Foreground(Theme.PrimaryText),
-                    Factories.Text("Secondary text for captions").Foreground(Theme.SecondaryText),
-                    Factories.Text("Tertiary text for placeholders").Foreground(Theme.TertiaryText),
-                    Factories.Text("Hyperlink-style accent text").Foreground(Theme.AccentText)
+                    TextBlock("Accent colored text").Foreground(Theme.Accent),
+                    TextBlock("Primary text on any surface").Foreground(Theme.PrimaryText),
+                    TextBlock("Secondary text for captions").Foreground(Theme.SecondaryText),
+                    TextBlock("Tertiary text for placeholders").Foreground(Theme.TertiaryText),
+                    TextBlock("Hyperlink-style accent text").Foreground(Theme.AccentText)
                 ),
 
                 // Background
-                Factories.Text("Background")
+                TextBlock("Background")
                     .ApplyStyle("BodyStrongTextBlockStyle"),
                 VStack(8,
-                    Border(Factories.Text("SolidBackground — app page background").Foreground(Theme.PrimaryText).Margin(4))
+                    Border(TextBlock("SolidBackground — app page background").Foreground(Theme.PrimaryText).Margin(4))
                         .Background(Theme.SolidBackground)
                         .WithBorder(Theme.SurfaceStroke)
                         .CornerRadius(6),
-                    Border(Factories.Text("CardBackground — elevated card surface").Foreground(Theme.PrimaryText).Margin(4))
+                    Border(TextBlock("CardBackground — elevated card surface").Foreground(Theme.PrimaryText).Margin(4))
                         .Background(Theme.CardBackground)
                         .WithBorder(Theme.CardStroke)
                         .CornerRadius(6),
-                    Border(Factories.Text("LayerFill — flyout or dialog layer").Foreground(Theme.PrimaryText).Margin(4))
+                    Border(TextBlock("LayerFill — flyout or dialog layer").Foreground(Theme.PrimaryText).Margin(4))
                         .Background(Theme.LayerFill)
                         .WithBorder(Theme.SurfaceStroke)
                         .CornerRadius(6),
-                    Border(Factories.Text("SubtleFill — subtle highlight area").Foreground(Theme.PrimaryText).Margin(4))
+                    Border(TextBlock("SubtleFill — subtle highlight area").Foreground(Theme.PrimaryText).Margin(4))
                         .Background(Theme.SubtleFill)
                         .WithBorder(Theme.DividerStroke)
                         .CornerRadius(6),
-                    Border(Factories.Text("Accent — primary action button fill").Foreground(Theme.Ref("TextOnAccentFillColorPrimaryBrush")).Margin(4))
+                    Border(TextBlock("Accent — primary action button fill").Foreground(Theme.Ref("TextOnAccentFillColorPrimaryBrush")).Margin(4))
                         .Background(Theme.Accent)
                         .CornerRadius(6)
                 ),
 
                 // Borders
-                Factories.Text("Border & Stroke")
+                TextBlock("Border & Stroke")
                     .ApplyStyle("BodyStrongTextBlockStyle"),
                 VStack(8,
-                    Border(Factories.Text("CardStroke border").Foreground(Theme.PrimaryText).Margin(4))
+                    Border(TextBlock("CardStroke border").Foreground(Theme.PrimaryText).Margin(4))
                         .Background(Theme.CardBackground)
                         .WithBorder(Theme.CardStroke)
                         .CornerRadius(6),
-                    Border(Factories.Text("SurfaceStroke border").Foreground(Theme.PrimaryText).Margin(4))
+                    Border(TextBlock("SurfaceStroke border").Foreground(Theme.PrimaryText).Margin(4))
                         .Background(Theme.LayerFill)
                         .WithBorder(Theme.SurfaceStroke)
                         .CornerRadius(6),
-                    Border(Factories.Text("ControlStroke border").Foreground(Theme.PrimaryText).Margin(4))
+                    Border(TextBlock("ControlStroke border").Foreground(Theme.PrimaryText).Margin(4))
                         .Background(Theme.ControlFill)
                         .WithBorder(Theme.ControlStroke)
                         .CornerRadius(6),
@@ -188,45 +188,45 @@ class ColorPage : Component
                 ),
 
                 // System signal usage
-                Factories.Text("System Signal Colors")
+                TextBlock("System Signal Colors")
                     .ApplyStyle("BodyStrongTextBlockStyle"),
                 VStack(8,
                     Border(HStack(8,
-                        Factories.Text("\uE946")
+                        TextBlock("\uE946")
                             .Set(t => t.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe MDL2 Assets"))
                             .Margin(4, 4, 0, 4)
                             .Foreground(Theme.SystemAttention),
-                        Factories.Text("Informational message").Foreground(Theme.PrimaryText)
+                        TextBlock("Informational message").Foreground(Theme.PrimaryText)
                     ).Margin(4))
                         .Background(Theme.SystemAttentionBackground)
                         .WithBorder(Theme.SurfaceStroke)
                         .CornerRadius(6),
                     Border(HStack(8,
-                        Factories.Text("\uE930")
+                        TextBlock("\uE930")
                             .Set(t => t.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe MDL2 Assets"))
                             .Margin(4, 4, 0, 4)
                             .Foreground(Theme.SystemSuccess),
-                        Factories.Text("Operation completed successfully").Foreground(Theme.PrimaryText)
+                        TextBlock("Operation completed successfully").Foreground(Theme.PrimaryText)
                     ).Margin(4))
                         .Background(Theme.SystemSuccessBackground)
                         .WithBorder(Theme.SurfaceStroke)
                         .CornerRadius(6),
                     Border(HStack(8,
-                        Factories.Text("\uE7BA")
+                        TextBlock("\uE7BA")
                             .Set(t => t.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe MDL2 Assets"))
                             .Margin(4, 4, 0, 4)
                             .Foreground(Theme.SystemCaution),
-                        Factories.Text("Proceed with caution").Foreground(Theme.PrimaryText)
+                        TextBlock("Proceed with caution").Foreground(Theme.PrimaryText)
                     ).Margin(4))
                         .Background(Theme.SystemCautionBackground)
                         .WithBorder(Theme.SurfaceStroke)
                         .CornerRadius(6),
                     Border(HStack(8,
-                        Factories.Text("\uEA39")
+                        TextBlock("\uEA39")
                             .Set(t => t.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe MDL2 Assets"))
                             .Margin(4, 4, 0, 4)
                             .Foreground(Theme.SystemCritical),
-                        Factories.Text("A critical error has occurred").Foreground(Theme.PrimaryText)
+                        TextBlock("A critical error has occurred").Foreground(Theme.PrimaryText)
                     ).Margin(4))
                         .Background(Theme.SystemCriticalBackground)
                         .WithBorder(Theme.SurfaceStroke)
@@ -234,10 +234,10 @@ class ColorPage : Component
                 )
             ),
             @"// Foreground
-Factories.Text(""Accent text"").Foreground(Theme.Accent)
-Factories.Text(""Primary"").Foreground(Theme.PrimaryText)
-Factories.Text(""Secondary"").Foreground(Theme.SecondaryText)
-Factories.Text(""Hyperlink"").Foreground(Theme.AccentText)
+TextBlock(""Accent text"").Foreground(Theme.Accent)
+TextBlock(""Primary"").Foreground(Theme.PrimaryText)
+TextBlock(""Secondary"").Foreground(Theme.SecondaryText)
+TextBlock(""Hyperlink"").Foreground(Theme.AccentText)
 
 // Background
 Border(content)
@@ -265,7 +265,7 @@ Border(HStack(icon, message))
 
         return SampleCard(title,
             VStack(2,
-                Factories.Text(description)
+                TextBlock(description)
                     .Foreground(Theme.SecondaryText)
                     .FontSize(13)
                     .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
@@ -288,14 +288,14 @@ Border(HStack(icon, message))
                 .Margin(0, 0, 8, 0)
                 .Grid(column: 0),
 
-            Factories.Text($"Theme.{entry.Token}")
+            TextBlock($"Theme.{entry.Token}")
                 .FontSize(13)
                 .SemiBold()
                 .Foreground(Theme.PrimaryText)
                 .VAlign(VerticalAlignment.Center)
                 .Grid(column: 1),
 
-            Factories.Text(entry.ResourceKey)
+            TextBlock(entry.ResourceKey)
                 .FontSize(11)
                 .Foreground(Theme.TertiaryText)
                 .Set(tb => tb.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Cascadia Code, Consolas, monospace"))
@@ -303,7 +303,7 @@ Border(HStack(icon, message))
                 .Margin(0, 0, 12, 0)
                 .Grid(column: 2),
 
-            Factories.Text(entry.Recommendation)
+            TextBlock(entry.Recommendation)
                 .FontSize(12)
                 .Foreground(Theme.SecondaryText)
                 .Set(tb => tb.TextWrapping = TextWrapping.Wrap)

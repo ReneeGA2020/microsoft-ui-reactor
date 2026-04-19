@@ -97,7 +97,7 @@ public sealed partial class Reconciler
         {
         result = (oldEl, newEl, control) switch
         {
-            (TextElement o, TextElement n, TextBlock tb)
+            (TextBlockElement o, TextBlockElement n, TextBlock tb)
                 => EnableBitmaskDiff ? UpdateTextBitmask(o, n, tb) : UpdateText(n, tb),
             (RichTextBlockElement o, RichTextBlockElement n, WinUI.RichTextBlock rtb)
                 => UpdateRichTextBlock(o, n, rtb),
@@ -359,7 +359,7 @@ public sealed partial class Reconciler
         return result;
     }
 
-    private UIElement? UpdateText(TextElement n, TextBlock tb)
+    private UIElement? UpdateText(TextBlockElement n, TextBlock tb)
     {
         if (tb.Text != n.Content) tb.Text = n.Content;
         if (n.FontSize.HasValue && tb.FontSize != n.FontSize.Value) tb.FontSize = n.FontSize.Value;
@@ -376,13 +376,13 @@ public sealed partial class Reconciler
     }
 
     /// <summary>
-    /// EXP-2: Bitmask-based UpdateText — compares old vs new TextElement (pure C#)
+    /// EXP-2: Bitmask-based UpdateText — compares old vs new TextBlockElement (pure C#)
     /// to determine which properties changed, then only touches those WinUI properties.
     /// Avoids COM interop reads for unchanged properties.
     /// </summary>
-    private UIElement? UpdateTextBitmask(TextElement old, TextElement n, TextBlock tb)
+    private UIElement? UpdateTextBitmask(TextBlockElement old, TextBlockElement n, TextBlock tb)
     {
-        var diff = TextElement.DiffProps(old, n);
+        var diff = TextBlockElement.DiffProps(old, n);
         if (diff == TextPropChanged.None) return null;
 
         if ((diff & TextPropChanged.Content) != 0) tb.Text = n.Content;

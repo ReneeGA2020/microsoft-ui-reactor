@@ -65,7 +65,7 @@ public class OffThreadApp : Component
         var cells = new Element[Count];
         for (int i = 0; i < Count; i++)
         {
-            cells[i] = Factories.Text($"Item {i}: {values[i]:F2}")
+            cells[i] = TextBlock($"Item {i}: {values[i]:F2}")
                 .FontSize(10)
                 .Padding(1)
                 .Grid(row: i / Columns, column: i % Columns);
@@ -76,9 +76,9 @@ public class OffThreadApp : Component
 
         return VStack(
             HStack(
-                Factories.Text($"FPS: {_tracker.CurrentFps:F0}").Width(120),
-                Factories.Text($"Update: {_tracker.LastUpdateMs:F2}ms").Width(150),
-                Factories.Text($"Mem: {_tracker.CurrentMemoryMB}MB").Width(150)
+                TextBlock($"FPS: {_tracker.CurrentFps:F0}").Width(120),
+                TextBlock($"Update: {_tracker.LastUpdateMs:F2}ms").Width(150),
+                TextBlock($"Mem: {_tracker.CurrentMemoryMB}MB").Width(150)
             ).Padding(4),
             Grid(colDefs, rowDefs, cells)
         );

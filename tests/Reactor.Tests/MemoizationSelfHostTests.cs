@@ -155,7 +155,7 @@ public class MemoizationSelfHostTests
         public override Element Render()
         {
             RenderCount++;
-            return new TextElement($"rendered {RenderCount}");
+            return new TextBlockElement($"rendered {RenderCount}");
         }
     }
 
@@ -167,7 +167,7 @@ public class MemoizationSelfHostTests
         public override Element Render()
         {
             RenderCount++;
-            return new TextElement($"Hello, {Props.Name} ({Props.Age})");
+            return new TextBlockElement($"Hello, {Props.Name} ({Props.Age})");
         }
     }
 
@@ -182,7 +182,7 @@ public class MemoizationSelfHostTests
         public override Element Render()
         {
             RenderCount++;
-            return new TextElement($"Hello, {Props.Name}");
+            return new TextBlockElement($"Hello, {Props.Name}");
         }
     }
 
@@ -193,7 +193,7 @@ public class MemoizationSelfHostTests
         public override Element Render()
         {
             RenderCount++;
-            return new TextElement($"Always: {Props.Name}");
+            return new TextBlockElement($"Always: {Props.Name}");
         }
     }
 
@@ -205,7 +205,7 @@ public class MemoizationSelfHostTests
         public override Element Render()
         {
             RenderCount++;
-            return new TextElement($"Name: {Props.Name}");
+            return new TextBlockElement($"Name: {Props.Name}");
         }
     }
 
@@ -217,7 +217,7 @@ public class MemoizationSelfHostTests
         {
             RenderCount++;
             LastTheme = UseContext(ThemeCtx);
-            return new TextElement($"Theme: {LastTheme}");
+            return new TextBlockElement($"Theme: {LastTheme}");
         }
     }
 
@@ -230,7 +230,7 @@ public class MemoizationSelfHostTests
             RenderCount++;
             var (count, set) = UseState(0);
             SetCounter = set;
-            return new TextElement($"Count: {count}");
+            return new TextBlockElement($"Count: {count}");
         }
     }
 
@@ -374,7 +374,7 @@ public class MemoizationSelfHostTests
         Assert.True(shouldRender);
 
         // Re-render picks up state change
-        var el = MountComponent(comp, scope) as TextElement;
+        var el = MountComponent(comp, scope) as TextBlockElement;
         Assert.Equal(2, comp.RenderCount);
         Assert.Equal("Count: 42", el?.Content);
     }
@@ -440,7 +440,7 @@ public class MemoizationSelfHostTests
         // Mount
         ctx.BeginRender(() => { }, scope);
         renderCount++;
-        var _el = new TextElement("memo");
+        var _el = new TextBlockElement("memo");
         ctx.FlushEffects();
 
         // Same deps → skip
@@ -534,13 +534,13 @@ public class MemoizationSelfHostTests
         var scope = new ContextScope();
         var comp = new SlotComponent();
 
-        var props1 = new SlotProps(new TextElement("static"));
+        var props1 = new SlotProps(new TextBlockElement("static"));
         ((IPropsReceiver)comp).SetProps(props1);
         MountComponent(comp, scope);
         Assert.Equal(1, comp.RenderCount);
 
         // Same static content → structurally equal (records) → skip
-        var props2 = new SlotProps(new TextElement("static"));
+        var props2 = new SlotProps(new TextBlockElement("static"));
         Assert.False(ShouldRender(comp, props1, props2, scope, selfTriggered: false));
     }
 
@@ -597,7 +597,7 @@ public class MemoizationSelfHostTests
         public override Element Render()
         {
             RenderCount++;
-            return new TextElement("grandchild");
+            return new TextBlockElement("grandchild");
         }
     }
 
@@ -646,7 +646,7 @@ public class MemoizationSelfHostTests
 
         // The new component's state starts at 0, not 42
         comp2.Context.BeginRender(() => { }, scope);
-        var el = comp2.Render() as TextElement;
+        var el = comp2.Render() as TextBlockElement;
         Assert.Equal("Count: 0", el?.Content);
     }
 

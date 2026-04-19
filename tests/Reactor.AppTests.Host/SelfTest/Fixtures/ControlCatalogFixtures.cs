@@ -46,7 +46,7 @@ internal static class ControlCatalogFixtures
             H.Check("ControlCatalog_AllMounted", mounted == controls.Count);
 
             // ── Phase 2: Unmount all (replace with empty) ──
-            host.Mount(ctx => Factories.Text("empty"));
+            host.Mount(ctx => TextBlock("empty"));
             await Harness.Render();
 
             H.Check("ControlCatalog_Unmounted",
@@ -75,7 +75,7 @@ internal static class ControlCatalogFixtures
                 => items.Add((name, el, marker));
 
             // ── Text / Display ──
-            Add("Text", Factories.Text("CatalogText"), "CatalogText");
+            Add("Text", TextBlock("CatalogText"), "CatalogText");
             Add("RichText", RichText("CatalogRich"), "CatalogRich");
             Add("RichEditBox", RichEditBox("CatalogEdit"), null);
 
@@ -120,26 +120,26 @@ internal static class ControlCatalogFixtures
             Add("PersonPicture", PersonPicture(), null);
 
             // ── Layout containers ──
-            Add("VStack", VStack(Factories.Text("CatalogVS")), "CatalogVS");
-            Add("HStack", HStack(Factories.Text("CatalogHS")), "CatalogHS");
-            Add("Grid", Grid(["*"], ["*"], Factories.Text("CatalogGrid").Grid(row: 0, column: 0)), "CatalogGrid");
-            Add("FlexRow", FlexRow(Factories.Text("CatalogFlex")), "CatalogFlex");
-            Add("FlexColumn", FlexColumn(Factories.Text("CatalogFlexC")), "CatalogFlexC");
-            Add("Border", Border(Factories.Text("CatalogBorder")), "CatalogBorder");
-            Add("ScrollView", ScrollView(Factories.Text("CatalogScroll")), "CatalogScroll");
-            Add("Expander", Expander("CatalogExp", Factories.Text("content"), isExpanded: true), "CatalogExp");
-            Add("WrapGrid", WrapGrid(Factories.Text("CatalogWG")), "CatalogWG");
-            Add("Canvas", Canvas(Factories.Text("CatalogCanvas")), "CatalogCanvas");
-            Add("Viewbox", Viewbox(Factories.Text("CatalogVB")), "CatalogVB");
+            Add("VStack", VStack(TextBlock("CatalogVS")), "CatalogVS");
+            Add("HStack", HStack(TextBlock("CatalogHS")), "CatalogHS");
+            Add("Grid", Grid(["*"], ["*"], TextBlock("CatalogGrid").Grid(row: 0, column: 0)), "CatalogGrid");
+            Add("FlexRow", FlexRow(TextBlock("CatalogFlex")), "CatalogFlex");
+            Add("FlexColumn", FlexColumn(TextBlock("CatalogFlexC")), "CatalogFlexC");
+            Add("Border", Border(TextBlock("CatalogBorder")), "CatalogBorder");
+            Add("ScrollView", ScrollView(TextBlock("CatalogScroll")), "CatalogScroll");
+            Add("Expander", Expander("CatalogExp", TextBlock("content"), isExpanded: true), "CatalogExp");
+            Add("WrapGrid", WrapGrid(TextBlock("CatalogWG")), "CatalogWG");
+            Add("Canvas", Canvas(TextBlock("CatalogCanvas")), "CatalogCanvas");
+            Add("Viewbox", Viewbox(TextBlock("CatalogVB")), "CatalogVB");
 
             // ── Navigation ──
             Add("BreadcrumbBar", BreadcrumbBar([Breadcrumb("CatalogBC")]), "CatalogBC");
-            Add("TabView", TabView(Tab("CatalogTab", Factories.Text("tab content"))), "CatalogTab");
-            Add("Pivot", Pivot(PivotItem("CatalogPivot", Factories.Text("pivot content"))), "CatalogPivot");
+            Add("TabView", TabView(Tab("CatalogTab", TextBlock("tab content"))), "CatalogTab");
+            Add("Pivot", Pivot(PivotItem("CatalogPivot", TextBlock("pivot content"))), "CatalogPivot");
 
             // ── Collections ──
-            Add("ListView", ListView(Factories.Text("CatalogLV")), "CatalogLV");
-            Add("FlipView", FlipView(Factories.Text("CatalogFV")), "CatalogFV");
+            Add("ListView", ListView(TextBlock("CatalogLV")), "CatalogLV");
+            Add("FlipView", FlipView(TextBlock("CatalogFV")), "CatalogFV");
             Add("TreeView", TreeView(TreeNode("CatalogTV")), "CatalogTV");
 
             // ── Menus ──
@@ -151,7 +151,7 @@ internal static class ControlCatalogFixtures
             Add("Ellipse", new EllipseElement() { Modifiers = new ElementModifiers { Width = 20, Height = 20 } }, null);
 
             // ── Components ──
-            Add("FuncComponent", Func(ctx => Factories.Text("CatalogFunc")), "CatalogFunc");
+            Add("FuncComponent", Func(ctx => TextBlock("CatalogFunc")), "CatalogFunc");
 
             return items;
         }

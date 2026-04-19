@@ -21,13 +21,13 @@ internal sealed class EventBlock : Component<EventBlockProps>
         var content = VStack(1,
             lines.Select((line, i) =>
                 (Element)(i == 0
-                    ? Factories.Text(line).SemiBold().FontSize(11)
+                    ? TextBlock(line).SemiBold().FontSize(11)
                         .Set(t =>
                         {
                             t.TextTrimming = Microsoft.UI.Xaml.TextTrimming.CharacterEllipsis;
                             t.MaxLines = 1;
                         })
-                    : Factories.Text(line).FontSize(11)
+                    : TextBlock(line).FontSize(11)
                         .Set(t =>
                         {
                             t.TextTrimming = Microsoft.UI.Xaml.TextTrimming.CharacterEllipsis;
@@ -36,7 +36,7 @@ internal sealed class EventBlock : Component<EventBlockProps>
                 )
             ).Concat(
                 evt.Location is not null
-                    ? [Factories.Text(evt.Location).FontSize(10).Foreground(SecondaryText)
+                    ? [TextBlock(evt.Location).FontSize(10).Foreground(SecondaryText)
                         .Set(t =>
                         {
                             t.TextTrimming = Microsoft.UI.Xaml.TextTrimming.CharacterEllipsis;

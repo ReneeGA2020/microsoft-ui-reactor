@@ -153,7 +153,7 @@ public class XamlInteropTests
     {
         var reconciler = new Reconciler();
         var page = new XamlPageElement(typeof(Page));
-        var text = new TextElement("hello");
+        var text = new TextBlockElement("hello");
         Assert.False(reconciler.CanUpdate(page, text));
     }
 

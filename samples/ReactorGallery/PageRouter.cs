@@ -102,6 +102,6 @@ static class PageRouter
         "theming" => Component<ControlPages.DesignGuidance.ThemePage>(),
         "typography" => Component<ControlPages.Styles.TypographyPage>(),
 
-        _ => Factories.Text($"Page not found: {tag}").Foreground(Theme.SecondaryText)
+        _ => TextBlock($"Page not found: {tag}").Foreground(Theme.SecondaryText)
     };
 }

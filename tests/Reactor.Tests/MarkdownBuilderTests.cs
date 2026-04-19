@@ -429,7 +429,7 @@ public class MarkdownBuilderTests
             {
                 capturedAlt = alt;
                 capturedUri = uri;
-                return Factories.Text($"IMG:{alt}");
+                return TextBlock($"IMG:{alt}");
             }
         };
 
@@ -444,11 +444,11 @@ public class MarkdownBuilderTests
         // Images in list items appear because LeaveListItem uses frame.Children.
         var options = new MarkdownOptions
         {
-            Image = (alt, uri) => Factories.Text($"IMG:{alt}")
+            Image = (alt, uri) => TextBlock($"IMG:{alt}")
         };
 
         var result = Md("- ![photo](https://example.com/pic.jpg)", options);
-        var allTexts = FlattenElements(result).OfType<TextElement>().ToList();
+        var allTexts = FlattenElements(result).OfType<TextBlockElement>().ToList();
         Assert.Contains(allTexts, t => t.Content == "IMG:photo");
     }
 
@@ -461,7 +461,7 @@ public class MarkdownBuilderTests
             Image = (alt, uri) =>
             {
                 callbackInvoked = true;
-                return Factories.Text("should not appear");
+                return TextBlock("should not appear");
             }
         };
 
@@ -501,7 +501,7 @@ public class MarkdownBuilderTests
             {
                 capturedCode = code;
                 capturedLang = lang;
-                return Factories.Text(code);
+                return TextBlock(code);
             }
         };
 
@@ -519,7 +519,7 @@ public class MarkdownBuilderTests
             CodeBlock = (code, lang) =>
             {
                 capturedLang = lang;
-                return Factories.Text(code);
+                return TextBlock(code);
             }
         };
 
@@ -538,7 +538,7 @@ public class MarkdownBuilderTests
             CodeBlock = (code, lang) =>
             {
                 capturedCode = code;
-                return Factories.Text(code);
+                return TextBlock(code);
             }
         };
 
@@ -553,12 +553,12 @@ public class MarkdownBuilderTests
     {
         var options = new MarkdownOptions
         {
-            CodeBlock = (code, lang) => Factories.Text($"CODE:{code}")
+            CodeBlock = (code, lang) => TextBlock($"CODE:{code}")
         };
 
         var result = Md("```\nvar x = 1;\n```", options);
         var stack = AsVStack(result);
-        var textEl = Child<TextElement>(stack, 0);
+        var textEl = Child<TextBlockElement>(stack, 0);
         Assert.Equal("CODE:var x = 1;", textEl.Content);
     }
 
@@ -571,7 +571,7 @@ public class MarkdownBuilderTests
             CodeBlock = (code, lang) =>
             {
                 capturedCode = code;
-                return Factories.Text(code);
+                return TextBlock(code);
             }
         };
 
@@ -591,7 +591,7 @@ public class MarkdownBuilderTests
             CodeBlock = (code, lang) =>
             {
                 capturedCode = code;
-                return Factories.Text(code);
+                return TextBlock(code);
             }
         };
 
@@ -637,7 +637,7 @@ public class MarkdownBuilderTests
         Assert.Equal(Orientation.Horizontal, item.Orientation);
         Assert.Equal(4.0, item.Spacing);
 
-        var marker = Assert.IsType<TextElement>(item.Children[0]);
+        var marker = Assert.IsType<TextBlockElement>(item.Children[0]);
         Assert.Contains("\u2022", marker.Content);
     }
 
@@ -650,11 +650,11 @@ public class MarkdownBuilderTests
         Assert.Equal(3, listStack.Children.Length);
 
         var item1 = Assert.IsType<StackElement>(listStack.Children[0]);
-        var marker1 = Assert.IsType<TextElement>(item1.Children[0]);
+        var marker1 = Assert.IsType<TextBlockElement>(item1.Children[0]);
         Assert.Contains("1.", marker1.Content);
 
         var item3 = Assert.IsType<StackElement>(listStack.Children[2]);
-        var marker3 = Assert.IsType<TextElement>(item3.Children[0]);
+        var marker3 = Assert.IsType<TextBlockElement>(item3.Children[0]);
         Assert.Contains("3.", marker3.Content);
     }
 
@@ -666,11 +666,11 @@ public class MarkdownBuilderTests
         var listStack = Child<StackElement>(stack, 0);
 
         var item1 = Assert.IsType<StackElement>(listStack.Children[0]);
-        var marker1 = Assert.IsType<TextElement>(item1.Children[0]);
+        var marker1 = Assert.IsType<TextBlockElement>(item1.Children[0]);
         Assert.Contains("5.", marker1.Content);
 
         var item2 = Assert.IsType<StackElement>(listStack.Children[1]);
-        var marker2 = Assert.IsType<TextElement>(item2.Children[0]);
+        var marker2 = Assert.IsType<TextBlockElement>(item2.Children[0]);
         Assert.Contains("6.", marker2.Content);
     }
 
@@ -681,7 +681,7 @@ public class MarkdownBuilderTests
         var stack = AsVStack(result);
         var listStack = Child<StackElement>(stack, 0);
         var item = Assert.IsType<StackElement>(listStack.Children[0]);
-        var marker = Assert.IsType<TextElement>(item.Children[0]);
+        var marker = Assert.IsType<TextBlockElement>(item.Children[0]);
         Assert.Contains("\u2611", marker.Content);
     }
 
@@ -692,7 +692,7 @@ public class MarkdownBuilderTests
         var stack = AsVStack(result);
         var listStack = Child<StackElement>(stack, 0);
         var item = Assert.IsType<StackElement>(listStack.Children[0]);
-        var marker = Assert.IsType<TextElement>(item.Children[0]);
+        var marker = Assert.IsType<TextBlockElement>(item.Children[0]);
         Assert.Contains("\u2610", marker.Content);
     }
 
@@ -801,14 +801,14 @@ public class MarkdownBuilderTests
             ThematicBreak = () =>
             {
                 called = true;
-                return Factories.Text("---break---");
+                return TextBlock("---break---");
             }
         };
 
         var result = Md("---", options);
         Assert.True(called);
         var stack = AsVStack(result);
-        var textEl = Child<TextElement>(stack, 0);
+        var textEl = Child<TextBlockElement>(stack, 0);
         Assert.Equal("---break---", textEl.Content);
     }
 
@@ -821,7 +821,7 @@ public class MarkdownBuilderTests
             ThematicBreak = () =>
             {
                 called = true;
-                return Factories.Text("hr");
+                return TextBlock("hr");
             }
         };
 
@@ -838,7 +838,7 @@ public class MarkdownBuilderTests
             ThematicBreak = () =>
             {
                 called = true;
-                return Factories.Text("hr");
+                return TextBlock("hr");
             }
         };
 
@@ -859,7 +859,7 @@ public class MarkdownBuilderTests
             HtmlBlock = (html) =>
             {
                 capturedHtml = html;
-                return Factories.Text("html block");
+                return TextBlock("html block");
             }
         };
 
@@ -873,12 +873,12 @@ public class MarkdownBuilderTests
     {
         var options = new MarkdownOptions
         {
-            HtmlBlock = (html) => Factories.Text("CUSTOM_HTML")
+            HtmlBlock = (html) => TextBlock("CUSTOM_HTML")
         };
 
         var result = Md("<div>content</div>", options);
         var stack = AsVStack(result);
-        var textEl = Child<TextElement>(stack, 0);
+        var textEl = Child<TextBlockElement>(stack, 0);
         Assert.Equal("CUSTOM_HTML", textEl.Content);
     }
 
@@ -967,14 +967,14 @@ public class MarkdownBuilderTests
             Heading = (level, defaultEl) =>
             {
                 capturedLevel = level;
-                return Factories.Text($"H{level}");
+                return TextBlock($"H{level}");
             }
         };
 
         var result = Md("## Custom Heading", options);
         Assert.Equal(2, capturedLevel);
         var stack = AsVStack(result);
-        var textEl = Child<TextElement>(stack, 0);
+        var textEl = Child<TextBlockElement>(stack, 0);
         Assert.Equal("H2", textEl.Content);
     }
 
@@ -1006,14 +1006,14 @@ public class MarkdownBuilderTests
             Paragraph = (defaultEl) =>
             {
                 called = true;
-                return Factories.Text("custom paragraph");
+                return TextBlock("custom paragraph");
             }
         };
 
         var result = Md("Some text", options);
         Assert.True(called);
         var stack = AsVStack(result);
-        var textEl = Child<TextElement>(stack, 0);
+        var textEl = Child<TextBlockElement>(stack, 0);
         Assert.Equal("custom paragraph", textEl.Content);
     }
 

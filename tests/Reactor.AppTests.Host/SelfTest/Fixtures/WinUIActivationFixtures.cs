@@ -36,7 +36,7 @@ internal static class WinUIActivationFixtures
         public override Task RunAsync()
         {
             var family = new FontFamily("Consolas");
-            var el = Border(Factories.Text("x")).FontFamily(family);
+            var el = Border(TextBlock("x")).FontFamily(family);
             H.Check("FontFamilyInst_IsBorderElement", el is BorderElement);
             H.Check("FontFamilyInst_SameInstance", ReferenceEquals(family, el.Modifiers!.FontFamily));
             return Task.CompletedTask;
@@ -78,7 +78,7 @@ internal static class WinUIActivationFixtures
         {
             // .Background() and .WithBorder() store values in Modifiers.
             // Verify the element-level modifiers are set correctly.
-            var el = VStack(Factories.Text("x")).Background("#ff0000").WithBorder("blue", 2);
+            var el = VStack(TextBlock("x")).Background("#ff0000").WithBorder("blue", 2);
             H.Check("BorderBrush_BgNotNull", el.Modifiers?.Background is not null);
             H.Check("BorderBrush_BorderBrushNotNull", el.Modifiers?.BorderBrush is not null);
             H.Check("BorderBrush_Thickness", el.Modifiers?.BorderThickness?.Left == 2);

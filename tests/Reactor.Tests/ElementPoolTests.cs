@@ -60,8 +60,8 @@ public class ElementPoolTests
     public void CanUpdate_CanvasElement_Same_Type_Returns_True()
     {
         var reconciler = new Reconciler();
-        var a = new CanvasElement([new TextElement("a")]);
-        var b = new CanvasElement([new TextElement("b")]);
+        var a = new CanvasElement([new TextBlockElement("a")]);
+        var b = new CanvasElement([new TextBlockElement("b")]);
         Assert.True(reconciler.CanUpdate(a, b));
     }
 
@@ -79,10 +79,10 @@ public class ElementPoolTests
     [Fact]
     public void CanvasElement_Stores_Children()
     {
-        var children = new Element[] { new TextElement("hello") };
+        var children = new Element[] { new TextBlockElement("hello") };
         var canvas = new CanvasElement(children);
         Assert.Single(canvas.Children);
-        Assert.IsType<TextElement>(canvas.Children[0]);
+        Assert.IsType<TextBlockElement>(canvas.Children[0]);
     }
 
     [Fact]

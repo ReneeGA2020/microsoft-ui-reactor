@@ -30,14 +30,14 @@ class GridViewPage : Component
                 SampleCard("Basic GridView",
                     GridView(
                         items.Select(i =>
-                            Border(Factories.Text($"Item {i}").Center())
+                            Border(TextBlock($"Item {i}").Center())
                                 .Background(Theme.SubtleFill)
                                 .Size(100, 100)
                                 .CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft)                        ).ToArray()
                     ).SelectionMode(selectionMode),
-                    @"GridView(\n    items.Select(i =>\n        Border(Factories.Text($""Item {i}"")).Size(100,100)\n    ).ToArray()\n).SelectionMode(ListViewSelectionMode.Multiple)",
+                    @"GridView(\n    items.Select(i =>\n        Border(TextBlock($""Item {i}"")).Size(100,100)\n    ).ToArray()\n).SelectionMode(ListViewSelectionMode.Multiple)",
                     OptionPanel(
-                        Factories.Text("Selection Mode"),
+                        TextBlock("Selection Mode"),
                         ComboBox(modes, mode, setMode)
                     )),
 
@@ -45,12 +45,12 @@ class GridViewPage : Component
                     GridView(
                         items.Select(i => i.ToString()).ToArray().AsReadOnly(),
                         s => s,
-                        (s, i) => Border(Factories.Text(s).Center().Bold())
+                        (s, i) => Border(TextBlock(s).Center().Bold())
                             .Background(i % 2 == 0 ? "#335588" : "#885533")
                             .Foreground("#FFFFFF")
                             .Size(80, 80).CornerRadius(ThemeResource.CornerRadius("OverlayCornerRadius").TopLeft)
                     ),
-                    @"GridView(\n    items, s => s,\n    (s, i) => Border(Factories.Text(s)).Size(80,80)\n)")
+                    @"GridView(\n    items, s => s,\n    (s, i) => Border(TextBlock(s)).Size(80,80)\n)")
             ).Margin(36, 24, 36, 36)
         );
     }

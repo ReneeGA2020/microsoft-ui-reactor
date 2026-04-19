@@ -19,14 +19,14 @@ internal static class CollectionFixtures
 
     internal static Element ListViewTyped(RenderContext ctx) =>
         VStack(
-            Factories.Text("Animals List").AutomationId("AnimalsTitle"),
+            TextBlock("Animals List").AutomationId("AnimalsTitle"),
             ListView(Animals,
                 keySelector: a => a.Name,
                 viewBuilder: (animal, idx) =>
                     HStack(
-                        Factories.Text($"{idx + 1}.").AutomationId($"AnimalIdx{idx}"),
-                        Factories.Text(animal.Name).AutomationId($"AnimalName{idx}"),
-                        Factories.Text($"({animal.Species})").AutomationId($"AnimalSpecies{idx}")
+                        TextBlock($"{idx + 1}.").AutomationId($"AnimalIdx{idx}"),
+                        TextBlock(animal.Name).AutomationId($"AnimalName{idx}"),
+                        TextBlock($"({animal.Species})").AutomationId($"AnimalSpecies{idx}")
                     )
             ).Height(300).AutomationId("AnimalsList")
         );

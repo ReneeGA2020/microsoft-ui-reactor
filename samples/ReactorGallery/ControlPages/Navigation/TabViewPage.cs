@@ -15,7 +15,7 @@ class TabViewPage : Component
         var (tabCount, setTabCount) = UseState(3);
 
         var tabs = Enumerable.Range(1, tabCount)
-            .Select(i => Tab($"Tab {i}", Factories.Text($"Content of Tab {i}").Padding(16)))
+            .Select(i => Tab($"Tab {i}", TextBlock($"Content of Tab {i}").Padding(16)))
             .ToArray();
 
         return ScrollView(
@@ -25,18 +25,18 @@ class TabViewPage : Component
 
                 SampleCard("Basic TabView",
                     (TabView(
-                        Tab("Home", Factories.Text("Home content").Padding(16)),
-                        Tab("Document", Factories.Text("Document content").Padding(16)),
-                        Tab("Settings", Factories.Text("Settings content").Padding(16))
+                        Tab("Home", TextBlock("Home content").Padding(16)),
+                        Tab("Document", TextBlock("Document content").Padding(16)),
+                        Tab("Settings", TextBlock("Settings content").Padding(16))
                     ) with
                     {
                         SelectedIndex = selectedIdx,
                         OnSelectionChanged = i => setSelectedIdx(i),
                     }).Height(200),
                     @"TabView(
-    Tab(""Home"", Factories.Text(""Home content"")),
-    Tab(""Document"", Factories.Text(""Document content"")),
-    Tab(""Settings"", Factories.Text(""Settings content""))
+    Tab(""Home"", TextBlock(""Home content"")),
+    Tab(""Document"", TextBlock(""Document content"")),
+    Tab(""Settings"", TextBlock(""Settings content""))
 ) with { SelectedIndex = idx, OnSelectionChanged = i => setIdx(i) }"),
 
                 SampleCard("Dynamic Tabs",
@@ -52,7 +52,7 @@ class TabViewPage : Component
                         )
                     ),
                     @"var tabs = Enumerable.Range(1, count)
-    .Select(i => Tab($""Tab {i}"", Factories.Text($""Content {i}"")))
+    .Select(i => Tab($""Tab {i}"", TextBlock($""Content {i}"")))
     .ToArray();
 TabView(tabs) with { SelectedIndex = idx }")
             ).Margin(36, 24, 36, 36)

@@ -97,7 +97,7 @@ public class ChildReconcilerIntegrationTests
     [Fact]
     public void HasAnyKeys_With_Keys_Returns_True()
     {
-        var elements = new Element[] { new TextElement("A") { Key = "1" }, new TextElement("B") };
+        var elements = new Element[] { new TextBlockElement("A") { Key = "1" }, new TextBlockElement("B") };
         // Use reflection to test HasAnyKeys
         var method = typeof(ChildReconciler).GetMethod("HasAnyKeys",
             global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Static);
@@ -109,7 +109,7 @@ public class ChildReconcilerIntegrationTests
     [Fact]
     public void HasAnyKeys_Without_Keys_Returns_False()
     {
-        var elements = new Element[] { new TextElement("A"), new TextElement("B") };
+        var elements = new Element[] { new TextBlockElement("A"), new TextBlockElement("B") };
         var method = typeof(ChildReconciler).GetMethod("HasAnyKeys",
             global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Static);
         var result = (bool)method!.Invoke(null, [elements])!;
@@ -123,24 +123,24 @@ public class ChildReconcilerIntegrationTests
     [Fact]
     public void CanUpdate_Keyed_Same_Key_Same_Type()
     {
-        var a = new TextElement("A") { Key = "k1" };
-        var b = new TextElement("B") { Key = "k1" };
+        var a = new TextBlockElement("A") { Key = "k1" };
+        var b = new TextBlockElement("B") { Key = "k1" };
         Assert.True(_reconciler.CanUpdate(a, b));
     }
 
     [Fact]
     public void CanUpdate_Keyed_Different_Key_Same_Type()
     {
-        var a = new TextElement("A") { Key = "k1" };
-        var b = new TextElement("B") { Key = "k2" };
+        var a = new TextBlockElement("A") { Key = "k1" };
+        var b = new TextBlockElement("B") { Key = "k2" };
         Assert.False(_reconciler.CanUpdate(a, b));
     }
 
     [Fact]
     public void CanUpdate_Mixed_Keyed_Unkeyed()
     {
-        var a = new TextElement("A") { Key = "k1" };
-        var b = new TextElement("B"); // no key
+        var a = new TextBlockElement("A") { Key = "k1" };
+        var b = new TextBlockElement("B"); // no key
         Assert.False(_reconciler.CanUpdate(a, b));
     }
 

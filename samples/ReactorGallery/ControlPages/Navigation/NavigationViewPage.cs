@@ -36,7 +36,7 @@ class NavigationViewPage : Component
 
                 SampleCard("Left-Pane NavigationView",
                     (NavigationView(items,
-                        content: Factories.Text($"Selected: {selectedTag}")
+                        content: TextBlock($"Selected: {selectedTag}")
                             .Foreground(Theme.PrimaryText).Padding(16))
                     with
                     {
@@ -45,7 +45,7 @@ class NavigationViewPage : Component
                         PaneTitle = "Nav Demo",
                         IsSettingsVisible = false,
                     }).Height(300),
-                    @"NavigationView(items, content: Factories.Text(""Selected: ...""))
+                    @"NavigationView(items, content: TextBlock(""Selected: ...""))
 with {
     SelectedTag = tag,
     OnSelectionChanged = t => setTag(t),
@@ -57,7 +57,7 @@ with {
 
                 SampleCard("Top-Mode NavigationView",
                     (NavigationView(items,
-                        content: Factories.Text($"Content area for: {selectedTag}")
+                        content: TextBlock($"Content area for: {selectedTag}")
                             .Foreground(Theme.PrimaryText).Padding(16))
                     with
                     {

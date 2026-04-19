@@ -95,7 +95,7 @@ class ChartGallery : Component
                                 .Width(800).Height(500).Charge(-200).Distance(80)
                                 .OnReady(h => { forceHandle.Current = h; SetupDrag(h); })),
 
-                        _ => Factories.Text("Select a tab"),
+                        _ => TextBlock("Select a tab"),
                     }
                 ).Padding(16)
             )

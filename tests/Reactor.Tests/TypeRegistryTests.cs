@@ -88,7 +88,7 @@ public class TypeRegistryTests
     {
         var reconciler = new Reconciler();
         var custom = new TestCustomElement("A");
-        var builtin = new TextElement("A");
+        var builtin = new TextBlockElement("A");
         Assert.False(reconciler.CanUpdate(custom, builtin));
         Assert.False(reconciler.CanUpdate(builtin, custom));
     }
@@ -235,12 +235,12 @@ public class TypeRegistryTests
     }
 
     [Fact]
-    public void Builtin_TextElement_Still_Works_Without_Registration()
+    public void Builtin_TextBlockElement_Still_Works_Without_Registration()
     {
-        // TextElement should fall through to built-in handler when nothing is registered
+        // TextBlockElement should fall through to built-in handler when nothing is registered
         var reconciler = new Reconciler();
         // CanUpdate should work for built-in types
-        Assert.True(reconciler.CanUpdate(new TextElement("a"), new TextElement("b")));
+        Assert.True(reconciler.CanUpdate(new TextBlockElement("a"), new TextBlockElement("b")));
     }
 
     [Fact]
@@ -249,8 +249,8 @@ public class TypeRegistryTests
         var reconciler = new Reconciler();
         bool customCalled = false;
 
-        // Override built-in TextElement
-        reconciler.RegisterType<TextElement, TextBlock>(
+        // Override built-in TextBlockElement
+        reconciler.RegisterType<TextBlockElement, TextBlock>(
             mount: (r, el, rerender) =>
             {
                 customCalled = true;
@@ -259,7 +259,7 @@ public class TypeRegistryTests
             update: (r, oldEl, newEl, ctrl, rerender) => null);
 
         Assert.Throws<InvalidOperationException>(() =>
-            reconciler.Mount(new TextElement("hello"), () => { }));
+            reconciler.Mount(new TextBlockElement("hello"), () => { }));
         Assert.True(customCalled);
     }
 }

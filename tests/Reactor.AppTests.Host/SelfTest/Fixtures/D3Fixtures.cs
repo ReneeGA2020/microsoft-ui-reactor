@@ -39,7 +39,7 @@ internal static class D3Fixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Line Chart"),
+                    TextBlock("Line Chart"),
                     ChartDsl.LineChart(SampleLine, d => d.X, d => d.Y)
                         .Width(600).Height(400)
                         .ShowAxes(true)
@@ -70,7 +70,7 @@ internal static class D3Fixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Bar Chart"),
+                    TextBlock("Bar Chart"),
                     ChartDsl.BarChart(SampleBars, d => d.X, d => d.Y)
                         .Width(600).Height(400)
                         .ShowAxes(true)
@@ -101,7 +101,7 @@ internal static class D3Fixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Pie Chart"),
+                    TextBlock("Pie Chart"),
                     ChartDsl.PieChart(SamplePie, d => d.Value, d => d.Label)
                         .Width(400).Height(400)
                         .ToElement()
@@ -131,7 +131,7 @@ internal static class D3Fixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Area Chart"),
+                    TextBlock("Area Chart"),
                     ChartDsl.AreaChart(SampleLine, d => d.X, d => d.Y)
                         .Width(600).Height(400)
                         .ShowAxes(true)
@@ -170,7 +170,7 @@ internal static class D3Fixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Tree Chart"),
+                    TextBlock("Tree Chart"),
                     ChartDsl.TreeChart<TreeItem>(TreeData, t => t.Kids, t => t.Name)
                         .Width(600).Height(400)
                         .ToElement()
@@ -217,7 +217,7 @@ internal static class D3Fixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Force Graph"),
+                    TextBlock("Force Graph"),
                     ChartDsl.ForceGraph(nodes, links)
                         .Width(600).Height(400)
                         .ToElement()
@@ -255,7 +255,7 @@ internal static class D3Fixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Customized Chart"),
+                    TextBlock("Customized Chart"),
                     ChartDsl.LineChart(SampleLine, d => d.X, d => d.Y)
                         .Width(800).Height(500)
                         .Margin(30, 30, 40, 50)
@@ -297,7 +297,7 @@ internal static class D3Fixtures
             XamlInterop.Register(host.Reconciler);
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Pie Chart Labels"),
+                    TextBlock("Pie Chart Labels"),
                     ChartDsl.PieChart(SamplePie, d => d.Value, d => d.Label)
                         .Width(400).Height(400)
                         .ToElement()

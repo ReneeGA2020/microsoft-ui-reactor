@@ -18,35 +18,35 @@ class PivotPage : Component
 
                 SampleCard("Basic Pivot",
                     Pivot(
-                        PivotItem("All", Factories.Text("All items displayed here.").Padding(12)),
-                        PivotItem("Recent", Factories.Text("Recent items displayed here.").Padding(12)),
-                        PivotItem("Favorites", Factories.Text("Favorite items displayed here.").Padding(12))
+                        PivotItem("All", TextBlock("All items displayed here.").Padding(12)),
+                        PivotItem("Recent", TextBlock("Recent items displayed here.").Padding(12)),
+                        PivotItem("Favorites", TextBlock("Favorite items displayed here.").Padding(12))
                     ).Height(200),
                     @"Pivot(
-    PivotItem(""All"", Factories.Text(""All items"")),
-    PivotItem(""Recent"", Factories.Text(""Recent items"")),
-    PivotItem(""Favorites"", Factories.Text(""Favorite items"")))"),
+    PivotItem(""All"", TextBlock(""All items"")),
+    PivotItem(""Recent"", TextBlock(""Recent items"")),
+    PivotItem(""Favorites"", TextBlock(""Favorite items"")))"),
 
                 SampleCard("Pivot with Rich Content",
                     Pivot(
                         PivotItem("Overview",
                             VStack(8,
                                 SubHeading("Overview").Foreground(Theme.PrimaryText),
-                                Factories.Text("Summary of key metrics.").Foreground(Theme.SecondaryText)
+                                TextBlock("Summary of key metrics.").Foreground(Theme.SecondaryText)
                             ).Padding(12)),
                         PivotItem("Details",
                             VStack(8,
                                 SubHeading("Details").Foreground(Theme.PrimaryText),
-                                Factories.Text("Detailed information goes here.").Foreground(Theme.SecondaryText)
+                                TextBlock("Detailed information goes here.").Foreground(Theme.SecondaryText)
                             ).Padding(12))
                     ).Height(200),
                     @"Pivot(
     PivotItem(""Overview"", VStack(8,
         SubHeading(""Overview""),
-        Factories.Text(""Summary of key metrics.""))),
+        TextBlock(""Summary of key metrics.""))),
     PivotItem(""Details"", VStack(8,
         SubHeading(""Details""),
-        Factories.Text(""Detailed info.""))))")
+        TextBlock(""Detailed info.""))))")
             ).Margin(36, 24, 36, 36)
         );
     }

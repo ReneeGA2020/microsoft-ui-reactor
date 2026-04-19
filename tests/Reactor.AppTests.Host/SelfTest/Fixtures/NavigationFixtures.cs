@@ -32,9 +32,9 @@ internal static class NavigationFixtures
                     Border(
                         tab switch
                         {
-                            "Home" => VStack(Factories.Text("Welcome Home"), Factories.Text("This is the home page.")),
-                            "Settings" => VStack(Factories.Text("Settings Page"), Factories.Text("Configure your preferences.")),
-                            "About" => VStack(Factories.Text("About Page"), Factories.Text("Version 1.0")),
+                            "Home" => VStack(TextBlock("Welcome Home"), TextBlock("This is the home page.")),
+                            "Settings" => VStack(TextBlock("Settings Page"), TextBlock("Configure your preferences.")),
+                            "About" => VStack(TextBlock("About Page"), TextBlock("Version 1.0")),
                             _ => Empty()
                         }
                     ).Padding(16)
@@ -88,9 +88,9 @@ internal static class NavigationFixtures
 
                 return NavigationHost(nav, route => route switch
                 {
-                    "home" => Factories.Text("Home Page Content"),
-                    "settings" => Factories.Text("Settings Content"),
-                    _ => Factories.Text("Unknown"),
+                    "home" => TextBlock("Home Page Content"),
+                    "settings" => TextBlock("Settings Content"),
+                    _ => TextBlock("Unknown"),
                 }) with { Transition = NavigationTransition.None };
             });
 
@@ -119,9 +119,9 @@ internal static class NavigationFixtures
                     Button("Go to Settings", () => nav.Navigate("settings")),
                     NavigationHost(nav, route => route switch
                     {
-                        "home" => Factories.Text("Home Page"),
-                        "settings" => Factories.Text("Settings Page"),
-                        _ => Factories.Text("Unknown"),
+                        "home" => TextBlock("Home Page"),
+                        "settings" => TextBlock("Settings Page"),
+                        _ => TextBlock("Unknown"),
                     }) with { Transition = NavigationTransition.None }
                 );
             });
@@ -160,9 +160,9 @@ internal static class NavigationFixtures
                     ),
                     NavigationHost(nav, route => route switch
                     {
-                        "home" => Factories.Text("Home Page"),
-                        "settings" => Factories.Text("Settings Page"),
-                        _ => Factories.Text("Unknown"),
+                        "home" => TextBlock("Home Page"),
+                        "settings" => TextBlock("Settings Page"),
+                        _ => TextBlock("Unknown"),
                     }) with { Transition = NavigationTransition.None }
                 );
             });
@@ -209,7 +209,7 @@ internal static class NavigationFixtures
                     {
                         "page-a" => Component<LifecyclePageA>(),
                         "page-b" => Component<LifecyclePageB>(),
-                        _ => Factories.Text("Unknown"),
+                        _ => TextBlock("Unknown"),
                     }) with { Transition = NavigationTransition.None }
                 );
             });
@@ -247,7 +247,7 @@ internal static class NavigationFixtures
                 onNavigatedTo: ctx => LifecycleEvents.Add("navigatedTo:A"),
                 onNavigatingFrom: ctx => LifecycleEvents.Add("navigatingFrom:A"),
                 onNavigatedFrom: ctx => LifecycleEvents.Add("navigatedFrom:A"));
-            return Factories.Text("Page A");
+            return TextBlock("Page A");
         }
     }
 
@@ -259,7 +259,7 @@ internal static class NavigationFixtures
                 onNavigatedTo: ctx => LifecycleEvents.Add("navigatedTo:B"),
                 onNavigatingFrom: ctx => LifecycleEvents.Add("navigatingFrom:B"),
                 onNavigatedFrom: ctx => LifecycleEvents.Add("navigatedFrom:B"));
-            return Factories.Text("Page B");
+            return TextBlock("Page B");
         }
     }
 
@@ -281,9 +281,9 @@ internal static class NavigationFixtures
                     ),
                     NavigationHost(outerNav, route => route switch
                     {
-                        "outer-a" => Factories.Text("Outer A Content"),
+                        "outer-a" => TextBlock("Outer A Content"),
                         "outer-b" => new NestedNavComponent().AsElement(),
-                        _ => Factories.Text("Unknown"),
+                        _ => TextBlock("Unknown"),
                     }) with { Transition = NavigationTransition.None }
                 );
             });
@@ -325,9 +325,9 @@ internal static class NavigationFixtures
                 ),
                 NavigationHost(nav, route => route switch
                 {
-                    "inner-1" => Factories.Text("Inner Page 1"),
-                    "inner-2" => Factories.Text("Inner Page 2"),
-                    _ => Factories.Text("Unknown"),
+                    "inner-1" => TextBlock("Inner Page 1"),
+                    "inner-2" => TextBlock("Inner Page 2"),
+                    _ => TextBlock("Unknown"),
                 }) with { Transition = NavigationTransition.None }
             );
         }

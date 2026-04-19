@@ -34,25 +34,25 @@ class ItemsViewPage : Component
                         p => p.Name,
                         (p, i) => Border(
                             VStack(4,
-                                Factories.Text(p.Name).Bold(),
-                                Factories.Text(p.Category).ApplyStyle("CaptionTextBlockStyle").Foreground(Theme.SecondaryText),
-                                Factories.Text($"${p.Price:F2}").Foreground(Theme.SystemSuccess)
+                                TextBlock(p.Name).Bold(),
+                                TextBlock(p.Category).ApplyStyle("CaptionTextBlockStyle").Foreground(Theme.SecondaryText),
+                                TextBlock($"${p.Price:F2}").Foreground(Theme.SystemSuccess)
                             ).Padding(12)
                         ).Background(Theme.SubtleFill).CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft).Margin(4)
                     ).Height(300),
-                    @"ItemsView(\n    products,\n    p => p.Name,\n    (p, i) => Border(VStack(\n        Factories.Text(p.Name).Bold(),\n        Factories.Text($""${p.Price:F2}"")\n    ))\n)"),
+                    @"ItemsView(\n    products,\n    p => p.Name,\n    (p, i) => Border(VStack(\n        TextBlock(p.Name).Bold(),\n        TextBlock($""${p.Price:F2}"")\n    ))\n)"),
 
                 SampleCard("Compact ItemsView",
                     ItemsView(
                         products,
                         p => p.Name,
                         (p, i) => HStack(8,
-                            Factories.Text($"{i + 1}.").Width(20).Foreground(Theme.SecondaryText),
-                            Factories.Text(p.Name).Flex(grow: 1),
-                            Factories.Text($"${p.Price:F2}").Foreground(Theme.AccentText)
+                            TextBlock($"{i + 1}.").Width(20).Foreground(Theme.SecondaryText),
+                            TextBlock(p.Name).Flex(grow: 1),
+                            TextBlock($"${p.Price:F2}").Foreground(Theme.AccentText)
                         ).Padding(8)
                     ).Height(250),
-                    @"ItemsView(\n    products, p => p.Name,\n    (p, i) => HStack(8, Factories.Text(p.Name).Flex(grow:1), Factories.Text(price))\n)")
+                    @"ItemsView(\n    products, p => p.Name,\n    (p, i) => HStack(8, TextBlock(p.Name).Flex(grow:1), TextBlock(price))\n)")
             ).Margin(36, 24, 36, 36)
         );
     }

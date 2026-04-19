@@ -32,10 +32,10 @@ internal sealed class EmailToolbar : Component
     {
         var btn = Button(
             (FlexRow(
-                Factories.Text(icon).FontSize(16).Foreground(SecondaryText)
+                TextBlock(icon).FontSize(16).Foreground(SecondaryText)
                     .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets"))
                     .AccessibilityHidden(),
-                Factories.Text(label).FontSize(13).Foreground(PrimaryText)
+                TextBlock(label).FontSize(13).Foreground(PrimaryText)
             ) with { ColumnGap = 6 }),
             null
         ).AutomationName(label)

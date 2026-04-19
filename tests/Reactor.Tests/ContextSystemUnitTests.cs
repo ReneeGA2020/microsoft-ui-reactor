@@ -116,7 +116,7 @@ public class ContextSystemUnitTests
     [Fact]
     public void Provide_Sets_ContextValues_On_Element_Record()
     {
-        var el = new TextElement("hello").Provide(TestTheme, "dark");
+        var el = new TextBlockElement("hello").Provide(TestTheme, "dark");
 
         Assert.NotNull(el.ContextValues);
         Assert.Single(el.ContextValues);
@@ -126,7 +126,7 @@ public class ContextSystemUnitTests
     [Fact]
     public void Chained_Provide_Merges_Into_Single_Dictionary()
     {
-        var el = new TextElement("hello")
+        var el = new TextBlockElement("hello")
             .Provide(TestTheme, "dark")
             .Provide(TestCount, 42);
 
@@ -139,7 +139,7 @@ public class ContextSystemUnitTests
     [Fact]
     public void Same_Context_Provided_Twice_Last_Write_Wins()
     {
-        var el = new TextElement("hello")
+        var el = new TextBlockElement("hello")
             .Provide(TestTheme, "dark")
             .Provide(TestTheme, "blue");
 
@@ -151,8 +151,8 @@ public class ContextSystemUnitTests
     [Fact]
     public void Provide_Returns_Same_Element_Type()
     {
-        var text = new TextElement("hello").Provide(TestTheme, "dark");
-        Assert.IsType<TextElement>(text);
+        var text = new TextBlockElement("hello").Provide(TestTheme, "dark");
+        Assert.IsType<TextBlockElement>(text);
         Assert.Equal("hello", text.Content);
     }
 
@@ -311,24 +311,24 @@ public class ContextSystemUnitTests
     [Fact]
     public void ShallowEquals_Includes_ContextValues_Comparison()
     {
-        var a = new TextElement("hi").Provide(TestTheme, "dark");
-        var b = new TextElement("hi").Provide(TestTheme, "dark");
+        var a = new TextBlockElement("hi").Provide(TestTheme, "dark");
+        var b = new TextBlockElement("hi").Provide(TestTheme, "dark");
         Assert.True(Element.ShallowEquals(a, b));
     }
 
     [Fact]
     public void ShallowEquals_Different_ContextValues_Returns_False()
     {
-        var a = new TextElement("hi").Provide(TestTheme, "dark");
-        var b = new TextElement("hi").Provide(TestTheme, "light");
+        var a = new TextBlockElement("hi").Provide(TestTheme, "dark");
+        var b = new TextBlockElement("hi").Provide(TestTheme, "light");
         Assert.False(Element.ShallowEquals(a, b));
     }
 
     [Fact]
     public void ShallowEquals_One_Has_ContextValues_Other_Doesnt_Returns_False()
     {
-        var a = new TextElement("hi").Provide(TestTheme, "dark");
-        var b = new TextElement("hi");
+        var a = new TextBlockElement("hi").Provide(TestTheme, "dark");
+        var b = new TextBlockElement("hi");
         Assert.False(Element.ShallowEquals(a, b));
     }
 }

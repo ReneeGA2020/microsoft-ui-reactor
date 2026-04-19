@@ -36,8 +36,8 @@ public sealed class OrgChartSample : GallerySample
         Element PersonCard(person, depth) =>
             Border(VStack(3,
                 AvatarCircle(person.Initials, Palette[depth]),
-                Factories.Text(person.Name).SemiBold(),
-                Factories.Text(person.Role),
+                TextBlock(person.Name).SemiBold(),
+                TextBlock(person.Role),
             )) with { CornerRadius = 8, ... };
         """;
 
@@ -103,9 +103,9 @@ public sealed class OrgChartSample : GallerySample
         return (Border(
             VStack(3,
                 AvatarCircle(person.Initials, color),
-                (Factories.Text(person.Name) with { FontSize = 10 })
+                (TextBlock(person.Name) with { FontSize = 10 })
                     .SemiBold().HAlign(HorizontalAlignment.Center).MaxWidth(CardW - 12),
-                (Factories.Text(person.Role) with { FontSize = 9 })
+                (TextBlock(person.Role) with { FontSize = 9 })
                     .Foreground(roleBrush).HAlign(HorizontalAlignment.Center).MaxWidth(CardW - 12)
             ).HAlign(HorizontalAlignment.Center)
         ) with
@@ -120,7 +120,7 @@ public sealed class OrgChartSample : GallerySample
 
     static Element AvatarCircle(string initials, Microsoft.UI.Xaml.Media.Brush color) =>
         (Border(
-            (Factories.Text(initials) with { FontSize = 11 })
+            (TextBlock(initials) with { FontSize = 11 })
                 .Bold().Foreground("#ffffff")
                 .HAlign(HorizontalAlignment.Center)
                 .VAlign(VerticalAlignment.Center)

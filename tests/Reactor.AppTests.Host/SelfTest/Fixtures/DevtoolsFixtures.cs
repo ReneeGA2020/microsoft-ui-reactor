@@ -125,7 +125,7 @@ internal static class DevtoolsFixtures
             var (toggled, setToggled) = UseState(false);
 
             return VStack(
-                Factories.Text($"count:{count}").AutomationId("count-label"),
+                TextBlock($"count:{count}").AutomationId("count-label"),
                 Button("Increment", () => setCount(count + 1)).AutomationId("btn-increment"),
                 TextField(text, setText).AutomationId("txt-input"),
                 CheckBox(toggled, setToggled, label: "Accept").AutomationId("chk-accept"),
@@ -530,14 +530,14 @@ internal static class DevtoolsFixtures
         public override Element Render()
         {
             var items = Enumerable.Range(0, 50)
-                .Select(i => Factories.Text($"row-{i}").AutomationId($"row-{i}") as Element)
+                .Select(i => TextBlock($"row-{i}").AutomationId($"row-{i}") as Element)
                 .ToArray();
 
             return VStack(
                 ListView(
-                    Factories.Text("Alpha").AutomationId("item-alpha"),
-                    Factories.Text("Beta").AutomationId("item-beta"),
-                    Factories.Text("Gamma").AutomationId("item-gamma")
+                    TextBlock("Alpha").AutomationId("item-alpha"),
+                    TextBlock("Beta").AutomationId("item-beta"),
+                    TextBlock("Gamma").AutomationId("item-gamma")
                 ).AutomationId("lv-items"),
                 ScrollView(VStack(items)).AutomationId("sv-items")
             );
@@ -764,11 +764,11 @@ internal static class DevtoolsFixtures
     {
         public override Element Render() => VStack(
             VStack(
-                Factories.Text("Name").AutomationId("lbl-name"),
+                TextBlock("Name").AutomationId("lbl-name"),
                 TextField("a", _ => { }).AutomationId("tb-name")
             ),
             VStack(
-                Factories.Text("Email").AutomationId("lbl-email"),
+                TextBlock("Email").AutomationId("lbl-email"),
                 TextField("b", _ => { }).AutomationId("tb-email")
             )
         );
@@ -874,7 +874,7 @@ internal static class DevtoolsFixtures
     private sealed class AltRoot : Component
     {
         public override Element Render() => VStack(
-            Factories.Text("alt-root").AutomationId("lbl-alt")
+            TextBlock("alt-root").AutomationId("lbl-alt")
         );
     }
 
@@ -951,7 +951,7 @@ internal static class DevtoolsFixtures
             _count = count;
             _setCount = setCount;
             return VStack(
-                Factories.Text($"count:{count}").AutomationId("count-label")
+                TextBlock($"count:{count}").AutomationId("count-label")
             );
         }
 

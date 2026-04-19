@@ -98,7 +98,7 @@ internal static class InteractionStatesTests
             host.Mount(ctx =>
             {
                 return VStack(
-                    Border(Factories.Text("Hover me"))
+                    Border(TextBlock("Hover me"))
                         .InteractionStates(states => states
                             .PointerOver(opacity: 0.85f, scale: 1.02f)
                             .Pressed(scale: 0.97f))

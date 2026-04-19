@@ -23,15 +23,15 @@ class ScrollViewPage : Component
                         ScrollView(
                             VStack(4,
                                 Enumerable.Range(1, (int)itemCount)
-                                    .Select(i => Border(Factories.Text($"Item {i}").Padding(8))
+                                    .Select(i => Border(TextBlock($"Item {i}").Padding(8))
                                         .Background(i % 2 == 0 ? Theme.SubtleFill : Theme.LayerFill))
                                     .ToArray()
                             )
                         )
                     ).Size(300, 200).WithBorder(Theme.CardStroke).CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft),
-                    @"ScrollView(\n    VStack(4, items.Select(i =>\n        Border(Factories.Text($""Item {i}"")).Padding(8)\n    ).ToArray())\n)",
+                    @"ScrollView(\n    VStack(4, items.Select(i =>\n        Border(TextBlock($""Item {i}"")).Padding(8)\n    ).ToArray())\n)",
                     OptionPanel(
-                        Factories.Text($"Item count: {(int)itemCount}"),
+                        TextBlock($"Item count: {(int)itemCount}"),
                         Slider(itemCount, 5, 50, setItemCount)
                     )),
 
@@ -40,7 +40,7 @@ class ScrollViewPage : Component
                         (ScrollView(
                             HStack(4,
                                 Enumerable.Range(1, 15)
-                                    .Select(i => Border(Factories.Text($"  {i}  ").Center().Foreground("#FFFFFF"))
+                                    .Select(i => Border(TextBlock($"  {i}  ").Center().Foreground("#FFFFFF"))
                                         .Background("#5B6ABF").Size(80, 60).CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft))
                                     .ToArray()
                             )

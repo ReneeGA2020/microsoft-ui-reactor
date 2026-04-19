@@ -42,7 +42,7 @@ internal sealed class WeekGrid : Component<WeekGridProps>
                 : $"{h - 12} PM";
 
             children.Add(
-                Factories.Text(label).FontSize(11).Foreground(TertiaryText)
+                TextBlock(label).FontSize(11).Foreground(TertiaryText)
                     .Padding(4, 0, 8, 0)
                     .VAlign(Microsoft.UI.Xaml.VerticalAlignment.Top)
                     .HAlign(Microsoft.UI.Xaml.HorizontalAlignment.Right)

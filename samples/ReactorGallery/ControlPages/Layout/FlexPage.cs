@@ -28,7 +28,7 @@ class FlexPage : Component
         var wrap = (FlexWrap)wrapIndex;
 
         Element Box(string label, string color) =>
-            Border(Factories.Text(label).Center().Foreground("#FFFFFF"))
+            Border(TextBlock(label).Center().Foreground("#FFFFFF"))
                 .Background(color).Size(70, 50).CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft);
 
         return ScrollView(
@@ -53,21 +53,21 @@ class FlexPage : Component
                     ).Size(400, 250).Background(Theme.SubtleFill).CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft),
                     @"new FlexElement(children) {\n    Direction = FlexDirection.Row,\n    JustifyContent = FlexJustify.SpaceBetween,\n    AlignItems = FlexAlign.Center,\n    Wrap = FlexWrap.Wrap\n}",
                     OptionPanel(
-                        Factories.Text("Direction"), ComboBox(dirs, dirIndex, setDirIndex),
-                        Factories.Text("Justify"), ComboBox(justifies, justifyIndex, setJustifyIndex),
-                        Factories.Text("Align"), ComboBox(aligns, alignIndex, setAlignIndex),
-                        Factories.Text("Wrap"), ComboBox(wraps, wrapIndex, setWrapIndex)
+                        TextBlock("Direction"), ComboBox(dirs, dirIndex, setDirIndex),
+                        TextBlock("Justify"), ComboBox(justifies, justifyIndex, setJustifyIndex),
+                        TextBlock("Align"), ComboBox(aligns, alignIndex, setAlignIndex),
+                        TextBlock("Wrap"), ComboBox(wraps, wrapIndex, setWrapIndex)
                     )),
 
                 SampleCard("Grow & Shrink",
                     new FlexElement(new Element[]
                     {
-                        Border(Factories.Text("Fixed").Center().Foreground("#FFFFFF"))
+                        Border(TextBlock("Fixed").Center().Foreground("#FFFFFF"))
                             .Background("#E74C3C").Height(40).Width(80).CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft),
-                        Border(Factories.Text("Grow 1").Center().Foreground("#FFFFFF"))
+                        Border(TextBlock("Grow 1").Center().Foreground("#FFFFFF"))
                             .Background("#3498DB").Height(40).CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft)
                             .Flex(grow: 1),
-                        Border(Factories.Text("Grow 2").Center().Foreground("#FFFFFF"))
+                        Border(TextBlock("Grow 2").Center().Foreground("#FFFFFF"))
                             .Background("#2ECC71").Height(40).CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft)
                             .Flex(grow: 2),
                     })
@@ -80,13 +80,13 @@ class FlexPage : Component
                 SampleCard("FlexRow & FlexColumn Shortcuts",
                     HStack(16,
                         VStack(4,
-                            Factories.Text("FlexRow:").Bold(),
+                            TextBlock("FlexRow:").Bold(),
                             FlexRow(
                                 Box("A", "#1ABC9C"), Box("B", "#E67E22"), Box("C", "#8E44AD")
                             )
                         ),
                         VStack(4,
-                            Factories.Text("FlexColumn:").Bold(),
+                            TextBlock("FlexColumn:").Bold(),
                             FlexColumn(
                                 Box("X", "#C0392B"), Box("Y", "#27AE60"), Box("Z", "#2980B9")
                             )

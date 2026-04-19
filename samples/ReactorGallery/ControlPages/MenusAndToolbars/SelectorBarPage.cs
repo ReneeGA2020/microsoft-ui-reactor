@@ -30,7 +30,7 @@ class SelectorBarPage : Component
                             },
                             selectedIdx,
                             i => setSelectedIdx(i)),
-                        Factories.Text($"Selected: {views[selectedIdx]}").Foreground(Theme.SecondaryText)
+                        TextBlock($"Selected: {views[selectedIdx]}").Foreground(Theme.SecondaryText)
                     ),
                     @"SelectorBar(
     new[] {

@@ -78,7 +78,7 @@ class TodoApp : Component
 
         return VStack(0,
             // Header
-            Factories.Text("todos").FontSize(36)
+            TextBlock("todos").FontSize(36)
                 .Set(t => t.FontWeight = Microsoft.UI.Text.FontWeights.Light)
                 .Foreground(AccentText)
                 .HAlign(HorizontalAlignment.Center)
@@ -104,7 +104,7 @@ class TodoApp : Component
 
             // Footer
             HStack(8,
-                Factories.Text($"{remaining} item{(remaining == 1 ? "" : "s")} left")
+                TextBlock($"{remaining} item{(remaining == 1 ? "" : "s")} left")
                     .FontSize(12).Foreground(SecondaryText)
                     .VAlign(VerticalAlignment.Center),
                 Empty().HAlign(HorizontalAlignment.Stretch),
@@ -121,7 +121,7 @@ class TodoApp : Component
     static Element TodoRow(TodoItem item, Action<TodoAction> dispatch) =>
         HStack(8,
             CheckBox(item.IsCompleted, _ => dispatch(new ToggleItem(item.Id))),
-            Factories.Text(item.Text)
+            TextBlock(item.Text)
                 .FontSize(14)
                 .Opacity(item.IsCompleted ? 0.5 : 1)
                 .Set(t =>

@@ -11,7 +11,7 @@ internal sealed class LocalizableString
     /// <summary>The class name containing the string (e.g., "SettingsPage").</summary>
     public required string ClassName { get; init; }
 
-    /// <summary>The DSL context (e.g., "Text", "Button", "Placeholder").</summary>
+    /// <summary>The DSL context (e.g., "TextBlock", "Button", "Placeholder").</summary>
     public required string Context { get; init; }
 
     /// <summary>The English string value (or ICU message for interpolations).</summary>

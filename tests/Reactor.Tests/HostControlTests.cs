@@ -94,11 +94,11 @@ public class HostControlTests
 
     private class TestComponent : Component
     {
-        public override Element Render() => new TextElement("test");
+        public override Element Render() => new TextBlockElement("test");
     }
 
     private class PropsComponent : Component<string>
     {
-        public override Element Render() => new TextElement($"Prop: {Props}");
+        public override Element Render() => new TextBlockElement($"Prop: {Props}");
     }
 }

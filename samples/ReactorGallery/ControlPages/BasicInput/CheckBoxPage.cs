@@ -20,7 +20,7 @@ class CheckBoxPage: Component
             SampleCard("Two-State CheckBox",
                 VStack(8,
                     CheckBox(isChecked, v => setIsChecked(v), "I agree to the terms"),
-                    Factories.Text($"Checked: {isChecked}").Foreground(Theme.SecondaryText)),
+                    TextBlock($"Checked: {isChecked}").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 CheckBox(isChecked, v => setIsChecked(v), ""I agree to the terms"")
 "),
@@ -28,7 +28,7 @@ CheckBox(isChecked, v => setIsChecked(v), ""I agree to the terms"")
             SampleCard("Three-State CheckBox",
                 VStack(8,
                     ThreeStateCheckBox(threeState, v => setThreeState(v), "Select all"),
-                    Factories.Text($"State: {(threeState == null ? "Indeterminate" : threeState.ToString())}").Foreground(Theme.SecondaryText)),
+                    TextBlock($"State: {(threeState == null ? "Indeterminate" : threeState.ToString())}").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 ThreeStateCheckBox(threeState, v => setThreeState(v), ""Select all"")
 ")

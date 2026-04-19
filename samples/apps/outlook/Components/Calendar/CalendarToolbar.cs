@@ -31,7 +31,7 @@ internal sealed class CalendarToolbar : Component<CalendarToolbarProps>
             Button(
                 HStack(4,
                     MdlIcon("\uE710", 14),
-                    Factories.Text("New event").FontSize(13)
+                    TextBlock("New event").FontSize(13)
                 ),
                 null
             ).Set(b =>
@@ -68,13 +68,13 @@ internal sealed class CalendarToolbar : Component<CalendarToolbarProps>
                 .Set(b => { b.BorderThickness = new Thickness(0); b.Padding = new Thickness(6); }),
 
             // Date range title
-            Factories.Text(title).SemiBold().FontSize(16).VAlign(VerticalAlignment.Center)
+            TextBlock(title).SemiBold().FontSize(16).VAlign(VerticalAlignment.Center)
                 .HeadingLevel(Microsoft.UI.Xaml.Automation.Peers.AutomationHeadingLevel.Level1)
         ).Padding(8, 6, 8, 6);
     }
 
     static Element MdlIcon(string glyph, double size = 14) =>
-        Factories.Text(glyph).FontSize(size)
+        TextBlock(glyph).FontSize(size)
             .Set(t => t.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe MDL2 Assets"));
 
     static string FormatRange(DateTimeOffset start, DateTimeOffset end)

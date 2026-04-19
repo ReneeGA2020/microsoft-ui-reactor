@@ -2,6 +2,7 @@ using Microsoft.UI.Reactor.Data;
 using Microsoft.UI.Reactor.Controls;
 using Microsoft.UI.Reactor.Controls.Validation;
 using Xunit;
+using static Microsoft.UI.Reactor.Factories;
 
 namespace Microsoft.UI.Reactor.Tests;
 
@@ -141,7 +142,7 @@ public class DataGridColumnDslTests
     public void CellRenderer_Sets_Custom_Renderer()
     {
         var col = ColumnDsl.Column<TestProduct>("Name", p => p.Name)
-            .CellRenderer(v => Factories.Text(v.ToString()!))
+            .CellRenderer(v => TextBlock(v.ToString()!))
             .Build();
 
         Assert.NotNull(col.CellRenderer);

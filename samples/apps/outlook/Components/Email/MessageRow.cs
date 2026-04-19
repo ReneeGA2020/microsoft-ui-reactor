@@ -46,7 +46,7 @@ internal sealed class MessageRow : Component<MessageRowProps>
             : Empty();
 
         var avatar = Border(
-            Factories.Text(msg.SenderInitials).Foreground("white").FontSize(13)
+            TextBlock(msg.SenderInitials).Foreground("white").FontSize(13)
                 .Set(t =>
                 {
                     t.HorizontalTextAlignment = TextAlignment.Center;
@@ -58,26 +58,26 @@ internal sealed class MessageRow : Component<MessageRowProps>
 
         // Line 1: Sender + date — use FlexRow so grow works
         var senderLine = FlexRow(
-            Factories.Text(msg.SenderName).FontSize(14)
+            TextBlock(msg.SenderName).FontSize(14)
                 .Set(t => { t.FontWeight = bold; t.TextTrimming = TextTrimming.CharacterEllipsis; })
                 .Flex(grow: 1),
-            Factories.Text(dateStr).FontSize(12).Foreground(TertiaryText)
+            TextBlock(dateStr).FontSize(12).Foreground(TertiaryText)
         ) with { ColumnGap = 8 };
 
         // Line 2: Subject
-        var subjectLine = Factories.Text(msg.Subject).FontSize(13)
+        var subjectLine = TextBlock(msg.Subject).FontSize(13)
             .Set(t => { t.FontWeight = bold; t.TextTrimming = TextTrimming.CharacterEllipsis; t.MaxLines = 1; });
 
         // Line 3: Preview + badges — use FlexRow so grow works
         var previewLine = FlexRow(
-            Factories.Text(msg.PreviewText).FontSize(12).Foreground(TertiaryText)
+            TextBlock(msg.PreviewText).FontSize(12).Foreground(TertiaryText)
                 .Set(t => { t.TextTrimming = TextTrimming.CharacterEllipsis; t.MaxLines = 1; })
                 .Flex(grow: 1),
             msg.HasAttachments
                 ? MdlIcon("\uE723", 12, TertiaryText)
                 : Empty(),
             msg.HasRsvp
-                ? Border(Factories.Text("RSVP").FontSize(9).Foreground(AccentText))
+                ? Border(TextBlock("RSVP").FontSize(9).Foreground(AccentText))
                     .Padding(4, 1, 4, 1).CornerRadius(2).WithBorder(Accent, 1)
                 : Empty()
         ) with { ColumnGap = 6 };
@@ -111,11 +111,11 @@ internal sealed class MessageRow : Component<MessageRowProps>
     }
 
     static Element MdlIcon(string glyph, double size, string color) =>
-        Factories.Text(glyph).FontSize(size).Foreground(color)
+        TextBlock(glyph).FontSize(size).Foreground(color)
             .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets"));
 
     static Element MdlIcon(string glyph, double size, ThemeRef color) =>
-        Factories.Text(glyph).FontSize(size).Foreground(color)
+        TextBlock(glyph).FontSize(size).Foreground(color)
             .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets"));
 
     static string FormatDate(DateTimeOffset date)

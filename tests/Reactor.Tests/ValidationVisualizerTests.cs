@@ -270,7 +270,7 @@ public class ValidationVisualizerTests
         IReadOnlyList<ValidationMessage>? receivedMessages = null;
 
         var el = ValidationVisualizer(
-            render: msgs => { receivedMessages = msgs; return Factories.Text("errors"); },
+            render: msgs => { receivedMessages = msgs; return TextBlock("errors"); },
             content: TextField("a"));
 
         Assert.Equal(VisualizerStyle.Custom, el.Style);

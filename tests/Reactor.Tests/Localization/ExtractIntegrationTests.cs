@@ -42,7 +42,7 @@ public class ExtractIntegrationTests : IDisposable
                 {
                     return VStack(
                         Heading("Inbox"),
-                        Factories.Text($"You have {messages.Count} messages"),
+                        TextBlock($"You have {messages.Count} messages"),
                         Button("Compose", OnCompose)
                     );
                 }
@@ -94,7 +94,7 @@ public class ExtractIntegrationTests : IDisposable
             {
                 public override Element Render()
                 {
-                    return Factories.Text("Hello");
+                    return TextBlock("Hello");
                 }
             }
             """;
@@ -124,7 +124,7 @@ public class ExtractIntegrationTests : IDisposable
             {
                 public override Element Render()
                 {
-                    return Factories.Text("Hello");
+                    return TextBlock("Hello");
                 }
             }
             """;
@@ -154,7 +154,7 @@ public class ExtractIntegrationTests : IDisposable
             {
                 public override Element Render()
                 {
-                    return Factories.Text(isVisible ? "Show" : "Hide");
+                    return TextBlock(isVisible ? "Show" : "Hide");
                 }
             }
             """;
@@ -182,9 +182,9 @@ public class ExtractIntegrationTests : IDisposable
                 public override Element Render()
                 {
                     return VStack(
-                        Factories.Text($"Total: {price:C}"),
-                        Factories.Text($"Due: {dueDate:D}"),
-                        Factories.Text($"Score: {pct:P0}")
+                        TextBlock($"Total: {price:C}"),
+                        TextBlock($"Due: {dueDate:D}"),
+                        TextBlock($"Score: {pct:P0}")
                     );
                 }
             }

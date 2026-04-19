@@ -24,7 +24,7 @@ class ControlledInputDemo : Component
         return VStack(12,
             SubHeading("Controlled Input"),
             TextField(name, setName, placeholder: "Type your name"),
-            Text($"You typed: {name}").Opacity(0.6)
+            TextBlock($"You typed: {name}").Opacity(0.6)
         ).Padding(24);
     }
 }
@@ -81,11 +81,11 @@ class ValidationDemo : Component
             TextField(email, setEmail, placeholder: "user@example.com",
                 header: "Email"),
             When(!string.IsNullOrEmpty(email) && !emailValid, () =>
-                Text("Enter a valid email address")
+                TextBlock("Enter a valid email address")
                     .Foreground(Theme.SystemCritical).FontSize(12)),
             NumberBox(age, setAge, header: "Age"),
             When(age > 0 && !ageValid, () =>
-                Text("Age must be between 18 and 120")
+                TextBlock("Age must be between 18 and 120")
                     .Foreground(Theme.SystemCritical).FontSize(12)),
             Button("Submit", () => { })
                 .Disabled(!formValid)
@@ -113,7 +113,7 @@ class ValidationContextDemo : Component
                     Validate.Required(),
                     Validate.Email()),
             When(ctx.IsTouched("email") && ctx.HasError("email"), () =>
-                Text(ctx.GetMessages("email").First().Text)
+                TextBlock(ctx.GetMessages("email").First().Text)
                     .Foreground(Theme.SystemCritical).FontSize(12)),
             PasswordBox(password, v => { setPassword(v); ctx.NotifyValueChanged("password", v); },
                 placeholderText: "Min 8 characters")
@@ -121,7 +121,7 @@ class ValidationContextDemo : Component
                     Validate.Required(),
                     Validate.MinLength(8)),
             When(ctx.IsTouched("password") && ctx.HasError("password"), () =>
-                Text(ctx.GetMessages("password").First().Text)
+                TextBlock(ctx.GetMessages("password").First().Text)
                     .Foreground(Theme.SystemCritical).FontSize(12)),
             Button("Register", () =>
             {
@@ -129,7 +129,7 @@ class ValidationContextDemo : Component
                 if (ctx.IsValid()) setSubmitted(true);
             }).Disabled(submitted),
             When(submitted, () =>
-                Text("Registration successful!")
+                TextBlock("Registration successful!")
                     .Foreground(Theme.SystemSuccess).SemiBold())
         ).Padding(24);
     }
@@ -178,10 +178,10 @@ class MaskedInputDemo : Component
             SubHeading("Masked Input"),
             TextField(phoneMask.Apply(phone), v => setPhone(phoneMask.GetRawValue(v)),
                 placeholder: "(___) ___-____", header: "Phone"),
-            Text($"Raw: {phone}").FontSize(12).Opacity(0.6),
+            TextBlock($"Raw: {phone}").FontSize(12).Opacity(0.6),
             TextField(dateMask.Apply(date), v => setDate(dateMask.GetRawValue(v)),
                 placeholder: "__/__/____", header: "Date"),
-            Text($"Raw: {date}").FontSize(12).Opacity(0.6)
+            TextBlock($"Raw: {date}").FontSize(12).Opacity(0.6)
         ).Padding(24);
     }
 }

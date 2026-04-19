@@ -86,7 +86,7 @@ public class ComponentModelIntegrationTests : IDisposable
                 return () => EffectLog.Add($"cleanup:{count}");
             }, count);
 
-            return new TextElement($"Dashboard: {Theme} count={count}");
+            return new TextBlockElement($"Dashboard: {Theme} count={count}");
         }
     }
 
@@ -142,7 +142,7 @@ public class ComponentModelIntegrationTests : IDisposable
             SetScroll = setScroll;
             TransientCount = transient;
             SetTransient = setTransient;
-            return new TextElement($"Scroll: {scroll}, Transient: {transient}");
+            return new TextBlockElement($"Scroll: {scroll}, Transient: {transient}");
         }
     }
 
@@ -182,7 +182,7 @@ public class ComponentModelIntegrationTests : IDisposable
         {
             RenderCount++;
             Theme = UseContext(ThemeCtx);
-            return new TextElement($"Header: {Theme}");
+            return new TextBlockElement($"Header: {Theme}");
         }
     }
 
@@ -193,7 +193,7 @@ public class ComponentModelIntegrationTests : IDisposable
         {
             RenderCount++;
             // Doesn't consume any context
-            return new TextElement("Footer");
+            return new TextBlockElement("Footer");
         }
     }
 
@@ -255,7 +255,7 @@ public class ComponentModelIntegrationTests : IDisposable
             var (local, set) = UseState(0);
             LocalState = local;
             SetLocal = set;
-            return new TextElement($"{Theme}/{Count}/{Locale} local={local}");
+            return new TextBlockElement($"{Theme}/{Count}/{Locale} local={local}");
         }
     }
 
@@ -309,7 +309,7 @@ public class ComponentModelIntegrationTests : IDisposable
         public override Element Render()
         {
             RenderCount++;
-            return new TextElement($"{Props.Name} ({Props.Role})");
+            return new TextBlockElement($"{Props.Name} ({Props.Role})");
         }
     }
 
@@ -355,7 +355,7 @@ public class ComponentModelIntegrationTests : IDisposable
                 return () => Log.Add($"cleanup-effect:{val}");
             }, val);
 
-            return new TextElement($"val={val}");
+            return new TextBlockElement($"val={val}");
         }
     }
 
@@ -397,7 +397,7 @@ public class ComponentModelIntegrationTests : IDisposable
             CountRef = UseRef(0);
             MemoValue = UseMemo(() => CountRef.Current * 2, CountRef.Current);
             StableCallback = UseCallback(() => CountRef.Current++, CountRef.Current);
-            return new TextElement($"memo={MemoValue} ref={CountRef.Current}");
+            return new TextBlockElement($"memo={MemoValue} ref={CountRef.Current}");
         }
     }
 
@@ -452,7 +452,7 @@ public class ComponentModelIntegrationTests : IDisposable
             var (state, dispatch) = UseReducer<TodoState, TodoAction>(reducer, new TodoState([], 0));
             State = state;
             Dispatch = dispatch;
-            return new TextElement($"Items: {state.Items.Length}");
+            return new TextBlockElement($"Items: {state.Items.Length}");
         }
     }
 
@@ -586,7 +586,7 @@ public class ComponentModelIntegrationTests : IDisposable
                 return () => Log.Add($"cleanupB:{b}");
             }, b);
 
-            return new TextElement($"a={a} b={b}");
+            return new TextBlockElement($"a={a} b={b}");
         }
     }
 
@@ -640,11 +640,11 @@ public class ComponentModelIntegrationTests : IDisposable
     [Fact]
     public void Provide_Modifier_Preserves_Element_Type()
     {
-        var text = new TextElement("hello")
+        var text = new TextBlockElement("hello")
             .Provide(ThemeCtx, "dark")
             .Provide(CountCtx, 5);
 
-        Assert.IsType<TextElement>(text);
+        Assert.IsType<TextBlockElement>(text);
         Assert.Equal("hello", text.Content);
         Assert.NotNull(text.ContextValues);
         Assert.Equal(2, text.ContextValues.Count);
@@ -662,7 +662,7 @@ public class ComponentModelIntegrationTests : IDisposable
         public override Element Render()
         {
             RenderCount++;
-            return new TextElement(Props?.Name ?? "null");
+            return new TextBlockElement(Props?.Name ?? "null");
         }
     }
 
@@ -696,11 +696,11 @@ public class ComponentModelIntegrationTests : IDisposable
     public void MemoElement_Record_Fields()
     {
         // No deps → null
-        var m1 = new MemoElement(ctx => new TextElement("hi"));
+        var m1 = new MemoElement(ctx => new TextBlockElement("hi"));
         Assert.Null(m1.Dependencies);
 
         // With deps
-        var m2 = new MemoElement(ctx => new TextElement("hi"), new object?[] { "a", 1 });
+        var m2 = new MemoElement(ctx => new TextBlockElement("hi"), new object?[] { "a", 1 });
         Assert.NotNull(m2.Dependencies);
         Assert.Equal(2, m2.Dependencies!.Length);
     }

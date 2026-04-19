@@ -103,7 +103,7 @@ For built-in WinUI styles, use `.Set()`:
 Button("Accent", onClick).Set(b =>
     b.Style = (Style)Application.Current.Resources["AccentButtonStyle"])
 
-Text("Body strong").Set(tb =>
+TextBlock("Body strong").Set(tb =>
     tb.Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"])
 ```
 
@@ -123,11 +123,11 @@ Text("Body strong").Set(tb =>
 6. **Don't re-declare inherited properties** — when applying a WinUI style via `.Set()`, don't also set properties the style already defines (FontSize, FontWeight, etc.). They are redundant and block future updates.
    ```csharp
    // Wrong: FontSize is already in BodyStrongTextBlockStyle
-   Text("Bold body").SemiBold().FontSize(14).Set(tb =>
+   TextBlock("Bold body").SemiBold().FontSize(14).Set(tb =>
        tb.Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"])
 
    // Correct: style handles size and weight
-   Text("Bold body").Set(tb =>
+   TextBlock("Bold body").Set(tb =>
        tb.Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"])
    ```
 7. **Empty HC is valid for `.Resources()` patterns** — when your overrides target only Light/Dark appearance and WinUI defaults already satisfy HC accessibility, you do not need HC-specific resource overrides. This is the common case for subtle/accent button patterns.

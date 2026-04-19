@@ -1,6 +1,7 @@
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Controls;
 using Xunit;
+using static Microsoft.UI.Reactor.Factories;
 
 namespace Microsoft.UI.Reactor.Tests;
 
@@ -17,7 +18,7 @@ public class VirtualListTests
         var el = new VirtualListElement
         {
             ItemCount = 100,
-            RenderItem = i => Factories.Text($"Item {i}"),
+            RenderItem = i => TextBlock($"Item {i}"),
         };
 
         Assert.Equal(100, el.ItemCount);
@@ -33,7 +34,7 @@ public class VirtualListTests
     [Fact]
     public void Element_With_All_Properties()
     {
-        Func<int, Element> renderItem = i => Factories.Text($"Row {i}");
+        Func<int, Element> renderItem = i => TextBlock($"Row {i}");
         Func<int, string> getKey = i => $"key-{i}";
         Action<VirtualListRef> onRef = _ => { };
         Action<int, int> onRange = (_, _) => { };
@@ -66,7 +67,7 @@ public class VirtualListTests
         var original = new VirtualListElement
         {
             ItemCount = 100,
-            RenderItem = i => Factories.Text($"Item {i}"),
+            RenderItem = i => TextBlock($"Item {i}"),
             Spacing = 4,
         };
 
@@ -85,7 +86,7 @@ public class VirtualListTests
         var el = new VirtualListElement
         {
             ItemCount = 1000,
-            RenderItem = i => Factories.Text($"Item {i}"),
+            RenderItem = i => TextBlock($"Item {i}"),
             ItemHeight = 32,
         };
 
@@ -99,7 +100,7 @@ public class VirtualListTests
         var el = new VirtualListElement
         {
             ItemCount = 1000,
-            RenderItem = i => Factories.Text($"Item {i}"),
+            RenderItem = i => TextBlock($"Item {i}"),
             EstimatedItemHeight = 60,
         };
 
@@ -119,7 +120,7 @@ public class VirtualListTests
             RenderItem = i =>
             {
                 calledIndices.Add(i);
-                return Factories.Text($"Item {i}");
+                return TextBlock($"Item {i}");
             },
         };
 
@@ -128,7 +129,7 @@ public class VirtualListTests
         {
             var result = el.RenderItem(i);
             Assert.NotNull(result);
-            Assert.IsType<TextElement>(result);
+            Assert.IsType<TextBlockElement>(result);
         }
 
         Assert.Equal(new[] { 0, 1, 2, 3, 4 }, calledIndices);
@@ -140,7 +141,7 @@ public class VirtualListTests
         var el = new VirtualListElement
         {
             ItemCount = 3,
-            RenderItem = i => Factories.Text($"Item {i}"),
+            RenderItem = i => TextBlock($"Item {i}"),
             GetItemKey = i => $"item-{i * 10}",
         };
 
@@ -156,7 +157,7 @@ public class VirtualListTests
     {
         var element = VirtualListDsl.VirtualList(
             itemCount: 50,
-            renderItem: i => Factories.Text($"Item {i}"));
+            renderItem: i => TextBlock($"Item {i}"));
 
         // Should produce a ComponentElement wrapping VirtualListComponent
         Assert.IsType<ComponentElement>(element);
@@ -167,7 +168,7 @@ public class VirtualListTests
     {
         var element = VirtualListDsl.VirtualList(
             itemCount: 1000,
-            renderItem: i => Factories.Text($"Row {i}"),
+            renderItem: i => TextBlock($"Row {i}"),
             itemHeight: 32,
             spacing: 1);
 
@@ -179,7 +180,7 @@ public class VirtualListTests
     {
         var element = VirtualListDsl.VirtualList(
             itemCount: 100,
-            renderItem: i => Factories.Text($"Item {i}"),
+            renderItem: i => TextBlock($"Item {i}"),
             getItemKey: i => $"key-{i}");
 
         Assert.IsType<ComponentElement>(element);
@@ -206,7 +207,7 @@ public class VirtualListTests
         var el = new VirtualListElement
         {
             ItemCount = 100,
-            RenderItem = i => Factories.Text($"Item {i}"),
+            RenderItem = i => TextBlock($"Item {i}"),
             Ref = r => captured = r,
         };
 
@@ -222,7 +223,7 @@ public class VirtualListTests
         var el = new VirtualListElement
         {
             ItemCount = 1000,
-            RenderItem = i => Factories.Text($"Item {i}"),
+            RenderItem = i => TextBlock($"Item {i}"),
             OnVisibleRangeChanged = (first, last) => ranges.Add((first, last)),
         };
 

@@ -23,9 +23,9 @@ namespace Microsoft.UI.Reactor;
 ///
 /// This gives you a clean, declarative syntax:
 ///   VStack(
-///       Factories.Text("Hello").Bold(),
+///       TextBlock("Hello").Bold(),
 ///       Button("Click me", () => setCount(count + 1)),
-///       count > 5 ? Factories.Text("Wow!") : null
+///       count > 5 ? TextBlock("Wow!") : null
 ///   )
 /// </summary>
 public static class Factories
@@ -41,23 +41,23 @@ public static class Factories
 
     // ── Text ────────────────────────────────────────────────────────
 
-    public static TextElement Text(string content) => new(content);
+    public static TextBlockElement TextBlock(string content) => new(content);
 
-    public static TextElement Heading(string content) =>
+    public static TextBlockElement Heading(string content) =>
         new(content) { FontSize = 28, Weight = new global::Windows.UI.Text.FontWeight(700),
             Modifiers = new Core.ElementModifiers
             {
                 HeadingLevel = Microsoft.UI.Xaml.Automation.Peers.AutomationHeadingLevel.Level1
             } };
 
-    public static TextElement SubHeading(string content) =>
+    public static TextBlockElement SubHeading(string content) =>
         new(content) { FontSize = 20, Weight = new global::Windows.UI.Text.FontWeight(600),
             Modifiers = new Core.ElementModifiers
             {
                 HeadingLevel = Microsoft.UI.Xaml.Automation.Peers.AutomationHeadingLevel.Level2
             } };
 
-    public static TextElement Caption(string content) =>
+    public static TextBlockElement Caption(string content) =>
         new(content) { FontSize = 12 };
 
     public static RichTextBlockElement RichText(string text) => new(text);
@@ -481,14 +481,14 @@ public static class Factories
 
     /// <summary>
     /// Define an inline function component (like a React function component).
-    /// Usage: Func(ctx => { var (n,setN) = ctx.UseState(0); return Factories.Text($"{n}"); })
+    /// Usage: Func(ctx => { var (n,setN) = ctx.UseState(0); return TextBlock($"{n}"); })
     /// </summary>
     public static FuncElement Func(Func<RenderContext, Element> render) => new(render);
 
     /// <summary>
     /// Define a memoized inline function component. Skips re-render when dependencies haven't changed.
     /// Empty deps array = render once + own state changes only. Non-empty = re-render when any dep changes.
-    /// Usage: Memo(ctx => Factories.Text("stable"), someProp, otherProp)
+    /// Usage: Memo(ctx => TextBlock("stable"), someProp, otherProp)
     /// </summary>
     public static MemoElement Memo(Func<RenderContext, Element> render, params object?[] dependencies)
         => new(render, dependencies.Length == 0 ? null : dependencies);
@@ -506,28 +506,28 @@ public static class Factories
 
     /// <summary>
     /// Renders element only when condition is true. Reads nicely:
-    ///   When(items.Any(), () =&gt; Factories.Text("Has items"))
+    ///   When(items.Any(), () =&gt; TextBlock("Has items"))
     /// </summary>
     public static Element When(bool condition, Func<Element> then) =>
         condition ? then() : EmptyElement.Instance;
 
     /// <summary>
     /// If/else as an expression:
-    ///   If(loggedIn, () =&gt; Factories.Text("Welcome"), () =&gt; Button("Login", ...))
+    ///   If(loggedIn, () =&gt; TextBlock("Welcome"), () =&gt; Button("Login", ...))
     /// </summary>
     public static Element If(bool condition, Func<Element> then, Func<Element>? otherwise = null) =>
         condition ? then() : (otherwise?.Invoke() ?? EmptyElement.Instance);
 
     /// <summary>
     /// Map a list to elements (like .map() in React JSX):
-    ///   ForEach(items, item =&gt; Factories.Text(item.Name))
+    ///   ForEach(items, item =&gt; TextBlock(item.Name))
     /// </summary>
     public static Element ForEach<T>(IEnumerable<T> items, Func<T, Element> render) =>
         new GroupElement(items.Select(render).ToArray());
 
     /// <summary>
     /// Map with index:
-    ///   ForEach(items, (item, i) =&gt; Factories.Text($"{i}: {item}"))
+    ///   ForEach(items, (item, i) =&gt; TextBlock($"{i}: {item}"))
     /// </summary>
     public static Element ForEach<T>(IEnumerable<T> items, Func<T, int, Element> render) =>
         new GroupElement(items.Select((item, i) => render(item, i)).ToArray());

@@ -727,7 +727,7 @@ internal static class MarkdownFixtures
                         Heading = (level, defaultEl) =>
                         {
                             headingCallCount++;
-                            return Factories.Text($"H{level}: Custom").Foreground("Red");
+                            return TextBlock($"H{level}: Custom").Foreground("Red");
                         },
                         Paragraph = (defaultEl) =>
                         {
@@ -737,12 +737,12 @@ internal static class MarkdownFixtures
                         CodeBlock = (code, lang) =>
                         {
                             codeBlockCallCount++;
-                            return Factories.Text($"Code: {code}").Foreground("Green");
+                            return TextBlock($"Code: {code}").Foreground("Green");
                         },
                         ThematicBreak = () =>
                         {
                             hrCallCount++;
-                            return Factories.Text("---BREAK---");
+                            return TextBlock("---BREAK---");
                         },
                     })
                 )
@@ -829,7 +829,7 @@ internal static class MarkdownFixtures
                         HtmlBlock = html =>
                         {
                             htmlCallCount++;
-                            return Factories.Text($"HTML: {html.Trim()}");
+                            return TextBlock($"HTML: {html.Trim()}");
                         },
                     })
                 )
@@ -862,12 +862,12 @@ internal static class MarkdownFixtures
                         Table = (rows, aligns) =>
                         {
                             tableCallCount++;
-                            return Factories.Text($"Table: {aligns.Length} cols");
+                            return TextBlock($"Table: {aligns.Length} cols");
                         },
                         Image = (alt, src) =>
                         {
                             imageCallCount++;
-                            return Factories.Text($"Image: {alt} @ {src}");
+                            return TextBlock($"Image: {alt} @ {src}");
                         },
                     })
                 )
@@ -935,7 +935,7 @@ internal static class MarkdownFixtures
                 VStack(
                     Factories.Markdown(""),
                     Factories.Markdown("   \n\n   "),
-                    Factories.Text("Sentinel")
+                    TextBlock("Sentinel")
                 )
             );
 

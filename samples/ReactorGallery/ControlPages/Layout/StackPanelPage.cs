@@ -15,7 +15,7 @@ class StackPanelPage : Component
         var (spacing, setSpacing) = UseState(8.0);
 
         Element ColorBox(string color, string label) =>
-            Border(Factories.Text(label).Center().Foreground("#FFFFFF"))
+            Border(TextBlock(label).Center().Foreground("#FFFFFF"))
                 .Background(color).Size(80, 50).CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft);
 
         return ScrollView(
@@ -31,7 +31,7 @@ class StackPanelPage : Component
                     ),
                     @"VStack(8,\n    Box(""A""), Box(""B""), Box(""C""), Box(""D"")\n)",
                     OptionPanel(
-                        Factories.Text($"Spacing: {(int)spacing}"),
+                        TextBlock($"Spacing: {(int)spacing}"),
                         Slider(spacing, 0, 32, setSpacing)
                     )),
 

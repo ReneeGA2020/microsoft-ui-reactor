@@ -22,10 +22,10 @@ public static class GalleryControls
     /// </summary>
     public static Element PageHeader(string title, string description) =>
         VStack(4,
-            Factories.Text(title)
+            TextBlock(title)
                 .ApplyStyle("TitleTextBlockStyle")
                 .Bold(),
-            Factories.Text(description)
+            TextBlock(description)
                 .Foreground(Theme.SecondaryText)
                 .HAlign(HorizontalAlignment.Left)
                 .Margin(0, 0, 0, 12)
@@ -51,13 +51,13 @@ public static class GalleryControls
                         .VAlign(VerticalAlignment.Top)
                         .Grid(rowSpan: 2),
 
-                    Factories.Text(c.Title)
+                    TextBlock(c.Title)
                         .SemiBold()
                         .Foreground(Theme.PrimaryText)
                         .VAlign(VerticalAlignment.Bottom)
                         .Grid(column: 1),
 
-                    Factories.Text(c.Description)
+                    TextBlock(c.Description)
                         .ApplyStyle("CaptionTextBlockStyle")
                         .Foreground(Theme.SecondaryText)
                         .Set(tb =>
@@ -175,7 +175,7 @@ public static class GalleryControls
         );
 
         return VStack(0,
-            Factories.Text(title)
+            TextBlock(title)
                 .ApplyStyle("BodyStrongTextBlockStyle")
                 .Margin(0, 0, 0, 12),
             Border(

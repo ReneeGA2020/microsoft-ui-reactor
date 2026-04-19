@@ -45,7 +45,7 @@ internal static class KeyframeBuilderTests
             host.Mount(ctx =>
             {
                 return VStack(
-                    Border(Factories.Text("Pulse"))
+                    Border(TextBlock("Pulse"))
                         .Keyframes("pulse", counter, kf => kf
                             .Duration(300)
                             .At(0.0f, opacity: 1f)
@@ -67,7 +67,7 @@ internal static class KeyframeBuilderTests
             host.Mount(ctx =>
             {
                 return VStack(
-                    Border(Factories.Text("Pulse"))
+                    Border(TextBlock("Pulse"))
                         .Keyframes("pulse", counter, kf => kf
                             .Duration(300)
                             .At(0.0f, opacity: 1f)

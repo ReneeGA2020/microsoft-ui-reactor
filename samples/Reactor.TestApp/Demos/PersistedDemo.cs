@@ -33,26 +33,26 @@ class PersistedDemo : Component
         {
             return VStack(12,
                 SubHeading(heading),
-                VStack(4, Factories.Text("Name"), TextField(name, setName, placeholder: "Enter name").Width(220)),
-                VStack(4, Factories.Text("Email"), TextField(email, setEmail, placeholder: "you@example.com").Width(220)),
+                VStack(4, TextBlock("Name"), TextField(name, setName, placeholder: "Enter name").Width(220)),
+                VStack(4, TextBlock("Email"), TextField(email, setEmail, placeholder: "you@example.com").Width(220)),
                 VStack(4,
-                    Factories.Text("Color"),
+                    TextBlock("Color"),
                     HStack(4, colors.Select(c =>
                         Button(c, () => setColor(c)).Disabled(color == c)
                     ).ToArray())
                 ),
                 Border(VStack(4,
-                    Factories.Text("Current values:").SemiBold(),
-                    Factories.Text($"Name: {(string.IsNullOrEmpty(name) ? "(empty)" : name)}"),
-                    Factories.Text($"Email: {(string.IsNullOrEmpty(email) ? "(empty)" : email)}"),
-                    Factories.Text($"Color: {color}")
+                    TextBlock("Current values:").SemiBold(),
+                    TextBlock($"Name: {(string.IsNullOrEmpty(name) ? "(empty)" : name)}"),
+                    TextBlock($"Email: {(string.IsNullOrEmpty(email) ? "(empty)" : email)}"),
+                    TextBlock($"Color: {color}")
                 )).Padding(12).CornerRadius(8).Background(SubtleFill)
             );
         }
 
         return ScrollView(VStack(16,
             Heading("Persisted State"),
-            Factories.Text("UsePersisted keeps values across unmount/remount (tab switches)."),
+            TextBlock("UsePersisted keeps values across unmount/remount (tab switches)."),
 
             HStack(32,
                 FormColumn("UsePersisted (survives)",
@@ -62,7 +62,7 @@ class PersistedDemo : Component
             ),
 
             Border(
-                Factories.Text("Fill in both sides, switch to another tab, then come back. Left persists, right resets.")
+                TextBlock("Fill in both sides, switch to another tab, then come back. Left persists, right resets.")
             ).Padding(12).CornerRadius(8).Background(SubtleFill)
         ));
     }

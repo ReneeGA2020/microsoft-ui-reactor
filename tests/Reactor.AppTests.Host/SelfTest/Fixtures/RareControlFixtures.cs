@@ -99,8 +99,8 @@ internal static class RareControlFixtures
                 return VStack(
                     Button("UpdGV", () => set(1)),
                     GridView(phase == 0
-                        ? [Factories.Text("GV_A"), Factories.Text("GV_B")]
-                        : [Factories.Text("GV_A"), Factories.Text("GV_B"), Factories.Text("GV_C")])
+                        ? [TextBlock("GV_A"), TextBlock("GV_B")]
+                        : [TextBlock("GV_A"), TextBlock("GV_B"), TextBlock("GV_C")])
                 );
             });
 
@@ -159,7 +159,7 @@ internal static class RareControlFixtures
             host.Mount(ctx =>
             {
                 return new RelativePanelElement([
-                    Factories.Text("RP_A") with
+                    TextBlock("RP_A") with
                     {
                         Attached = new Dictionary<Type, object>
                         {
@@ -170,7 +170,7 @@ internal static class RareControlFixtures
                             }
                         }
                     },
-                    Factories.Text("RP_B") with
+                    TextBlock("RP_B") with
                     {
                         Attached = new Dictionary<Type, object>
                         {

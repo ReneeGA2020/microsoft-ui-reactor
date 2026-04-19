@@ -45,7 +45,7 @@ internal static class UseMutationFixtures
 
                 runMutation = () => _ = mutation.RunAsync(1);
 
-                return Factories.Text($"count: {localCount} pending: {mutation.IsPending}");
+                return TextBlock($"count: {localCount} pending: {mutation.IsPending}");
             });
 
             await Harness.Render();
@@ -104,7 +104,7 @@ internal static class UseMutationFixtures
 
                 runMutation = () => _ = mutation.RunAsync(1);
 
-                return Factories.Text(
+                return TextBlock(
                     $"count: {count} error: {mutation.Error?.Message ?? "(none)"}");
             });
 
@@ -157,7 +157,7 @@ internal static class UseMutationFixtures
 
                 runMutation = () => _ = mutation.RunAsync(5);
 
-                return VStack(reader, Factories.Text($"mutated: {mutation.LastResult}"));
+                return VStack(reader, TextBlock($"mutated: {mutation.LastResult}"));
             });
 
             // Let the reader's initial fetch land.
@@ -204,7 +204,7 @@ internal static class UseMutationFixtures
                 cache,
                 Array.Empty<object>(),
                 new ResourceOptions(CacheKey: "invalidate/target"));
-            return Factories.Text($"reader: {v switch
+            return TextBlock($"reader: {v switch
             {
                 AsyncValue<string>.Loading => "loading",
                 AsyncValue<string>.Data d => d.Value,

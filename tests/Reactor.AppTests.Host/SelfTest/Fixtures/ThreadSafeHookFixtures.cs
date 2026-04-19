@@ -40,7 +40,7 @@ internal static class ThreadSafeHookFixtures
             {
                 var (counter, set) = ctx.UseState(0, threadSafe: true);
                 setCounter = set;
-                return Factories.Text($"Counter: {counter}");
+                return TextBlock($"Counter: {counter}");
             });
 
             await Harness.Render();
@@ -107,9 +107,9 @@ internal static class ThreadSafeHookFixtures
                 var (c, sc) = ctx.UseState(0, threadSafe: true);
                 setA = sa; setB = sb; setC = sc;
                 return VStack(
-                    Factories.Text($"A={a}"),
-                    Factories.Text($"B={b}"),
-                    Factories.Text($"C={c}")
+                    TextBlock($"A={a}"),
+                    TextBlock($"B={b}"),
+                    TextBlock($"C={c}")
                 );
             });
 
@@ -157,7 +157,7 @@ internal static class ThreadSafeHookFixtures
             {
                 var (count, upd) = ctx.UseReducer(0, threadSafe: true);
                 update = upd;
-                return Factories.Text($"Sum: {count}");
+                return TextBlock($"Sum: {count}");
             });
 
             await Harness.Render();
@@ -206,7 +206,7 @@ internal static class ThreadSafeHookFixtures
                     Enumerable.Range(0, 50).Select(i => $"Item-{i}-v0").ToArray(),
                     threadSafe: true);
                 setItems = set;
-                return VStack(items.Select(Factories.Text).ToArray());
+                return VStack(items.Select(TextBlock).ToArray());
             });
 
             await Harness.Render();
@@ -273,8 +273,8 @@ internal static class ThreadSafeHookFixtures
                 renderCount.Current++;
                 setValue = set;
                 return VStack(
-                    Factories.Text($"Value: {value}"),
-                    Factories.Text($"Renders: {renderCount.Current}")
+                    TextBlock($"Value: {value}"),
+                    TextBlock($"Renders: {renderCount.Current}")
                 );
             });
 

@@ -1,6 +1,7 @@
 using Microsoft.UI.Reactor.Controls;
 using static Microsoft.UI.Reactor.Controls.AutoSuggestDsl;
 using Xunit;
+using static Microsoft.UI.Reactor.Factories;
 
 namespace Microsoft.UI.Reactor.Tests;
 
@@ -53,7 +54,7 @@ public class AutoSuggestTests
     public void AutoSuggest_With_Template()
     {
         var el = AutoSuggest<string>(null,
-            template: item => Factories.Text(item));
+            template: item => TextBlock(item));
         Assert.NotNull(el.Template);
     }
 

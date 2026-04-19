@@ -609,7 +609,7 @@ class RegeditApp : Component
         // ── Address bar ──────────────────────────────────────────────
         var addressBar = When(showAddressBar, () =>
             HStack(8,
-                Factories.Text(Strings.Computer)
+                TextBlock(Strings.Computer)
                     .VAlign(VerticalAlignment.Center)
                     .SemiBold(),
                 AutoSuggestBox(addressBarText, setAddressBarText, text => AddressBarSubmit(text))
@@ -642,7 +642,7 @@ class RegeditApp : Component
         // ── Status bar ───────────────────────────────────────────────
         var statusBar = When(showStatusBar, () =>
             HStack(8,
-                Factories.Text(string.IsNullOrEmpty(currentKeyPath) ? Strings.Computer : currentKeyPath)
+                TextBlock(string.IsNullOrEmpty(currentKeyPath) ? Strings.Computer : currentKeyPath)
                     .Set(tb =>
                     {
                         tb.TextTrimming = Microsoft.UI.Xaml.TextTrimming.CharacterEllipsis;
@@ -744,7 +744,7 @@ class RegeditApp : Component
         var renameKeyDialog = ContentDialog(
             Strings.RenameKeyTitle,
             VStack(8,
-                Factories.Text(Strings.NewKeyName),
+                TextBlock(Strings.NewKeyName),
                 TextField(editValueData, setEditValueData)
             ).Width(350),
             Strings.OK
@@ -765,7 +765,7 @@ class RegeditApp : Component
         var renameValueDialog = ContentDialog(
             Strings.RenameValueTitle,
             VStack(8,
-                Factories.Text(Strings.NewKeyName),
+                TextBlock(Strings.NewKeyName),
                 TextField(editValueData, setEditValueData)
             ).Width(350),
             Strings.OK
@@ -785,7 +785,7 @@ class RegeditApp : Component
 
         var aboutDialog = ContentDialog(
             Strings.AboutTitle,
-            Factories.Text(Strings.AboutText),
+            TextBlock(Strings.AboutText),
             Strings.OK
         ) with
         {

@@ -22,7 +22,7 @@ class ListBoxPage : Component
                 SampleCard("Basic ListBox",
                     VStack(8,
                         ListBox(fruits, selected, setSelected),
-                        Factories.Text($"Selected: {fruits[selected]}").Foreground(Theme.SecondaryText)
+                        TextBlock($"Selected: {fruits[selected]}").Foreground(Theme.SecondaryText)
                     ),
                     @"var (selected, setSelected) = UseState(0);\nListBox(fruits, selected, setSelected)"),
 

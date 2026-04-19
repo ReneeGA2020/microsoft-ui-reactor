@@ -21,7 +21,7 @@ public class AccessibilityScannerTests
     public void A11Y_001_IconButton_Without_AutomationName()
     {
         var tree = VStack(
-            Button(Factories.Text("🔍"), null) // icon content, no AutomationName
+            Button(TextBlock("🔍"), null) // icon content, no AutomationName
         );
 
         var findings = AccessibilityScanner.Scan(tree);
@@ -32,7 +32,7 @@ public class AccessibilityScannerTests
     public void A11Y_001_IconButton_With_AutomationName_Passes()
     {
         var tree = VStack(
-            Button(Factories.Text("🔍"), null).AutomationName("Search")
+            Button(TextBlock("🔍"), null).AutomationName("Search")
         );
 
         var findings = AccessibilityScanner.Scan(tree);
@@ -128,7 +128,7 @@ public class AccessibilityScannerTests
     public void A11Y_003_TextField_With_LabeledBy_Passes()
     {
         var tree = VStack(
-            Factories.Text("Email").AutomationId("EmailLabel"),
+            TextBlock("Email").AutomationId("EmailLabel"),
             TextField("", null).LabeledBy("EmailLabel")
         );
 
@@ -145,7 +145,7 @@ public class AccessibilityScannerTests
     {
         // Use FontWeight directly (not .Bold()) to avoid WinUI COM activation in unit tests
         var tree = VStack(
-            new TextElement("Settings") { FontSize = 24, Weight = new global::Windows.UI.Text.FontWeight(700) }
+            new TextBlockElement("Settings") { FontSize = 24, Weight = new global::Windows.UI.Text.FontWeight(700) }
         );
 
         var findings = AccessibilityScanner.Scan(tree);
@@ -156,7 +156,7 @@ public class AccessibilityScannerTests
     public void A11Y_004_LargeBoldText_With_HeadingLevel_Passes()
     {
         var tree = VStack(
-            (new TextElement("Settings") { FontSize = 24, Weight = new global::Windows.UI.Text.FontWeight(700) })
+            (new TextBlockElement("Settings") { FontSize = 24, Weight = new global::Windows.UI.Text.FontWeight(700) })
                 .HeadingLevel(AutomationHeadingLevel.Level1)
         );
 
@@ -168,7 +168,7 @@ public class AccessibilityScannerTests
     public void A11Y_004_SmallText_Not_Flagged()
     {
         var tree = VStack(
-            Factories.Text("Normal text").FontSize(14)
+            TextBlock("Normal text").FontSize(14)
         );
 
         var findings = AccessibilityScanner.Scan(tree);
@@ -183,7 +183,7 @@ public class AccessibilityScannerTests
     public void A11Y_006_No_Main_Landmark()
     {
         var tree = VStack(
-            Factories.Text("Hello"),
+            TextBlock("Hello"),
             Button("Go", null)
         );
 
@@ -195,7 +195,7 @@ public class AccessibilityScannerTests
     public void A11Y_006_Has_Main_Landmark_Passes()
     {
         var tree = VStack(
-            Factories.Text("Hello"),
+            TextBlock("Hello"),
             Button("Go", null)
         ).Landmark(AutomationLandmarkType.Main);
 
@@ -223,7 +223,7 @@ public class AccessibilityScannerTests
     public void A11Y_008_LabeledBy_Valid_Reference_Passes()
     {
         var tree = VStack(
-            Factories.Text("Email").AutomationId("EmailLabel"),
+            TextBlock("Email").AutomationId("EmailLabel"),
             TextField("", null).LabeledBy("EmailLabel")
                 .AutomationName("Email") // prevent A11Y_003
         );
@@ -291,7 +291,7 @@ public class AccessibilityScannerTests
         var tree = VStack(
             Button("Reply", null),
             Button("Forward", null),
-            Button(Factories.Text("🗑"), null) // triggers A11Y_001
+            Button(TextBlock("🗑"), null) // triggers A11Y_001
         );
 
         var findings = AccessibilityScanner.Scan(tree);
@@ -299,7 +299,7 @@ public class AccessibilityScannerTests
         Assert.NotNull(iconBtnFinding);
         // The scanner should report the child content type
         Assert.NotNull(iconBtnFinding!.Context.ChildTypes);
-        Assert.Contains("TextElement", iconBtnFinding.Context.ChildTypes!);
+        Assert.Contains("TextBlockElement", iconBtnFinding.Context.ChildTypes!);
     }
 
     // ════════════════════════════════════════════════════════════════

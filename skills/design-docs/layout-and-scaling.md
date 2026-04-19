@@ -9,14 +9,14 @@ Odd values (3, 5, 7, 11, 15) cause blurry rendering at fractional DPI scales (12
 ```csharp
 // Correct: multiples of 4
 VStack(8,
-    Text("Item 1"),
-    Text("Item 2")
+    TextBlock("Item 1"),
+    TextBlock("Item 2")
 ).Padding(16).Margin(12)
 
 // Wrong: odd values
 VStack(5,
-    Text("Item 1"),
-    Text("Item 2")
+    TextBlock("Item 1"),
+    TextBlock("Item 2")
 ).Padding(15).Margin(7)
 ```
 
@@ -56,14 +56,14 @@ Linear vertical or horizontal layout with optional spacing.
 ```csharp
 VStack(8,
     Heading("Title"),
-    Text("Description"),
+    TextBlock("Description"),
     Button("Action", onClick)
 )
 
 HStack(12,
     Image(icon).Size(24, 24),
-    Text("Label"),
-    Text("Value").Foreground(Theme.SecondaryText)
+    TextBlock("Label"),
+    TextBlock("Value").Foreground(Theme.SecondaryText)
 )
 ```
 
@@ -76,7 +76,7 @@ Grid(
     columns: ["Auto", "*", "Auto"],
     rows: ["Auto", "*"],
     
-    Text("Label").Grid(row: 0, column: 0),
+    TextBlock("Label").Grid(row: 0, column: 0),
     TextField(value, setValue).Grid(row: 0, column: 1),
     Button("Go", onClick).Grid(row: 0, column: 2),
     
@@ -98,7 +98,7 @@ Modern flexible layout via Yoga engine. Best for proportional, wrapping, and com
 ```csharp
 // Responsive row with grow
 Flex(
-    Text("Fixed").Flex(shrink: 0, basis: 100),
+    TextBlock("Fixed").Flex(shrink: 0, basis: 100),
     Border(child).Flex(grow: 1),
     Button("Action").Flex(shrink: 0)
 ) with
@@ -129,12 +129,12 @@ For a single child with background, border, padding, or corner radius.
 ```csharp
 // Correct: Border for styled single-child container
 Border(
-    Text("Card content")
+    TextBlock("Card content")
 ).Padding(16).CornerRadius(4).Background(Theme.CardBackground)
 
 // Wrong: Grid or VStack for single child
 Grid(["*"], ["*"],
-    Text("Card content")
+    TextBlock("Card content")
 ).Background(Theme.CardBackground)
 ```
 
@@ -196,25 +196,25 @@ Fixed height clips text at larger text scaling settings:
 
 ```csharp
 // Correct
-Border(Text(message)).MinHeight(40).Padding(8)
+Border(TextBlock(message)).MinHeight(40).Padding(8)
 
 // Wrong
-Border(Text(message)).Height(40)  // Clips at 200% text scale
+Border(TextBlock(message)).Height(40)  // Clips at 200% text scale
 ```
 
 ## Alignment
 
 ```csharp
 // Horizontal alignment
-Text("Centered").HAlign(HorizontalAlignment.Center)
+TextBlock("Centered").HAlign(HorizontalAlignment.Center)
 Button("Right").HAlign(HorizontalAlignment.Right)
-Text("Stretch").HAlign(HorizontalAlignment.Stretch)
+TextBlock("Stretch").HAlign(HorizontalAlignment.Stretch)
 
 // Vertical alignment
-Text("Middle").VAlign(VerticalAlignment.Center)
+TextBlock("Middle").VAlign(VerticalAlignment.Center)
 
 // Center both axes
-Text("Centered").Center()
+TextBlock("Centered").Center()
 ```
 
 ### Mixed-Control Rows
@@ -224,7 +224,7 @@ When placing different controls side by side (e.g., toggle + text), vertically c
 ```csharp
 HStack(8,
     ToggleSwitch(isOn, setOn).VAlign(VerticalAlignment.Center),
-    Text("Enable feature").VAlign(VerticalAlignment.Center))
+    TextBlock("Enable feature").VAlign(VerticalAlignment.Center))
 ```
 
 ## Spacing
@@ -233,13 +233,13 @@ Use container spacing, not spacer elements:
 
 ```csharp
 // Correct: spacing parameter
-VStack(8, Text("A"), Text("B"), Text("C"))
+VStack(8, TextBlock("A"), TextBlock("B"), TextBlock("C"))
 
 // Wrong: spacer element
 VStack(
-    Text("A"),
+    TextBlock("A"),
     Border(null).Height(8).Opacity(0),
-    Text("B"))
+    TextBlock("B"))
 ```
 
 For Grid, use row/column spacing via `.Set()`:
@@ -282,7 +282,7 @@ Grid(
     columns: ["Auto", "*"],
     rows: ["Auto"],
     Image(avatar).Size(32, 32).Grid(column: 0),
-    Text(title)
+    TextBlock(title)
         .TextTrimming(TextTrimming.CharacterEllipsis)
         .ToolTip(title)  // Show full text on hover when trimmed
         .Grid(column: 1))
@@ -290,7 +290,7 @@ Grid(
 // Wrong: TextTrimming never fires in HStack
 HStack(8,
     Image(avatar).Size(32, 32),
-    Text(title).TextTrimming(TextTrimming.CharacterEllipsis))
+    TextBlock(title).TextTrimming(TextTrimming.CharacterEllipsis))
 ```
 
 **Important:** `Grid` column `"Auto"` also sizes to content and prevents trimming — always use `"*"` for the column that contains trimmable text. This is a common mistake when multiple columns are present.
@@ -302,10 +302,10 @@ Remove wrapper containers (`Border`, `Grid`, `VStack`) that exist only for nesti
 ```csharp
 // Wrong: Grid wrapper serves no purpose
 Grid(["*"], ["*"],
-    Text("Hello").Grid(row: 0, column: 0))
+    TextBlock("Hello").Grid(row: 0, column: 0))
 
 // Correct: just the text
-Text("Hello")
+TextBlock("Hello")
 ```
 
 ## BiDi / RTL Support
@@ -313,7 +313,7 @@ Text("Hello")
 Use logical margin and padding for bidirectional layouts:
 
 ```csharp
-Text("Label")
+TextBlock("Label")
     .MarginInlineStart(16)   // Left in LTR, right in RTL
     .PaddingInlineEnd(8)     // Right in LTR, left in RTL
 ```

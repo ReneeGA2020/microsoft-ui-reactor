@@ -22,25 +22,25 @@ class ContextDemo : Component
 
         return ScrollView(VStack(16,
             Heading("Context System"),
-            Factories.Text("Context passes values through the tree without prop drilling."),
+            TextBlock("Context passes values through the tree without prop drilling."),
 
             // 1. Controls
             SubHeading("1. Provide context values"),
             HStack(8,
-                Factories.Text("Accent color:"),
+                TextBlock("Accent color:"),
                 Button("Blue", () => setAccent("#0078D4")).Disabled(accent == "#0078D4"),
                 Button("Red", () => setAccent("#E74C3C")).Disabled(accent == "#E74C3C"),
                 Button("Green", () => setAccent("#50C878")).Disabled(accent == "#50C878"),
                 Border(Empty()).Background(accent).CornerRadius(4).Size(24, 24)
             ),
             HStack(8,
-                Factories.Text("User name:"),
+                TextBlock("User name:"),
                 TextField(userName, setUserName, placeholder: "Enter name").Width(200)
             ),
 
             // 2. Consumers
             SubHeading("2. Consume in descendants"),
-            Factories.Text("These components call UseContext() — no props passed from parent."),
+            TextBlock("These components call UseContext() — no props passed from parent."),
             VStack(8,
                 Component<AccentBadge>(),
                 Component<UserGreeting>()
@@ -48,21 +48,21 @@ class ContextDemo : Component
 
             // 3. Nested override
             SubHeading("3. Nested provider overrides outer"),
-            Factories.Text("An inner .Provide() shadows the outer for its subtree only."),
+            TextBlock("An inner .Provide() shadows the outer for its subtree only."),
             HStack(16,
                 VStack(8,
-                    Factories.Text("Outer scope").SemiBold(),
+                    TextBlock("Outer scope").SemiBold(),
                     Component<AccentBadge>()
                 ).Provide(AccentContext, accent).Provide(UserNameContext, userName),
                 VStack(8,
-                    Factories.Text("Inner scope (forced purple)").SemiBold(),
+                    TextBlock("Inner scope (forced purple)").SemiBold(),
                     Component<AccentBadge>()
                 ).Provide(AccentContext, "#9B59B6").Provide(UserNameContext, userName)
             ),
 
             // 4. Default value
             SubHeading("4. Default value (no provider)"),
-            Factories.Text("Without a .Provide() ancestor, UseContext returns the Context default."),
+            TextBlock("Without a .Provide() ancestor, UseContext returns the Context default."),
             Component<AccentBadge>()
         ));
     }
@@ -74,7 +74,7 @@ class ContextDemo : Component
             var accent = UseContext(AccentContext);
             return HStack(8,
                 Border(Empty()).Background(accent).CornerRadius(4).Size(24, 24),
-                Factories.Text($"Accent = {accent}").SemiBold()
+                TextBlock($"Accent = {accent}").SemiBold()
             );
         }
     }
@@ -86,7 +86,7 @@ class ContextDemo : Component
             var accent = UseContext(AccentContext);
             var name = UseContext(UserNameContext);
             return Border(
-                Factories.Text($"Hello, {name}!").Foreground(accent).SemiBold().FontSize(18)
+                TextBlock($"Hello, {name}!").Foreground(accent).SemiBold().FontSize(18)
             ).Padding(12).CornerRadius(6).Background(SubtleFill);
         }
     }

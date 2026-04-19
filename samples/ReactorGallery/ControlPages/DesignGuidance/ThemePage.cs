@@ -15,14 +15,14 @@ class ThemePage : Component
 
         Element preview = Border(
             VStack(12,
-                Factories.Text("Theme Preview").Foreground(Theme.PrimaryText).Bold().FontSize(16),
-                Factories.Text("This card adapts to the current theme.")
+                TextBlock("Theme Preview").Foreground(Theme.PrimaryText).Bold().FontSize(16),
+                TextBlock("This card adapts to the current theme.")
                     .Foreground(Theme.SecondaryText),
                 HStack(8,
                     Button("Primary Action"),
                     Button("Secondary").Background(Theme.SubtleFill)
                 ),
-                Border(Factories.Text("Nested card").Margin(8).Foreground(Theme.PrimaryText))
+                Border(TextBlock("Nested card").Margin(8).Foreground(Theme.PrimaryText))
                     .Background(Theme.LayerFill)
                     .WithBorder(Theme.SurfaceStroke)
                     .CornerRadius(4)
@@ -57,13 +57,13 @@ Border(content)
                     VStack(8,
                         HStack(8,
                             Border(VStack()).Background(Theme.Accent).Width(24).Height(24).CornerRadius(4),
-                            Factories.Text("Theme.Accent — brand accent color").Foreground(Theme.PrimaryText).FontSize(13)),
+                            TextBlock("Theme.Accent — brand accent color").Foreground(Theme.PrimaryText).FontSize(13)),
                         HStack(8,
                             Border(VStack()).Background(Theme.CardBackground).WithBorder(Theme.CardStroke).Width(24).Height(24).CornerRadius(4),
-                            Factories.Text("Theme.CardBackground — card surfaces").Foreground(Theme.PrimaryText).FontSize(13)),
+                            TextBlock("Theme.CardBackground — card surfaces").Foreground(Theme.PrimaryText).FontSize(13)),
                         HStack(8,
                             Border(VStack()).Background(Theme.SubtleFill).WithBorder(Theme.SurfaceStroke).Width(24).Height(24).CornerRadius(4),
-                            Factories.Text("Theme.SubtleFill — subtle backgrounds").Foreground(Theme.PrimaryText).FontSize(13))
+                            TextBlock("Theme.SubtleFill — subtle backgrounds").Foreground(Theme.PrimaryText).FontSize(13))
                     ),
                     @"Theme.Accent, Theme.CardBackground,
 Theme.SubtleFill, Theme.SolidBackground")

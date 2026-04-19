@@ -101,15 +101,15 @@ public static class D3Dsl
     // ── Text ────────────────────────────────────────────────────────────
 
     /// <summary>Creates a positioned text label on a Canvas.</summary>
-    public static TextElement Text(double x, double y, string text, double fontSize = 10, Brush? foreground = null) =>
-        Factories.Text(text)
+    public static TextBlockElement Text(double x, double y, string text, double fontSize = 10, Brush? foreground = null) =>
+        TextBlock(text)
             .FontSize(fontSize)
             .Foreground(foreground ?? Gray(100))
             .Canvas(x, y);
 
     /// <summary>Creates a positioned text label with right alignment and explicit width (for Y axis labels).</summary>
-    public static TextElement TextRight(double x, double y, string text, double width, double fontSize = 10, Brush? foreground = null) =>
-        Factories.Text(text)
+    public static TextBlockElement TextRight(double x, double y, string text, double width, double fontSize = 10, Brush? foreground = null) =>
+        TextBlock(text)
             .FontSize(fontSize)
             .Foreground(foreground ?? Gray(100))
             .Width(width)
@@ -117,8 +117,8 @@ public static class D3Dsl
             .Canvas(x, y);
 
     /// <summary>Creates a positioned text label with center alignment and explicit width.</summary>
-    public static TextElement TextCenter(double x, double y, string text, double width, double fontSize = 10, Brush? foreground = null) =>
-        Factories.Text(text)
+    public static TextBlockElement TextCenter(double x, double y, string text, double width, double fontSize = 10, Brush? foreground = null) =>
+        TextBlock(text)
             .FontSize(fontSize)
             .Foreground(foreground ?? Gray(100))
             .Width(width)

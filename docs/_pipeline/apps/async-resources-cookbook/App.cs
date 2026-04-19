@@ -85,12 +85,12 @@ class BeforeUseResourceExample : Component
             return () => cts.Cancel();
         }, 42);
 
-        if (loading) return (Element)Text("Loading…").Padding(24);
-        if (error is not null) return (Element)Text($"Error: {error.Message}").Padding(24);
+        if (loading) return (Element)TextBlock("Loading…").Padding(24);
+        if (error is not null) return (Element)TextBlock($"Error: {error.Message}").Padding(24);
         return VStack(4,
             Heading("Before: manual plumbing").FontSize(14),
-            Text(data?.Name ?? "(none)").FontSize(20).Bold(),
-            Text(data?.Role ?? "").Opacity(0.6)
+            TextBlock(data?.Name ?? "(none)").FontSize(20).Bold(),
+            TextBlock(data?.Role ?? "").Opacity(0.6)
         ).Padding(24);
     }
 }
@@ -106,13 +106,13 @@ class AfterUseResourceExample : Component
             deps: new object[] { 42 });
 
         return user.Match<Element>(
-            loading: () => Text("Loading…").Padding(24),
+            loading: () => TextBlock("Loading…").Padding(24),
             data: u => VStack(4,
                 Heading("After: one hook").FontSize(14),
-                Text(u.Name).FontSize(20).Bold(),
-                Text(u.Role).Opacity(0.6)
+                TextBlock(u.Name).FontSize(20).Bold(),
+                TextBlock(u.Role).Opacity(0.6)
             ).Padding(24),
-            error: ex => Text($"Error: {ex.Message}").Padding(24));
+            error: ex => TextBlock($"Error: {ex.Message}").Padding(24));
     }
 }
 // </snippet:after-useresource>
@@ -140,8 +140,8 @@ class InfiniteScrollExample : Component
                     {
                         var commit = commits.ItemAt(i);
                         return commit is null
-                            ? Text("…").Opacity(0.4).Padding(4)
-                            : Text($"{commit.Sha} — {commit.Message}").Padding(4);
+                            ? TextBlock("…").Opacity(0.4).Padding(4)
+                            : TextBlock($"{commit.Sha} — {commit.Message}").Padding(4);
                     })
                     .ToArray())
         ).Padding(24);
@@ -170,7 +170,7 @@ class UseMutationExample : Component
         return VStack(8,
             Heading($"Todos ({todos.Count})").FontSize(14),
             VStack(2, todos.Select(t =>
-                Text(t.Title + (t.IsTemporary ? " (saving…)" : ""))
+                TextBlock(t.Title + (t.IsTemporary ? " (saving…)" : ""))
                     .Opacity(t.IsTemporary ? 0.5 : 1.0)).ToArray()),
             Button("Add Todo",
                 () => _ = mutation.RunAsync(new DemoApi.TodoInput($"Item {todos.Count + 1}")))
@@ -185,7 +185,7 @@ class PendingFallbackExample : Component
     public override Element Render()
     {
         return PendingFactory.Pending(
-            fallback: Text("Loading dashboard…").Opacity(0.5).Padding(24),
+            fallback: TextBlock("Loading dashboard…").Opacity(0.5).Padding(24),
             child: VStack(8,
                 Heading("Dashboard").FontSize(14),
                 Component<UserHeader>(),
@@ -202,9 +202,9 @@ class PendingFallbackExample : Component
                 ct => DemoApi.GetUserAsync(1, ct),
                 deps: new object[] { "user-1" });
             return user.Match<Element>(
-                loading: () => Text("• user loading…").Opacity(0.5),
-                data: u => Text($"• {u.Name} ({u.Role})"),
-                error: ex => Text($"• error: {ex.Message}"));
+                loading: () => TextBlock("• user loading…").Opacity(0.5),
+                data: u => TextBlock($"• {u.Name} ({u.Role})"),
+                error: ex => TextBlock($"• error: {ex.Message}"));
         }
     }
 
@@ -219,7 +219,7 @@ class PendingFallbackExample : Component
                     return new Page<DemoApi.Commit, string>(items, next, total);
                 },
                 deps: new object[] { "feed" });
-            return Text($"• {feed.Items.Count} recent items");
+            return TextBlock($"• {feed.Items.Count} recent items");
         }
     }
 
@@ -231,9 +231,9 @@ class PendingFallbackExample : Component
                 ct => DemoApi.GetUserAsync(99, ct),
                 deps: new object[] { "stats" });
             return user.Match(
-                loading: () => Text("• stats loading…").Opacity(0.5),
-                data: _ => Text("• stats ready"),
-                error: ex => Text($"• error: {ex.Message}"));
+                loading: () => TextBlock("• stats loading…").Opacity(0.5),
+                data: _ => TextBlock("• stats ready"),
+                error: ex => TextBlock($"• error: {ex.Message}"));
         }
     }
 }

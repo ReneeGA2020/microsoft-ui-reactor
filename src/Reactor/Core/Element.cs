@@ -154,10 +154,10 @@ public abstract record Element
     }
 
     /// <summary>
-    /// Convenience: implicitly convert a string to a TextElement.
+    /// Convenience: implicitly convert a string to a TextBlockElement.
     /// Allows writing: VStack("Hello", "World") instead of VStack(Text("Hello"), Text("World"))
     /// </summary>
-    public static implicit operator Element(string text) => new TextElement(text);
+    public static implicit operator Element(string text) => new TextBlockElement(text);
 
     // ════════════════════════════════════════════════════════════════════════
     //  Fast structural comparison for reconciler short-circuit
@@ -190,7 +190,7 @@ public abstract record Element
 
         return (a, b) switch
         {
-            (TextElement ta, TextElement tb) =>
+            (TextBlockElement ta, TextBlockElement tb) =>
                 ta.Content == tb.Content
                 && ta.FontSize == tb.FontSize
                 && ta.Weight == tb.Weight
@@ -902,7 +902,7 @@ public record CommandHostElement(Command[] Commands, Element Child) : Element;
 //  Text elements
 // ════════════════════════════════════════════════════════════════════════
 
-public record TextElement(string Content) : Element
+public record TextBlockElement(string Content) : Element
 {
     public double? FontSize { get; init; }
     public FontWeight? Weight { get; init; }
@@ -916,10 +916,10 @@ public record TextElement(string Content) : Element
     internal Action<WinUI.TextBlock>[] Setters { get; init; } = [];
 
     /// <summary>
-    /// EXP-2: Bitmask diff — compare two TextElement instances (pure C#, no COM interop)
+    /// EXP-2: Bitmask diff — compare two TextBlockElement instances (pure C#, no COM interop)
     /// and return which properties actually changed. Callers only touch WinUI for set bits.
     /// </summary>
-    internal static TextPropChanged DiffProps(TextElement old, TextElement cur)
+    internal static TextPropChanged DiffProps(TextBlockElement old, TextBlockElement cur)
     {
         var diff = TextPropChanged.None;
         if (old.Content != cur.Content) diff |= TextPropChanged.Content;

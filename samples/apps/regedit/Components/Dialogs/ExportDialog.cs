@@ -22,7 +22,7 @@ internal sealed class ExportDialog : Component<ExportDialogProps>
             Strings.ExportTitle,
             VStack(12,
                 VStack(4,
-                    Factories.Text(Strings.ExportRange),
+                    TextBlock(Strings.ExportRange),
                     RadioButton(Strings.All,
                         Props.ExportAll,
                         _ => Props.OnExportAllChanged(true),

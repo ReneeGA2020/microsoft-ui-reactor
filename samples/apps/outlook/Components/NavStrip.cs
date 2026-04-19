@@ -34,10 +34,10 @@ internal sealed class NavStrip : Component<NavStripProps>
 
         return Button(
             VStack(0,
-                Factories.Text(icon).FontSize(16).Foreground(fg)
+                TextBlock(icon).FontSize(16).Foreground(fg)
                     .Set(t => t.FontFamily = new FontFamily("Segoe MDL2 Assets"))
                     .HAlign(HorizontalAlignment.Center),
-                Factories.Text(label).FontSize(10).Foreground(fg)
+                TextBlock(label).FontSize(10).Foreground(fg)
                     .HAlign(HorizontalAlignment.Center)
             ).Padding(6, 3, 6, 3),
             () => Props.OnViewChanged(view)

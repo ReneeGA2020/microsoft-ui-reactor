@@ -197,7 +197,7 @@ public class NavigationViewSyncTests
     {
         var stack = new NavigationStack<Route>(new Home());
         var nav = new NavigationHandle<Route>(stack);
-        var content = Factories.Text("Content");
+        var content = TextBlock("Content");
         var items = new[] { NavItem("Home", tag: "home") };
 
         var el = NavigationView(items, content)

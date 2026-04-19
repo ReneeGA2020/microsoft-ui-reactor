@@ -176,7 +176,7 @@ internal static class CoreCoverageFixtures
                         if (l.Count > 0) l[0] = "Changed";
                         setItems(l);
                     }),
-                    GridView<string>(items, x => x, (item, idx) => Factories.Text(item))
+                    GridView<string>(items, x => x, (item, idx) => TextBlock(item))
                 );
             });
 
@@ -227,7 +227,7 @@ internal static class CoreCoverageFixtures
                         if (l.Count > 0) l[0] = "Edited";
                         setItems(l);
                     }),
-                    FlipView<string>(items, x => x, (item, idx) => Factories.Text(item))
+                    FlipView<string>(items, x => x, (item, idx) => TextBlock(item))
                 );
             });
 
@@ -274,7 +274,7 @@ internal static class CoreCoverageFixtures
                     Button("MoreItems", () => setItems(
                         Enumerable.Range(0, 30).Select(i => $"Item {i}").ToList())),
                     LazyVStack<string>(items, x => x, (item, idx) =>
-                        Factories.Text(item).Height(30))
+                        TextBlock(item).Height(30))
                 ).Height(400);
             });
 
@@ -306,8 +306,8 @@ internal static class CoreCoverageFixtures
             {
                 // Mount a closed ContentDialog — it creates a collapsed placeholder
                 return VStack(
-                    Factories.Text("Main content"),
-                    ContentDialog("Test Dialog", Factories.Text("Dialog body"), "OK")
+                    TextBlock("Main content"),
+                    ContentDialog("Test Dialog", TextBlock("Dialog body"), "OK")
                 );
             });
 
@@ -377,7 +377,7 @@ internal static class CoreCoverageFixtures
                 };
                 return CommandHost([saveCmd],
                     VStack(
-                        Factories.Text(label),
+                        TextBlock(label),
                         Button("Trigger", () => setLabel("Updated"))
                     )
                 );
@@ -470,18 +470,18 @@ internal static class CoreCoverageFixtures
                 {
                     return VStack(
                         Button("ChangeTheme", () => set(1)),
-                        Factories.Text("Themed text").Foreground(Theme.PrimaryText),
+                        TextBlock("Themed text").Foreground(Theme.PrimaryText),
                         Button("Themed btn", () => { }).Background(Theme.Accent),
-                        Border(Factories.Text("inner")).Background(Theme.CardBackground)
+                        Border(TextBlock("inner")).Background(Theme.CardBackground)
                     );
                 }
                 else
                 {
                     return VStack(
                         Button("ChangeTheme", () => set(2)),
-                        Factories.Text("Themed text").Foreground(Theme.SecondaryText),
+                        TextBlock("Themed text").Foreground(Theme.SecondaryText),
                         Button("Themed btn", () => { }).Background(Theme.AccentSecondary),
-                        Border(Factories.Text("inner")).Background(Theme.SubtleFill)
+                        Border(TextBlock("inner")).Background(Theme.SubtleFill)
                     );
                 }
             });
@@ -556,7 +556,7 @@ internal static class CoreCoverageFixtures
                 {
                     return VStack(
                         Button("UpdateA11y", () => set(1)),
-                        Factories.Text("Accessible")
+                        TextBlock("Accessible")
                             .AutomationName("test-text")
                             .HelpText("This is help text")
                             .FullDescription("Full description of the element")
@@ -567,7 +567,7 @@ internal static class CoreCoverageFixtures
                 {
                     return VStack(
                         Button("UpdateA11y", () => set(2)),
-                        Factories.Text("Accessible")
+                        TextBlock("Accessible")
                             .AutomationName("test-text-updated")
                             .HelpText("Updated help text")
                             .FullDescription("Updated description")
@@ -618,7 +618,7 @@ internal static class CoreCoverageFixtures
             var wrapped = UseCommand(asyncCmd);
 
             return VStack(
-                Factories.Text(wrapped.IsExecuting ? "Executing" : "Idle"),
+                TextBlock(wrapped.IsExecuting ? "Executing" : "Idle"),
                 Button("RunAsync", () => wrapped.Execute?.Invoke())
             );
         }
@@ -663,7 +663,7 @@ internal static class CoreCoverageFixtures
             var wrapped = UseCommand(typedCmd);
 
             return VStack(
-                Factories.Text($"Result: {result}"),
+                TextBlock($"Result: {result}"),
                 Button("RunTyped", () => wrapped.Execute?.Invoke("hello"))
             );
         }
@@ -705,7 +705,7 @@ internal static class CoreCoverageFixtures
                     Button("Toggle", () => set(phase + 1)),
                     Flyout(
                         Button("WithFlyout", () => { }),
-                        phase == 0 ? Factories.Text("Flyout v1") : Factories.Text("Flyout v2")
+                        phase == 0 ? TextBlock("Flyout v1") : TextBlock("Flyout v2")
                     )
                 );
             });
@@ -734,8 +734,8 @@ internal static class CoreCoverageFixtures
             host.Mount(ctx =>
             {
                 var (phase, set) = ctx.UseState(0);
-                var zoomedIn = phase == 0 ? Factories.Text("Zoomed In v1") : Factories.Text("Zoomed In v2");
-                var zoomedOut = phase == 0 ? Factories.Text("Zoomed Out v1") : Factories.Text("Zoomed Out v2");
+                var zoomedIn = phase == 0 ? TextBlock("Zoomed In v1") : TextBlock("Zoomed In v2");
+                var zoomedOut = phase == 0 ? TextBlock("Zoomed Out v1") : TextBlock("Zoomed Out v2");
                 return VStack(
                     Button("UpdateZoom", () => set(1)),
                     SemanticZoom(zoomedIn, zoomedOut)
@@ -769,7 +769,7 @@ internal static class CoreCoverageFixtures
                 var (visible, setVisible) = ctx.UseState(true);
                 return VStack(
                     Button("ToggleVis", () => setVisible(!visible)),
-                    Factories.Text("Transitioning")
+                    TextBlock("Transitioning")
                         .Opacity(visible ? 1.0 : 0.3)
                         .OpacityTransition(TimeSpan.FromMilliseconds(200))
                         .ScaleTransition()
@@ -805,7 +805,7 @@ internal static class CoreCoverageFixtures
                     Button("AddChild", () => setCount(count + 1)),
                     VStack(
                         Enumerable.Range(0, count).Select(i =>
-                            Factories.Text($"Child {i}").WithKey($"c{i}")).ToArray()
+                            TextBlock($"Child {i}").WithKey($"c{i}")).ToArray()
                     ).WithTransitions(
                         new Microsoft.UI.Xaml.Media.Animation.EntranceThemeTransition())
                 );
@@ -841,7 +841,7 @@ internal static class CoreCoverageFixtures
                     Memo(memoCtx =>
                     {
                         renderCount++;
-                        return Factories.Text($"Memo count={count} renders={renderCount}");
+                        return TextBlock($"Memo count={count} renders={renderCount}");
                     }, count)
                 );
             });
@@ -875,7 +875,7 @@ internal static class CoreCoverageFixtures
             {
                 var (msg, setMsg) = ctx.UseState("None");
                 return VStack(
-                    Factories.Text(msg),
+                    TextBlock(msg),
                     // OnKeyDown is exposed on ElementModifiers; exercise it for coverage
                     Button("Hoverable", () => setMsg("Clicked"))
                         .OnKeyDown((s, e) => setMsg("KeyDown"))
@@ -973,7 +973,7 @@ internal static class CoreCoverageFixtures
             {
                 var items = Enumerable.Range(0, 15).Select(i => $"H{i}").ToList();
                 return LazyHStack<string>(items, x => x, (item, idx) =>
-                    Factories.Text(item).Width(80)).Height(60);
+                    TextBlock(item).Width(80)).Height(60);
             });
 
             await Harness.Render();
@@ -1004,7 +1004,7 @@ internal static class CoreCoverageFixtures
             // Sync-only: UseCommand returns unchanged
             var wrapped = UseCommand(syncCmd);
             return VStack(
-                Factories.Text(label),
+                TextBlock(label),
                 Button("RunSync", () => wrapped.Execute?.Invoke())
             );
         }
@@ -1042,7 +1042,7 @@ internal static class CoreCoverageFixtures
                 var items = new[] { NavItem("Home", tag: "home"), NavItem("Settings", tag: "settings") };
                 return VStack(
                     Button("SwitchPage", () => setPage(page == 0 ? 1 : 0)),
-                    new NavigationViewElement(items, page == 0 ? Factories.Text("Home Page") : Factories.Text("Settings Page"))
+                    new NavigationViewElement(items, page == 0 ? TextBlock("Home Page") : TextBlock("Settings Page"))
                     {
                         SelectedTag = page == 0 ? "home" : "settings",
                     }
@@ -1077,8 +1077,8 @@ internal static class CoreCoverageFixtures
                 return VStack(
                     Button("UpdateRP", () => set(1)),
                     RelativePanel(
-                        phase == 0 ? Factories.Text("Left") : Factories.Text("Right"),
-                        Factories.Text("Center")
+                        phase == 0 ? TextBlock("Left") : TextBlock("Right"),
+                        TextBlock("Center")
                     )
                 );
             });
@@ -1108,7 +1108,7 @@ internal static class CoreCoverageFixtures
                 var (trigger, setTrigger) = ctx.UseState(0);
                 return VStack(
                     Button("Animate", () => setTrigger(trigger + 1)),
-                    Factories.Text("Animated")
+                    TextBlock("Animated")
                         .Keyframes("pulse", trigger, kf => kf
                             .Duration(300)
                             .At(0f, opacity: 0.5f, scale: new global::System.Numerics.Vector3(0.8f, 0.8f, 1f))
@@ -1143,7 +1143,7 @@ internal static class CoreCoverageFixtures
             host.Mount(ctx =>
             {
                 return SwipeControl(
-                    Factories.Text("Swipeable item"),
+                    TextBlock("Swipeable item"),
                     leftItems: [new SwipeItemData("Delete")],
                     rightItems: [new SwipeItemData("Archive")]
                 );
@@ -1221,17 +1221,17 @@ internal static class CoreCoverageFixtures
                 // GetStyleTargetType branches
                 return VStack(
                     // TextBlock target
-                    Factories.Text("ThemeText").Foreground(Theme.PrimaryText),
+                    TextBlock("ThemeText").Foreground(Theme.PrimaryText),
                     // Button target
                     Button("ThemeBtn", () => { }).Background(Theme.Accent).Foreground(Theme.PrimaryText),
                     // Border target
-                    Border(Factories.Text("inner"))
+                    Border(TextBlock("inner"))
                         .Background(Theme.CardBackground)
                         .WithBorder(Theme.CardStroke),
                     // Grid target
-                    Grid(["*"], ["*"], Factories.Text("grid cell")).Background(Theme.SubtleFill),
+                    Grid(["*"], ["*"], TextBlock("grid cell")).Background(Theme.SubtleFill),
                     // StackPanel target
-                    VStack(Factories.Text("stack")).Background(Theme.LayerFill)
+                    VStack(TextBlock("stack")).Background(Theme.LayerFill)
                 );
             });
 
@@ -1260,8 +1260,8 @@ internal static class CoreCoverageFixtures
             host.Mount(ctx =>
             {
                 return VStack(
-                    Popup(Factories.Text("Popup content"), isOpen: false),
-                    RefreshContainer(Factories.Text("Pull to refresh"))
+                    Popup(TextBlock("Popup content"), isOpen: false),
+                    RefreshContainer(TextBlock("Pull to refresh"))
                 );
             });
 
@@ -1302,7 +1302,7 @@ internal static class CoreCoverageFixtures
             var (count, setCount) = UseState(0);
             return VStack(
                 Button("BumpCtx", () => setCount(count + 1)),
-                Factories.Text($"Context: {count}")
+                TextBlock($"Context: {count}")
             ).Provide(ContextProviderKey, count);
         }
 
@@ -1314,7 +1314,7 @@ internal static class CoreCoverageFixtures
         public override Element Render()
         {
             var value = UseContext(ContextProviderComponent.ContextProviderKey);
-            return Factories.Text($"Consumed: {value}");
+            return TextBlock($"Consumed: {value}");
         }
     }
 
@@ -1356,11 +1356,11 @@ internal static class CoreCoverageFixtures
                 var (phase, set) = ctx.UseState(0);
                 Element[] children = phase switch
                 {
-                    0 => [Factories.Text("A").WithKey("a"), Factories.Text("B").WithKey("b"), Factories.Text("C").WithKey("c")],
-                    1 => [Factories.Text("A").WithKey("a"), Factories.Text("D").WithKey("d"), Factories.Text("B").WithKey("b"),
-                          Factories.Text("E").WithKey("e"), Factories.Text("C").WithKey("c")],
-                    2 => [Factories.Text("E").WithKey("e"), Factories.Text("C").WithKey("c")],
-                    _ => [Factories.Text("X").WithKey("x")],
+                    0 => [TextBlock("A").WithKey("a"), TextBlock("B").WithKey("b"), TextBlock("C").WithKey("c")],
+                    1 => [TextBlock("A").WithKey("a"), TextBlock("D").WithKey("d"), TextBlock("B").WithKey("b"),
+                          TextBlock("E").WithKey("e"), TextBlock("C").WithKey("c")],
+                    2 => [TextBlock("E").WithKey("e"), TextBlock("C").WithKey("c")],
+                    _ => [TextBlock("X").WithKey("x")],
                 };
                 return VStack(
                     Button("Phase", () => set(phase + 1)),
@@ -1403,7 +1403,7 @@ internal static class CoreCoverageFixtures
                     // ContentFlyout attached via modifier
                     Button("WithContentFlyout", () => { })
                         .WithFlyout(ContentFlyout(
-                            phase == 0 ? Factories.Text("Flyout V1") : Factories.Text("Flyout V2"))),
+                            phase == 0 ? TextBlock("Flyout V1") : TextBlock("Flyout V2"))),
                     // MenuItems attached via modifier
                     Button("WithMenuFlyout", () => { })
                         .WithFlyout(MenuItems(
@@ -1474,7 +1474,7 @@ internal static class CoreCoverageFixtures
                 var (phase, set) = ctx.UseState(0);
                 return VStack(
                     Button("UpdateMods", () => set(1)),
-                    Factories.Text("Scaled")
+                    TextBlock("Scaled")
                         .Scale(phase == 0 ? 1.0f : 1.5f)
                         .Rotation(phase == 0 ? 0f : 45f)
                         .FontFamily("Segoe UI")
@@ -1502,7 +1502,7 @@ internal static class CoreCoverageFixtures
         {
             var scheme = UseColorScheme();
             var isDark = UseIsDarkTheme();
-            return Factories.Text($"Scheme: {scheme}, Dark: {isDark}");
+            return TextBlock($"Scheme: {scheme}, Dark: {isDark}");
         }
     }
 
@@ -1541,7 +1541,7 @@ internal static class CoreCoverageFixtures
         public override Element Render()
         {
             UseObservable(Model);
-            return Factories.Text($"Observed: {Model.Name}");
+            return TextBlock($"Observed: {Model.Name}");
         }
     }
 
@@ -1571,7 +1571,7 @@ internal static class CoreCoverageFixtures
     private class ConditionalThrowComponent : Component<bool>
     {
         public override Element Render() =>
-            Props ? throw new InvalidOperationException("Boom") : Factories.Text("Healthy");
+            Props ? throw new InvalidOperationException("Boom") : TextBlock("Healthy");
     }
 
     internal class ErrorBoundaryUpdate(Harness h) : SelfTestFixtureBase(h)
@@ -1586,7 +1586,7 @@ internal static class CoreCoverageFixtures
                     Button("TriggerError", () => setShouldThrow(true)),
                     ErrorBoundary(
                         Component<ConditionalThrowComponent, bool>(shouldThrow),
-                        ex => Factories.Text($"Caught: {ex.Message}")
+                        ex => TextBlock($"Caught: {ex.Message}")
                     )
                 );
             });
@@ -1615,7 +1615,7 @@ internal static class CoreCoverageFixtures
                 var (phase, set) = ctx.UseState(0);
                 return VStack(
                     Button("UpdateExp", () => set(1)),
-                    Expander("Header", phase == 0 ? Factories.Text("Body V1") : VStack(Factories.Text("Body V2"), Factories.Text("Extra")), isExpanded: true)
+                    Expander("Header", phase == 0 ? TextBlock("Body V1") : VStack(TextBlock("Body V2"), TextBlock("Extra")), isExpanded: true)
                 );
             });
 
@@ -1646,8 +1646,8 @@ internal static class CoreCoverageFixtures
                     Button("MoveItem", () => set(1)),
                     Canvas(
                         phase == 0
-                            ? Factories.Text("Positioned").Canvas(left: 10, top: 20)
-                            : Factories.Text("Positioned").Canvas(left: 50, top: 60)
+                            ? TextBlock("Positioned").Canvas(left: 10, top: 20)
+                            : TextBlock("Positioned").Canvas(left: 50, top: 60)
                     ).Width(200).Height(200)
                 );
             });

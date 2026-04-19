@@ -23,14 +23,14 @@ class ContentDialogPage : Component
                 SampleCard("Basic Dialog",
                     VStack(8,
                         Button("Show Dialog", () => setShowBasic(true)),
-                        ContentDialog("Welcome", Factories.Text("Thank you for using this app!"), "OK") with
+                        ContentDialog("Welcome", TextBlock("Thank you for using this app!"), "OK") with
                         {
                             IsOpen = showBasic,
                             OnClosed = _ => setShowBasic(false),
                         }
                     ),
                     @"Button(""Show Dialog"", () => setShow(true)),
-ContentDialog(""Welcome"", Factories.Text(""Thank you!""), ""OK"") with {
+ContentDialog(""Welcome"", TextBlock(""Thank you!""), ""OK"") with {
     IsOpen = show,
     OnClosed = _ => setShow(false),
 }"),
@@ -38,9 +38,9 @@ ContentDialog(""Welcome"", Factories.Text(""Thank you!""), ""OK"") with {
                 SampleCard("Confirmation Dialog",
                     VStack(8,
                         Button("Delete Item", () => setShowConfirm(true)),
-                        Factories.Text($"Last result: {result}").Foreground(Theme.SecondaryText),
+                        TextBlock($"Last result: {result}").Foreground(Theme.SecondaryText),
                         ContentDialog("Confirm Delete",
-                            Factories.Text("Are you sure you want to delete this item? This action cannot be undone."),
+                            TextBlock("Are you sure you want to delete this item? This action cannot be undone."),
                             "Delete") with
                         {
                             IsOpen = showConfirm,
@@ -53,7 +53,7 @@ ContentDialog(""Welcome"", Factories.Text(""Thank you!""), ""OK"") with {
                         }
                     ),
                     @"ContentDialog(""Confirm Delete"",
-    Factories.Text(""Are you sure?""), ""Delete"") with {
+    TextBlock(""Are you sure?""), ""Delete"") with {
     IsOpen = show,
     SecondaryButtonText = ""Cancel"",
     OnClosed = r => { setResult(r.ToString()); setShow(false); },

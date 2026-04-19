@@ -1,6 +1,7 @@
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Data;
 using Microsoft.UI.Reactor.Controls.Validation;
+using static Microsoft.UI.Reactor.Factories;
 
 namespace Microsoft.UI.Reactor.Controls.Validation;
 
@@ -70,11 +71,11 @@ public static class FormFieldDsl
             var meta = registry.Resolve(field.FieldType);
             content = meta.Editor is not null
                 ? meta.Editor(value, onChange)
-                : Microsoft.UI.Reactor.Factories.Text(value?.ToString() ?? "(null)");
+                : TextBlock(value?.ToString() ?? "(null)");
         }
         else
         {
-            content = Microsoft.UI.Reactor.Factories.Text(value?.ToString() ?? "(null)");
+            content = TextBlock(value?.ToString() ?? "(null)");
         }
 
         var label = field.DisplayName ?? field.Name;

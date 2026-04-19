@@ -22,7 +22,7 @@ class SplitButtonPage: Component
                     SplitButton("Send", () => setLastAction("Send clicked"), MenuItems(
                         MenuItem("Send now", () => setLastAction("Send now")),
                         MenuItem("Schedule", () => setLastAction("Schedule")))),
-                    Factories.Text($"Last action: {lastAction}").Foreground(Theme.SecondaryText)),
+                    TextBlock($"Last action: {lastAction}").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 SplitButton(""Send"", () => setLastAction(""Send clicked""), MenuItems(
     MenuItem(""Send now"", () => setLastAction(""Send now"")),
@@ -34,7 +34,7 @@ SplitButton(""Send"", () => setLastAction(""Send clicked""), MenuItems(
                     ToggleSplitButton("Bold", isToggled, v => setIsToggled(v), MenuItems(
                         MenuItem("Italic"),
                         MenuItem("Underline"))),
-                    Factories.Text($"Toggled: {isToggled}").Foreground(Theme.SecondaryText)),
+                    TextBlock($"Toggled: {isToggled}").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 ToggleSplitButton(""Bold"", isToggled, v => setIsToggled(v), MenuItems(
     MenuItem(""Italic""),

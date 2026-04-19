@@ -188,7 +188,7 @@ public class LocaleProviderTests
             var intl = UseIntl();
             LastLocale = intl.Locale;
             LastMessage = intl.Message(new MessageKey("Common", "Hello"));
-            return new TextElement(LastMessage ?? "");
+            return new TextBlockElement(LastMessage ?? "");
         }
     }
 }

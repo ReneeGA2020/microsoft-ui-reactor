@@ -19,7 +19,7 @@ internal static class ErrorBoundaryFixtures
     private class ConditionalThrowComponent : Component<bool>
     {
         public override Element Render() =>
-            Props ? throw new InvalidOperationException("Boom") : Factories.Text("Healthy");
+            Props ? throw new InvalidOperationException("Boom") : TextBlock("Healthy");
     }
 
     internal class CatchesRenderError(Harness h) : SelfTestFixtureBase(h)
@@ -32,8 +32,8 @@ internal static class ErrorBoundaryFixtures
                 return ErrorBoundary(
                     Component<ThrowingComponent>(),
                     ex => VStack(
-                        Factories.Text("Error caught!"),
-                        Factories.Text($"Message: {ex.Message}")
+                        TextBlock("Error caught!"),
+                        TextBlock($"Message: {ex.Message}")
                     )
                 );
             });
@@ -63,7 +63,7 @@ internal static class ErrorBoundaryFixtures
                 return VStack(
                     ErrorBoundary(
                         Component<ConditionalThrowComponent, bool>(shouldThrow),
-                        ex => Factories.Text("In error state")
+                        ex => TextBlock("In error state")
                     ),
                     Button("Recover", () => setShouldThrow(false))
                 );

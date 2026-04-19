@@ -32,7 +32,7 @@ internal static class EventHandlerFixtures
                     })
                     .AutomationId("TapBtn"),
 
-                Factories.Text($"Tap count: {tapCount}")
+                TextBlock($"Tap count: {tapCount}")
                     .AutomationId("TapCount")
             );
         }
@@ -55,7 +55,7 @@ internal static class EventHandlerFixtures
                     .AutomationId("SizeToggleBtn"),
 
                 Border(
-                    Factories.Text("Resizable area")
+                    TextBlock("Resizable area")
                 ).Width(expanded ? 400 : 200)
                  .Height(100)
                  .Background("#d0d0ff")
@@ -65,7 +65,7 @@ internal static class EventHandlerFixtures
                  })
                  .AutomationId("SizeTarget"),
 
-                Factories.Text($"Size: {sizeText}")
+                TextBlock($"Size: {sizeText}")
                     .AutomationId("SizeDisplay")
             );
         }
@@ -100,7 +100,7 @@ internal static class EventHandlerFixtures
                     .Height(100)
                     .AutomationId("PointerBtn"),
 
-                Factories.Text($"Press count: {pressCount}")
+                TextBlock($"Press count: {pressCount}")
                     .AutomationId("PressCount")
             );
         }
@@ -129,7 +129,7 @@ internal static class EventHandlerFixtures
                     })
                     .AutomationId("KeyInput"),
 
-                Factories.Text($"Last key: {lastKey}")
+                TextBlock($"Last key: {lastKey}")
                     .AutomationId("KeyDisplay")
             );
         }
@@ -190,7 +190,7 @@ internal static class EventHandlerFixtures
                 reducer, new TodoState(["Item 1"]));
 
             return VStack(8,
-                Factories.Text($"Count: {state.Items.Length}")
+                TextBlock($"Count: {state.Items.Length}")
                     .AutomationId("TodoCount"),
 
                 Button("Add", () => dispatch(new AddTodo($"Item {state.Items.Length + 1}")))
@@ -201,7 +201,7 @@ internal static class EventHandlerFixtures
 
                 VStack(4,
                     state.Items.Select((item, i) =>
-                        Factories.Text(item).AutomationId($"Todo_{i}")
+                        TextBlock(item).AutomationId($"Todo_{i}")
                     ).ToArray()
                 )
             );

@@ -14,7 +14,7 @@ internal static class ReconcilerFixtures
         public override async Task RunAsync()
         {
             var host = H.CreateHost();
-            host.Mount(ctx => Factories.Text("Hello from Reactor"));
+            host.Mount(ctx => TextBlock("Hello from Reactor"));
 
             await Harness.Render();
 
@@ -35,7 +35,7 @@ internal static class ReconcilerFixtures
             {
                 var (text, setText) = ctx.UseState("Before");
                 return VStack(
-                    Factories.Text(text),
+                    TextBlock(text),
                     Button("Change", () => setText("After"))
                 );
             });
@@ -69,7 +69,7 @@ internal static class ReconcilerFixtures
                         Button("Add", () => setCount(count + 1)),
                         Button("Remove", () => setCount(Math.Max(0, count - 1)))
                     ),
-                    VStack(Enumerable.Range(0, count).Select(i => Factories.Text($"Item {i}")).ToArray())
+                    VStack(Enumerable.Range(0, count).Select(i => TextBlock($"Item {i}")).ToArray())
                 );
             });
 
@@ -101,7 +101,7 @@ internal static class ReconcilerFixtures
         {
             var (count, setCount) = UseState(0);
             return VStack(
-                Factories.Text($"Count: {count}"),
+                TextBlock($"Count: {count}"),
                 Button("Increment", () => setCount(count + 1))
             );
         }
@@ -148,7 +148,7 @@ internal static class ReconcilerFixtures
 
                 return VStack(
                     Button("Reverse", () => setReversed(!reversed)),
-                    VStack(ordered.Select(item => Factories.Text(item).WithKey(item)).ToArray())
+                    VStack(ordered.Select(item => TextBlock(item).WithKey(item)).ToArray())
                 );
             });
 
@@ -187,7 +187,7 @@ internal static class ReconcilerFixtures
                 var (paneCount, setPaneCount) = ctx.UseState(1);
 
                 var panes = Enumerable.Range(0, paneCount)
-                    .Select(i => Factories.Text($"Pane {i}").Grid(row: 0, column: i))
+                    .Select(i => TextBlock($"Pane {i}").Grid(row: 0, column: i))
                     .ToArray();
                 var cols = Enumerable.Range(0, Math.Max(1, paneCount)).Select(_ => "*").ToArray();
 
@@ -265,19 +265,19 @@ internal static class ReconcilerFixtures
                 var (count, setCount) = ctx.UseState(2);
 
                 var stackChildren = Enumerable.Range(0, count)
-                    .Select(i => Factories.Text($"S{i}"))
+                    .Select(i => TextBlock($"S{i}"))
                     .ToArray();
                 var gridChildren = Enumerable.Range(0, count)
-                    .Select(i => Factories.Text($"G{i}").Grid(row: 0, column: i))
+                    .Select(i => TextBlock($"G{i}").Grid(row: 0, column: i))
                     .ToArray();
                 var flexChildren = Enumerable.Range(0, count)
-                    .Select(i => Factories.Text($"F{i}"))
+                    .Select(i => TextBlock($"F{i}"))
                     .ToArray();
                 var wrapChildren = Enumerable.Range(0, count)
-                    .Select(i => Factories.Text($"W{i}"))
+                    .Select(i => TextBlock($"W{i}"))
                     .ToArray();
                 var canvasChildren = Enumerable.Range(0, count)
-                    .Select(i => Factories.Text($"C{i}"))
+                    .Select(i => TextBlock($"C{i}"))
                     .ToArray();
                 var cols = Enumerable.Range(0, Math.Max(1, count)).Select(_ => "*").ToArray();
 

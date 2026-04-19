@@ -32,7 +32,7 @@ public static class SamplePageHost
     /// </summary>
     public static Element SourceBlock(string code) =>
         Border(
-            (Factories.Text(code) with { IsTextSelectionEnabled = true, TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap })
+            (TextBlock(code) with { IsTextSelectionEnabled = true, TextWrapping = Microsoft.UI.Xaml.TextWrapping.Wrap })
                 .Set(tb =>
                 {
                     tb.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Cascadia Code, Consolas, monospace");

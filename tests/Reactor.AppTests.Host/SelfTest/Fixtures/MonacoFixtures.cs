@@ -15,7 +15,7 @@ internal static class MonacoFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Monaco Editor Test"),
+                    TextBlock("Monaco Editor Test"),
                     MonacoEditor(
                         text: "function hello() {\n  return 42;\n}",
                         language: "javascript",

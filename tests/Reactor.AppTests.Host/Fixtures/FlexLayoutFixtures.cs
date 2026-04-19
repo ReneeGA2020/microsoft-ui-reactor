@@ -17,19 +17,19 @@ internal static class FlexLayoutFixtures
         FlexColumn(
             // Header row: fixed height
             FlexRow(
-                Factories.Text("Logo").Flex(basis: 0, grow: 1).AutomationId("Logo").Background("LightCoral"),
-                Factories.Text("Nav").Flex(basis: 0, grow: 2).AutomationId("Nav").Background("LightBlue")
+                TextBlock("Logo").Flex(basis: 0, grow: 1).AutomationId("Logo").Background("LightCoral"),
+                TextBlock("Nav").Flex(basis: 0, grow: 2).AutomationId("Nav").Background("LightBlue")
             ).Height(50).AutomationId("HeaderRow"),
 
             // Body row: grows to fill remaining space
             FlexRow(
-                Factories.Text("Sidebar").Flex(basis: 0, grow: 1).AutomationId("Sidebar").Background("LightGreen"),
-                Factories.Text("Content").Flex(basis: 0, grow: 3).AutomationId("Content").Background("LightYellow")
+                TextBlock("Sidebar").Flex(basis: 0, grow: 1).AutomationId("Sidebar").Background("LightGreen"),
+                TextBlock("Content").Flex(basis: 0, grow: 3).AutomationId("Content").Background("LightYellow")
             ).Flex(grow: 1).AutomationId("BodyRow"),
 
             // Footer row: fixed height
             FlexRow(
-                Factories.Text("Footer").Flex(grow: 1).AutomationId("Footer")
+                TextBlock("Footer").Flex(grow: 1).AutomationId("Footer")
             ).Height(40).Background("LightGray").AutomationId("FooterRow")
         ).Width(600).Height(400);
 
@@ -38,15 +38,15 @@ internal static class FlexLayoutFixtures
         FlexRow(
             // Sidebar: 1/4 width
             FlexColumn(
-                Factories.Text("Menu A").AutomationId("MenuA"),
-                Factories.Text("Menu B").AutomationId("MenuB"),
-                Factories.Text("Menu C").AutomationId("MenuC")
+                TextBlock("Menu A").AutomationId("MenuA"),
+                TextBlock("Menu B").AutomationId("MenuB"),
+                TextBlock("Menu C").AutomationId("MenuC")
             ).Flex(basis: 0, grow: 1).Background("LightCoral").AutomationId("SidebarCol"),
 
             // Content area: 3/4 width
             FlexColumn(
-                Factories.Text("Title").Height(40).AutomationId("Title"),
-                Factories.Text("Body text here").Flex(grow: 1).AutomationId("BodyText")
+                TextBlock("Title").Height(40).AutomationId("Title"),
+                TextBlock("Body text here").Flex(grow: 1).AutomationId("BodyText")
             ).Flex(basis: 0, grow: 3).Background("LightBlue").AutomationId("ContentCol")
         ).Width(600).Height(300);
 
@@ -54,21 +54,21 @@ internal static class FlexLayoutFixtures
     internal static Element FlexNestedDeep(RenderContext ctx) =>
         // Level 1: Column
         FlexColumn(
-            Factories.Text("L1-Header").Height(30).AutomationId("L1Header"),
+            TextBlock("L1-Header").Height(30).AutomationId("L1Header"),
 
             // Level 2: Row (grows)
             FlexRow(
-                Factories.Text("L2-Left").Flex(basis: 0, grow: 1).AutomationId("L2Left"),
+                TextBlock("L2-Left").Flex(basis: 0, grow: 1).AutomationId("L2Left"),
 
                 // Level 3: Column inside the row
                 FlexColumn(
-                    Factories.Text("L3-Top").AutomationId("L3Top"),
-                    Factories.Text("L3-Mid").Flex(grow: 1).AutomationId("L3Mid"),
-                    Factories.Text("L3-Bot").AutomationId("L3Bot")
+                    TextBlock("L3-Top").AutomationId("L3Top"),
+                    TextBlock("L3-Mid").Flex(grow: 1).AutomationId("L3Mid"),
+                    TextBlock("L3-Bot").AutomationId("L3Bot")
                 ).Flex(basis: 0, grow: 2).AutomationId("L3Col")
             ).Flex(grow: 1).AutomationId("L2Row"),
 
-            Factories.Text("L1-Footer").Height(30).AutomationId("L1Footer")
+            TextBlock("L1-Footer").Height(30).AutomationId("L1Footer")
         ).Width(600).Height(400);
 
     // 4. Flex inside Grid star cells
@@ -76,25 +76,25 @@ internal static class FlexLayoutFixtures
         Grid(["*", "2*"], ["*", "*"],
             // Top-left: FlexRow in 1* cell
             FlexRow(
-                Factories.Text("A1").Flex(grow: 1).AutomationId("A1").Background("LightCoral"),
-                Factories.Text("A2").Flex(grow: 1).AutomationId("A2").Background("LightBlue")
+                TextBlock("A1").Flex(grow: 1).AutomationId("A1").Background("LightCoral"),
+                TextBlock("A2").Flex(grow: 1).AutomationId("A2").Background("LightBlue")
             ).Grid(row: 0, column: 0),
 
             // Top-right: FlexColumn in 2* cell
             FlexColumn(
-                Factories.Text("B1").Flex(grow: 1).AutomationId("B1").Background("LightGreen"),
-                Factories.Text("B2").Flex(grow: 2).AutomationId("B2").Background("LightYellow")
+                TextBlock("B1").Flex(grow: 1).AutomationId("B1").Background("LightGreen"),
+                TextBlock("B2").Flex(grow: 2).AutomationId("B2").Background("LightYellow")
             ).Grid(row: 0, column: 1),
 
             // Bottom-left: single grow child
             FlexRow(
-                Factories.Text("C1").Flex(grow: 1).AutomationId("C1").Background("Wheat")
+                TextBlock("C1").Flex(grow: 1).AutomationId("C1").Background("Wheat")
             ).Grid(row: 1, column: 0),
 
             // Bottom-right: mixed fixed + grow
             FlexRow(
-                Factories.Text("D1").Width(80).AutomationId("D1").Background("Plum"),
-                Factories.Text("D2").Flex(grow: 1).AutomationId("D2").Background("PeachPuff")
+                TextBlock("D1").Width(80).AutomationId("D1").Background("Plum"),
+                TextBlock("D2").Flex(grow: 1).AutomationId("D2").Background("PeachPuff")
             ).Grid(row: 1, column: 1)
         ).Width(600).Height(400);
 
@@ -104,86 +104,86 @@ internal static class FlexLayoutFixtures
             // A FlexRow inside a Border -- should only be as tall as its content
             Border(
                 FlexRow(
-                    Factories.Text("Left").Flex(grow: 1).AutomationId("Left").Background("LightCoral"),
-                    Factories.Text("Right").Flex(grow: 1).AutomationId("Right").Background("LightBlue")
+                    TextBlock("Left").Flex(grow: 1).AutomationId("Left").Background("LightCoral"),
+                    TextBlock("Right").Flex(grow: 1).AutomationId("Right").Background("LightBlue")
                 ).AutomationId("FlexInBorderRow")
             ).Width(600).Background("LightGray"),
 
             // Reference: plain text for height comparison
-            Factories.Text("Reference line").AutomationId("ReferenceLine")
+            TextBlock("Reference line").AutomationId("ReferenceLine")
         ).Width(600).Height(400);
 
     // 6. Flex inside VStack
     internal static Element FlexInsideVStack(RenderContext ctx) =>
         VStack(4,
-            Factories.Text("Before").AutomationId("Before"),
+            TextBlock("Before").AutomationId("Before"),
 
             FlexRow(
-                Factories.Text("Row1-A").Flex(basis: 0, grow: 1).AutomationId("Row1A").Background("LightCoral"),
-                Factories.Text("Row1-B").Flex(basis: 0, grow: 2).AutomationId("Row1B").Background("LightBlue"),
-                Factories.Text("Row1-C").Flex(basis: 0, grow: 1).AutomationId("Row1C").Background("LightGreen")
+                TextBlock("Row1-A").Flex(basis: 0, grow: 1).AutomationId("Row1A").Background("LightCoral"),
+                TextBlock("Row1-B").Flex(basis: 0, grow: 2).AutomationId("Row1B").Background("LightBlue"),
+                TextBlock("Row1-C").Flex(basis: 0, grow: 1).AutomationId("Row1C").Background("LightGreen")
             ).AutomationId("FlexRow1"),
 
             FlexRow(
-                Factories.Text("Row2-A").Flex(basis: 0, grow: 1).AutomationId("Row2A").Background("Wheat"),
-                Factories.Text("Row2-B").Flex(basis: 0, grow: 1).AutomationId("Row2B").Background("Plum")
+                TextBlock("Row2-A").Flex(basis: 0, grow: 1).AutomationId("Row2A").Background("Wheat"),
+                TextBlock("Row2-B").Flex(basis: 0, grow: 1).AutomationId("Row2B").Background("Plum")
             ).AutomationId("FlexRow2"),
 
-            Factories.Text("After").AutomationId("After")
+            TextBlock("After").AutomationId("After")
         ).Width(600).Height(400);
 
     // 7. Flex inside ScrollViewer (infinite height)
     internal static Element FlexInsideScrollView(RenderContext ctx) =>
         ScrollView(
             FlexColumn(
-                Factories.Text("Item 1").Height(60).AutomationId("ScrollItem1").Background("LightCoral"),
-                Factories.Text("Item 2").Height(60).AutomationId("ScrollItem2").Background("LightBlue"),
-                Factories.Text("Item 3").Height(60).AutomationId("ScrollItem3").Background("LightGreen"),
-                Factories.Text("Item 4").Height(60).AutomationId("ScrollItem4").Background("Wheat"),
-                Factories.Text("Item 5").Height(60).AutomationId("ScrollItem5").Background("Plum")
+                TextBlock("Item 1").Height(60).AutomationId("ScrollItem1").Background("LightCoral"),
+                TextBlock("Item 2").Height(60).AutomationId("ScrollItem2").Background("LightBlue"),
+                TextBlock("Item 3").Height(60).AutomationId("ScrollItem3").Background("LightGreen"),
+                TextBlock("Item 4").Height(60).AutomationId("ScrollItem4").Background("Wheat"),
+                TextBlock("Item 5").Height(60).AutomationId("ScrollItem5").Background("Plum")
             ).Width(400).AutomationId("ScrollFlexCol")
         ).Width(400).Height(200);
 
     // 8. ScrollViewer inside a Flex grow child
     internal static Element ScrollViewInsideFlex(RenderContext ctx) =>
         FlexColumn(
-            Factories.Text("Header").Height(50).Flex(shrink: 0).AutomationId("Header").Background("LightCoral"),
+            TextBlock("Header").Height(50).Flex(shrink: 0).AutomationId("Header").Background("LightCoral"),
 
             ScrollView(
                 VStack(0,
-                    Factories.Text("Scroll Item 1").Height(80).AutomationId("SIFScrollItem1"),
-                    Factories.Text("Scroll Item 2").Height(80).AutomationId("SIFScrollItem2"),
-                    Factories.Text("Scroll Item 3").Height(80).AutomationId("SIFScrollItem3"),
-                    Factories.Text("Scroll Item 4").Height(80).AutomationId("SIFScrollItem4"),
-                    Factories.Text("Scroll Item 5").Height(80).AutomationId("SIFScrollItem5")
+                    TextBlock("Scroll Item 1").Height(80).AutomationId("SIFScrollItem1"),
+                    TextBlock("Scroll Item 2").Height(80).AutomationId("SIFScrollItem2"),
+                    TextBlock("Scroll Item 3").Height(80).AutomationId("SIFScrollItem3"),
+                    TextBlock("Scroll Item 4").Height(80).AutomationId("SIFScrollItem4"),
+                    TextBlock("Scroll Item 5").Height(80).AutomationId("SIFScrollItem5")
                 )
             ).Flex(grow: 1).AutomationId("ScrollViewerInFlex"),
 
-            Factories.Text("Footer").Height(50).Flex(shrink: 0).AutomationId("Footer").Background("LightBlue")
+            TextBlock("Footer").Height(50).Flex(shrink: 0).AutomationId("Footer").Background("LightBlue")
         ).Width(400).Height(400);
 
     // 9. FlexColumn grow distribution (vertical main axis)
     internal static Element FlexColumnGrow(RenderContext ctx) =>
         FlexColumn(
-            Factories.Text("Top").Flex(basis: 0, grow: 1).AutomationId("Top").Background("LightCoral"),
-            Factories.Text("Middle").Flex(basis: 0, grow: 2).AutomationId("Middle").Background("LightGreen"),
-            Factories.Text("Bottom").Flex(basis: 0, grow: 1).AutomationId("Bottom").Background("LightBlue")
+            TextBlock("Top").Flex(basis: 0, grow: 1).AutomationId("Top").Background("LightCoral"),
+            TextBlock("Middle").Flex(basis: 0, grow: 2).AutomationId("Middle").Background("LightGreen"),
+            TextBlock("Bottom").Flex(basis: 0, grow: 1).AutomationId("Bottom").Background("LightBlue")
         ).Width(400).Height(400);
 
     // 10. Mixed grow + fixed-width children
     internal static Element FlexMixedGrowFixed(RenderContext ctx) =>
         FlexRow(
-            Factories.Text("Fixed1").Width(100).AutomationId("Fixed1").Background("LightCoral"),
-            Factories.Text("Grow").Flex(grow: 1).AutomationId("Grow").Background("LightGreen"),
-            Factories.Text("Fixed2").Width(100).AutomationId("Fixed2").Background("LightBlue")
+            TextBlock("Fixed1").Width(100).AutomationId("Fixed1").Background("LightCoral"),
+            TextBlock("Grow").Flex(grow: 1).AutomationId("Grow").Background("LightGreen"),
+            TextBlock("Fixed2").Width(100).AutomationId("Fixed2").Background("LightBlue")
         ).Width(600).Height(60);
 
     // 11. Flex with gaps
     internal static Element FlexWithGaps(RenderContext ctx) =>
         new FlexElement([
-            Factories.Text("A").Flex(basis: 0, grow: 1).AutomationId("GapA").Background("LightCoral"),
-            Factories.Text("B").Flex(basis: 0, grow: 1).AutomationId("GapB").Background("LightGreen"),
-            Factories.Text("C").Flex(basis: 0, grow: 1).AutomationId("GapC").Background("LightBlue")
+            TextBlock("A").Flex(basis: 0, grow: 1).AutomationId("GapA").Background("LightCoral"),
+            TextBlock("B").Flex(basis: 0, grow: 1).AutomationId("GapB").Background("LightGreen"),
+            TextBlock("C").Flex(basis: 0, grow: 1).AutomationId("GapC").Background("LightBlue")
         ])
         {
             Direction = FlexDirection.Row,
@@ -193,8 +193,8 @@ internal static class FlexLayoutFixtures
     // 12. Flex with FlexPadding
     internal static Element FlexWithPadding(RenderContext ctx) =>
         FlexRow(
-            Factories.Text("Padded-A").Flex(basis: 0, grow: 1).AutomationId("PaddedA").Background("LightCoral"),
-            Factories.Text("Padded-B").Flex(basis: 0, grow: 1).AutomationId("PaddedB").Background("LightBlue")
+            TextBlock("Padded-A").Flex(basis: 0, grow: 1).AutomationId("PaddedA").Background("LightCoral"),
+            TextBlock("Padded-B").Flex(basis: 0, grow: 1).AutomationId("PaddedB").Background("LightBlue")
         ).FlexPadding(20).Width(600).Height(100);
 
     // 13. Flex cross-axis content sizing regression
@@ -207,44 +207,44 @@ internal static class FlexLayoutFixtures
         return VStack(8,
             // FlexRow with grow + long text
             FlexRow(
-                Factories.Text("Sidebar").Width(100).AutomationId("CrossSidebar").Background("LightCoral"),
-                Factories.Text(longText).Flex(grow: 1).AutomationId("CrossLongText").Background("LightBlue")
+                TextBlock("Sidebar").Width(100).AutomationId("CrossSidebar").Background("LightCoral"),
+                TextBlock(longText).Flex(grow: 1).AutomationId("CrossLongText").Background("LightBlue")
             ).Width(600).Background("LightGray").AutomationId("CrossFlexRow"),
 
             // Reference: same text in a fixed-width container
-            Factories.Text(longText).Width(500).AutomationId("CrossRefText").Background("LightGreen"),
+            TextBlock(longText).Width(500).AutomationId("CrossRefText").Background("LightGreen"),
 
-            Factories.Text("Below-all-visible").AutomationId("BelowAll")
+            TextBlock("Below-all-visible").AutomationId("BelowAll")
         ).Width(600).Height(600);
     }
 
     // 14. Grid inside Flex -- Grid as a grow child
     internal static Element GridInsideFlex(RenderContext ctx) =>
         FlexColumn(
-            Factories.Text("Header").Height(50).AutomationId("GIFHeader").Background("LightCoral"),
+            TextBlock("Header").Height(50).AutomationId("GIFHeader").Background("LightCoral"),
 
             Grid(["*", "2*"], ["*"],
-                Factories.Text("GridLeft").Grid(row: 0, column: 0).AutomationId("GridLeft").Background("LightGreen"),
-                Factories.Text("GridRight").Grid(row: 0, column: 1).AutomationId("GridRight").Background("LightBlue")
+                TextBlock("GridLeft").Grid(row: 0, column: 0).AutomationId("GridLeft").Background("LightGreen"),
+                TextBlock("GridRight").Grid(row: 0, column: 1).AutomationId("GridRight").Background("LightBlue")
             ).Flex(grow: 1).AutomationId("GridInFlex"),
 
-            Factories.Text("Footer").Height(50).AutomationId("GIFFooter").Background("Wheat")
+            TextBlock("Footer").Height(50).AutomationId("GIFFooter").Background("Wheat")
         ).Width(600).Height(400);
 
     // 15. Flex with child margins
     internal static Element FlexWithChildMargins(RenderContext ctx) =>
         FlexRow(
-            Factories.Text("M1").Flex(basis: 0, grow: 1).Margin(10).AutomationId("M1").Background("LightCoral"),
-            Factories.Text("M2").Flex(basis: 0, grow: 1).Margin(10).AutomationId("M2").Background("LightBlue"),
-            Factories.Text("M3").Flex(basis: 0, grow: 1).Margin(10).AutomationId("M3").Background("LightGreen")
+            TextBlock("M1").Flex(basis: 0, grow: 1).Margin(10).AutomationId("M1").Background("LightCoral"),
+            TextBlock("M2").Flex(basis: 0, grow: 1).Margin(10).AutomationId("M2").Background("LightBlue"),
+            TextBlock("M3").Flex(basis: 0, grow: 1).Margin(10).AutomationId("M3").Background("LightGreen")
         ).Width(600).Height(80);
 
     // 16. Flex with JustifyContent=SpaceBetween
     internal static Element FlexJustifySpaceBetween(RenderContext ctx) =>
         new FlexElement([
-            Factories.Text("J1").Width(100).AutomationId("J1").Background("LightCoral"),
-            Factories.Text("J2").Width(100).AutomationId("J2").Background("LightGreen"),
-            Factories.Text("J3").Width(100).AutomationId("J3").Background("LightBlue"),
+            TextBlock("J1").Width(100).AutomationId("J1").Background("LightCoral"),
+            TextBlock("J2").Width(100).AutomationId("J2").Background("LightGreen"),
+            TextBlock("J3").Width(100).AutomationId("J3").Background("LightBlue"),
         ])
         {
             Direction = FlexDirection.Row,
@@ -255,12 +255,12 @@ internal static class FlexLayoutFixtures
     internal static Element FlexLayoutCycleInGridStar(RenderContext ctx) =>
         Grid(["200", "*"], ["*"],
             // Fixed sidebar
-            Factories.Text("Sidebar").Grid(row: 0, column: 0).AutomationId("CycleSidebar").Background("LightCoral"),
+            TextBlock("Sidebar").Grid(row: 0, column: 0).AutomationId("CycleSidebar").Background("LightCoral"),
 
             // Star column: FlexPanel
             FlexRow(
-                Factories.Text("Grow-A").Flex(basis: 0, grow: 1).AutomationId("GrowA").Background("LightGreen"),
-                Factories.Text("Grow-B").Flex(basis: 0, grow: 2).AutomationId("GrowB").Background("LightBlue")
+                TextBlock("Grow-A").Flex(basis: 0, grow: 1).AutomationId("GrowA").Background("LightGreen"),
+                TextBlock("Grow-B").Flex(basis: 0, grow: 2).AutomationId("GrowB").Background("LightBlue")
             ).Grid(row: 0, column: 1)
         ).Width(600).Height(300);
 
@@ -268,28 +268,28 @@ internal static class FlexLayoutFixtures
     internal static Element FlexLayoutCycleNestedDeep(RenderContext ctx) =>
         // Level 1: Column with grow
         FlexColumn(
-            Factories.Text("L1-Top").Height(40).AutomationId("CycleL1Top"),
+            TextBlock("L1-Top").Height(40).AutomationId("CycleL1Top"),
 
             // Level 2: Row with grow children
             FlexRow(
-                Factories.Text("L2-Left").Flex(basis: 0, grow: 1).AutomationId("CycleL2Left"),
+                TextBlock("L2-Left").Flex(basis: 0, grow: 1).AutomationId("CycleL2Left"),
 
                 // Level 3: Column inside grow child
                 FlexColumn(
-                    Factories.Text("L3-Header").Height(30).AutomationId("CycleL3Header"),
+                    TextBlock("L3-Header").Height(30).AutomationId("CycleL3Header"),
 
                     // Level 4: Row inside grow child
                     FlexRow(
-                        Factories.Text("L4-A").Flex(basis: 0, grow: 1).AutomationId("CycleL4A").Background("LightCoral"),
-                        Factories.Text("L4-B").Flex(basis: 0, grow: 1).AutomationId("CycleL4B").Background("LightBlue"),
-                        Factories.Text("L4-C").Flex(basis: 0, grow: 1).AutomationId("CycleL4C").Background("LightGreen")
+                        TextBlock("L4-A").Flex(basis: 0, grow: 1).AutomationId("CycleL4A").Background("LightCoral"),
+                        TextBlock("L4-B").Flex(basis: 0, grow: 1).AutomationId("CycleL4B").Background("LightBlue"),
+                        TextBlock("L4-C").Flex(basis: 0, grow: 1).AutomationId("CycleL4C").Background("LightGreen")
                     ).Flex(grow: 1),
 
-                    Factories.Text("L3-Footer").Height(30).AutomationId("CycleL3Footer")
+                    TextBlock("L3-Footer").Height(30).AutomationId("CycleL3Footer")
                 ).Flex(basis: 0, grow: 2)
             ).Flex(grow: 1),
 
-            Factories.Text("L1-Bottom").Height(40).AutomationId("CycleL1Bottom")
+            TextBlock("L1-Bottom").Height(40).AutomationId("CycleL1Bottom")
         ).Width(600).Height(400);
 
     // 19. Layout cycle prevention: FlexPanel with auto-sizing text
@@ -302,14 +302,14 @@ internal static class FlexLayoutFixtures
         return Grid(["*", "2*"], ["Auto", "*"],
             // Row 0: Auto-height row with FlexPanel containing wrapping text
             FlexRow(
-                Factories.Text("Label").Width(80).AutomationId("AutoLabel").Background("LightCoral"),
-                Factories.Text(longText).Flex(grow: 1).AutomationId("AutoLongText").Background("LightBlue")
+                TextBlock("Label").Width(80).AutomationId("AutoLabel").Background("LightCoral"),
+                TextBlock(longText).Flex(grow: 1).AutomationId("AutoLongText").Background("LightBlue")
             ).Grid(row: 0, column: 0, columnSpan: 2).AutomationId("AutoTextFlexRow"),
 
             // Row 1: star row with more flex content
             FlexRow(
-                Factories.Text("Body-A").Flex(basis: 0, grow: 1).AutomationId("AutoBodyA").Background("LightGreen"),
-                Factories.Text("Body-B").Flex(basis: 0, grow: 1).AutomationId("AutoBodyB").Background("Wheat")
+                TextBlock("Body-A").Flex(basis: 0, grow: 1).AutomationId("AutoBodyA").Background("LightGreen"),
+                TextBlock("Body-B").Flex(basis: 0, grow: 1).AutomationId("AutoBodyB").Background("Wheat")
             ).Grid(row: 1, column: 0, columnSpan: 2)
         ).Width(600).Height(400);
     }
@@ -319,21 +319,21 @@ internal static class FlexLayoutFixtures
         // Outer Grid constrains the viewport
         Grid(["*"], ["60", "*", "60"],
             // Header
-            Factories.Text("Header").Grid(row: 0, column: 0).AutomationId("MismatchHeader").Background("LightCoral"),
+            TextBlock("Header").Grid(row: 0, column: 0).AutomationId("MismatchHeader").Background("LightCoral"),
 
             // Middle: ScrollViewer constrains the FlexPanel
             ScrollView(
                 FlexColumn(
-                    Factories.Text("Item-1").Height(50).AutomationId("MismatchItem1").Background("LightBlue"),
-                    Factories.Text("Item-2").Height(50).AutomationId("MismatchItem2").Background("LightGreen"),
-                    Factories.Text("Item-3").Height(50).AutomationId("MismatchItem3").Background("Wheat"),
-                    Factories.Text("Item-4").Height(50).AutomationId("MismatchItem4").Background("Plum"),
-                    Factories.Text("Item-5").Height(50).AutomationId("MismatchItem5").Background("LightCoral"),
-                    Factories.Text("Item-6").Height(50).AutomationId("MismatchItem6").Background("PeachPuff")
+                    TextBlock("Item-1").Height(50).AutomationId("MismatchItem1").Background("LightBlue"),
+                    TextBlock("Item-2").Height(50).AutomationId("MismatchItem2").Background("LightGreen"),
+                    TextBlock("Item-3").Height(50).AutomationId("MismatchItem3").Background("Wheat"),
+                    TextBlock("Item-4").Height(50).AutomationId("MismatchItem4").Background("Plum"),
+                    TextBlock("Item-5").Height(50).AutomationId("MismatchItem5").Background("LightCoral"),
+                    TextBlock("Item-6").Height(50).AutomationId("MismatchItem6").Background("PeachPuff")
                 ).Width(400).AutomationId("MismatchFlexCol")
             ).Grid(row: 1, column: 0),
 
             // Footer
-            Factories.Text("Footer").Grid(row: 2, column: 0).AutomationId("MismatchFooter").Background("LightGray")
+            TextBlock("Footer").Grid(row: 2, column: 0).AutomationId("MismatchFooter").Background("LightGray")
         ).Width(400).Height(300);
 }

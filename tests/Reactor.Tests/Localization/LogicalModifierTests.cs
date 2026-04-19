@@ -131,7 +131,7 @@ public class LogicalModifierTests
     [Fact]
     public void ExtensionMethod_MarginInlineStart_SetsProperty()
     {
-        var el = new TextElement("Hello");
+        var el = new TextBlockElement("Hello");
         var modified = Microsoft.UI.Reactor.ElementExtensions.MarginInlineStart(el, 16);
 
         Assert.NotNull(modified.Modifiers);
@@ -141,7 +141,7 @@ public class LogicalModifierTests
     [Fact]
     public void ExtensionMethod_PaddingInlineEnd_SetsProperty()
     {
-        var el = new TextElement("Hello");
+        var el = new TextBlockElement("Hello");
         var modified = Microsoft.UI.Reactor.ElementExtensions.PaddingInlineEnd(el, 8);
 
         Assert.NotNull(modified.Modifiers);
@@ -151,7 +151,7 @@ public class LogicalModifierTests
     [Fact]
     public void ExtensionMethod_Chaining_PreservesAllValues()
     {
-        var el = new TextElement("Hello");
+        var el = new TextBlockElement("Hello");
         var modified = Microsoft.UI.Reactor.ElementExtensions.MarginInlineEnd(
             Microsoft.UI.Reactor.ElementExtensions.MarginInlineStart(el, 16), 8);
 

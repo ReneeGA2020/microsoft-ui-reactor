@@ -23,7 +23,7 @@ class BasicNavDemo : Component
 
         return VStack(12,
             SubHeading($"Current: {nav.CurrentRoute}"),
-            Text($"Stack depth: {nav.Depth}"),
+            TextBlock($"Stack depth: {nav.Depth}"),
             HStack(8,
                 Button("Home", () => nav.Navigate(Route.Home)),
                 Button("Settings", () => nav.Navigate(Route.Settings)),
@@ -33,10 +33,10 @@ class BasicNavDemo : Component
             ),
             NavigationHost(nav, route => route switch
             {
-                Route.Home => Text("Welcome home!").FontSize(18).Padding(16),
-                Route.Settings => Text("Settings page").FontSize(18).Padding(16),
-                Route.Profile => Text("Your profile").FontSize(18).Padding(16),
-                _ => Text("Not found").Padding(16)
+                Route.Home => TextBlock("Welcome home!").FontSize(18).Padding(16),
+                Route.Settings => TextBlock("Settings page").FontSize(18).Padding(16),
+                Route.Profile => TextBlock("Your profile").FontSize(18).Padding(16),
+                _ => TextBlock("Not found").Padding(16)
             })
         ).Padding(24);
     }
@@ -58,15 +58,15 @@ class NavViewDemo : Component
             content: NavigationHost(nav, route => route switch
             {
                 Route.Home => VStack(12, Heading("Home"),
-                    Text("Welcome to the app."),
+                    TextBlock("Welcome to the app."),
                     Button("Go to Settings",
                         () => nav.Navigate(Route.Settings))).Padding(24),
                 Route.Settings => VStack(12, Heading("Settings"),
-                    Text("Configure your preferences."),
+                    TextBlock("Configure your preferences."),
                     Button("Back", () => nav.GoBack())).Padding(24),
                 Route.Profile => VStack(12, Heading("Profile"),
-                    Text("View your profile info.")).Padding(24),
-                _ => Text("Not found").Padding(24)
+                    TextBlock("View your profile info.")).Padding(24),
+                _ => TextBlock("Not found").Padding(24)
             })
         );
     }
@@ -82,8 +82,8 @@ class StackOperationsDemo : Component
 
         return VStack(12,
             SubHeading($"Current: {nav.CurrentRoute}"),
-            Text($"Back stack: {nav.BackStack.Count}"),
-            Text($"Forward stack: {nav.ForwardStack.Count}"),
+            TextBlock($"Back stack: {nav.BackStack.Count}"),
+            TextBlock($"Forward stack: {nav.ForwardStack.Count}"),
             HStack(8,
                 Button("Navigate", () =>
                     nav.Navigate(Route.Settings)),
@@ -97,7 +97,7 @@ class StackOperationsDemo : Component
                     .Disabled(!nav.CanGoForward)
             ),
             NavigationHost(nav, route =>
-                Text($"Page: {route}")
+                TextBlock($"Page: {route}")
                     .FontSize(18).Padding(16))
         ).Padding(24);
     }
@@ -127,7 +127,7 @@ class LifecyclePage : Component
             SubHeading("Lifecycle Events"),
             VStack(4,
                 log.TakeLast(5).Select(entry =>
-                    Text(entry).FontSize(12).Opacity(0.7)
+                    TextBlock(entry).FontSize(12).Opacity(0.7)
                 ).ToArray()
             )
         ).Padding(16);
@@ -154,12 +154,12 @@ class PageTransitionsDemo : Component
             NavigationHost(nav, route => route switch
             {
                 Route.Home => VStack(8,
-                    Text("Home").FontSize(24).Bold(),
-                    Text("Slide transition on navigate")).Padding(16),
+                    TextBlock("Home").FontSize(24).Bold(),
+                    TextBlock("Slide transition on navigate")).Padding(16),
                 Route.Settings => VStack(8,
-                    Text("Settings").FontSize(24).Bold(),
-                    Text("DrillIn transition to detail")).Padding(16),
-                _ => Text($"{route}").FontSize(18).Padding(16)
+                    TextBlock("Settings").FontSize(24).Bold(),
+                    TextBlock("DrillIn transition to detail")).Padding(16),
+                _ => TextBlock($"{route}").FontSize(18).Padding(16)
             }) with { Transition = NavigationTransition.DrillIn() }
         ).Padding(24);
     }
@@ -188,7 +188,7 @@ class DeepLinkingDemo : Component
                 Button("Resolve /unknown", () =>
                     setResult($"/unknown -> {map.Resolve("/unknown").Matched}"))
             ),
-            Text($"Result: {result}").FontSize(14).Opacity(0.7)
+            TextBlock($"Result: {result}").FontSize(14).Opacity(0.7)
         ).Padding(24);
     }
 }
@@ -222,7 +222,7 @@ class DeepLinkQueryDemo : Component
             SubHeading("Deep Link Query Params"),
             Button("Resolve /users/42/posts/7?sort=date", () =>
                 map.Resolve("/users/42/posts/7?sort=date")),
-            Text($"Captured: {info}").FontSize(14).Opacity(0.7)
+            TextBlock($"Captured: {info}").FontSize(14).Opacity(0.7)
         ).Padding(24);
     }
 }
@@ -249,11 +249,11 @@ class StateSerializationDemo : Component
                         nav.SetState(savedState);
                 }).Disabled(savedState is null)
             ),
-            Text($"Current: {nav.CurrentRoute}"),
-            Text($"Saved: {savedState?[..Math.Min(50, savedState?.Length ?? 0)] ?? "(none)"}")
+            TextBlock($"Current: {nav.CurrentRoute}"),
+            TextBlock($"Saved: {savedState?[..Math.Min(50, savedState?.Length ?? 0)] ?? "(none)"}")
                 .FontSize(12).Opacity(0.6),
             NavigationHost(nav, route =>
-                Text($"Page: {route}").Padding(16))
+                TextBlock($"Page: {route}").Padding(16))
         ).Padding(24);
     }
 }
@@ -290,10 +290,10 @@ class DiagnosticsDemo : Component
                 Button("Settings", () => nav.Navigate(Route.Settings))
             ),
             VStack(4, log.TakeLast(6).Select(
-                entry => Text(entry).FontSize(11).Opacity(0.6)
+                entry => TextBlock(entry).FontSize(11).Opacity(0.6)
             ).ToArray()),
             NavigationHost(nav, route =>
-                Text($"Page: {route}").Padding(16))
+                TextBlock($"Page: {route}").Padding(16))
         ).Padding(24);
     }
 }
@@ -308,7 +308,7 @@ class PageCachingDemo : Component
 
         return VStack(12,
             SubHeading("Page Caching"),
-            Text("Text input is preserved across navigations."),
+            TextBlock("Text input is preserved across navigations."),
             HStack(8,
                 Button("Home", () => nav.Navigate(Route.Home)),
                 Button("Settings", () => nav.Navigate(Route.Settings)),
@@ -319,7 +319,7 @@ class PageCachingDemo : Component
             {
                 Route.Home => CachedPage("Home"),
                 Route.Settings => CachedPage("Settings"),
-                _ => Text($"{route}").Padding(16)
+                _ => TextBlock($"{route}").Padding(16)
             }) with
             {
                 CacheMode = NavigationCacheMode.Enabled,
@@ -330,7 +330,7 @@ class PageCachingDemo : Component
 
     static Element CachedPage(string name) =>
         VStack(8,
-            Text(name).FontSize(20).Bold(),
+            TextBlock(name).FontSize(20).Bold(),
             TextField("", _ => { }, placeholder: "Type here — state persists")
         ).Padding(16);
 }
@@ -344,20 +344,20 @@ class TabNavDemo : Component
         return TabView(
             Tab("Documents",
                 VStack(12,
-                    Text("Your documents appear here."),
+                    TextBlock("Your documents appear here."),
                     Button("New Document", () => { })
                 ).Padding(24)
             ),
             Tab("Recent",
                 VStack(12,
-                    Text("Recently opened files."),
-                    Text("No recent files.").Opacity(0.5)
+                    TextBlock("Recently opened files."),
+                    TextBlock("No recent files.").Opacity(0.5)
                 ).Padding(24)
             ),
             Tab("Shared",
                 VStack(12,
-                    Text("Files shared with you."),
-                    Text("Nothing shared yet.").Opacity(0.5)
+                    TextBlock("Files shared with you."),
+                    TextBlock("Nothing shared yet.").Opacity(0.5)
                 ).Padding(24)
             )
         );

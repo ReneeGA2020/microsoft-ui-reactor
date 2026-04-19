@@ -82,7 +82,7 @@ public record A11yContext
     /// <summary>String description of the child content (e.g., "SymbolIcon(Symbol.Delete)").</summary>
     public string? ChildContent { get; init; }
 
-    /// <summary>Text content of the first TextElement child, if any.</summary>
+    /// <summary>Text content of the first TextBlockElement child, if any.</summary>
     public string? ChildText { get; init; }
 
     /// <summary>Type names of immediate children.</summary>
@@ -363,7 +363,7 @@ public static class AccessibilityScanner
     /// <summary>A11Y_004: Heading-styled text without HeadingLevel.</summary>
     private static void CheckHeadingStyle(Element el, ScanContext ctx, List<A11yDiagnostic> findings)
     {
-        if (el is not TextElement text) return;
+        if (el is not TextBlockElement text) return;
 
         // Heuristic: large + bold text that isn't annotated as a heading
         bool isLargeFont = text.FontSize.HasValue && text.FontSize.Value >= 20;
@@ -385,7 +385,7 @@ public static class AccessibilityScanner
             Severity = "info",
             Message = $"Text \"{Truncate(text.Content, 40)}\" is styled as a heading but has no HeadingLevel set",
             WcagCriterion = "1.3.1",
-            ElementType = "TextElement",
+            ElementType = "TextBlockElement",
             AutomationId = GetAutomationId(el),
             ComponentType = ctx.CurrentComponent,
             Fix = new A11yFixSuggestion
@@ -618,7 +618,7 @@ public static class AccessibilityScanner
             }
 
             // Update from current element
-            if (el is TextElement text && el.Modifiers?.HeadingLevel.HasValue == true)
+            if (el is TextBlockElement text && el.Modifiers?.HeadingLevel.HasValue == true)
                 frame.NearestHeading = text.Content;
 
             var landmark = el.Modifiers?.Accessibility?.LandmarkType;
@@ -635,7 +635,7 @@ public static class AccessibilityScanner
             CurrentSiblingTexts.Clear();
             foreach (var child in GetChildren(el))
             {
-                if (child is TextElement t)
+                if (child is TextBlockElement t)
                     CurrentSiblingTexts.Add(t.Content);
                 else if (child is ButtonElement b && !string.IsNullOrEmpty(b.Label))
                     CurrentSiblingTexts.Add(b.Label);
@@ -663,7 +663,7 @@ public static class AccessibilityScanner
             if (children.Count > 0)
             {
                 childTypes = children.Select(c => c!.GetType().Name).ToArray();
-                var firstText = children.OfType<TextElement>().FirstOrDefault();
+                var firstText = children.OfType<TextBlockElement>().FirstOrDefault();
                 if (firstText is not null)
                     childText = firstText.Content;
                 if (children.Count == 1)
@@ -675,7 +675,7 @@ public static class AccessibilityScanner
             {
                 childContent = btn.ContentElement.GetType().Name;
                 childTypes = [btn.ContentElement.GetType().Name];
-                if (btn.ContentElement is TextElement ct)
+                if (btn.ContentElement is TextBlockElement ct)
                     childText = ct.Content;
             }
 

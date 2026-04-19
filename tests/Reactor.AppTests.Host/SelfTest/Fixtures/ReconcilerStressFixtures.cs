@@ -39,8 +39,8 @@ internal static class ReconcilerStressFixtures
             {
                 var (phase, setPhase) = ctx.UseState(0);
                 Element[] items = phase == 0
-                    ? [Factories.Text("A").WithKey("a"), Factories.Text("B").WithKey("b"), Factories.Text("C").WithKey("c"), Factories.Text("D").WithKey("d")]
-                    : [Factories.Text("X").WithKey("x"), Factories.Text("Y").WithKey("y"), Factories.Text("C").WithKey("c"), Factories.Text("D").WithKey("d")];
+                    ? [TextBlock("A").WithKey("a"), TextBlock("B").WithKey("b"), TextBlock("C").WithKey("c"), TextBlock("D").WithKey("d")]
+                    : [TextBlock("X").WithKey("x"), TextBlock("Y").WithKey("y"), TextBlock("C").WithKey("c"), TextBlock("D").WithKey("d")];
 
                 return VStack(
                     Button("Switch", () => setPhase(1)),
@@ -88,8 +88,8 @@ internal static class ReconcilerStressFixtures
             {
                 var (phase, setPhase) = ctx.UseState(0);
                 Element[] items = phase == 0
-                    ? [Factories.Text("A").WithKey("a"), Factories.Text("B").WithKey("b"), Factories.Text("C").WithKey("c"), Factories.Text("D").WithKey("d"), Factories.Text("E").WithKey("e")]
-                    : [Factories.Text("A").WithKey("a"), Factories.Text("C").WithKey("c"), Factories.Text("E").WithKey("e")];
+                    ? [TextBlock("A").WithKey("a"), TextBlock("B").WithKey("b"), TextBlock("C").WithKey("c"), TextBlock("D").WithKey("d"), TextBlock("E").WithKey("e")]
+                    : [TextBlock("A").WithKey("a"), TextBlock("C").WithKey("c"), TextBlock("E").WithKey("e")];
 
                 return VStack(
                     Button("Remove", () => setPhase(1)),
@@ -129,8 +129,8 @@ internal static class ReconcilerStressFixtures
             {
                 var (phase, setPhase) = ctx.UseState(0);
                 Element[] items = phase == 0
-                    ? [Factories.Text("A").WithKey("a"), Factories.Text("B").WithKey("b"), Factories.Text("C").WithKey("c"), Factories.Text("D").WithKey("d"), Factories.Text("E").WithKey("e")]
-                    : [Factories.Text("E").WithKey("e"), Factories.Text("C").WithKey("c"), Factories.Text("A").WithKey("a"), Factories.Text("D").WithKey("d"), Factories.Text("B").WithKey("b")];
+                    ? [TextBlock("A").WithKey("a"), TextBlock("B").WithKey("b"), TextBlock("C").WithKey("c"), TextBlock("D").WithKey("d"), TextBlock("E").WithKey("e")]
+                    : [TextBlock("E").WithKey("e"), TextBlock("C").WithKey("c"), TextBlock("A").WithKey("a"), TextBlock("D").WithKey("d"), TextBlock("B").WithKey("b")];
 
                 return VStack(
                     Button("Reorder", () => setPhase(1)),
@@ -181,8 +181,8 @@ internal static class ReconcilerStressFixtures
             {
                 var (phase, setPhase) = ctx.UseState(0);
                 Element[] items = phase == 0
-                    ? [Factories.Text("A").WithKey("a"), Factories.Text("B").WithKey("b"), Factories.Text("C").WithKey("c"), Factories.Text("D").WithKey("d")]
-                    : [Factories.Text("D").WithKey("d"), Factories.Text("X").WithKey("x"), Factories.Text("B").WithKey("b"), Factories.Text("Y").WithKey("y")];
+                    ? [TextBlock("A").WithKey("a"), TextBlock("B").WithKey("b"), TextBlock("C").WithKey("c"), TextBlock("D").WithKey("d")]
+                    : [TextBlock("D").WithKey("d"), TextBlock("X").WithKey("x"), TextBlock("B").WithKey("b"), TextBlock("Y").WithKey("y")];
 
                 return VStack(
                     Button("Change", () => setPhase(1)),
@@ -229,8 +229,8 @@ internal static class ReconcilerStressFixtures
             {
                 var (phase, setPhase) = ctx.UseState(0);
                 Element[] items = phase == 0
-                    ? [Factories.Text("TypeA"), Button("TypeB")]
-                    : [Button("TypeC"), Factories.Text("TypeD")];
+                    ? [TextBlock("TypeA"), Button("TypeB")]
+                    : [Button("TypeC"), TextBlock("TypeD")];
 
                 return VStack(
                     Button("Swap", () => setPhase(1)),
@@ -272,7 +272,7 @@ internal static class ReconcilerStressFixtures
                 {
                     var (count, setCount) = innerCtx.UseState(0);
                     return VStack(
-                        Factories.Text($"FuncCount: {count}"),
+                        TextBlock($"FuncCount: {count}"),
                         Button("FuncInc", () => setCount(count + 1))
                     );
                 });
@@ -309,7 +309,7 @@ internal static class ReconcilerStressFixtures
                 var (show, setShow) = ctx.UseState(true);
                 return VStack(
                     Button("Toggle", () => setShow(!show)),
-                    show ? Border(Factories.Text("Visible")) : null
+                    show ? Border(TextBlock("Visible")) : null
                 );
             });
 
@@ -347,7 +347,7 @@ internal static class ReconcilerStressFixtures
                     // Setup
                     return () => { CleanupCount++; }; // Cleanup
                 });
-                return Factories.Text("Cleanup Tracked");
+                return TextBlock("Cleanup Tracked");
             }
         }
 
@@ -396,9 +396,9 @@ internal static class ReconcilerStressFixtures
                     Button("RemoveNested", () => setShow(false)),
                     show
                         ? Border(ScrollView(VStack(
-                            Factories.Text("Nested1"),
-                            Factories.Text("Nested2"),
-                            Factories.Text("Nested3"))))
+                            TextBlock("Nested1"),
+                            TextBlock("Nested2"),
+                            TextBlock("Nested3"))))
                         : null
                 );
             });
@@ -460,7 +460,7 @@ internal static class ReconcilerStressFixtures
                         Button("Reverse", () => setPhase(1)),
                         Button("Shuffle", () => setPhase(2))
                     ),
-                    VStack(indices.Select(i => Factories.Text($"K{i}").WithKey($"k{i}")).ToArray())
+                    VStack(indices.Select(i => TextBlock($"K{i}").WithKey($"k{i}")).ToArray())
                 );
             });
 
@@ -506,9 +506,9 @@ internal static class ReconcilerStressFixtures
 
                 Element[] items = phase switch
                 {
-                    0 => [Factories.Text("MC_A").WithKey("a"), Factories.Text("MC_B").WithKey("b")],
-                    1 => [Factories.Text("MC_A").WithKey("a"), Factories.Text("MC_B").WithKey("b"), Factories.Text("MC_C").WithKey("c"), Factories.Text("MC_D").WithKey("d")],
-                    _ => [Factories.Text("MC_B").WithKey("b"), Factories.Text("MC_D").WithKey("d")],
+                    0 => [TextBlock("MC_A").WithKey("a"), TextBlock("MC_B").WithKey("b")],
+                    1 => [TextBlock("MC_A").WithKey("a"), TextBlock("MC_B").WithKey("b"), TextBlock("MC_C").WithKey("c"), TextBlock("MC_D").WithKey("d")],
+                    _ => [TextBlock("MC_B").WithKey("b"), TextBlock("MC_D").WithKey("d")],
                 };
 
                 return VStack(
@@ -561,8 +561,8 @@ internal static class ReconcilerStressFixtures
             {
                 var (phase, setPhase) = ctx.UseState(0);
                 Element[] items = phase == 0
-                    ? [Button("Btn1").WithKey("k1"), Factories.Text("Txt2").WithKey("k2")]
-                    : [Factories.Text("Txt1").WithKey("k1"), Factories.Text("Txt2").WithKey("k2")];
+                    ? [Button("Btn1").WithKey("k1"), TextBlock("Txt2").WithKey("k2")]
+                    : [TextBlock("Txt1").WithKey("k1"), TextBlock("Txt2").WithKey("k2")];
 
                 return VStack(
                     Button("TypeBreak", () => setPhase(1)),

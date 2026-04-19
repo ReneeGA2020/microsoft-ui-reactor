@@ -19,16 +19,16 @@ class RelativePanelPage : Component
                 SampleCard("Basic RelativePanel",
                     Border(
                         RelativePanel(
-                            Border(Factories.Text("Top-Left").Center().Foreground("#FFFFFF").Padding(8))
+                            Border(TextBlock("Top-Left").Center().Foreground("#FFFFFF").Padding(8))
                                 .Background("#E74C3C").CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft)
                                 .RelativePanel(name: "topLeft", alignLeftWithPanel: true, alignTopWithPanel: true),
 
-                            Border(Factories.Text("Right of Red").Center().Foreground("#FFFFFF").Padding(8))
+                            Border(TextBlock("Right of Red").Center().Foreground("#FFFFFF").Padding(8))
                                 .Background("#3498DB").CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft)
                                 .RelativePanel(name: "rightBlock", rightOf: "topLeft")
                                 .Margin(8, 0, 0, 0),
 
-                            Border(Factories.Text("Below Red").Center().Foreground("#FFFFFF").Padding(8))
+                            Border(TextBlock("Below Red").Center().Foreground("#FFFFFF").Padding(8))
                                 .Background("#2ECC71").CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft)
                                 .RelativePanel(name: "belowBlock", below: "topLeft")
                                 .Margin(0, 8, 0, 0)
@@ -39,13 +39,13 @@ class RelativePanelPage : Component
                 SampleCard("Panel Alignment",
                     Border(
                         RelativePanel(
-                            Border(Factories.Text("Center").Center().Foreground("#FFFFFF").Padding(8))
+                            Border(TextBlock("Center").Center().Foreground("#FFFFFF").Padding(8))
                                 .Background("#9B59B6").CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft)
                                 .RelativePanel(name: "center",
                                     alignHorizontalCenterWithPanel: true,
                                     alignVerticalCenterWithPanel: true),
 
-                            Border(Factories.Text("Bottom-Right").Center().Foreground("#FFFFFF").Padding(8))
+                            Border(TextBlock("Bottom-Right").Center().Foreground("#FFFFFF").Padding(8))
                                 .Background("#E67E22").CornerRadius(ThemeResource.CornerRadius("ControlCornerRadius").TopLeft)
                                 .RelativePanel(name: "bottomRight",
                                     alignRightWithPanel: true,

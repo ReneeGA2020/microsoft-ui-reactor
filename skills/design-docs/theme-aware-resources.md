@@ -20,7 +20,7 @@ When the reconciler mounts or updates an element with a `ThemeRef`, it resolves 
 | `Theme.DisabledText` | `TextFillColorDisabledBrush` | Disabled text |
 | `Theme.AccentText` | `AccentTextFillColorPrimaryBrush` | Accent-colored text |
 
-Do **not** set `Theme.PrimaryText` explicitly on `Text()` — it is the default foreground.
+Do **not** set `Theme.PrimaryText` explicitly on `TextBlock()` — it is the default foreground.
 
 ### Text on Accent
 
@@ -228,7 +228,7 @@ Use `UseColorScheme()` to reactively respond to system theme changes:
 var scheme = UseColorScheme();
 
 return VStack(
-    Text(scheme.IsDarkTheme ? "Dark Mode" : "Light Mode"),
+    TextBlock(scheme.IsDarkTheme ? "Dark Mode" : "Light Mode"),
     // Adjust layout or content based on theme
 );
 ```

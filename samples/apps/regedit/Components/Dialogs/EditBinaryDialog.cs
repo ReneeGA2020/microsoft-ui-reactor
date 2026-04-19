@@ -23,12 +23,12 @@ internal sealed class EditBinaryDialog : Component<EditBinaryDialogProps>
             Strings.EditBinaryTitle,
             VStack(12,
                 VStack(4,
-                    Factories.Text(Strings.ValueName),
+                    TextBlock(Strings.ValueName),
                     TextField(Props.ValueName, _ => { })
                         .ReadOnly()
                 ),
                 VStack(4,
-                    Factories.Text(Strings.ValueData),
+                    TextBlock(Strings.ValueData),
                     TextField(Props.ValueData, Props.OnValueDataChanged)
                         .Set(tb =>
                         {

@@ -71,15 +71,15 @@ public class ReconcilerMountUpdateTests
     public void CanUpdate_Same_Type_Same_Key_Returns_True()
     {
         var reconciler = new Reconciler();
-        Assert.True(reconciler.CanUpdate(new TextElement("a"), new TextElement("b")));
+        Assert.True(reconciler.CanUpdate(new TextBlockElement("a"), new TextBlockElement("b")));
     }
 
     [Fact]
     public void CanUpdate_Same_Type_Different_Key_Returns_False()
     {
         var reconciler = new Reconciler();
-        var a = new TextElement("a") { Key = "1" };
-        var b = new TextElement("b") { Key = "2" };
+        var a = new TextBlockElement("a") { Key = "1" };
+        var b = new TextBlockElement("b") { Key = "2" };
         Assert.False(reconciler.CanUpdate(a, b));
     }
 
@@ -87,7 +87,7 @@ public class ReconcilerMountUpdateTests
     public void CanUpdate_Different_Types_Returns_False()
     {
         var reconciler = new Reconciler();
-        Assert.False(reconciler.CanUpdate(new TextElement("a"), new ButtonElement("b")));
+        Assert.False(reconciler.CanUpdate(new TextBlockElement("a"), new ButtonElement("b")));
     }
 
     [Fact]

@@ -113,7 +113,7 @@ internal static class MarkdownHtmlFixtures
             var host = H.CreateHost();
             host.Mount(ctx =>
                 VStack(
-                    Factories.Text("Markdown \u2192 HTML \u2192 WebView2"),
+                    TextBlock("Markdown \u2192 HTML \u2192 WebView2"),
                     (WebView2() with { OnNavigationCompleted = _ => { } })
                         .Width(800).Height(600)
                         .Set(wv =>

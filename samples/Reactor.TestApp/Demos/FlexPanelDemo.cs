@@ -21,12 +21,12 @@ class FlexPanelDemo : Component
 
         return ScrollView(VStack(16,
             Heading("FlexPanel"),
-            Factories.Text("Interactive CSS Flexbox layout."),
+            TextBlock("Interactive CSS Flexbox layout."),
 
             // Controls
             HStack(8,
                 VStack(4,
-                    Factories.Text("Direction").SemiBold(),
+                    TextBlock("Direction").SemiBold(),
                     Button("Row", () => setDirection(FlexDirection.Row))
                         .Disabled(direction == FlexDirection.Row),
                     Button("Column", () => setDirection(FlexDirection.Column))
@@ -35,14 +35,14 @@ class FlexPanelDemo : Component
                         .Disabled(direction == FlexDirection.RowReverse)
                 ),
                 VStack(4,
-                    Factories.Text("Wrap").SemiBold(),
+                    TextBlock("Wrap").SemiBold(),
                     Button("No Wrap", () => setWrap(FlexWrap.NoWrap))
                         .Disabled(wrap == FlexWrap.NoWrap),
                     Button("Wrap", () => setWrap(FlexWrap.Wrap))
                         .Disabled(wrap == FlexWrap.Wrap)
                 ),
                 VStack(4,
-                    Factories.Text("Justify Content").SemiBold(),
+                    TextBlock("Justify Content").SemiBold(),
                     Button("Start", () => setJustify(FlexJustify.FlexStart))
                         .Disabled(justify == FlexJustify.FlexStart),
                     Button("Center", () => setJustify(FlexJustify.Center))
@@ -53,7 +53,7 @@ class FlexPanelDemo : Component
                         .Disabled(justify == FlexJustify.SpaceEvenly)
                 ),
                 VStack(4,
-                    Factories.Text("Align Items").SemiBold(),
+                    TextBlock("Align Items").SemiBold(),
                     Button("Stretch", () => setAlignItems(FlexAlign.Stretch))
                         .Disabled(alignItems == FlexAlign.Stretch),
                     Button("Center", () => setAlignItems(FlexAlign.Center))
@@ -90,7 +90,7 @@ class FlexPanelDemo : Component
 
             // Grow ratio demo
             SubHeading("Grow Ratios"),
-            Factories.Text("Items with grow 1 : 2 : 1 share available space proportionally."),
+            TextBlock("Items with grow 1 : 2 : 1 share available space proportionally."),
             new FlexElement([
                 ColorBox("1x", "#4A90D9").Flex(grow: 1).Height(50),
                 ColorBox("2x", "#50B86C").Flex(grow: 2).Height(50),
@@ -103,7 +103,7 @@ class FlexPanelDemo : Component
 
             // Wrap demo
             SubHeading("Wrap"),
-            Factories.Text("Eight items with wrap enabled flow onto multiple lines."),
+            TextBlock("Eight items with wrap enabled flow onto multiple lines."),
             new FlexElement(
                 Enumerable.Range(1, 8).Select(i =>
                     ColorBox($"{i}", i % 2 == 0 ? "#4A90D9" : "#E8834A")
@@ -121,6 +121,6 @@ class FlexPanelDemo : Component
 
     static Element ColorBox(string label, string color) =>
         Border(
-            Factories.Text(label).SemiBold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
+            TextBlock(label).SemiBold().HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center)
         ).Background(color).CornerRadius(4).Padding(8);
 }

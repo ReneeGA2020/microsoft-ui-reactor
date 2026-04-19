@@ -24,11 +24,11 @@ internal sealed class FindDialog : Component<FindDialogProps>
             Strings.FindTitle,
             VStack(12,
                 VStack(4,
-                    Factories.Text(Strings.FindWhat),
+                    TextBlock(Strings.FindWhat),
                     TextField(Props.SearchText, Props.OnSearchTextChanged)
                 ),
                 VStack(4,
-                    Factories.Text(Strings.LookAt),
+                    TextBlock(Strings.LookAt),
                     CheckBox(
                         Props.Flags.HasFlag(FindFlags.Keys),
                         v => ToggleFlag(FindFlags.Keys, v),

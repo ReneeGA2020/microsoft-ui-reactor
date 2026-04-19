@@ -20,7 +20,7 @@ class ToggleButtonPage: Component
             SampleCard("Basic ToggleButton",
                 VStack(8,
                     ToggleButton("Mute", isChecked, v => setIsChecked(v)),
-                    Factories.Text($"Toggled: {isChecked}").Foreground(Theme.SecondaryText)),
+                    TextBlock($"Toggled: {isChecked}").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 ToggleButton(""Mute"", isChecked, v => setIsChecked(v))
 "),
@@ -28,7 +28,7 @@ ToggleButton(""Mute"", isChecked, v => setIsChecked(v))
             SampleCard("ToggleButton with State Display",
                 VStack(8,
                     ToggleButton(isChecked2 ? "ON" : "OFF", isChecked2, v => setIsChecked2(v)),
-                    Factories.Text(isChecked2 ? "Feature is enabled" : "Feature is disabled").Foreground(Theme.SecondaryText)),
+                    TextBlock(isChecked2 ? "Feature is enabled" : "Feature is disabled").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 ToggleButton(isChecked2 ? ""ON"" : ""OFF"", isChecked2, v => setIsChecked2(v))
 ")

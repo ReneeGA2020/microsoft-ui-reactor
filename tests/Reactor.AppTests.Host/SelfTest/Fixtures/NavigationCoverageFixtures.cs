@@ -33,16 +33,16 @@ internal static class NavigationCoverageFixtures
                 return VStack(
                     NavigationHost<string>(nav, route => route switch
                     {
-                        "Home" => Factories.Text("Page:Home"),
-                        "Settings" => Factories.Text("Page:Settings"),
-                        "Profile" => Factories.Text("Page:Profile"),
-                        "Deep" => Factories.Text("Page:Deep"),
-                        _ => Factories.Text($"Page:{route}"),
+                        "Home" => TextBlock("Page:Home"),
+                        "Settings" => TextBlock("Page:Settings"),
+                        "Profile" => TextBlock("Page:Profile"),
+                        "Deep" => TextBlock("Page:Deep"),
+                        _ => TextBlock($"Page:{route}"),
                     }),
-                    Factories.Text($"Route:{nav.CurrentRoute}"),
-                    Factories.Text($"CanBack:{nav.CanGoBack}"),
-                    Factories.Text($"CanFwd:{nav.CanGoForward}"),
-                    Factories.Text($"Depth:{nav.Depth}"),
+                    TextBlock($"Route:{nav.CurrentRoute}"),
+                    TextBlock($"CanBack:{nav.CanGoBack}"),
+                    TextBlock($"CanFwd:{nav.CanGoForward}"),
+                    TextBlock($"Depth:{nav.Depth}"),
                     Button("GoSettings", () => nav.Navigate("Settings")),
                     Button("GoProfile", () => nav.Navigate("Profile")),
                     Button("GoDeep", () => nav.Navigate("Deep")),
@@ -108,9 +108,9 @@ internal static class NavigationCoverageFixtures
                 var nav = ctx.UseNavigation("A");
                 navHandle = nav;
                 return VStack(
-                    NavigationHost<string>(nav, route => Factories.Text($"Pop:{route}")),
-                    Factories.Text($"Current:{nav.CurrentRoute}"),
-                    Factories.Text($"Depth:{nav.Depth}"),
+                    NavigationHost<string>(nav, route => TextBlock($"Pop:{route}")),
+                    TextBlock($"Current:{nav.CurrentRoute}"),
+                    TextBlock($"Depth:{nav.Depth}"),
                     Button("GoB", () => nav.Navigate("B")),
                     Button("GoC", () => nav.Navigate("C")),
                     Button("GoD", () => nav.Navigate("D")),
@@ -154,8 +154,8 @@ internal static class NavigationCoverageFixtures
                 var nav = ctx.UseNavigation("Home");
                 navHandle = nav;
                 return VStack(
-                    NavigationHost<string>(nav, route => Factories.Text($"Ser:{route}")),
-                    Factories.Text($"Cur:{nav.CurrentRoute}"),
+                    NavigationHost<string>(nav, route => TextBlock($"Ser:{route}")),
+                    TextBlock($"Cur:{nav.CurrentRoute}"),
                     Button("GoA", () => nav.Navigate("A")),
                     Button("GoB", () => nav.Navigate("B")),
                     Button("Save", () => savedState = nav.GetState()),
@@ -204,9 +204,9 @@ internal static class NavigationCoverageFixtures
             {
                 var nav = ctx.UseNavigation("Start");
                 return VStack(
-                    NavigationHost<string>(nav, route => Factories.Text($"Opt:{route}")),
-                    Factories.Text($"Cur:{nav.CurrentRoute}"),
-                    Factories.Text($"Depth:{nav.Depth}"),
+                    NavigationHost<string>(nav, route => TextBlock($"Opt:{route}")),
+                    TextBlock($"Cur:{nav.CurrentRoute}"),
+                    TextBlock($"Depth:{nav.Depth}"),
                     Button("NavReplace", () => nav.Navigate("Replaced", new NavigateOptions { PushToBackStack = false })),
                     Button("NavPush", () => nav.Navigate("Pushed"))
                 );
@@ -287,7 +287,7 @@ internal static class NavigationCoverageFixtures
 
             // Dummy render to satisfy harness
             var host = H.CreateHost();
-            host.Mount(ctx => Factories.Text("DeepLink done"));
+            host.Mount(ctx => TextBlock("DeepLink done"));
             await Harness.Render();
         }
     }
@@ -323,7 +323,7 @@ internal static class NavigationCoverageFixtures
             H.Check("NavTrans_None", none is SuppressTransition);
 
             var host = H.CreateHost();
-            host.Mount(ctx => Factories.Text("Transitions done"));
+            host.Mount(ctx => TextBlock("Transitions done"));
             await Harness.Render();
         }
     }
@@ -352,9 +352,9 @@ internal static class NavigationCoverageFixtures
                 });
 
                 return VStack(
-                    NavigationHost<string>(nav, route => Factories.Text($"Evt:{route}")),
-                    Factories.Text($"Back:{nav.BackStack.Count}"),
-                    Factories.Text($"Fwd:{nav.ForwardStack.Count}"),
+                    NavigationHost<string>(nav, route => TextBlock($"Evt:{route}")),
+                    TextBlock($"Back:{nav.BackStack.Count}"),
+                    TextBlock($"Fwd:{nav.ForwardStack.Count}"),
                     Button("Nav1", () => nav.Navigate("Page1")),
                     Button("Nav2", () => nav.Navigate("Page2")),
                     Button("Back", () => nav.GoBack())
@@ -393,10 +393,10 @@ internal static class NavigationCoverageFixtures
                     Button("GoOther", () => nav.Navigate("other")),
                     NavigationHost(nav, route => route switch
                     {
-                        "open" => Factories.Text("Page:Open"),
+                        "open" => TextBlock("Page:Open"),
                         "guarded" => Component<GuardedPage>(),
-                        "other" => Factories.Text("Page:Other"),
-                        _ => Factories.Text("Unknown"),
+                        "other" => TextBlock("Page:Other"),
+                        _ => TextBlock("Unknown"),
                     }) with { Transition = NavigationTransition.None }
                 );
             });
@@ -432,7 +432,7 @@ internal static class NavigationCoverageFixtures
         {
             UseNavigationLifecycle(
                 onNavigatingTo: ctx => ctx.Cancel());
-            return Factories.Text("Page:Guarded");
+            return TextBlock("Page:Guarded");
         }
     }
 
@@ -456,7 +456,7 @@ internal static class NavigationCoverageFixtures
             H.Check("NavDLQ_NoQuery", r2.Matched && r2.Routes[0] == "User:7,Tab:default,Page:1");
 
             var host = H.CreateHost();
-            host.Mount(ctx => Factories.Text("DLQ done"));
+            host.Mount(ctx => TextBlock("DLQ done"));
             await Harness.Render();
         }
     }
@@ -480,7 +480,7 @@ internal static class NavigationCoverageFixtures
             H.Check("NavDLOpt_Absent", r2.Matched && r2.Routes[0] == "Search:all");
 
             var host = H.CreateHost();
-            host.Mount(ctx => Factories.Text("DLOpt done"));
+            host.Mount(ctx => TextBlock("DLOpt done"));
             await Harness.Render();
         }
     }
@@ -509,7 +509,7 @@ internal static class NavigationCoverageFixtures
             H.Check("NavDLWild_BaseNoMatch", !r2.Matched);
 
             var host = H.CreateHost();
-            host.Mount(ctx => Factories.Text("DLWild done"));
+            host.Mount(ctx => TextBlock("DLWild done"));
             await Harness.Render();
         }
     }
@@ -534,7 +534,7 @@ internal static class NavigationCoverageFixtures
                     var nav = ctx.UseNavigation("home");
                     return VStack(
                         Button("Go", () => nav.Navigate("detail")),
-                        NavigationHost(nav, route => Factories.Text($"Diag:{route}"))
+                        NavigationHost(nav, route => TextBlock($"Diag:{route}"))
                             with { Transition = NavigationTransition.None }
                     );
                 });
@@ -570,7 +570,7 @@ internal static class NavigationCoverageFixtures
             H.Check("NavSlide_DefaultNull", def is SlideTransition d && d.Distance is null);
 
             var host = H.CreateHost();
-            host.Mount(ctx => Factories.Text("Slide done"));
+            host.Mount(ctx => TextBlock("Slide done"));
             await Harness.Render();
         }
     }

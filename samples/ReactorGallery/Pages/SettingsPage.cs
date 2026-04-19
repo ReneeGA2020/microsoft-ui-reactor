@@ -13,7 +13,7 @@ class SettingsPage : Component
         return ScrollView(
             VStack(24,
                 // Page header
-                Factories.Text("Settings")
+                TextBlock("Settings")
                     .FontSize(28)
                     .Bold()
                     .Foreground(Theme.PrimaryText),
@@ -21,7 +21,7 @@ class SettingsPage : Component
                 // About section card
                 Border(
                     VStack(12,
-                        Factories.Text("About this app")
+                        TextBlock("About this app")
                             .Foreground(Theme.PrimaryText)
                             .SemiBold(),
 
@@ -32,7 +32,7 @@ class SettingsPage : Component
                         HStack(16,
                             // App icon placeholder
                             Border(
-                                Factories.Text("\uE80F")
+                                TextBlock("\uE80F")
                                     .Set(tb => tb.FontFamily = new FontFamily("Segoe MDL2 Assets"))
                                     .FontSize(24)
                                     .Foreground(Theme.AccentText)
@@ -43,16 +43,16 @@ class SettingsPage : Component
                             .Width(48).Height(48),
 
                             VStack(2,
-                                Factories.Text("WinUI Gallery (Reactor)")
+                                TextBlock("WinUI Gallery (Reactor)")
                                     .Foreground(Theme.PrimaryText)
                                     .SemiBold(),
-                                Factories.Text("Version 1.0")
+                                TextBlock("Version 1.0")
                                     .Foreground(Theme.SecondaryText)
                                     .FontSize(12)
                             ).VAlign(VerticalAlignment.Center)
                         ),
 
-                        Factories.Text("This app is built with Reactor, a declarative component-based UI framework for WinUI 3. It demonstrates how to recreate the WinUI Gallery experience using reactive hooks and a composable element DSL.")
+                        TextBlock("This app is built with Reactor, a declarative component-based UI framework for WinUI 3. It demonstrates how to recreate the WinUI Gallery experience using reactive hooks and a composable element DSL.")
                             .Foreground(Theme.SecondaryText)
                             .FontSize(13)
                             .Set(tb => tb.TextWrapping = TextWrapping.Wrap)
@@ -67,7 +67,7 @@ class SettingsPage : Component
                 // Links section card
                 Border(
                     VStack(12,
-                        Factories.Text("Links")
+                        TextBlock("Links")
                             .Foreground(Theme.PrimaryText)
                             .SemiBold(),
 
@@ -94,7 +94,7 @@ class SettingsPage : Component
                 // Framework info card
                 Border(
                     VStack(8,
-                        Factories.Text("Built with Reactor")
+                        TextBlock("Built with Reactor")
                             .Foreground(Theme.PrimaryText)
                             .SemiBold(),
 
@@ -103,20 +103,20 @@ class SettingsPage : Component
                             .Background(Theme.DividerStroke),
 
                         HStack(8,
-                            Factories.Text("Framework").Foreground(Theme.SecondaryText).FontSize(13).Width(120),
-                            Factories.Text("Reactor (declarative C# DSL)").Foreground(Theme.PrimaryText).FontSize(13)
+                            TextBlock("Framework").Foreground(Theme.SecondaryText).FontSize(13).Width(120),
+                            TextBlock("Reactor (declarative C# DSL)").Foreground(Theme.PrimaryText).FontSize(13)
                         ),
                         HStack(8,
-                            Factories.Text("Platform").Foreground(Theme.SecondaryText).FontSize(13).Width(120),
-                            Factories.Text("WinUI 3 / Windows App SDK").Foreground(Theme.PrimaryText).FontSize(13)
+                            TextBlock("Platform").Foreground(Theme.SecondaryText).FontSize(13).Width(120),
+                            TextBlock("WinUI 3 / Windows App SDK").Foreground(Theme.PrimaryText).FontSize(13)
                         ),
                         HStack(8,
-                            Factories.Text("Rendering").Foreground(Theme.SecondaryText).FontSize(13).Width(120),
-                            Factories.Text("Virtual DOM reconciler").Foreground(Theme.PrimaryText).FontSize(13)
+                            TextBlock("Rendering").Foreground(Theme.SecondaryText).FontSize(13).Width(120),
+                            TextBlock("Virtual DOM reconciler").Foreground(Theme.PrimaryText).FontSize(13)
                         ),
                         HStack(8,
-                            Factories.Text("State").Foreground(Theme.SecondaryText).FontSize(13).Width(120),
-                            Factories.Text("React-style hooks").Foreground(Theme.PrimaryText).FontSize(13)
+                            TextBlock("State").Foreground(Theme.SecondaryText).FontSize(13).Width(120),
+                            TextBlock("React-style hooks").Foreground(Theme.PrimaryText).FontSize(13)
                         )
                     )
                 )

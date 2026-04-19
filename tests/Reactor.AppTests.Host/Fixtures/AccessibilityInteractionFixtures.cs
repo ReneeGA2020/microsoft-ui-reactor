@@ -21,7 +21,7 @@ internal static class AccessibilityInteractionFixtures
     internal static Element KeyboardNavTest(RenderContext ctx)
     {
         return VStack(12,
-            Factories.Text("Keyboard Navigation Test")
+            TextBlock("Keyboard Navigation Test")
                 .HeadingLevel(AutomationHeadingLevel.Level1)
                 .AutomationId("A11yNav_Title"),
 
@@ -60,15 +60,15 @@ internal static class AccessibilityInteractionFixtures
     {
         // Stateless fixture — validates that LiveRegion UIA properties are set.
         return VStack(12,
-            Factories.Text("Live Region Test")
+            TextBlock("Live Region Test")
                 .HeadingLevel(AutomationHeadingLevel.Level1)
                 .AutomationId("A11yLive_Title"),
 
-            Factories.Text("Status: 3 items deleted")
+            TextBlock("Status: 3 items deleted")
                 .LiveRegion(AutomationLiveSetting.Polite)
                 .AutomationId("A11yLive_Status"),
 
-            Factories.Text("Alert: Connection lost!")
+            TextBlock("Alert: Connection lost!")
                 .LiveRegion(AutomationLiveSetting.Assertive)
                 .AutomationId("A11yLive_Alert")
         ).Landmark(AutomationLandmarkType.Main)
@@ -92,7 +92,7 @@ internal static class AccessibilityInteractionFixtures
             var announce = UseAnnounce();
 
             return VStack(12,
-                Factories.Text("UseAnnounce Test")
+                TextBlock("UseAnnounce Test")
                     .HeadingLevel(AutomationHeadingLevel.Level1)
                     .AutomationId("A11yAnnounce_Title"),
 
@@ -113,11 +113,11 @@ internal static class AccessibilityInteractionFixtures
                 }).AutomationId("A11yAnnounce_ResetBtn"),
 
                 // Visible live region — text changes trigger screen reader announcements
-                Factories.Text($"Deleted: {count} items")
+                TextBlock($"Deleted: {count} items")
                     .LiveRegion(AutomationLiveSetting.Polite)
                     .AutomationId("A11yAnnounce_StatusText"),
 
-                Factories.Text(count > 0 ? $"Last announcement: {count} items deleted" : "No announcements yet")
+                TextBlock(count > 0 ? $"Last announcement: {count} items deleted" : "No announcements yet")
                     .AutomationId("A11yAnnounce_LastAction")
             ).Landmark(AutomationLandmarkType.Main)
              .Padding(24);
@@ -134,29 +134,29 @@ internal static class AccessibilityInteractionFixtures
     internal static Element HeadingHierarchyTest(RenderContext ctx)
     {
         return VStack(12,
-            Factories.Text("Application Settings")
+            TextBlock("Application Settings")
                 .FontSize(24).Bold()
                 .HeadingLevel(AutomationHeadingLevel.Level1)
                 .AutomationId("A11yH_H1"),
 
-            Factories.Text("Appearance")
+            TextBlock("Appearance")
                 .FontSize(18).SemiBold()
                 .HeadingLevel(AutomationHeadingLevel.Level2)
                 .AutomationId("A11yH_H2a"),
 
-            Factories.Text("Choose your preferred theme."),
+            TextBlock("Choose your preferred theme."),
 
-            Factories.Text("Notifications")
+            TextBlock("Notifications")
                 .FontSize(18).SemiBold()
                 .HeadingLevel(AutomationHeadingLevel.Level2)
                 .AutomationId("A11yH_H2b"),
 
-            Factories.Text("Email Alerts")
+            TextBlock("Email Alerts")
                 .FontSize(15).SemiBold()
                 .HeadingLevel(AutomationHeadingLevel.Level3)
                 .AutomationId("A11yH_H3"),
 
-            Factories.Text("Configure which emails you receive.")
+            TextBlock("Configure which emails you receive.")
         ).Landmark(AutomationLandmarkType.Main)
          .Padding(24);
     }
@@ -168,7 +168,7 @@ internal static class AccessibilityInteractionFixtures
     internal static Element AccessKeyTest(RenderContext ctx)
     {
         return VStack(12,
-            Factories.Text("Access Key Test")
+            TextBlock("Access Key Test")
                 .HeadingLevel(AutomationHeadingLevel.Level1)
                 .AutomationId("A11yAK_Title"),
 
@@ -180,7 +180,7 @@ internal static class AccessibilityInteractionFixtures
                 .AccessKey("C")
                 .AutomationId("A11yAK_CancelBtn"),
 
-            Factories.Text("Ready")
+            TextBlock("Ready")
                 .AutomationId("A11yAK_Status")
         ).Landmark(AutomationLandmarkType.Main)
          .Padding(24);
@@ -193,17 +193,17 @@ internal static class AccessibilityInteractionFixtures
     internal static Element SemanticPanelTest(RenderContext ctx)
     {
         return VStack(12,
-            Factories.Text("Semantic Panel Test")
+            TextBlock("Semantic Panel Test")
                 .HeadingLevel(AutomationHeadingLevel.Level1)
                 .AutomationId("A11ySem_Title"),
 
             // Star rating: 3 out of 5 — should expose as a slider with range value
             HStack(4,
-                Factories.Text("★").FontSize(20),
-                Factories.Text("★").FontSize(20),
-                Factories.Text("★").FontSize(20),
-                Factories.Text("☆").FontSize(20),
-                Factories.Text("☆").FontSize(20)
+                TextBlock("★").FontSize(20),
+                TextBlock("★").FontSize(20),
+                TextBlock("★").FontSize(20),
+                TextBlock("☆").FontSize(20),
+                TextBlock("☆").FontSize(20)
             ).Semantics(
                 role: "slider",
                 value: "3 of 5 stars",
@@ -215,8 +215,8 @@ internal static class AccessibilityInteractionFixtures
 
             // Status badge: should expose as a custom group with a value
             HStack(4,
-                Factories.Text("●").FontSize(10).Foreground("#00CC00"),
-                Factories.Text("Online")
+                TextBlock("●").FontSize(10).Foreground("#00CC00"),
+                TextBlock("Online")
             ).Semantics(
                 role: "statusbar",
                 value: "Online"
@@ -234,12 +234,12 @@ internal static class AccessibilityInteractionFixtures
     internal static Element LabeledByTest(RenderContext ctx)
     {
         return VStack(12,
-            Factories.Text("LabeledBy Test")
+            TextBlock("LabeledBy Test")
                 .HeadingLevel(AutomationHeadingLevel.Level1)
                 .AutomationId("A11yLbl_Title"),
 
             // Label element
-            Factories.Text("Email address")
+            TextBlock("Email address")
                 .AutomationId("A11yLbl_EmailLabel"),
 
             // Field referencing the label
@@ -263,7 +263,7 @@ internal static class AccessibilityInteractionFixtures
     internal static Element TabNavigationTest(RenderContext ctx)
     {
         return VStack(12,
-            Factories.Text("Tab Navigation Test")
+            TextBlock("Tab Navigation Test")
                 .HeadingLevel(AutomationHeadingLevel.Level1)
                 .AutomationId("A11yTabNav_Title"),
 

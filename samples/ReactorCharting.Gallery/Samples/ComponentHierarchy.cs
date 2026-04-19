@@ -105,7 +105,7 @@ public sealed class ComponentHierarchySample : GallerySample
 
     static Element HeaderBadge(string text) =>
         Border(
-            (Factories.Text(text) with { FontSize = 11, Weight = Microsoft.UI.Text.FontWeights.SemiBold })
+            (TextBlock(text) with { FontSize = 11, Weight = Microsoft.UI.Text.FontWeights.SemiBold })
                 .Foreground("#ffffff")
         ) with
         {

@@ -24,7 +24,7 @@ Use this checklist when reviewing Reactor UI code for Windows 11 design complian
 - [ ] Icon fonts use `SymbolThemeFontFamily` — not hardcoded `"Segoe Fluent Icons"`
 - [ ] Icon TextBlocks set `IsTextScaleFactorEnabled = false`
 - [ ] Icons and text top-aligned in wrapping scenarios (not center, which drifts at large text scales)
-- [ ] Default foreground (`TextFillColorPrimaryBrush`) not explicitly set on `Text()`
+- [ ] Default foreground (`TextFillColorPrimaryBrush`) not explicitly set on `TextBlock()`
 - [ ] Changing numbers use tabular numerals
 - [ ] Trimmed text has a tooltip for overflow content
 - [ ] TextWrapping choice is intentional — `Wrap` / `WrapWholeWords` where text should flow

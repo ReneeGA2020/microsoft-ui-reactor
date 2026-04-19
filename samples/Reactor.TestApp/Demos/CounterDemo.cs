@@ -28,20 +28,20 @@ class CounterDemo : Component
             ),
 
             HStack(8,
-                Factories.Text("Step size:"),
+                TextBlock("Step size:"),
                 Slider(step, 1, 10, v => setStep((int)v)).Width(200),
-                Factories.Text($"{step}")
+                TextBlock($"{step}")
             ),
 
             // Conditional rendering — shows different messages based on count
             count switch
             {
-                0 => Factories.Text("Try clicking the buttons!").Foreground(TertiaryText),
-                > 0 and < 10 => Factories.Text("Going up..."),
-                >= 10 and < 50 => Factories.Text("Getting bigger!").SemiBold(),
-                >= 50 => Factories.Text("That's a LOT!").SemiBold(),
-                < 0 and > -10 => Factories.Text("Going negative..."),
-                _ => Factories.Text("Way down there!").SemiBold()
+                0 => TextBlock("Try clicking the buttons!").Foreground(TertiaryText),
+                > 0 and < 10 => TextBlock("Going up..."),
+                >= 10 and < 50 => TextBlock("Getting bigger!").SemiBold(),
+                >= 50 => TextBlock("That's a LOT!").SemiBold(),
+                < 0 and > -10 => TextBlock("Going negative..."),
+                _ => TextBlock("Way down there!").SemiBold()
             }
         );
     }

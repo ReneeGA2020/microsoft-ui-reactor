@@ -61,7 +61,7 @@ class GalleryApp : Component
                         Button(
                             VStack(6,
                                 SampleIcon(sample, 36),
-                                Factories.Text(sample.Title) with { FontSize = 12 }
+                                TextBlock(sample.Title) with { FontSize = 12 }
                             ).MaxWidth(100).HAlign(HorizontalAlignment.Center),
                             () => navigate(sample)
                         ).Width(130).Height(90)
@@ -111,7 +111,7 @@ class GalleryApp : Component
                 SubHeading("Source Code").Foreground(Theme.PrimaryText),
                 Border(
                     ScrollView(
-                        (Factories.Text(sample.SourceCode) with
+                        (TextBlock(sample.SourceCode) with
                         {
                             IsTextSelectionEnabled = true,
                             TextWrapping = TextWrapping.Wrap,

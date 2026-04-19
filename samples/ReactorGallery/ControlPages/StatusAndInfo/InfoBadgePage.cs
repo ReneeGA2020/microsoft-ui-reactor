@@ -22,11 +22,11 @@ class InfoBadgePage : Component
                     VStack(8,
                         HStack(16,
                             VStack(4,
-                                Factories.Text("Notifications").Foreground(Theme.PrimaryText),
+                                TextBlock("Notifications").Foreground(Theme.PrimaryText),
                                 InfoBadge(count)
                             ),
                             VStack(4,
-                                Factories.Text("Messages").Foreground(Theme.PrimaryText),
+                                TextBlock("Messages").Foreground(Theme.PrimaryText),
                                 InfoBadge(42)
                             )
                         ),
@@ -41,11 +41,11 @@ InfoBadge(42)"),
                 SampleCard("Dot Badge",
                     HStack(16,
                         VStack(4,
-                            Factories.Text("Status").Foreground(Theme.PrimaryText),
+                            TextBlock("Status").Foreground(Theme.PrimaryText),
                             InfoBadge()
                         ),
                         VStack(4,
-                            Factories.Text("Updates Available").Foreground(Theme.PrimaryText),
+                            TextBlock("Updates Available").Foreground(Theme.PrimaryText),
                             InfoBadge()
                         )
                     ),

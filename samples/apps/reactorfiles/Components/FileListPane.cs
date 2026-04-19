@@ -46,11 +46,11 @@ internal sealed class FileListPane : Component<FileListPaneProps>
         var header = Grid(
             ["36", "2*", "*", "*", "*"],
             ["32"],
-            Factories.Text("").Grid(row: 0, column: 0),
-            Factories.Text("Name").SemiBold().Grid(row: 0, column: 1),
-            Factories.Text("Date modified").SemiBold().Grid(row: 0, column: 2),
-            Factories.Text("Type").SemiBold().Grid(row: 0, column: 3),
-            Factories.Text("Size").SemiBold().Grid(row: 0, column: 4)
+            TextBlock("").Grid(row: 0, column: 0),
+            TextBlock("Name").SemiBold().Grid(row: 0, column: 1),
+            TextBlock("Date modified").SemiBold().Grid(row: 0, column: 2),
+            TextBlock("Type").SemiBold().Grid(row: 0, column: 3),
+            TextBlock("Size").SemiBold().Grid(row: 0, column: 4)
         ).Set(g =>
         {
             g.Padding = new Thickness(4, 0, 4, 0);
@@ -74,7 +74,7 @@ internal sealed class FileListPane : Component<FileListPaneProps>
 
     private Element RenderDetailRow(FileEntry file)
     {
-        var icon = Factories.Text(file.IsDirectory ? FolderIcon : FileIcon)
+        var icon = TextBlock(file.IsDirectory ? FolderIcon : FileIcon)
             .Set(tb =>
             {
                 tb.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe MDL2 Assets");
@@ -85,10 +85,10 @@ internal sealed class FileListPane : Component<FileListPaneProps>
             ["36", "2*", "*", "*", "*"],
             ["32"],
             icon.HAlign(HorizontalAlignment.Center).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 0),
-            Factories.Text(file.Name).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 1),
-            Factories.Text(file.Modified.ToString("g")).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 2),
-            Factories.Text(file.TypeDescription).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 3),
-            Factories.Text(file.FormattedSize).HAlign(HorizontalAlignment.Right).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 4)
+            TextBlock(file.Name).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 1),
+            TextBlock(file.Modified.ToString("g")).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 2),
+            TextBlock(file.TypeDescription).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 3),
+            TextBlock(file.FormattedSize).HAlign(HorizontalAlignment.Right).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 4)
         ).Set(g =>
         {
             g.Padding = new Thickness(4, 0, 4, 0);
@@ -108,7 +108,7 @@ internal sealed class FileListPane : Component<FileListPaneProps>
             f => f.FullPath,
             (file, _) =>
             {
-                var icon = Factories.Text(file.IsDirectory ? FolderIcon : FileIcon)
+                var icon = TextBlock(file.IsDirectory ? FolderIcon : FileIcon)
                     .Set(tb =>
                     {
                         tb.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe MDL2 Assets");
@@ -117,7 +117,7 @@ internal sealed class FileListPane : Component<FileListPaneProps>
 
                 return HStack(6,
                     icon.VAlign(VerticalAlignment.Center),
-                    Factories.Text(file.Name).VAlign(VerticalAlignment.Center)
+                    TextBlock(file.Name).VAlign(VerticalAlignment.Center)
                 ).Set(sp =>
                 {
                     sp.Padding = new Thickness(4, 2, 4, 2);
@@ -138,7 +138,7 @@ internal sealed class FileListPane : Component<FileListPaneProps>
             f => f.FullPath,
             (file, _) =>
             {
-                var icon = Factories.Text(file.IsDirectory ? FolderIcon : FileIcon)
+                var icon = TextBlock(file.IsDirectory ? FolderIcon : FileIcon)
                     .Set(tb =>
                     {
                         tb.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe MDL2 Assets");
@@ -149,7 +149,7 @@ internal sealed class FileListPane : Component<FileListPaneProps>
                 {
                     return VStack(4,
                         icon.HAlign(HorizontalAlignment.Center),
-                        Factories.Text(file.Name).Set(tb =>
+                        TextBlock(file.Name).Set(tb =>
                         {
                             tb.TextAlignment = TextAlignment.Center;
                             tb.TextWrapping = TextWrapping.NoWrap;
@@ -168,7 +168,7 @@ internal sealed class FileListPane : Component<FileListPaneProps>
                 {
                     return HStack(6,
                         icon.VAlign(VerticalAlignment.Center),
-                        Factories.Text(file.Name).Set(tb =>
+                        TextBlock(file.Name).Set(tb =>
                         {
                             tb.TextTrimming = TextTrimming.CharacterEllipsis;
                             tb.MaxWidth = itemWidth - 40;

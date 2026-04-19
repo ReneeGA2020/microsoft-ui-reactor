@@ -189,7 +189,7 @@ class PerfStressDemo : Component
                         .Height(2),
                     // Middle: value label (only when bars are wide enough)
                     barWidth >= 10
-                        ? Factories.Text($"{val}").FontSize(Math.Min(7, barWidth * 0.8))
+                        ? TextBlock($"{val}").FontSize(Math.Min(7, barWidth * 0.8))
                         : Empty(),
                     // Bottom: progress-like fill showing relative position
                     Border(Empty())
@@ -217,18 +217,18 @@ class PerfStressDemo : Component
         }
         else
         {
-            bars = Factories.Text("Click 'Start Sort' to begin").Foreground(TertiaryText).MinHeight(220);
+            bars = TextBlock("Click 'Start Sort' to begin").Foreground(TertiaryText).MinHeight(220);
         }
 
         return ScrollView(VStack(12,
             Heading("Performance Stress Test"),
-            Factories.Text("Quicksort visualization — stresses tree diffing with many simultaneous property changes, " +
+            TextBlock("Quicksort visualization — stresses tree diffing with many simultaneous property changes, " +
                  "element creation/removal, and structural mutations."),
 
             // Controls
             HStack(12,
                 VStack(4,
-                    Factories.Text("Elements:"),
+                    TextBlock("Elements:"),
                     HStack(8,
                         Button("10", () => { if (!running) setElementCount(10); }).Disabled(running || elementCount == 10),
                         Button("50", () => { if (!running) setElementCount(50); }).Disabled(running || elementCount == 50),
@@ -239,10 +239,10 @@ class PerfStressDemo : Component
                     )
                 ),
                 VStack(4,
-                    Factories.Text("Tick interval:"),
+                    TextBlock("Tick interval:"),
                     HStack(8,
                         Slider(tickMs, 0, 100, v => { if (!running) setTickMs((int)v); }).Width(150),
-                        Factories.Text($"{tickMs}ms")
+                        TextBlock($"{tickMs}ms")
                     )
                 )
             ),
@@ -265,10 +265,10 @@ class PerfStressDemo : Component
 
             // Status
             sortState?.Sorted == true
-                ? Factories.Text($"Sorted in {totalSortMs:F0} ms  ({totalSwaps} swaps, {stepCount} steps)")
+                ? TextBlock($"Sorted in {totalSortMs:F0} ms  ({totalSwaps} swaps, {stepCount} steps)")
                     .SemiBold()
                 : running
-                    ? Factories.Text($"Sorting... step {stepCount}, {totalSwaps} swaps").Foreground(SecondaryText)
+                    ? TextBlock($"Sorting... step {stepCount}, {totalSwaps} swaps").Foreground(SecondaryText)
                     : Empty(),
 
             // Visualization area
@@ -282,32 +282,32 @@ class PerfStressDemo : Component
                 SubHeading("Render Performance"),
                 HStack(16,
                     VStack(2,
-                        Factories.Text("Elements").SemiBold(),
-                        Factories.Text($"{elementCount}")
+                        TextBlock("Elements").SemiBold(),
+                        TextBlock($"{elementCount}")
                     ),
                     VStack(2,
-                        Factories.Text("Samples").SemiBold(),
-                        Factories.Text($"{renderTimes.Count}")
+                        TextBlock("Samples").SemiBold(),
+                        TextBlock($"{renderTimes.Count}")
                     ),
                     VStack(2,
-                        Factories.Text("Avg").SemiBold(),
-                        Factories.Text($"{avgMs:F2} ms")
+                        TextBlock("Avg").SemiBold(),
+                        TextBlock($"{avgMs:F2} ms")
                     ),
                     VStack(2,
-                        Factories.Text("P95").SemiBold(),
-                        Factories.Text($"{p95Ms:F2} ms")
+                        TextBlock("P95").SemiBold(),
+                        TextBlock($"{p95Ms:F2} ms")
                     ),
                     VStack(2,
-                        Factories.Text("Max").SemiBold(),
-                        Factories.Text($"{maxMs:F2} ms")
+                        TextBlock("Max").SemiBold(),
+                        TextBlock($"{maxMs:F2} ms")
                     ),
                     VStack(2,
-                        Factories.Text("Swaps").SemiBold(),
-                        Factories.Text($"{totalSwaps}")
+                        TextBlock("Swaps").SemiBold(),
+                        TextBlock($"{totalSwaps}")
                     ),
                     VStack(2,
-                        Factories.Text("Total").SemiBold(),
-                        Factories.Text($"{totalSortMs:F0} ms")
+                        TextBlock("Total").SemiBold(),
+                        TextBlock($"{totalSortMs:F0} ms")
                     )
                 ),
 

@@ -47,7 +47,7 @@ internal static class DataGridFixtures
             };
 
             return VStack(8,
-                Factories.Text($"Last edit: {lastEdit}").AutomationId("EditStatus"),
+                TextBlock($"Last edit: {lastEdit}").AutomationId("EditStatus"),
                 DataGridDsl.DataGrid(
                     source: source,
                     columns: columns,

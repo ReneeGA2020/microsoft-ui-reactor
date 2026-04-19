@@ -17,10 +17,10 @@ class Tier1Demo : Component
     public override Element Render()
     {
         return VStack(12,
-            Text("Account Settings")
+            TextBlock("Account Settings")
                 .FontSize(24).Bold()
                 .HeadingLevel(AutomationHeadingLevel.Level1),
-            Text("Profile")
+            TextBlock("Profile")
                 .FontSize(18).SemiBold()
                 .HeadingLevel(AutomationHeadingLevel.Level2),
             TextField("", _ => { }, placeholder: "Display name")
@@ -47,13 +47,13 @@ class Tier2Demo : Component
                 .HelpText("Type a product name or SKU to filter results")
                 .Width(300),
             VStack(8,
-                Text("Revenue by Region").Bold(),
-                Text("Bar chart placeholder").Opacity(0.5)
+                TextBlock("Revenue by Region").Bold(),
+                TextBlock("Bar chart placeholder").Opacity(0.5)
             ).FullDescription(
                 "Bar chart showing Q1 revenue: East $4.2M, " +
                 "West $3.8M, Central $2.1M")
              .Padding(16).Background("#f5f5f5").CornerRadius(8),
-            Text("Decorative divider")
+            TextBlock("Decorative divider")
                 .Opacity(0.2)
                 .AccessibilityHidden()
         ).Padding(24);
@@ -73,7 +73,7 @@ class AccessibleFormDemo : Component
             && email.Contains('@') && agree;
 
         return VStack(12,
-            Text("Create Account").FontSize(24).Bold()
+            TextBlock("Create Account").FontSize(24).Bold()
                 .HeadingLevel(AutomationHeadingLevel.Level1),
             TextField(name, setName, header: "Full Name")
                 .AutomationName("Full name").Required().TabIndex(1),
@@ -103,10 +103,10 @@ class LandmarksDemo : Component
              .AutomationName("Main navigation"),
 
             VStack(12,
-                Text("Dashboard")
+                TextBlock("Dashboard")
                     .FontSize(20).Bold()
                     .HeadingLevel(AutomationHeadingLevel.Level1),
-                Text("Welcome back. Here is your overview.")
+                TextBlock("Welcome back. Here is your overview.")
             ).Landmark(AutomationLandmarkType.Main)
              .AutomationName("Main content"),
 
@@ -124,20 +124,20 @@ class HeadingHierarchyDemo : Component
     public override Element Render()
     {
         return VStack(12,
-            Text("Application Settings")
+            TextBlock("Application Settings")
                 .FontSize(24).Bold()
                 .HeadingLevel(AutomationHeadingLevel.Level1),
-            Text("Appearance")
+            TextBlock("Appearance")
                 .FontSize(18).SemiBold()
                 .HeadingLevel(AutomationHeadingLevel.Level2),
-            Text("Choose your preferred theme and font size."),
-            Text("Notifications")
+            TextBlock("Choose your preferred theme and font size."),
+            TextBlock("Notifications")
                 .FontSize(18).SemiBold()
                 .HeadingLevel(AutomationHeadingLevel.Level2),
-            Text("Email Alerts")
+            TextBlock("Email Alerts")
                 .FontSize(15).SemiBold()
                 .HeadingLevel(AutomationHeadingLevel.Level3),
-            Text("Configure which emails you receive.")
+            TextBlock("Configure which emails you receive.")
         ).Padding(24);
     }
 }
@@ -157,8 +157,8 @@ class FocusTrapDemo : Component
             When(showModal, () =>
                 Border(
                     VStack(12,
-                        Text("Modal Dialog").FontSize(18).Bold(),
-                        Text("Tab/Shift+Tab stays inside this panel."),
+                        TextBlock("Modal Dialog").FontSize(18).Bold(),
+                        TextBlock("Tab/Shift+Tab stays inside this panel."),
                         TextField("", _ => { }, placeholder: "Name")
                             .TabIndex(0),
                         Button("Close", () => setShowModal(false))
@@ -191,7 +191,7 @@ class AnnouncementsDemo : Component
             }),
             Button("Error (Assertive)", () =>
                 announce.Announce("Connection lost!", assertive: true)),
-            Text($"Saves: {count}").Opacity(0.6),
+            TextBlock($"Saves: {count}").Opacity(0.6),
             announce.Region  // invisible live region — must be in tree
         ).Padding(24);
     }
@@ -218,7 +218,7 @@ class SemanticPanelDemo : Component
                 role: "slider",
                 value: $"{rating} of 5 stars",
                 rangeMin: 1, rangeMax: 5, rangeValue: rating),
-            Text($"Current: {rating}/5").Opacity(0.6)
+            TextBlock($"Current: {rating}/5").Opacity(0.6)
         ).Padding(24);
     }
 }

@@ -30,9 +30,9 @@ public sealed class NestedListExplorerSample : GallerySample
         return D3Canvas(W, H,
             [.. root.Children.Select((folder, ci) =>
                 Border(VStack(4,
-                    Factories.Text(folder.Data.Name).SemiBold().Foreground(color),
+                    TextBlock(folder.Data.Name).SemiBold().Foreground(color),
                     ListView(folder.Leaves().Select(leaf =>
-                        HStack(8, Factories.Text(leaf.Data.Name), Factories.Text($"${leaf.Data.Size}"))
+                        HStack(8, TextBlock(leaf.Data.Name), TextBlock($"${leaf.Data.Size}"))
                     ).ToArray())
                 )) with { CornerRadius = 6, BorderBrush = color, ... }
                   .Size(folder.Width, folder.Height)
@@ -98,13 +98,13 @@ public sealed class NestedListExplorerSample : GallerySample
                     var bgColor = Brush(Palette[ci % Palette.Count], opacity: 0.06);
                     var dimBrush = Gray(100, alpha: 160);
 
-                    var header = (Factories.Text(folder.Data.Name) with { FontSize = 12 })
+                    var header = (TextBlock(folder.Data.Name) with { FontSize = 12 })
                         .SemiBold().Foreground(color).Margin(8, 6, 8, 2);
 
                     var items = folder.Leaves().Select(leaf =>
                         (Element)HStack(8,
-                            (Factories.Text(leaf.Data.Name) with { FontSize = 11 }).VAlign(VerticalAlignment.Center),
-                            (Factories.Text($"${leaf.Data.Size:N0}") with { FontSize = 10 })
+                            (TextBlock(leaf.Data.Name) with { FontSize = 11 }).VAlign(VerticalAlignment.Center),
+                            (TextBlock($"${leaf.Data.Size:N0}") with { FontSize = 10 })
                                 .Foreground(dimBrush).VAlign(VerticalAlignment.Center)
                         )
                     ).ToArray();

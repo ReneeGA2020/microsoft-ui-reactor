@@ -29,7 +29,7 @@ internal static class ControlUpdateFixtures2
                     Button("UpdNV", () => set(1)),
                     NavigationView(
                         [NavItem("Home"), NavItem("Settings")],
-                        content: phase == 0 ? Factories.Text("NV_Page1") : Factories.Text("NV_Page2")
+                        content: phase == 0 ? TextBlock("NV_Page1") : TextBlock("NV_Page2")
                     )
                 );
             });
@@ -95,12 +95,12 @@ internal static class ControlUpdateFixtures2
                 return VStack(
                     Button("UpdExtra", () => set(1)),
                     SplitView(
-                        pane: Factories.Text("ExPane"),
-                        content: Factories.Text(phase == 0 ? "ExContent1" : "ExContent2")
+                        pane: TextBlock("ExPane"),
+                        content: TextBlock(phase == 0 ? "ExContent1" : "ExContent2")
                     ),
                     NavigationView(
                         [NavItem("NavH", icon: "Home")],
-                        content: Factories.Text(phase == 0 ? "NavC1" : "NavC2")
+                        content: TextBlock(phase == 0 ? "NavC1" : "NavC2")
                     ),
                     new LineElement
                     {
@@ -134,7 +134,7 @@ internal static class ControlUpdateFixtures2
     // ════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Enables the experimental bitmask diff for TextElement and exercises
+    /// Enables the experimental bitmask diff for TextBlockElement and exercises
     /// UpdateTextBitmask which avoids COM interop reads.
     /// </summary>
     internal class TextBitmaskDiffUpdate(Harness h) : SelfTestFixtureBase(h)
@@ -153,8 +153,8 @@ internal static class ControlUpdateFixtures2
                     return VStack(
                         Button("UpdBitmask", () => set(1)),
                         phase == 0
-                            ? Factories.Text("BM_Before").FontSize(12)
-                            : Factories.Text("BM_After").FontSize(24).Bold()
+                            ? TextBlock("BM_Before").FontSize(12)
+                            : TextBlock("BM_After").FontSize(24).Bold()
                     );
                 });
 
@@ -183,7 +183,7 @@ internal static class ControlUpdateFixtures2
 
     /// <summary>
     /// Tests the backward-compat ModifiedElement unwrapping in Update().
-    /// Creates a ModifiedElement wrapping a TextElement to exercise lines 16-28.
+    /// Creates a ModifiedElement wrapping a TextBlockElement to exercise lines 16-28.
     /// </summary>
     internal class LegacyModifiedElementUpdate(Harness h) : SelfTestFixtureBase(h)
     {
@@ -195,8 +195,8 @@ internal static class ControlUpdateFixtures2
                 var (phase, set) = ctx.UseState(0);
                 // Directly create ModifiedElement (legacy path)
                 var inner = phase == 0
-                    ? new TextElement("Leg_Before")
-                    : new TextElement("Leg_After");
+                    ? new TextBlockElement("Leg_Before")
+                    : new TextBlockElement("Leg_After");
                 var modified = new ModifiedElement(inner, new ElementModifiers
                 {
                     Width = phase == 0 ? 100 : 200,
@@ -271,7 +271,7 @@ internal static class ControlUpdateFixtures2
                     Button("UpdExp", () => set(1)),
                     Expander(
                         phase == 0 ? "ExpanderHdr1" : "ExpanderHdr2",
-                        phase == 0 ? Factories.Text("ExpContent1") : VStack(Factories.Text("ExpContent2a"), Factories.Text("ExpContent2b")),
+                        phase == 0 ? TextBlock("ExpContent1") : VStack(TextBlock("ExpContent2a"), TextBlock("ExpContent2b")),
                         isExpanded: true,
                         onExpandedChanged: _ => { })
                 );
@@ -302,7 +302,7 @@ internal static class ControlUpdateFixtures2
                 var (visible, setVisible) = ctx.UseState(true);
                 return VStack(
                     Button("ToggleVis", () => setVisible(!visible)),
-                    Factories.Text("VisTarget") with
+                    TextBlock("VisTarget") with
                     {
                         Modifiers = new ElementModifiers
                         {

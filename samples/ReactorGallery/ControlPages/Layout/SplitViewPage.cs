@@ -32,21 +32,21 @@ class SplitViewPage : Component
                     Border(
                         (SplitView(
                             pane: VStack(8,
-                                Factories.Text("Pane").Bold(),
-                                Factories.Text("Item 1"),
-                                Factories.Text("Item 2"),
-                                Factories.Text("Item 3")
+                                TextBlock("Pane").Bold(),
+                                TextBlock("Item 1"),
+                                TextBlock("Item 2"),
+                                TextBlock("Item 3")
                             ).Padding(12),
                             content: VStack(8,
                                 Button(isOpen ? "Close Pane" : "Open Pane", () => setIsOpen(!isOpen)),
-                                Factories.Text("Main content area").Foreground(Theme.SecondaryText)
+                                TextBlock("Main content area").Foreground(Theme.SecondaryText)
                             ).Padding(12)
                         ) with { IsPaneOpen = isOpen })
                         .Set(sv => sv.DisplayMode = displayMode)
                     ).Size(500, 250).WithBorder(Theme.CardStroke).CornerRadius(4),
-                    @"SplitView(\n    pane: VStack(8, Factories.Text(""Pane""), ...),\n    content: VStack(8, ...)\n) with { IsPaneOpen = isOpen }\n.Set(sv => sv.DisplayMode = SplitViewDisplayMode.Inline)",
+                    @"SplitView(\n    pane: VStack(8, TextBlock(""Pane""), ...),\n    content: VStack(8, ...)\n) with { IsPaneOpen = isOpen }\n.Set(sv => sv.DisplayMode = SplitViewDisplayMode.Inline)",
                     OptionPanel(
-                        Factories.Text("Display Mode"),
+                        TextBlock("Display Mode"),
                         ComboBox(modes, modeIndex, setModeIndex),
                         ToggleSwitch(isOpen, setIsOpen, header: "Pane Open")
                     ))

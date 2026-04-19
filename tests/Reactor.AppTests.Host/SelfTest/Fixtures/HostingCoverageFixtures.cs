@@ -25,7 +25,7 @@ internal static class HostingCoverageFixtures
         {
             var (count, setCount) = UseState(0);
             return VStack(
-                Factories.Text($"Hosted:{count}"),
+                TextBlock($"Hosted:{count}"),
                 Button("HostInc", () => setCount(count + 1))
             );
         }
@@ -87,7 +87,7 @@ internal static class HostingCoverageFixtures
             {
                 var (val, setVal) = ctx.UseState("hello");
                 return VStack(
-                    Factories.Text($"Func:{val}"),
+                    TextBlock($"Func:{val}"),
                     Button("HostChange", () => setVal("world"))
                 );
             });
@@ -125,7 +125,7 @@ internal static class HostingCoverageFixtures
     {
         public override Element Render()
         {
-            return Factories.Text($"WithProps:{Props}");
+            return TextBlock($"WithProps:{Props}");
         }
     }
 
@@ -179,7 +179,7 @@ internal static class HostingCoverageFixtures
 
             H.Check("HostCtrlCb_HasReconciler", hostControl.Reconciler is not null);
 
-            hostControl.Mount(ctx => Factories.Text("Callback test"));
+            hostControl.Mount(ctx => TextBlock("Callback test"));
 
             var container = new Border { Child = hostControl };
             H.SetContent(container);
@@ -212,7 +212,7 @@ internal static class HostingCoverageFixtures
             {
                 var (n, set) = ctx.UseState(0);
                 return VStack(
-                    Factories.Text($"Stats:{n}"),
+                    TextBlock($"Stats:{n}"),
                     Button("Bump", () => set(n + 1))
                 );
             });
@@ -249,7 +249,7 @@ internal static class HostingCoverageFixtures
             window.Activate();
 
             var host = new ReactorHost(window);
-            host.Mount(ctx => Factories.Text("WillDispose"));
+            host.Mount(ctx => TextBlock("WillDispose"));
             await Task.Delay(200);
             await Harness.Render();
 
@@ -259,7 +259,7 @@ internal static class HostingCoverageFixtures
 
             // After dispose, re-set ActiveHost for subsequent fixtures
             var newHost = H.CreateHost();
-            newHost.Mount(ctx => Factories.Text("AfterDispose"));
+            newHost.Mount(ctx => TextBlock("AfterDispose"));
             await Harness.Render();
             H.Check("HostDispose_NewHostWorks", H.FindText("AfterDispose") is not null);
         }
@@ -281,7 +281,7 @@ internal static class HostingCoverageFixtures
 
             // Create a ReactorHostControl, mount, then unmount
             var hostCtrl = new ReactorHostControl();
-            hostCtrl.Mount(ctx => Factories.Text("PageHelper"));
+            hostCtrl.Mount(ctx => TextBlock("PageHelper"));
             var container = new Border { Child = hostCtrl };
             H.SetContent(container);
             await Harness.Render();

@@ -46,7 +46,7 @@ public class PropertyGridComponent : Component<PropertyGridElement>
 
         var meta = registry.Resolve(target.GetType());
         if (meta.Decompose is null)
-            return Factories.Text("No properties to display");
+            return TextBlock("No properties to display");
 
         var allDescriptors = meta.Decompose(target);
 
@@ -93,9 +93,9 @@ public class PropertyGridComponent : Component<PropertyGridElement>
             rows.Add(
                 BlankButton(
                     FlexRow(
-                        Factories.Text(categoryName).SemiBold().Flex(shrink: 0),
-                        Factories.Text(" ").Flex(grow: 1),
-                        Factories.Text(catExp ? "\u25BC" : "\u25B6").Flex(shrink: 0).Opacity(0.6)
+                        TextBlock(categoryName).SemiBold().Flex(shrink: 0),
+                        TextBlock(" ").Flex(grow: 1),
+                        TextBlock(catExp ? "\u25BC" : "\u25B6").Flex(shrink: 0).Opacity(0.6)
                     ),
                     () => setExpandState(dict =>
                     {
@@ -156,7 +156,7 @@ public class PropertyGridComponent : Component<PropertyGridElement>
         else
         {
             var value = descriptor.GetValue(owner);
-            editor = Factories.Text(value?.ToString() ?? "(null)");
+            editor = TextBlock(value?.ToString() ?? "(null)");
         }
 
         // FullEditor "..." expand affordance — show a small button that opens
@@ -270,7 +270,7 @@ public class PropertyGridComponent : Component<PropertyGridElement>
             return ToggleSwitch((bool)(value ?? false), null).Disabled();
         if (type == typeof(string))
             return TextField((string)(value ?? ""), null).Disabled();
-        return Factories.Text(value?.ToString() ?? "(null)");
+        return TextBlock(value?.ToString() ?? "(null)");
     }
 
     private static bool IsPrimitiveOrEnum(Type type)

@@ -25,16 +25,16 @@ internal sealed class EditQwordDialog : Component<EditQwordDialogProps>
             Strings.EditQwordTitle,
             VStack(12,
                 VStack(4,
-                    Factories.Text(Strings.ValueName),
+                    TextBlock(Strings.ValueName),
                     TextField(Props.ValueName, _ => { })
                         .ReadOnly()
                 ),
                 VStack(4,
-                    Factories.Text(Strings.ValueData),
+                    TextBlock(Strings.ValueData),
                     TextField(Props.ValueData, Props.OnValueDataChanged)
                 ),
                 VStack(4,
-                    Factories.Text(Strings.Base),
+                    TextBlock(Strings.Base),
                     RadioButton(Strings.Hexadecimal,
                         Props.NumberBase == NumberBase.Hexadecimal,
                         _ => Props.OnBaseChanged(NumberBase.Hexadecimal),

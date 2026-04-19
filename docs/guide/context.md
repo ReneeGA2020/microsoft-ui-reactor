@@ -33,7 +33,7 @@ class ProvideConsumeExample : Component
     public override Element Render()
     {
         return VStack(12,
-            Text("Outside: no provider"),
+            TextBlock("Outside: no provider"),
             VStack(12,
                 Component<Greeting>()
             ).Provide(Contexts.UserName, "Alice")
@@ -46,7 +46,7 @@ class Greeting : Component
     public override Element Render()
     {
         var name = UseContext(Contexts.UserName);
-        return Text($"Hello, {name}!").FontSize(20).Bold();
+        return TextBlock($"Hello, {name}!").FontSize(20).Bold();
     }
 }
 ```
@@ -84,8 +84,8 @@ class ThemePanel : Component
         var elTheme = theme == "dark" ? ElementTheme.Dark : ElementTheme.Light;
         return Border(
             VStack(8,
-                Text($"Current theme: {theme}").Bold(),
-                Text("Panel adapts to context.").Foreground(Theme.SecondaryText)
+                TextBlock($"Current theme: {theme}").Bold(),
+                TextBlock("Panel adapts to context.").Foreground(Theme.SecondaryText)
             ).Padding(16)
         ).Background(Theme.CardBackground)
          .CornerRadius(8)
@@ -129,7 +129,7 @@ class NameDisplay : Component
     public override Element Render()
     {
         var name = UseContext(Contexts.UserName);
-        return Text(name).FontSize(18).SemiBold().Foreground(Theme.Accent);
+        return TextBlock(name).FontSize(18).SemiBold().Foreground(Theme.Accent);
     }
 }
 ```
@@ -167,8 +167,8 @@ class ProfileCard : Component
 
         return Border(
             VStack(8,
-                Text(name).FontSize(fontSize).Bold(),
-                Text($"Font scale from context: {fontSize}px")
+                TextBlock(name).FontSize(fontSize).Bold(),
+                TextBlock($"Font scale from context: {fontSize}px")
                     .Foreground(Theme.SecondaryText)
             ).Padding(16)
         ).Background(Theme.CardBackground).CornerRadius(8);

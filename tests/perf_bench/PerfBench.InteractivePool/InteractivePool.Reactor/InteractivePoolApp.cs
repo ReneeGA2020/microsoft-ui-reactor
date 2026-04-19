@@ -72,9 +72,9 @@ public class InteractivePoolApp : Component
 
         return VStack(
             HStack(
-                Factories.Text($"FPS: {_tracker.CurrentFps:F0}").Width(120),
-                Factories.Text($"Update: {_tracker.LastUpdateMs:F2}ms").Width(150),
-                Factories.Text($"Mem: {_tracker.CurrentMemoryMB}MB").Width(150)
+                TextBlock($"FPS: {_tracker.CurrentFps:F0}").Width(120),
+                TextBlock($"Update: {_tracker.LastUpdateMs:F2}ms").Width(150),
+                TextBlock($"Mem: {_tracker.CurrentMemoryMB}MB").Width(150)
             ).Padding(4),
             LazyVStack<InteractiveItem>(
                 items,

@@ -21,7 +21,7 @@ public class FlyoutAttachmentTests
     [Fact]
     public void ContentFlyout_Creates_ContentFlyoutElement_With_Defaults()
     {
-        var el = ContentFlyout(Factories.Text("content"));
+        var el = ContentFlyout(TextBlock("content"));
         Assert.IsType<ContentFlyoutElement>(el);
         Assert.Equal(FlyoutPlacementMode.Auto, el.Placement);
     }
@@ -29,14 +29,14 @@ public class FlyoutAttachmentTests
     [Fact]
     public void ContentFlyout_With_Explicit_Placement()
     {
-        var el = ContentFlyout(Factories.Text("content"), placement: FlyoutPlacementMode.Bottom);
+        var el = ContentFlyout(TextBlock("content"), placement: FlyoutPlacementMode.Bottom);
         Assert.Equal(FlyoutPlacementMode.Bottom, el.Placement);
     }
 
     [Fact]
     public void ContentFlyout_Content_Is_Preserved()
     {
-        var inner = Factories.Text("inner content");
+        var inner = TextBlock("inner content");
         var el = ContentFlyout(inner);
         Assert.Same(inner, el.Content);
     }
@@ -77,8 +77,8 @@ public class FlyoutAttachmentTests
     [Fact]
     public void ContentFlyoutElement_Record_Equality()
     {
-        var a = ContentFlyout(Factories.Text("x"), FlyoutPlacementMode.Bottom);
-        var b = ContentFlyout(Factories.Text("x"), FlyoutPlacementMode.Bottom);
+        var a = ContentFlyout(TextBlock("x"), FlyoutPlacementMode.Bottom);
+        var b = ContentFlyout(TextBlock("x"), FlyoutPlacementMode.Bottom);
         Assert.Equal(a, b);
     }
 
@@ -95,7 +95,7 @@ public class FlyoutAttachmentTests
     [Fact]
     public void ContentFlyoutElement_Is_Element_Subclass()
     {
-        Element el = ContentFlyout(Factories.Text("x"));
+        Element el = ContentFlyout(TextBlock("x"));
         Assert.IsAssignableFrom<Element>(el);
     }
 
@@ -113,7 +113,7 @@ public class FlyoutAttachmentTests
     [Fact]
     public void WithFlyout_Sets_AttachedFlyout_On_Modifiers()
     {
-        var flyout = ContentFlyout(Factories.Text("content"));
+        var flyout = ContentFlyout(TextBlock("content"));
         var el = Button("Click", null).WithFlyout(flyout);
         Assert.NotNull(el.Modifiers);
         Assert.NotNull(el.Modifiers!.AttachedFlyout);
@@ -124,7 +124,7 @@ public class FlyoutAttachmentTests
     public void WithContextFlyout_Sets_ContextFlyout_On_Modifiers()
     {
         var menu = MenuItems(MenuItem("Copy"), MenuItem("Paste"));
-        var el = Factories.Text("right-click me").WithContextFlyout(menu);
+        var el = TextBlock("right-click me").WithContextFlyout(menu);
         Assert.NotNull(el.Modifiers);
         Assert.NotNull(el.Modifiers!.ContextFlyout);
         Assert.IsType<MenuFlyoutContentElement>(el.Modifiers.ContextFlyout);
@@ -133,7 +133,7 @@ public class FlyoutAttachmentTests
     [Fact]
     public void WithToolTip_Element_Sets_RichToolTip_On_Modifiers()
     {
-        var tip = VStack(Factories.Text("Title"), Factories.Text("Description"));
+        var tip = VStack(TextBlock("Title"), TextBlock("Description"));
         var el = Button("Hover me", null).WithToolTip(tip);
         Assert.NotNull(el.Modifiers);
         Assert.NotNull(el.Modifiers!.RichToolTip);
@@ -141,17 +141,17 @@ public class FlyoutAttachmentTests
     }
 
     [Fact]
-    public void WithFlyout_Works_On_TextElement()
+    public void WithFlyout_Works_On_TextBlockElement()
     {
-        var el = Factories.Text("tap me").WithFlyout(ContentFlyout(Factories.Text("popup")));
-        Assert.IsType<TextElement>(el);
+        var el = TextBlock("tap me").WithFlyout(ContentFlyout(TextBlock("popup")));
+        Assert.IsType<TextBlockElement>(el);
         Assert.NotNull(el.Modifiers?.AttachedFlyout);
     }
 
     [Fact]
     public void WithFlyout_Works_On_ButtonElement()
     {
-        var el = Button("Go", null).WithFlyout(ContentFlyout(Factories.Text("popup")));
+        var el = Button("Go", null).WithFlyout(ContentFlyout(TextBlock("popup")));
         Assert.IsType<ButtonElement>(el);
         Assert.NotNull(el.Modifiers?.AttachedFlyout);
     }
@@ -159,16 +159,16 @@ public class FlyoutAttachmentTests
     [Fact]
     public void WithFlyout_Works_On_BorderElement()
     {
-        var el = Border(Factories.Text("inner")).WithFlyout(ContentFlyout(Factories.Text("popup")));
+        var el = Border(TextBlock("inner")).WithFlyout(ContentFlyout(TextBlock("popup")));
         Assert.IsType<BorderElement>(el);
         Assert.NotNull(el.Modifiers?.AttachedFlyout);
     }
 
     [Fact]
-    public void WithContextFlyout_Works_On_TextElement()
+    public void WithContextFlyout_Works_On_TextBlockElement()
     {
-        var el = Factories.Text("right-click").WithContextFlyout(MenuItems(MenuItem("Cut")));
-        Assert.IsType<TextElement>(el);
+        var el = TextBlock("right-click").WithContextFlyout(MenuItems(MenuItem("Cut")));
+        Assert.IsType<TextBlockElement>(el);
         Assert.NotNull(el.Modifiers?.ContextFlyout);
     }
 
@@ -193,7 +193,7 @@ public class FlyoutAttachmentTests
     {
         var el = Button("Hover", null)
             .ToolTip("simple string tip")
-            .WithToolTip(VStack(Factories.Text("rich"), Factories.Text("tooltip")));
+            .WithToolTip(VStack(TextBlock("rich"), TextBlock("tooltip")));
 
         Assert.NotNull(el.Modifiers);
         Assert.Equal("simple string tip", el.Modifiers!.ToolTip);
@@ -204,7 +204,7 @@ public class FlyoutAttachmentTests
     [Fact]
     public void Modifier_Merge_Preserves_AttachedFlyout()
     {
-        var flyout = ContentFlyout(Factories.Text("content"));
+        var flyout = ContentFlyout(TextBlock("content"));
         var mods1 = new ElementModifiers { AttachedFlyout = flyout };
         var mods2 = new ElementModifiers { Opacity = 0.5 };
 
@@ -228,7 +228,7 @@ public class FlyoutAttachmentTests
     [Fact]
     public void Modifier_Merge_Preserves_RichToolTip()
     {
-        var tip = Factories.Text("rich tip");
+        var tip = TextBlock("rich tip");
         var mods1 = new ElementModifiers { RichToolTip = tip };
         var mods2 = new ElementModifiers { Height = 50 };
 
@@ -240,10 +240,10 @@ public class FlyoutAttachmentTests
     [Fact]
     public void Attachments_Compose_With_Other_Modifiers()
     {
-        var el = Factories.Text("styled")
+        var el = TextBlock("styled")
             .Margin(16)
             .Opacity(0.8)
-            .WithFlyout(ContentFlyout(Factories.Text("popup")));
+            .WithFlyout(ContentFlyout(TextBlock("popup")));
 
         Assert.NotNull(el.Modifiers);
         Assert.Equal(new Thickness(16), el.Modifiers!.Margin);
@@ -254,10 +254,10 @@ public class FlyoutAttachmentTests
     [Fact]
     public void Multiple_Attachments_On_Same_Element()
     {
-        var el = Border(Factories.Text("full"))
-            .WithFlyout(ContentFlyout(Factories.Text("flyout")))
+        var el = Border(TextBlock("full"))
+            .WithFlyout(ContentFlyout(TextBlock("flyout")))
             .WithContextFlyout(MenuItems(MenuItem("Copy")))
-            .WithToolTip(Factories.Text("tip"));
+            .WithToolTip(TextBlock("tip"));
 
         Assert.NotNull(el.Modifiers?.AttachedFlyout);
         Assert.NotNull(el.Modifiers?.ContextFlyout);
@@ -271,15 +271,15 @@ public class FlyoutAttachmentTests
     [Fact]
     public void Same_ContentFlyoutElement_Types_Match()
     {
-        var a = ContentFlyout(Factories.Text("old"));
-        var b = ContentFlyout(Factories.Text("new"));
+        var a = ContentFlyout(TextBlock("old"));
+        var b = ContentFlyout(TextBlock("new"));
         Assert.Equal(a.GetType(), b.GetType());
     }
 
     [Fact]
     public void ContentFlyoutElement_And_MenuFlyoutContentElement_Do_Not_Match()
     {
-        Element a = ContentFlyout(Factories.Text("content"));
+        Element a = ContentFlyout(TextBlock("content"));
         Element b = MenuItems(MenuItem("item"));
         Assert.NotEqual(a.GetType(), b.GetType());
     }
@@ -311,7 +311,7 @@ public class FlyoutAttachmentTests
     [Fact]
     public void SplitButton_Accepts_ContentFlyout_As_Flyout()
     {
-        var el = SplitButton("Action", () => { }, flyout: ContentFlyout(Factories.Text("options")));
+        var el = SplitButton("Action", () => { }, flyout: ContentFlyout(TextBlock("options")));
         Assert.IsType<SplitButtonElement>(el);
         Assert.NotNull(el.Flyout);
         Assert.IsType<ContentFlyoutElement>(el.Flyout);

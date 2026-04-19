@@ -21,7 +21,7 @@ class DatePickerPage : Component
                 SampleCard("Basic DatePicker",
                     VStack(8,
                         DatePicker(date, d => setDate(d)),
-                        Factories.Text($"Selected: {date:d}").Foreground(Theme.SecondaryText)
+                        TextBlock($"Selected: {date:d}").Foreground(Theme.SecondaryText)
                     ),
                     @"DatePicker(date, d => setDate(d))"),
 
@@ -30,7 +30,7 @@ class DatePickerPage : Component
                         DatePicker(date, d => setDate(d)),
                         HStack(8,
                             Button("Today", () => setDate(DateTimeOffset.Now)),
-                            Factories.Text($"Selected: {date:D}").Foreground(Theme.SecondaryText)
+                            TextBlock($"Selected: {date:D}").Foreground(Theme.SecondaryText)
                         )
                     ),
                     @"DatePicker(date, d => setDate(d))

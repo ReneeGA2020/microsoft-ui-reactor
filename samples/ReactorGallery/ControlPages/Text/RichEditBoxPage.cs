@@ -28,7 +28,7 @@ class RichEditBoxPage : Component
                     VStack(8,
                         RichEditBox(text, s => { setText(s); setCharCount(s.Length); })
                             .Width(400).Height(120),
-                        Factories.Text($"Characters: {charCount}").Foreground(Theme.SecondaryText).FontSize(12)
+                        TextBlock($"Characters: {charCount}").Foreground(Theme.SecondaryText).FontSize(12)
                     ),
                     @"RichEditBox(text, s => { setText(s); setCharCount(s.Length); })\nText($""Characters: {charCount}"")")
             ).Margin(36, 24, 36, 36)

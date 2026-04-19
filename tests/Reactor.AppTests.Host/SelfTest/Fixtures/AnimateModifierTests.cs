@@ -17,7 +17,7 @@ internal static class AnimateModifierTests
             host.Mount(ctx =>
             {
                 return VStack(
-                    Border(Factories.Text("Animated"))
+                    Border(TextBlock("Animated"))
                         .Animate(Curve.Spring(0.65f))
                         .AutomationId("animate-target")
                 );
@@ -61,7 +61,7 @@ internal static class AnimateModifierTests
             host.Mount(ctx =>
             {
                 return VStack(
-                    Border(Factories.Text("Targeted"))
+                    Border(TextBlock("Targeted"))
                         .Animate(Curve.Ease(200), AnimateProperty.Opacity | AnimateProperty.Scale)
                         .AutomationId("animate-targeted")
                 );
@@ -104,7 +104,7 @@ internal static class AnimateModifierTests
             host.Mount(ctx =>
             {
                 return VStack(
-                    Border(Factories.Text("Merged"))
+                    Border(TextBlock("Merged"))
                         .LayoutAnimation()
                         .Animate(Curve.Spring(0.8f))
                         .AutomationId("animate-merged")

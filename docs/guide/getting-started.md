@@ -49,7 +49,7 @@ class GettingStartedApp : Component
         var (name, setName) = UseState("World");
 
         return VStack(16,
-            Text($"Hello, {name}!").FontSize(24).Bold(),
+            TextBlock($"Hello, {name}!").FontSize(24).Bold(),
             TextField(name, setName, placeholder: "Enter your name").Width(250)
         ).Padding(24);
     }
@@ -89,7 +89,7 @@ class CounterExample : Component
         var (count, setCount) = UseState(0);
 
         return VStack(12,
-            Text($"Count: {count}").FontSize(20).SemiBold(),
+            TextBlock($"Count: {count}").FontSize(20).SemiBold(),
             HStack(8,
                 Button("- 1", () => setCount(count - 1)),
                 Button("Reset", () => setCount(0)),
@@ -124,13 +124,13 @@ class MultipleStateExample : Component
             : $"{firstName} {lastName}".Trim();
 
         return VStack(12,
-            Text($"Hello, {fullName}!").FontSize(fontSize).Bold(),
+            TextBlock($"Hello, {fullName}!").FontSize(fontSize).Bold(),
             TextField(firstName, setFirstName, placeholder: "First name").Width(200),
             TextField(lastName, setLastName, placeholder: "Last name").Width(200),
             HStack(8,
-                Text("Font size:"),
+                TextBlock("Font size:"),
                 Slider(fontSize, 10, 40, setFontSize).Width(200),
-                Text($"{fontSize:F0}px")
+                TextBlock($"{fontSize:F0}px")
             )
         ).Padding(24);
     }
@@ -163,14 +163,14 @@ class LayoutBasicsExample : Component
             SubHeading("Nested Layout"),
             HStack(16,
                 VStack(4,
-                    Text("Left Column").Bold(),
-                    Text("Item A"),
-                    Text("Item B")
+                    TextBlock("Left Column").Bold(),
+                    TextBlock("Item A"),
+                    TextBlock("Item B")
                 ),
                 VStack(4,
-                    Text("Right Column").Bold(),
-                    Text("Item X"),
-                    Text("Item Y")
+                    TextBlock("Right Column").Bold(),
+                    TextBlock("Item X"),
+                    TextBlock("Item Y")
                 )
             )
         ).Padding(24);
@@ -221,7 +221,7 @@ class TodoApp : Component
 
         return VStack(16,
             Heading("Todo List"),
-            Text($"{doneCount}/{items.Count} completed").Opacity(0.6),
+            TextBlock($"{doneCount}/{items.Count} completed").Opacity(0.6),
 
             // Input row
             HStack(8,
@@ -363,7 +363,7 @@ class CalculatorApp : Component
 
         return VStack(4,
             // Display
-            Text(display)
+            TextBlock(display)
                 .FontSize(32).Bold()
                 .HAlign(HorizontalAlignment.Right)
                 .Padding(12, 8),

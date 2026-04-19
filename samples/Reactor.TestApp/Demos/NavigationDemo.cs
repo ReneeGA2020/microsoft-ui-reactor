@@ -33,7 +33,7 @@ class NavigationDemo : Component
 
         return VStack(12,
             Heading("Navigation Demo"),
-            Factories.Text($"Route: {nav.CurrentRoute}  |  Depth: {nav.Depth}  |  Back stack: {nav.BackStack.Count}"),
+            TextBlock($"Route: {nav.CurrentRoute}  |  Depth: {nav.Depth}  |  Back stack: {nav.BackStack.Count}"),
 
             HStack(8,
                 Button("Back", () => nav.GoBack()).Disabled(!nav.CanGoBack),
@@ -43,7 +43,7 @@ class NavigationDemo : Component
 
             // Transition selector (persisted across tab switches)
             HStack(8,
-                Factories.Text("Transition:").VAlign(VerticalAlignment.Center),
+                TextBlock("Transition:").VAlign(VerticalAlignment.Center),
                 ComboBox(["Slide", "Fade", "DrillIn", "Spring", "None"],
                     Array.IndexOf(new[] { "Slide", "Fade", "DrillIn", "Spring", "None" }, transition),
                     i => setTransition(new[] { "Slide", "Fade", "DrillIn", "Spring", "None" }[i])
@@ -55,7 +55,7 @@ class NavigationDemo : Component
                 NavHome => Component<NavHomePage>(),
                 NavDetail d => Component<NavDetailPage, int>(d.Id),
                 NavSettings => Component<NavSettingsPage>(),
-                _ => Factories.Text("Unknown route"),
+                _ => TextBlock("Unknown route"),
             }) with { Transition = activeTransition }
         );
     }
@@ -73,8 +73,8 @@ class NavHomePage : Component
 
         return VStack(8,
             SubHeading("Home Page"),
-            Factories.Text($"Visit count: {visitCount} (persisted across navigations)").Foreground(SecondaryText),
-            Factories.Text("Select an item to view details:"),
+            TextBlock($"Visit count: {visitCount} (persisted across navigations)").Foreground(SecondaryText),
+            TextBlock("Select an item to view details:"),
             VStack(4,
                 Button("Item #1", () => nav.Navigate(new NavDetail(1))),
                 Button("Item #2", () => nav.Navigate(new NavDetail(2))),
@@ -101,7 +101,7 @@ class NavDetailPage : Component<int>
 
         return VStack(8,
             SubHeading($"Detail Page — Item #{id}"),
-            Factories.Text($"Viewing details for item {id}."),
+            TextBlock($"Viewing details for item {id}."),
             TextField(notes, setNotes)
                 .Set(t => t.PlaceholderText = "Notes (persisted via UsePersisted)"),
             HStack(8,
@@ -126,8 +126,8 @@ class NavSettingsPage : Component
 
         return VStack(8,
             SubHeading("Settings Page"),
-            Factories.Text("Application settings would go here."),
-            Factories.Text("Lifecycle hooks log to debug output.").Foreground(TertiaryText),
+            TextBlock("Application settings would go here."),
+            TextBlock("Lifecycle hooks log to debug output.").Foreground(TertiaryText),
             Button("Back to Home", () => nav.Reset(new NavHome()))
         );
     }

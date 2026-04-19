@@ -22,7 +22,7 @@ class AcrylicPage : Component
                 SampleCard("Acrylic Brush",
                     VStack(8,
                         Border(
-                            Factories.Text("Acrylic Background")
+                            TextBlock("Acrylic Background")
                                 .Foreground(Theme.PrimaryText)
                                 .Padding(24)
                                 .FontSize(16)
@@ -32,7 +32,7 @@ class AcrylicPage : Component
                          .CornerRadius(8)
                          .Width(300).Height(100),
                         Border(
-                            Factories.Text("Dark Acrylic")
+                            TextBlock("Dark Acrylic")
                                 .Foreground("#FFFFFF")
                                 .Padding(24)
                                 .FontSize(16)
@@ -46,19 +46,19 @@ class AcrylicPage : Component
     global::Windows.UI.Color.FromArgb(255, 100, 100, 200),
     tintOpacity: 0.8)",
                     options: OptionPanel(
-                        Factories.Text($"Tint Opacity: {opacity:F2}").Foreground(Theme.SecondaryText),
+                        TextBlock($"Tint Opacity: {opacity:F2}").Foreground(Theme.SecondaryText),
                         Slider(opacity, 0, 1, v => setOpacity(v))
                     )),
 
                 SampleCard("Acrylic Colors",
                     HStack(12,
-                        Border(Factories.Text("Blue").Foreground("#FFFFFF").Padding(16))
+                        Border(TextBlock("Blue").Foreground("#FFFFFF").Padding(16))
                             .Background(AcrylicBrush(global::Windows.UI.Color.FromArgb(255, 0, 120, 215), 0.7))
                             .CornerRadius(8).Width(100).Height(80),
-                        Border(Factories.Text("Green").Foreground("#FFFFFF").Padding(16))
+                        Border(TextBlock("Green").Foreground("#FFFFFF").Padding(16))
                             .Background(AcrylicBrush(global::Windows.UI.Color.FromArgb(255, 16, 137, 62), 0.7))
                             .CornerRadius(8).Width(100).Height(80),
-                        Border(Factories.Text("Red").Foreground("#FFFFFF").Padding(16))
+                        Border(TextBlock("Red").Foreground("#FFFFFF").Padding(16))
                             .Background(AcrylicBrush(global::Windows.UI.Color.FromArgb(255, 200, 50, 50), 0.7))
                             .CornerRadius(8).Width(100).Height(80)
                     ),

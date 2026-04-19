@@ -24,7 +24,7 @@ class BreadcrumbBarPage : Component
                         BreadcrumbBar(
                             path.Select(p => Breadcrumb(p)).ToArray(),
                             item => setClicked(item.Label)),
-                        Factories.Text($"Last clicked: {clicked}").Foreground(Theme.SecondaryText)
+                        TextBlock($"Last clicked: {clicked}").Foreground(Theme.SecondaryText)
                     ),
                     @"BreadcrumbBar(
     new[] { Breadcrumb(""Home""), Breadcrumb(""Docs""), Breadcrumb(""Reports"") },

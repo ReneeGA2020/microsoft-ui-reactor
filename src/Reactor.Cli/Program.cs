@@ -177,7 +177,7 @@ string GenerateProgram(string name) =>
     {
         public override Element Render()
         {
-            return Factories.Text("Hello, World!").FontSize(24).Margin(20);
+            return TextBlock("Hello, World!").FontSize(24).Margin(20);
         }
     }
     """;

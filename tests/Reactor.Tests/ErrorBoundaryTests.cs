@@ -23,8 +23,8 @@ public class ErrorBoundaryTests
     [Fact]
     public void ErrorBoundaryElement_Has_Child_And_Fallback()
     {
-        var child = new TextElement("Hello");
-        Func<Exception, Element> fallback = ex => new TextElement("Error");
+        var child = new TextBlockElement("Hello");
+        Func<Exception, Element> fallback = ex => new TextBlockElement("Error");
         var eb = new ErrorBoundaryElement(child, fallback);
 
         Assert.Same(child, eb.Child);
@@ -35,23 +35,23 @@ public class ErrorBoundaryTests
     public void DSL_ErrorBoundary_With_Func_Fallback()
     {
         var eb = ErrorBoundary(
-            Factories.Text("child"),
-            ex => Factories.Text($"Error: {ex.Message}"));
+            TextBlock("child"),
+            ex => TextBlock($"Error: {ex.Message}"));
 
         Assert.IsType<ErrorBoundaryElement>(eb);
-        Assert.IsType<TextElement>(eb.Child);
+        Assert.IsType<TextBlockElement>(eb.Child);
     }
 
     [Fact]
     public void DSL_ErrorBoundary_With_Static_Fallback()
     {
         var eb = ErrorBoundary(
-            Factories.Text("child"),
-            Factories.Text("fallback"));
+            TextBlock("child"),
+            TextBlock("fallback"));
 
         Assert.IsType<ErrorBoundaryElement>(eb);
         var fallbackResult = eb.Fallback(new Exception("test"));
-        Assert.Equal("fallback", ((TextElement)fallbackResult).Content);
+        Assert.Equal("fallback", ((TextBlockElement)fallbackResult).Content);
     }
 
     [Fact]
@@ -59,8 +59,8 @@ public class ErrorBoundaryTests
     {
         Exception? received = null;
         var eb = ErrorBoundary(
-            Factories.Text("child"),
-            ex => { received = ex; return Factories.Text("err"); });
+            TextBlock("child"),
+            ex => { received = ex; return TextBlock("err"); });
 
         var testEx = new InvalidOperationException("specific");
         eb.Fallback(testEx);
@@ -71,8 +71,8 @@ public class ErrorBoundaryTests
     [Fact]
     public void ShallowEquals_Returns_False_For_ErrorBoundary()
     {
-        var child = Factories.Text("Hello");
-        Func<Exception, Element> fallback = ex => Factories.Text("err");
+        var child = TextBlock("Hello");
+        Func<Exception, Element> fallback = ex => TextBlock("err");
         var a = new ErrorBoundaryElement(child, fallback);
         var b = new ErrorBoundaryElement(child, fallback);
         Assert.False(Element.ShallowEquals(a, b));
@@ -86,8 +86,8 @@ public class ErrorBoundaryTests
     public void CanUpdate_Matches_ErrorBoundary_Elements()
     {
         var reconciler = new Reconciler();
-        var a = new ErrorBoundaryElement(Factories.Text("a"), ex => Factories.Text("err"));
-        var b = new ErrorBoundaryElement(Factories.Text("b"), ex => Factories.Text("err2"));
+        var a = new ErrorBoundaryElement(TextBlock("a"), ex => TextBlock("err"));
+        var b = new ErrorBoundaryElement(TextBlock("b"), ex => TextBlock("err2"));
         Assert.True(reconciler.CanUpdate(a, b));
     }
 
@@ -95,8 +95,8 @@ public class ErrorBoundaryTests
     public void CanUpdate_Rejects_Different_Types()
     {
         var reconciler = new Reconciler();
-        var eb = new ErrorBoundaryElement(Factories.Text("a"), ex => Factories.Text("err"));
-        var text = Factories.Text("a");
+        var eb = new ErrorBoundaryElement(TextBlock("a"), ex => TextBlock("err"));
+        var text = TextBlock("a");
         Assert.False(reconciler.CanUpdate(eb, text));
     }
 
@@ -122,8 +122,8 @@ public class ErrorBoundaryTests
         // allowing the error to propagate to the ErrorBoundary.
         // Verified structurally by the conditional catch filter in the code.
         var reconciler = new Reconciler();
-        var a = new ErrorBoundaryElement(Factories.Text("a"), ex => Factories.Text("err"));
-        var b = new ErrorBoundaryElement(Factories.Text("b"), ex => Factories.Text("err2"));
+        var a = new ErrorBoundaryElement(TextBlock("a"), ex => TextBlock("err"));
+        var b = new ErrorBoundaryElement(TextBlock("b"), ex => TextBlock("err2"));
         // Both are ErrorBoundaryElement — CanUpdate should match
         Assert.True(reconciler.CanUpdate(a, b));
     }

@@ -25,7 +25,7 @@ HyperlinkButton(""Go to Microsoft"", new Uri(""https://www.microsoft.com""))
             SampleCard("HyperlinkButton with Click Handler",
                 VStack(8,
                     HyperlinkButton("Click me", onClick: () => setClickCount(clickCount + 1)),
-                    Factories.Text($"Clicked {clickCount} times").Foreground(Theme.SecondaryText)),
+                    TextBlock($"Clicked {clickCount} times").Foreground(Theme.SecondaryText)),
                 sourceCode: @"
 HyperlinkButton(""Click me"", onClick: () => setClickCount(clickCount + 1))
 ")

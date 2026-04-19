@@ -30,7 +30,7 @@ internal static class PendingFixtures
 
             var host = H.CreateHost();
             host.Mount(ctx => Pending(
-                fallback: Factories.Text("⏳ pending-fallback"),
+                fallback: TextBlock("⏳ pending-fallback"),
                 child: VStack(
                     Factories.Component<ResourceChild, ResourceChildProps>(
                         new ResourceChildProps(cache, "bubble/a", g1.Task, "child-a")),
@@ -104,7 +104,7 @@ internal static class PendingFixtures
 
             var host = H.CreateHost();
             host.Mount(ctx => Pending(
-                fallback: Factories.Text("⏳ outer-fallback"),
+                fallback: TextBlock("⏳ outer-fallback"),
                 child: Factories.Component<LocalMatchingChild, LocalMatchingChildProps>(
                     new LocalMatchingChildProps(cache, "override/key", gate.Task))));
 
@@ -194,7 +194,7 @@ internal static class PendingFixtures
                         new ChurnResourceChildProps(cache, i, Epoch: 0, gates));
                 }
                 return Pending(
-                    fallback: Factories.Text("⏳ churn-fallback"),
+                    fallback: TextBlock("⏳ churn-fallback"),
                     child: VStack(kids));
             });
 
@@ -273,7 +273,7 @@ internal static class PendingFixtures
                 p.Cache,
                 new object[] { p.Epoch },
                 new ResourceOptions(CacheKey: $"churn/{p.Index}/{p.Epoch}"));
-            return Factories.Text(v switch
+            return TextBlock(v switch
             {
                 AsyncValue<int>.Loading => $"{p.Index}: loading",
                 AsyncValue<int>.Data d => $"{p.Index}: {d.Value}",
@@ -298,7 +298,7 @@ internal static class PendingFixtures
                 p.Cache,
                 Array.Empty<object>(),
                 new ResourceOptions(CacheKey: p.Key));
-            return Factories.Text($"{p.Label}: {v switch
+            return TextBlock($"{p.Label}: {v switch
             {
                 AsyncValue<string>.Loading => "loading",
                 AsyncValue<string>.Data d => $"data: {d.Value}",
@@ -329,11 +329,11 @@ internal static class PendingFixtures
 
             return v switch
             {
-                AsyncValue<string>.Loading => Factories.Text("(local skeleton)"),
-                AsyncValue<string>.Data d => Factories.Text($"local: {d.Value}"),
-                AsyncValue<string>.Reloading r => Factories.Text($"local: {r.Previous}"),
-                AsyncValue<string>.Error e => Factories.Text($"local-error: {e.Exception.Message}"),
-                _ => Factories.Text("?"),
+                AsyncValue<string>.Loading => TextBlock("(local skeleton)"),
+                AsyncValue<string>.Data d => TextBlock($"local: {d.Value}"),
+                AsyncValue<string>.Reloading r => TextBlock($"local: {r.Previous}"),
+                AsyncValue<string>.Error e => TextBlock($"local-error: {e.Exception.Message}"),
+                _ => TextBlock("?"),
             };
         }
     }

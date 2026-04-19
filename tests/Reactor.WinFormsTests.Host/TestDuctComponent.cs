@@ -17,7 +17,7 @@ class TestReactorComponent : Component
 
         return Grid(["*"], ["*"],
             VStack(
-                Factories.Text("Reactor Island Content")
+                TextBlock("Reactor Island Content")
                     .FontSize(16)
                     .AutomationId("Reactor_Title"),
 
@@ -27,7 +27,7 @@ class TestReactorComponent : Component
                     .AutomationId("Reactor_TextField1")
                     .AutomationName("Island text field"),
 
-                Factories.Text($"Text: {text}")
+                TextBlock($"Text: {text}")
                     .AutomationId("Reactor_TextDisplay"),
 
                 // Focusable button — second Tab stop inside the island
@@ -35,7 +35,7 @@ class TestReactorComponent : Component
                     .AutomationId("Reactor_Button1")
                     .AutomationName("Island button"),
 
-                Factories.Text($"Count: {count}")
+                TextBlock($"Count: {count}")
                     .AutomationId("Reactor_CountDisplay"),
 
                 // A second text field — third Tab stop
@@ -45,11 +45,11 @@ class TestReactorComponent : Component
                     .AutomationName("Island second field"),
 
                 // Accessibility test targets
-                Factories.Text("Status: Ready")
+                TextBlock("Status: Ready")
                     .LiveRegion(Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite)
                     .AutomationId("Reactor_LiveRegion"),
 
-                Factories.Text("Island rendered successfully")
+                TextBlock("Island rendered successfully")
                     .AutomationId("Reactor_RenderProof")
 
             ).Padding(16)

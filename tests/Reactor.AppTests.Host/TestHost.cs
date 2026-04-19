@@ -36,18 +36,18 @@ internal class TestHost : Component
             var fixtureElement = FixtureRegistry.Build(currentFixture, new RenderContext());
             content = VStack(4,
                 HStack(8,
-                    Factories.Text($"Loaded: {currentFixture}")
+                    TextBlock($"Loaded: {currentFixture}")
                         .AutomationId("FixtureStatus")
                         .SemiBold(),
                     Button("Reset", () => setFixture(null))
                         .AutomationId("ResetFixture")
                 ),
-                fixtureElement ?? Factories.Text("Unknown fixture").AutomationId("FixtureError")
+                fixtureElement ?? TextBlock("Unknown fixture").AutomationId("FixtureError")
             );
         }
         else
         {
-            content = Factories.Text("Ready")
+            content = TextBlock("Ready")
                 .AutomationId("FixtureStatus")
                 .FontSize(16)
                 .Padding(20);

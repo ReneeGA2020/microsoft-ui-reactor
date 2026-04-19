@@ -89,7 +89,7 @@ public sealed class IntlAccessor
         if (pattern is null)
         {
             var marker = _pseudoLocalize ? PseudoLocalizer.MissingKeyMarker(key) : $"[?? {key} ??]";
-            return new TextElement(marker);
+            return new TextBlockElement(marker);
         }
 
         string formatted;
@@ -105,7 +105,7 @@ public sealed class IntlAccessor
             formatted = PseudoLocalizer.Transform(formatted);
 
         if (tags is null || tags.Count == 0)
-            return new TextElement(formatted);
+            return new TextBlockElement(formatted);
 
         return ParseRichText(formatted, tags);
     }
@@ -234,7 +234,7 @@ public sealed class IntlAccessor
             // Add plain text before this tag
             if (match.Index > lastIndex)
             {
-                elements.Add(new TextElement(formatted[lastIndex..match.Index]));
+                elements.Add(new TextBlockElement(formatted[lastIndex..match.Index]));
             }
 
             var tagName = match.Groups[1].Value;
@@ -247,7 +247,7 @@ public sealed class IntlAccessor
             else
             {
                 // Unknown tag — render content as plain text
-                elements.Add(new TextElement(tagContent));
+                elements.Add(new TextBlockElement(tagContent));
             }
 
             lastIndex = match.Index + match.Length;
@@ -256,7 +256,7 @@ public sealed class IntlAccessor
         // Add trailing plain text
         if (lastIndex < formatted.Length)
         {
-            elements.Add(new TextElement(formatted[lastIndex..]));
+            elements.Add(new TextBlockElement(formatted[lastIndex..]));
         }
 
         // Single element: return it directly. Multiple: wrap in GroupElement.

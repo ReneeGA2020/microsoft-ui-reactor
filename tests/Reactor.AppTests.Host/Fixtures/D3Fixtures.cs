@@ -26,7 +26,7 @@ internal static class D3Fixtures
 
     internal static Element LineChart(RenderContext ctx) =>
         VStack(
-            Factories.Text("Line Chart").AutomationId("LineChartTitle"),
+            TextBlock("Line Chart").AutomationId("LineChartTitle"),
             ChartDsl.LineChart(SampleLine, d => d.X, d => d.Y)
                 .Width(600).Height(400)
                 .ShowAxes(true)
@@ -37,7 +37,7 @@ internal static class D3Fixtures
 
     internal static Element BarChart(RenderContext ctx) =>
         VStack(
-            Factories.Text("Bar Chart").AutomationId("BarChartTitle"),
+            TextBlock("Bar Chart").AutomationId("BarChartTitle"),
             ChartDsl.BarChart(SampleBars, d => d.X, d => d.Y)
                 .Width(600).Height(400)
                 .ShowAxes(true)
@@ -47,7 +47,7 @@ internal static class D3Fixtures
 
     internal static Element PieChart(RenderContext ctx) =>
         VStack(
-            Factories.Text("Pie Chart").AutomationId("PieChartTitle"),
+            TextBlock("Pie Chart").AutomationId("PieChartTitle"),
             ChartDsl.PieChart(SamplePie, d => d.Value, d => d.Label)
                 .Width(400).Height(400)
                 .ToElement()
