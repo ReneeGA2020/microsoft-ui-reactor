@@ -49,9 +49,33 @@ Border(child).CornerRadius(6)   // Not in the design system
 
 ## Layout Containers
 
-### VStack / HStack (Stack-Based)
+**Default for linear layout:** `FlexColumn` / `FlexRow`. They implement CSS
+Flexbox semantics via Yoga, so `grow`, `shrink`, `basis`, `gap`, `wrap`,
+`justify-content`, and `align-items` all behave the way web-trained engineers
+and designers expect. `VStack` / `HStack` (StackPanel) remain appropriate when
+you specifically want StackPanel's shrink-wrap cross-axis behavior, are
+porting existing StackPanel code, or prefer its terser single-arg spacing.
 
-Linear vertical or horizontal layout with optional spacing.
+### FlexColumn / FlexRow (CSS Flexbox — preferred for linear layout)
+
+```csharp
+FlexColumn(
+    Heading("Title"),
+    TextBlock("Description"),
+    Button("Action", onClick)
+) with { RowGap = 8 }
+
+FlexRow(
+    Image(icon).Size(24, 24),
+    TextBlock("Label"),
+    TextBlock("Value").Foreground(Theme.SecondaryText)
+) with { ColumnGap = 12, AlignItems = FlexAlign.Center }
+```
+
+### VStack / HStack (StackPanel)
+
+Linear vertical or horizontal layout with optional spacing. Good fit when
+StackPanel's shrink-wrap cross-axis is what you want.
 
 ```csharp
 VStack(8,
@@ -274,7 +298,7 @@ Border(content)
 
 ## Text Trimming
 
-`HStack` (StackPanel) gives children unbounded width, so `TextTrimming` never activates. Use a `Grid` with a `"*"` column:
+`HStack` (StackPanel) and `FlexRow` both give children unbounded main-axis width, so `TextTrimming` never activates inside them. Use a `Grid` with a `"*"` column:
 
 ```csharp
 // Correct: Grid constrains width
@@ -287,7 +311,7 @@ Grid(
         .ToolTip(title)  // Show full text on hover when trimmed
         .Grid(column: 1))
 
-// Wrong: TextTrimming never fires in HStack
+// Wrong: TextTrimming never fires in HStack or FlexRow
 HStack(8,
     Image(avatar).Size(32, 32),
     TextBlock(title).TextTrimming(TextTrimming.CharacterEllipsis))

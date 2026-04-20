@@ -278,20 +278,25 @@ TextField(text, setText).Height(30)
 
 #### Container Choice
 
-Pick the right container:
+Pick the right container. **Prefer `FlexRow` / `FlexColumn` as the default for
+linear layout** — they follow CSS Flexbox semantics (grow, shrink, basis, gap,
+wrap, `justify-content`, `align-items`), which matches the mental model web-
+trained engineers and designers already have. `VStack` / `HStack` remain a good
+choice when you specifically want StackPanel's shrink-wrap cross-axis behavior
+or are porting from existing StackPanel code.
 
 | Need | Use | Not |
 |------|-----|-----|
-| Single child with background/border | `Border(child)` | `Grid` or `VStack` with one child |
-| Linear vertical layout | `VStack(children)` | Nested `Grid` |
-| Linear horizontal layout | `HStack(children)` | Nested `Grid` |
-| Flexible proportional layout | `Flex(children)` | Complex nested stacks |
+| Single child with background/border | `Border(child)` | `Grid` or `FlexColumn` with one child |
+| Linear vertical layout | `FlexColumn(children)` (preferred), or `VStack(children)` | Nested `Grid` |
+| Linear horizontal layout | `FlexRow(children)` (preferred), or `HStack(children)` | Nested `Grid` |
+| Grow/shrink, wrapping, or `justify-content` distribution | `Flex(children)` with `.Flex(grow/shrink/basis)` on children | Complex nested stacks |
 | Positional row/column layout | `Grid(columns, rows, children)` | Canvas or absolute positioning |
-| Text that needs trimming | `Grid` with `"*"` column | `HStack` (prevents trimming) |
+| Text that needs trimming | `Grid` with `"*"` column | `HStack` / `FlexRow` (children get unbounded main-axis width) |
 
-Remove wrapper containers (`Border`, `Grid`, `VStack`) that exist only for nesting without contributing layout, styling, or semantic purpose.
+Remove wrapper containers (`Border`, `Grid`, `FlexColumn`, `VStack`) that exist only for nesting without contributing layout, styling, or semantic purpose.
 
-**Text trimming caveat:** `HStack` (StackPanel) gives children unbounded width, so `TextTrimming` never activates. Use a `Grid` with a `"*"` column. Note: `Grid` column `"Auto"` also sizes to content and prevents trimming — always use `"*"` for the column that contains trimmable text.
+**Text trimming caveat:** `HStack` (StackPanel) and `FlexRow` both give children unbounded width on the main axis, so `TextTrimming` never activates inside them. Use a `Grid` with a `"*"` column. Note: `Grid` column `"Auto"` also sizes to content and prevents trimming — always use `"*"` for the column that contains trimmable text.
 
 ```csharp
 // Correct: Grid constrains width so trimming works
@@ -322,9 +327,35 @@ VStack(
     ).Set(sv => sv.HorizontalContentAlignment = HorizontalAlignment.Stretch))
 ```
 
+#### Window Title Bar
+
+Prefer `TitleBar(...)` as the top-of-window element for Reactor desktop apps
+where a title makes sense (most main windows, document shells, settings
+windows). It integrates with the Windows caption (drag region, system menu,
+min/max/close) and themes with the rest of the app, and it accepts inline
+`Content` and `RightHeader` for branding, document context, or small inline
+controls — which avoids the common mistake of stacking a custom header row
+below the system chrome and ending up with two visual title zones.
+
+```csharp
+// Preferred: real Windows title bar with app title + subtitle + inline content
+var titleBar = (TitleBar("MyApp") with
+{
+    Subtitle = currentDoc,
+    Content = ModeSwitcher(mode, setMode),
+    RightHeader = TextBlock($"{rowsLoaded:N0} rows").FontSize(12).Opacity(0.6),
+}).Flex(shrink: 0);
+
+return FlexColumn(titleBar, MainContent());
+```
+
+Small dialogs, embedded pop-outs, and tool windows that already have a
+distinct visual header don't need `TitleBar` — use it where you'd otherwise
+reach for a custom header row across the full window width.
+
 #### Spacing
 
-Use `VStack(spacing, ...)` / `HStack(spacing, ...)` or Grid `RowSpacing`/`ColumnSpacing` — not spacer elements.
+Use `FlexColumn(...) with { RowGap = n }` / `FlexRow(...) with { ColumnGap = n }` (or `VStack(spacing, ...)` / `HStack(spacing, ...)`) or Grid `RowSpacing`/`ColumnSpacing` — not spacer elements.
 
 ```csharp
 // Correct
