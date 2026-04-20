@@ -46,7 +46,8 @@ Meanwhile, Reactor's general accessibility infrastructure (spec 006) is already 
 | `ElementModifiers` (AutomationName, HelpText, Landmark, LiveRegion, PositionInSet, …) | `src/Reactor/Elements/ElementExtensions.cs:1024-1184` | Shipped |
 | `SemanticPanel` + custom automation peer (`IRangeValueProvider`, `IValueProvider`) | `src/Reactor/Accessibility/SemanticPanel.cs:1` | Shipped |
 | `AccessibilityScanner` (WCAG checks → AI-agent JSON) | `src/Reactor/Core/AccessibilityScanner.cs:1` | Shipped, no chart rules |
-| `UseReducedMotion`, `UseHighContrast` hooks | spec 006 Layer 5 | Shipped |
+| `UseHighContrast` hook | spec 006 Layer 5 | Shipped |
+| `UseReducedMotion` hook | spec 006 Layer 5 | Planned — not yet implemented |
 | Keyboard modifiers (`IsTabStop`, `TabIndex`, `AccessKey`, `OnKeyDown`) | `ElementExtensions.cs:193-194,1024-1184` | Shipped |
 
 So the gap is **charting-specific infrastructure**, not framework primitives. This spec designs
@@ -78,7 +79,7 @@ An "A" on charting accessibility means:
    `ITableProvider` + `IValueProvider`. Narrator/JAWS table commands "just work."
 4. Keyboard conventions match Highcharts/Power BI so users with established muscle memory aren't
    retrained.
-5. All chart infrastructure auto-reacts to `UISettings.HighContrast`,
+5. All chart infrastructure auto-reacts to `AccessibilitySettings.HighContrast`,
    `UISettings.AnimationsEnabled`, and Windows contrast themes without author opt-in.
 6. AI-agent-friendly diagnostics (continuing spec 024 / scanner pattern) so an agent can auto-fix
    missing chart semantics.
@@ -120,7 +121,7 @@ Eight layers. Each is independently shippable. Later layers depend on earlier on
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  Layer 8: Scanner rules (A11Y_CHART_001–007)                       │
+│  Layer 8: Scanner rules (A11Y_CHART_001–007, 009–012)              │
 ├─────────────────────────────────────────────────────────────────────┤
 │  Layer 7: Forced-colors + reduced-motion integration               │
 │  → palette remap, shape/dash double-encoding, animation snap       │
@@ -294,8 +295,9 @@ AreaChart(...)
   it (Layer 5 `ChartFocusContext`).
 - Toggle announces state via the chart's live region (Layer 6): `"Showing data table"` /
   `"Showing chart"`.
-- When alternate view is active, the chart's `UIA.Visibility` is `Collapsed` in the automation
-  tree to avoid double-announcement.
+- When alternate view is active, the chart is pruned from the UIA tree via
+  `AutomationProperties.AccessibilityView = Raw` (Reactor's `.AccessibilityHidden()` modifier,
+  see spec 006) to avoid double-announcement. Visual XAML `Visibility` is unchanged.
 - If `.AlternateView()` is **not** set, the T key is a no-op (not an error). Nothing is
   synthesized.
 
@@ -438,15 +440,27 @@ immediately and full-motion users hear it ~200ms later after the tween completes
 
 ### 7.1 Forced-colors palette
 
-Extend `D3Dsl` brushes:
+Extend `D3Dsl` brushes. `IsForcedColors` follows the same per-render `[ThreadStatic]` pattern
+as the existing `IsDarkTheme` flag (`src/Reactor/Charting/D3Dsl.cs:52`) so multi-window hosts
+can render concurrently with different accessibility settings without cross-talk:
 
 ```csharp
 // src/Reactor/Charting/D3Dsl.cs
-public static bool IsForcedColors { get; private set; }
+[ThreadStatic] private static bool _isForcedColors;
+public static bool IsForcedColors
+{
+    get => _isForcedColors;
+    set => _isForcedColors = value;
+}
+
 public static SolidColorBrush ChartSeries(int seriesIndex);
 public static DashStyle   ChartSeriesDash(int seriesIndex);
 public static MarkerShape ChartSeriesMarker(int seriesIndex);
 ```
+
+Host applications set `IsForcedColors` once per render pass, matching the existing
+`IsDarkTheme` pattern. A `RenderContext` hook reads `AccessibilitySettings.HighContrast` and
+propagates it automatically.
 
 When `IsForcedColors`:
 
@@ -506,17 +520,25 @@ deuteranopia/protanopia/tritanopia simulation (ΔE ≥ 10 between any two series
 ≥ 3:1 against both `ChartBackground` variants (light + dark theme).
 
 ```csharp
-public static class ChartPalette
+public sealed class ChartPalette
 {
-    public static ChartPalette OkabeIto    { get; }  // 8 colors, colorblind-safe
-    public static ChartPalette IBM         { get; }  // 5 colors, colorblind-safe
-    public static ChartPalette Viridis     { get; }  // sequential, perceptually uniform
-    public static ChartPalette Cividis     { get; }  // sequential, colorblind-friendly
-    public static ChartPalette FluentDefault { get; } // matches Reactor theme tokens
+    private ChartPalette(Color[] colors, string name) { /* ... */ }
+
+    public static ChartPalette OkabeIto      { get; }  // 8 colors, colorblind-safe
+    public static ChartPalette IBM           { get; }  // 5 colors, colorblind-safe
+    public static ChartPalette Viridis       { get; }  // sequential, perceptually uniform
+    public static ChartPalette Cividis       { get; }  // sequential, colorblind-friendly
+    public static ChartPalette FluentDefault { get; }  // matches Reactor theme tokens
+
+    public static HardenResult Harden(Color[] input, HardenOptions? options = null);
 }
 
 LineChart(...).Palette(ChartPalette.OkabeIto);
 ```
+
+`ChartPalette` is a sealed class with a private constructor, so the only way to obtain one is
+the curated static set (Tier 1) or as the output of `Harden()`. `ChartPalette.Harden(...)`
+lives on the same type to keep the one-import story clean.
 
 Default when no `.Palette()` is set: `ChartPalette.OkabeIto`.
 
@@ -576,7 +598,8 @@ Single utility exposed to both runtime code and the AI-agent devtools path
 checks, plus a structured diff.
 
 ```csharp
-public static class ChartPalette
+// (method lives on the sealed ChartPalette class defined in §7.6.1)
+public sealed class ChartPalette
 {
     public static HardenResult Harden(
         Color[] input,
@@ -625,7 +648,7 @@ JSON shape as existing A11Y_001–008:
 | `A11Y_CHART_002` | Chart has no `Description` and `ChartSummarizer` produced empty | Add `.Description("...")` or provide accessors with labels. |
 | `A11Y_CHART_003` | Chart is `.Interactive()` but `ChartKeyboardNavigator` disabled | Remove `.DisableKeyboard()` or move interactivity out. |
 | `A11Y_CHART_004` | `.ColorOnly()` used — color is sole series encoding | Remove `.ColorOnly()` or provide `.SeriesShapes(...)`. |
-| `A11Y_CHART_005` | Marker < 24×24 px on interactive chart without hit-shape opt-in | Remove `.TightHitTest()` or use `.MarkerSize(24)`. |
+| `A11Y_CHART_005` | `.TightHitTest()` disabled the automatic 24×24 hit-target expansion on a marker < 24 px | Remove `.TightHitTest()` (expansion is automatic per §7.5), or use `.MarkerSize(24)` if tight hit-testing is genuinely required. |
 | `A11Y_CHART_006` | Focus indicator contrast < 3:1 against computed chart background | Use default focus ring; do not override with `.FocusRing(...)` in low-contrast contexts. |
 | `A11Y_CHART_007` | `.AnnounceEveryFrame()` used — floods live region | Remove; defaults are debounced for a reason. |
 | `A11Y_CHART_009` | Custom palette fails pairwise WCAG 3:1 non-text contrast | Run `ChartPalette.Harden(...)` — fix suggestion embeds hardened hex values. |
@@ -794,7 +817,7 @@ A chart ships at **A** grade when it:
       works without any visible table).
 - [ ] Passes every interactive operation via keyboard alone (if interactive).
 - [ ] Announces settled state changes via debounced polite live region.
-- [ ] Honors `UISettings.HighContrast` and `AccessibilitySettings.HighContrast`.
+- [ ] Honors `AccessibilitySettings.HighContrast` (system high-contrast toggle).
 - [ ] Honors `UISettings.AnimationsEnabled` / `SPI_GETCLIENTAREAANIMATION`.
 - [ ] Double-encodes series (color + shape + dash) unless explicit `.ColorOnly()`.
 - [ ] Focus indicator meets WCAG 2.4.13 (3:1 contrast, ≥ 2 px perimeter).
