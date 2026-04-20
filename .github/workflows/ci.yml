@@ -19,14 +19,40 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Filter non-Markdown changes
+      - name: Detect non-Markdown changes
         id: filter
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
-        with:
-          filters: |
-            non-md:
-              - '**'
-              - '!**/*.md'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_SHA: ${{ github.sha }}
+        run: |
+          set +e
+          ZERO_SHA="0000000000000000000000000000000000000000"
+          if [ -n "$BASE_SHA" ] && [ -n "$HEAD_SHA" ]; then
+            # Three-dot mirrors GitHub's PR diff (merge-base..head).
+            files=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+            rc=$?
+          elif [ -n "$PUSH_BEFORE" ] && [ -n "$PUSH_SHA" ] && [ "$PUSH_BEFORE" != "$ZERO_SHA" ]; then
+            files=$(git diff --name-only "$PUSH_BEFORE" "$PUSH_SHA")
+            rc=$?
+          else
+            echo "No valid diff range; defaulting to non-md=true"
+            echo "non-md=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$rc" -ne 0 ]; then
+            echo "git diff failed; defaulting to non-md=true"
+            echo "non-md=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Changed files:"
+          echo "$files"
+          if [ -z "$files" ] || echo "$files" | grep -qv '\.md$'; then
+            echo "non-md=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "non-md=false" >> "$GITHUB_OUTPUT"
+          fi
 
   unit-tests:
     name: Unit Tests
