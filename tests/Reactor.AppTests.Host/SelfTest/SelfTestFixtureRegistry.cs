@@ -91,6 +91,20 @@ internal static class SelfTestFixtureRegistry
         "D3Cov_MultiLineChart",
         "D3Cov_CirclePacking",
         "D3Cov_ScalesExercise",
+
+        // Chart accessibility (Phase 1 + 2)
+        "ChartA11y_PeerAttachment",
+        "ChartA11y_GridProvider",
+        "ChartA11y_PointValue",
+        "ChartA11y_TableHeaders",
+        "ChartA11y_PieChart",
+        "ChartA11y_ForceGraph",
+        "ChartA11y_DefaultPointLabels",
+        "ChartA11y_CustomDataLabel",
+        "ChartA11y_AutoSummary",
+        "ChartA11y_AutoNameFromTitle",
+        "ChartA11y_AutoNameFallback",
+
         "MdHtml_HtmlGeneration",
         "MdHtml_HtmlInWebView2",
         "ListView_TypedRendering",
@@ -582,6 +596,20 @@ internal static class SelfTestFixtureRegistry
         "D3Cov_MultiLineChart" => new D3ChartCoverageFixtures.MultiLineChart(harness),
         "D3Cov_CirclePacking" => new D3ChartCoverageFixtures.CirclePacking(harness),
         "D3Cov_ScalesExercise" => new D3ChartCoverageFixtures.ScalesExercise(harness),
+
+        // Chart accessibility (Phase 1 + 2)
+        "ChartA11y_PeerAttachment" => new ChartAccessibilityFixtures.PeerAttachment(harness),
+        "ChartA11y_GridProvider" => new ChartAccessibilityFixtures.GridProvider(harness),
+        "ChartA11y_PointValue" => new ChartAccessibilityFixtures.PointValue(harness),
+        "ChartA11y_TableHeaders" => new ChartAccessibilityFixtures.TableHeaders(harness),
+        "ChartA11y_PieChart" => new ChartAccessibilityFixtures.PieChart(harness),
+        "ChartA11y_ForceGraph" => new ChartAccessibilityFixtures.ForceGraph(harness),
+        "ChartA11y_DefaultPointLabels" => new ChartAccessibilityFixtures.DefaultPointLabels(harness),
+        "ChartA11y_CustomDataLabel" => new ChartAccessibilityFixtures.CustomDataLabel(harness),
+        "ChartA11y_AutoSummary" => new ChartAccessibilityFixtures.AutoSummary(harness),
+        "ChartA11y_AutoNameFromTitle" => new ChartAccessibilityFixtures.AutoNameFromTitle(harness),
+        "ChartA11y_AutoNameFallback" => new ChartAccessibilityFixtures.AutoNameFallback(harness),
+
         "MdHtml_HtmlGeneration" => new MarkdownHtmlFixtures.HtmlGeneration(harness),
         "MdHtml_HtmlInWebView2" => new MarkdownHtmlFixtures.HtmlInWebView2(harness),
         "ListView_TypedRendering" => new CollectionFixtures.ListViewTyped(harness),

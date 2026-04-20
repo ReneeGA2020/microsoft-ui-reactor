@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor.Charting.Accessibility;
 using Microsoft.UI.Reactor.Charting.D3;
 // Tree and Force Graph chart DSL for Reactor integration
 
@@ -44,7 +45,7 @@ public static partial class ChartDsl
 /// <summary>
 /// Tree diagram element for Reactor's virtual tree — renders as native D3 elements.
 /// </summary>
-public sealed class TreeChartElement<T>
+public sealed class TreeChartElement<T> : IChartAccessibilityData
 {
     internal T Root { get; init; } = default!;
     internal Func<T, IEnumerable<T>?> ChildrenAccessor { get; init; } = _ => null;
@@ -57,12 +58,22 @@ public sealed class TreeChartElement<T>
     private double _nodeRadius = 6;
     private Action<TreeChartHandle>? _onReady;
 
+    // Accessibility fields
+    private string? _title;
+    private string? _description;
+
     public TreeChartElement<T> Width(double w) { _width = w; return this; }
     public TreeChartElement<T> Height(double h) { _height = h; return this; }
     public TreeChartElement<T> LinkColor(string c) { _linkColor = c; return this; }
     public TreeChartElement<T> NodeColor(string c) { _nodeColor = c; return this; }
     public TreeChartElement<T> NodeRadius(double r) { _nodeRadius = r; return this; }
     public TreeChartElement<T> OnReady(Action<TreeChartHandle> callback) { _onReady = callback; return this; }
+
+    /// <summary>Sets visible title + accessible name for the chart.</summary>
+    public TreeChartElement<T> Title(string title) { _title = title; return this; }
+
+    /// <summary>Overrides auto-generated accessible description/summary.</summary>
+    public TreeChartElement<T> Description(string description) { _description = description; return this; }
 
     public Element ToElement() => BuildElement(Root);
     public static implicit operator Element(TreeChartElement<T> chart) => chart.ToElement();
@@ -118,6 +129,34 @@ public sealed class TreeChartElement<T>
 
         return canvas;
     }
+
+    // ── IChartAccessibilityData ──────────────────────────────────────
+
+    string? IChartAccessibilityData.Name => _title;
+    string? IChartAccessibilityData.Description => _description;
+
+    IReadOnlyList<ChartSeriesDescriptor> IChartAccessibilityData.Series
+    {
+        get
+        {
+            var layout = TreeLayout.Create<T>().Size(_width, _height);
+            var root = layout.Hierarchy(Root, ChildrenAccessor);
+            layout.Layout(root);
+            var allNodes = root.Descendants().ToList();
+
+            // Tree charts expose nodes as a single series with label and depth
+            var points = allNodes.Select((node, i) =>
+            {
+                var label = LabelAccessor?.Invoke(node.Data) ?? $"Node {i + 1}";
+                return new ChartPointDescriptor(label, node.Depth);
+            }).ToArray();
+
+            return [new ChartSeriesDescriptor("Nodes", points)];
+        }
+    }
+
+    IReadOnlyList<ChartAxisDescriptor> IChartAccessibilityData.Axes => [];
+    ChartViewport? IChartAccessibilityData.Viewport => null;
 }
 
 /// <summary>
@@ -143,7 +182,7 @@ public sealed class TreeChartHandle
 /// Note: ForceGraph intentionally uses XamlHostElement for 60fps direct manipulation
 /// via SyncPositions(). See ductd3-native-chart-migration.md §5, Option A.
 /// </summary>
-public sealed class ForceGraphElement
+public sealed class ForceGraphElement : IChartAccessibilityData
 {
     internal IReadOnlyList<ForceNode> InputNodes { get; init; } = [];
     internal IReadOnlyList<ForceLink> InputLinks { get; init; } = [];
@@ -157,6 +196,10 @@ public sealed class ForceGraphElement
     private int _iterations = 300;
     private Action<ForceGraphHandle>? _onReady;
 
+    // Accessibility fields
+    private string? _title;
+    private string? _description;
+
     public ForceGraphElement Width(double w) { _width = w; return this; }
     public ForceGraphElement Height(double h) { _height = h; return this; }
     public ForceGraphElement LinkColor(string c) { _linkColor = c; return this; }
@@ -164,6 +207,12 @@ public sealed class ForceGraphElement
     public ForceGraphElement Charge(double strength) { _chargeStrength = strength; return this; }
     public ForceGraphElement Distance(double d) { _linkDistance = d; return this; }
     public ForceGraphElement Iterations(int n) { _iterations = n; return this; }
+
+    /// <summary>Sets visible title + accessible name for the graph.</summary>
+    public ForceGraphElement Title(string title) { _title = title; return this; }
+
+    /// <summary>Overrides auto-generated accessible description/summary.</summary>
+    public ForceGraphElement Description(string description) { _description = description; return this; }
 
     /// <summary>
     /// Called after the graph is rendered with a handle that exposes the simulation,
@@ -284,6 +333,40 @@ public sealed class ForceGraphElement
         // Hand the live references to the caller
         _onReady?.Invoke(new ForceGraphHandle(_sim, canvas, ellipses, labels, lines));
     }
+
+    // ── IChartAccessibilityData ──────────────────────────────────────
+
+    string? IChartAccessibilityData.Name => _title;
+    string? IChartAccessibilityData.Description => _description;
+
+    IReadOnlyList<ChartSeriesDescriptor> IChartAccessibilityData.Series
+    {
+        get
+        {
+            if (InputLinks.Count == 0) return [];
+
+            // Force graphs expose edges as {source, target, weight} rows
+            var points = InputLinks.Select((link, i) =>
+            {
+                var sourceName = link.Source >= 0 && link.Source < InputNodes.Count
+                    ? InputNodes[link.Source].Label ?? $"Node {link.Source}"
+                    : $"Node {link.Source}";
+                var targetName = link.Target >= 0 && link.Target < InputNodes.Count
+                    ? InputNodes[link.Target].Label ?? $"Node {link.Target}"
+                    : $"Node {link.Target}";
+
+                return new ChartPointDescriptor(
+                    $"{sourceName} → {targetName}",
+                    link.Strength,
+                    $"{sourceName} to {targetName}, weight {link.Strength}");
+            }).ToArray();
+
+            return [new ChartSeriesDescriptor("Edges", points)];
+        }
+    }
+
+    IReadOnlyList<ChartAxisDescriptor> IChartAccessibilityData.Axes => [];
+    ChartViewport? IChartAccessibilityData.Viewport => null;
 }
 
 /// <summary>
