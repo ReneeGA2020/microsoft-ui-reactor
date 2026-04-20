@@ -60,7 +60,7 @@ public class AreaChart : GallerySample
              D3LinePath(data, x: d => xScale.Map(d.x), y: d => yScale.Map(d.y),
                 stroke: Brush(Palette[0]), strokeWidth: 2, curve: D3Curve.MonotoneX),
              .. dots,
-             D3Dsl.Text(marginLeft, 2, "Area Chart", 14, Gray(40))]
+             D3Dsl.Text(marginLeft, 2, "Area Chart", 14, ChartForeground)]
         );
     }
 }

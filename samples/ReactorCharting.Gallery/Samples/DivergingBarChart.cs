@@ -20,7 +20,7 @@ public class DivergingBarChartSample : GallerySample
 
         double zeroX = left + xs.Map(0);
         D3Line(zeroX, top, zeroX, top + plotH)
-            with { Stroke = Gray(80), StrokeThickness = 1.5 };
+            with { Stroke = ChartMutedForeground, StrokeThickness = 1.5 };
 
         var posBrush = Brush(Palette[0]);
         var negBrush = Brush(Palette[3]);
@@ -60,7 +60,7 @@ public class DivergingBarChartSample : GallerySample
         var band = BandScale.Create(items).SetRange(0, plotH).SetPaddingInner(0.2).SetPaddingOuter(0.1);
 
         // Vertical grid lines
-        var gridBrush = Gray(128, alpha: 40);
+        var gridBrush = ChartGrid;
         var gridLines = xs.Ticks(8).Select(t =>
             D3Line(left + xs.Map(t), top, left + xs.Map(t), top + plotH) with { Stroke = gridBrush, StrokeThickness = 1 });
 
@@ -72,11 +72,11 @@ public class DivergingBarChartSample : GallerySample
         var negBrush = Brush(Palette[3]);
 
         // Axes
-        var axisBrush = Gray(100, alpha: 180);
+        var axisBrush = ChartAxis;
 
         return D3Canvas(W, H,
             [.. gridLines,
-             D3Line(zeroX, top, zeroX, top + plotH) with { Stroke = Gray(80), StrokeThickness = 1.5 },
+             D3Line(zeroX, top, zeroX, top + plotH) with { Stroke = ChartMutedForeground, StrokeThickness = 1.5 },
 
              // Bars + value labels
              .. (from t in items.Select((item, i) => (item, i))
@@ -89,7 +89,7 @@ public class DivergingBarChartSample : GallerySample
                  from el in new Element[]
                  {
                      D3Rect(barStart, y, barWidth, band.Bandwidth) with { Fill = fill, RadiusX = 2, RadiusY = 2 },
-                     D3Dsl.Text(labelX, y + band.Bandwidth / 2 - 7, (v >= 0 ? "+" : "") + v.ToString("F0"), 10, Gray(60)),
+                     D3Dsl.Text(labelX, y + band.Bandwidth / 2 - 7, (v >= 0 ? "+" : "") + v.ToString("F0"), 10, ChartMutedForeground),
                  }
                  select el),
 
@@ -99,12 +99,12 @@ public class DivergingBarChartSample : GallerySample
 
              // Y axis labels
              .. items.Select((item, i) =>
-                 TextRight(2, top + band.Map(item) + band.Bandwidth / 2 - 7, item, left - 6, 10, Gray(60))),
+                 TextRight(2, top + band.Map(item) + band.Bandwidth / 2 - 7, item, left - 6, 10, ChartMutedForeground)),
 
              // Legend
              .. D3Legend(left + plotW - 120, top + 2, [("Positive", posBrush), ("Negative", negBrush)]),
 
-             D3Dsl.Text(left, 4, "Customer Sentiment Scores", 13, Gray(40)),
+             D3Dsl.Text(left, 4, "Customer Sentiment Scores", 13, ChartForeground),
             ]
         );
     }

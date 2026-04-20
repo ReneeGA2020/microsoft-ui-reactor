@@ -28,7 +28,7 @@ public sealed class CirclePackingSample : GallerySample
                 return new[] { D3Circle(nx, ny, r) with { Fill = fill, Stroke = stroke } };
             }
             else
-                return new[] { D3Circle(nx, ny, r) with { Fill = Gray(200, alpha: alpha), Stroke = Gray(140) } };
+                return new[] { D3Circle(nx, ny, r) with { Fill = Gray(200, alpha: alpha), Stroke = ChartMutedForeground } };
         });
         D3Canvas(W, H, [..elements, title]);
         """;
@@ -110,14 +110,14 @@ public sealed class CirclePackingSample : GallerySample
                 {
                     byte alpha = node.Depth == 0 ? (byte)40 : (byte)25;
                     var fill = Gray(200, alpha: alpha);
-                    var stroke = Gray(140);
+                    var stroke = ChartMutedForeground;
                     return new Element[]
                     {
                         D3Circle(nx, ny, r) with { Fill = fill, Stroke = stroke, StrokeThickness = node.Depth == 0 ? 2 : 1 },
                     };
                 }
             }),
-            D3Dsl.Text(10, 5, "Organization Headcount", 13, Gray(51)),
+            D3Dsl.Text(10, 5, "Organization Headcount", 13, ChartForeground),
         ]);
     }
 

@@ -89,7 +89,7 @@ public sealed class ClusterDendrogramSample : GallerySample
 
         var nodes = root.Descendants().ToList();
 
-        var linkStroke = Gray(190);
+        var linkStroke = ChartSubtleStroke;
 
         return D3Canvas(W, H,
         [
@@ -104,13 +104,13 @@ public sealed class ClusterDendrogramSample : GallerySample
                 int branchColor = root.Children.IndexOf(node.TopAncestor);
                 var fill = isLeaf
                     ? Brush(Palette[branchColor % Palette.Count])
-                    : Brush("#666666");
+                    : ChartSubtleFill;
 
                 Element label = isLeaf
-                    ? D3Dsl.Text(node.X + 7, node.Y - 7, node.Data.Name, 8.5, Gray(50))
+                    ? D3Dsl.Text(node.X + 7, node.Y - 7, node.Data.Name, 8.5, ChartForeground)
                     : node.Parent == null
-                        ? TextCenter(node.X - 40, node.Y - 18, node.Data.Name, 80, 11, Brush("#222222"))
-                        : D3Dsl.Text(node.X - 4, node.Y - 16, node.Data.Name, 9, Gray(80));
+                        ? TextCenter(node.X - 40, node.Y - 18, node.Data.Name, 80, 11, ChartForeground)
+                        : D3Dsl.Text(node.X - 4, node.Y - 16, node.Data.Name, 9, ChartMutedForeground);
 
                 return new Element[]
                 {

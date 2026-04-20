@@ -41,7 +41,7 @@ public class BarChartSample : GallerySample
         var band = BandScale.Create(months).SetRange(0, plotW).SetPaddingInner(0.2).SetPaddingOuter(0.1);
 
         var fill = Brush(Palette[0]);
-        var axisBrush = Gray(100, alpha: 180);
+        var axisBrush = ChartAxis;
 
         var bars =
             from i in Enumerable.Range(0, months.Length)
@@ -63,7 +63,7 @@ public class BarChartSample : GallerySample
              .. ys.Ticks(5).Select(t =>
                  TextRight(0, ys.Map(t) - 7, Fmt(t) + "k", left - 6, 10, axisBrush)),
              .. xLabels,
-             D3Dsl.Text(left, 4, "Monthly Revenue ($k)", 13, Gray(40))]
+             D3Dsl.Text(left, 4, "Monthly Revenue ($k)", 13, ChartForeground)]
         );
     }
 }

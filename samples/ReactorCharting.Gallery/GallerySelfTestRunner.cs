@@ -62,7 +62,7 @@ static class GallerySelfTestRunner
     static async Task RunSampleNavigationTests()
     {
         Check("Gallery_Launches_With_Landing_Page",
-            FindText("Reactor Charting Gallery") != null);
+            FindText("Reactor Charting Gallery") != null && IsOnLandingPage());
 
         // Capture landing page snapshot
         await CaptureSnapshot("_landing");
@@ -73,37 +73,81 @@ static class GallerySelfTestRunner
             {
                 // Click into the sample
                 ClickSampleButton(sample.Title);
-                await Render(800); // Longer wait for charts to render
+                await Render(800); // Longer wait for charts to render + transition
 
-                // Verify sample page rendered
-                var backBtn = FindButton("< Back");
-                if (backBtn == null)
+                // Verify sample page rendered (Heading with sample title, FontSize 28)
+                if (!IsOnDetailPage(sample.Title))
                 {
                     await Render(500);
-                    backBtn = FindButton("< Back");
+                    if (!IsOnDetailPage(sample.Title))
+                        return false;
                 }
-
-                if (backBtn == null)
-                    return false;
 
                 // Capture snapshot of the rendered chart
                 await CaptureSnapshot(sample.IconName);
 
-                // Navigate back
-                ClickButton("< Back");
-                await Render();
+                // Navigate back via the exposed nav handle (drives the same
+                // GoBack the TitleBar's native back button calls).
+                GalleryApp.CurrentNav?.GoBack();
+                await Render(500);
 
                 // Verify landing page is restored
-                var landing = FindText("Reactor Charting Gallery");
-                if (landing == null)
+                if (!IsOnLandingPage())
                 {
-                    await Render();
-                    landing = FindText("Reactor Charting Gallery");
+                    await Render(500);
+                    if (!IsOnLandingPage())
+                        return false;
                 }
 
-                return landing != null;
+                return true;
             });
         }
+    }
+
+    /// <summary>
+    /// Landing page is active when at least one category SubHeading (e.g., "Bars")
+    /// is visible. SubHeading renders a TextBlock with FontSize around 20.
+    /// </summary>
+    static bool IsOnLandingPage()
+    {
+        // Bars is always the first category.
+        var hit = FindInTree<TextBlock>(_window?.Content!,
+            tb => tb.Text == "Bars" && tb.FontSize >= 16);
+        return hit != null;
+    }
+
+    /// <summary>
+    /// Detail page is active when a Heading (FontSize 28) with the sample's
+    /// title is in the tree.
+    /// </summary>
+    static bool IsOnDetailPage(string sampleTitle)
+    {
+        var hit = FindInTree<TextBlock>(_window?.Content!,
+            tb => tb.Text == sampleTitle && tb.FontSize >= 24);
+        return hit != null;
+    }
+
+    /// <summary>
+    /// The WinUI TitleBar renders a native back button whose Content is an icon
+    /// (not a string). Our theme toggle Button, also inside the TitleBar, has
+    /// a string Content — so we filter for non-string Content.
+    /// </summary>
+    static bool InvokeTitleBarBackButton()
+    {
+        var content = _window?.Content;
+        if (content == null) return false;
+        var titleBar = FindInTree<Microsoft.UI.Xaml.Controls.TitleBar>(content, _ => true);
+        if (titleBar == null) return false;
+
+        var backBtn = FindInTree<Button>(titleBar,
+            b => b.IsEnabled && b.Content is not string);
+        if (backBtn == null) return false;
+
+        var peer = new Microsoft.UI.Xaml.Automation.Peers.ButtonAutomationPeer(backBtn);
+        var invoke = (Microsoft.UI.Xaml.Automation.Provider.IInvokeProvider)
+            peer.GetPattern(Microsoft.UI.Xaml.Automation.Peers.PatternInterface.Invoke);
+        invoke.Invoke();
+        return true;
     }
 
     // ── Snapshot Capture ───────────────────────────────────────────

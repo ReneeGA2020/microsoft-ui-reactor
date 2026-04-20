@@ -51,20 +51,20 @@ public class SlopeChart : GallerySample
 
         double xLeft = left;
         double xRight = left + width;
-        var gridBrush = Gray(128, alpha: 30);
-        var axisBrush = Gray(100, alpha: 180);
+        var gridBrush = ChartGrid;
+        var axisBrush = ChartAxis;
 
         return D3Canvas(canvasW, canvasH,
             [// Column headers
-             TextCenter(xLeft - 30, top - 30, "Before", 60, 13, Gray(60)),
-             TextCenter(xRight - 30, top - 30, "After", 60, 13, Gray(60)),
+             TextCenter(xLeft - 30, top - 30, "Before", 60, 13, ChartMutedForeground),
+             TextCenter(xRight - 30, top - 30, "After", 60, 13, ChartMutedForeground),
 
              // Grid lines + tick labels
              .. ys.Ticks(6).SelectMany(t => new Element[]
              {
                  D3Line(xLeft, ys.Map(t), xRight, ys.Map(t)) with { Stroke = gridBrush, StrokeThickness = 1 },
-                 D3Dsl.Text(xLeft - 28, ys.Map(t) - 7, Fmt(t), 9, Gray(140)),
-                 D3Dsl.Text(xRight + 8, ys.Map(t) - 7, Fmt(t), 9, Gray(140)),
+                 D3Dsl.Text(xLeft - 28, ys.Map(t) - 7, Fmt(t), 9, ChartMutedForeground),
+                 D3Dsl.Text(xRight + 8, ys.Map(t) - 7, Fmt(t), 9, ChartMutedForeground),
              }),
 
              // Vertical axis lines

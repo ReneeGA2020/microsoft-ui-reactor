@@ -78,7 +78,7 @@ public sealed class TidyTreeSample : GallerySample
 
         var nodes = root.Descendants().ToList();
 
-        var linkStroke = Gray(180);
+        var linkStroke = ChartSubtleStroke;
 
         return D3Canvas(W, H,
             [.. nodes.SelectMany(node =>
@@ -88,12 +88,12 @@ public sealed class TidyTreeSample : GallerySample
              {
                  bool isLeaf = node.Children.Count == 0;
                  double r = isLeaf ? 4 : 5;
-                 var fill = isLeaf ? Brush(Palette[0]) : Gray(85);
-                 Microsoft.UI.Xaml.Media.Brush? stroke = isLeaf ? null : Gray(80);
+                 var fill = isLeaf ? Brush(Palette[0]) : ChartSubtleFill;
+                 Microsoft.UI.Xaml.Media.Brush? stroke = isLeaf ? null : ChartMutedForeground;
 
                  Element label = isLeaf
-                     ? D3Dsl.Text(node.X + 8, node.Y - 7, node.Data.Name, 9, Gray(60))
-                     : TextCenter(node.X - 4, node.Y - 18, node.Data.Name, 40, 10, Gray(51));
+                     ? D3Dsl.Text(node.X + 8, node.Y - 7, node.Data.Name, 9, ChartMutedForeground)
+                     : TextCenter(node.X - 4, node.Y - 18, node.Data.Name, 40, 10, ChartForeground);
 
                  return new Element[]
                  {

@@ -124,9 +124,9 @@ public sealed class BarChartRaceSample : GallerySample
             }
 
             // Render: iterate by country index (stable order for reconciler)
-            var titleBrush = Gray(50, alpha: 200);
-            var valueBrush = Gray(80, alpha: 180);
-            var yearBrush = Gray(100, alpha: 40);
+            var titleBrush = ChartForeground;
+            var valueBrush = ChartMutedForeground;
+            var yearBrush = ChartGrid;
 
             return D3Canvas(W, H,
             [

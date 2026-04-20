@@ -54,7 +54,7 @@ public sealed class BubbleChartSample : GallerySample
             [.. D3Grid(ys, left, pw),
              .. D3Axes(xs, ys, left, top, pw, ph),
              .. bubbles,
-             D3Dsl.Text(left, 6, "Bubble Chart (size encodes third variable)", 14, Gray(40))]
+             D3Dsl.Text(left, 6, "Bubble Chart (size encodes third variable)", 14, ChartForeground)]
         );
     }
 }

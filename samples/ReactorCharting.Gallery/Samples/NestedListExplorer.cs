@@ -96,7 +96,7 @@ public sealed class NestedListExplorerSample : GallerySample
                 {
                     var color = Brush(Palette[ci % Palette.Count]);
                     var bgColor = Brush(Palette[ci % Palette.Count], opacity: 0.06);
-                    var dimBrush = Gray(100, alpha: 160);
+                    var dimBrush = ChartAxis;
 
                     var header = (TextBlock(folder.Data.Name) with { FontSize = 12 })
                         .SemiBold().Foreground(color).Margin(8, 6, 8, 2);

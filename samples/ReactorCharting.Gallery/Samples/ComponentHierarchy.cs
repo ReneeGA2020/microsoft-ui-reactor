@@ -73,7 +73,7 @@ public sealed class ComponentHierarchySample : GallerySample
         layout.Layout(root);
 
         var nodes = root.Descendants().ToList();
-        var linkBrush = Gray(100, alpha: 120);
+        var linkBrush = ChartAxis;
 
         return D3Canvas(W, H,
         [

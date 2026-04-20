@@ -68,7 +68,7 @@ public sealed class HistogramSample : GallerySample
                  return D3Rect(bx, by, bw, bh) with { Fill = fill };
              }),
              .. D3Axes(xs, ys, left, top, pw, ph),
-             D3Dsl.Text(left, 6, "Histogram (normal distribution, 200 values)", 14, Gray(40))]
+             D3Dsl.Text(left, 6, "Histogram (normal distribution, 200 values)", 14, ChartForeground)]
         );
     }
 }

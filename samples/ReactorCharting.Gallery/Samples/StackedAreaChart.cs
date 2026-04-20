@@ -79,9 +79,9 @@ public class StackedAreaChart : GallerySample
              .. D3Axes(xScale, yScale, marginLeft, marginTop, plotW, plotH),
              .. Enumerable.Range(0, 6).Select(i =>
                 D3Dsl.Text(xScale.Map(i * 2) - 10, marginTop + plotH + 6,
-                    monthLabels[i * 2], 9, Gray(120))),
+                    monthLabels[i * 2], 9, ChartMutedForeground)),
              .. D3Legend(marginLeft + plotW - 100, marginTop + 8, keys.Select((key, k) => (key, Brush(Palette[k], opacity: 0.75)))),
-             D3Dsl.Text(marginLeft, 2, "Stacked Area Chart", 14, Gray(40)),
+             D3Dsl.Text(marginLeft, 2, "Stacked Area Chart", 14, ChartForeground),
             ]
         );
     }

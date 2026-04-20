@@ -71,7 +71,7 @@ public sealed class WorkflowPipelineSample : GallerySample
         var cx = Stages.Select(s => PadX + s.Column * ColW + CardW / 2).ToArray();
         var cy = Stages.Select(s => PadY + s.Row * RowH + CardH / 2).ToArray();
 
-        var edgeBrush = Gray(100, alpha: 100);
+        var edgeBrush = ChartAxis;
 
         return D3Canvas(W, H,
         [

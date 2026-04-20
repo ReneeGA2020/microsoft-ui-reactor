@@ -2,6 +2,7 @@ using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Hosting;
 using Microsoft.UI.Reactor.Layout;
+using Microsoft.UI.Reactor.Navigation;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -19,36 +20,123 @@ else
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  Gallery App — Landing page + sample detail pages
+//  Routes
+// ═══════════════════════════════════════════════════════════════════════
+
+abstract record GalleryRoute;
+sealed record Landing : GalleryRoute;
+sealed record SampleDetail(string SampleTitle) : GalleryRoute;
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Gallery shell — native TitleBar + stack navigation
 // ═══════════════════════════════════════════════════════════════════════
 
 class GalleryApp : Component
 {
+    // Exposed so the self-test harness can drive navigation without
+    // having to find the TitleBar back button in the visual tree.
+    internal static NavigationHandle<GalleryRoute>? CurrentNav;
+
     public override Element Render()
     {
-        var (current, setCurrent) = UseState<GallerySample?>(null);
         var (isDark, setIsDark) = UseState(false);
+        var nav = UseNavigation<GalleryRoute>(new Landing());
+        CurrentNav = nav;
 
-        Element page;
-        if (current != null)
-            page = RenderSamplePage(current, () => setCurrent(null), isDark, setIsDark);
-        else
-            page = RenderLanding(setCurrent, isDark, setIsDark);
+        // Charts read this flag to pick axis/label/grid brushes that contrast
+        // with the current theme. Set here so it's current by the time any
+        // descendant sample.Render() runs.
+        Microsoft.UI.Reactor.Charting.D3Dsl.IsDarkTheme = isDark;
 
-        // Apply theme to the root container
-        return Border(page)
-            .Background(Theme.SolidBackground)
-            .Set(b => b.RequestedTheme = isDark ? ElementTheme.Dark : ElementTheme.Light);
+        // The Windows caption buttons (min/max/close) are system chrome —
+        // they don't adapt to RequestedTheme on the Reactor tree. Push the
+        // colors directly onto AppWindow.TitleBar so they track the toggle.
+        UseEffect(() =>
+        {
+            if (Microsoft.UI.Reactor.ReactorApp.ActiveHost?.Window?.AppWindow is { } aw)
+            {
+                var tb = aw.TitleBar;
+                var fg       = isDark ? global::Windows.UI.Color.FromArgb(255, 240, 240, 240)
+                                      : global::Windows.UI.Color.FromArgb(255,  30,  30,  30);
+                var inactive = isDark ? global::Windows.UI.Color.FromArgb(255, 140, 140, 140)
+                                      : global::Windows.UI.Color.FromArgb(255, 140, 140, 140);
+                var transparent = global::Windows.UI.Color.FromArgb(0, 0, 0, 0);
+                var hoverBg    = isDark ? global::Windows.UI.Color.FromArgb( 40, 255, 255, 255)
+                                        : global::Windows.UI.Color.FromArgb( 20,   0,   0,   0);
+                var pressedBg  = isDark ? global::Windows.UI.Color.FromArgb( 70, 255, 255, 255)
+                                        : global::Windows.UI.Color.FromArgb( 40,   0,   0,   0);
+
+                tb.ButtonForegroundColor          = fg;
+                tb.ButtonHoverForegroundColor     = fg;
+                tb.ButtonPressedForegroundColor   = fg;
+                tb.ButtonInactiveForegroundColor  = inactive;
+                tb.ButtonBackgroundColor          = transparent;
+                tb.ButtonInactiveBackgroundColor  = transparent;
+                tb.ButtonHoverBackgroundColor     = hoverBg;
+                tb.ButtonPressedBackgroundColor   = pressedBg;
+            }
+        }, isDark);
+
+        return Border(
+            FlexColumn(
+                TitleBar("Reactor Charting Gallery")
+                    .WithNavigation(nav)
+                    .Subtitle(SubtitleFor(nav.CurrentRoute)) with
+                {
+                    RightHeader = ThemeToggle(isDark, setIsDark),
+                },
+
+                NavigationHost(nav, route => route switch
+                {
+                    Landing             => Component<LandingPage>(),
+                    SampleDetail d      => LookupSample(d.SampleTitle) is { } s
+                                             ? Component<SampleDetailPage, GallerySample>(s)
+                                             : TextBlock($"Sample '{d.SampleTitle}' not found").Padding(24),
+                    _                   => Empty(),
+                }) with
+                {
+                    Transition = NavigationTransition.DrillIn(),
+                }
+            )
+        )
+        .Background(Theme.SolidBackground)
+        .Set(b => b.RequestedTheme = isDark ? ElementTheme.Dark : ElementTheme.Light);
     }
 
-    static string IconPath(GallerySample sample) =>
-        global::System.IO.Path.Combine(AppContext.BaseDirectory, "Icons", $"{sample.IconName}.svg");
-
-    static Element SampleIcon(GallerySample sample, double size) =>
-        Image(IconPath(sample)) with { Width = size, Height = size };
-
-    Element RenderLanding(Action<GallerySample?> navigate, bool isDark, Action<bool> setIsDark)
+    static string SubtitleFor(GalleryRoute route) => route switch
     {
+        Landing          => $"{SampleRegistry.All.Length} samples — powered by D3.js ported to C#",
+        SampleDetail d   => LookupSample(d.SampleTitle)?.Category ?? "",
+        _                => "",
+    };
+
+    static GallerySample? LookupSample(string title) =>
+        SampleRegistry.All.FirstOrDefault(s => s.Title == title);
+
+    static Element ThemeToggle(bool isDark, Action<bool> setIsDark) =>
+        Button(isDark ? "\uE793" : "\uE708", () => setIsDark(!isDark))
+            .Foreground(Theme.AccentText)
+            .Set(b =>
+            {
+                b.FontFamily = new FontFamily("Segoe MDL2 Assets");
+                b.Width = 36;
+                b.Height = 36;
+                b.Padding = new Thickness(0);
+                b.MinWidth = 0;
+                b.MinHeight = 0;
+                b.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+                b.BorderThickness = new Thickness(0);
+            });
+}
+
+// ─── Landing page — category grid of samples ─────────────────────────
+
+class LandingPage : Component
+{
+    public override Element Render()
+    {
+        var nav = UseNavigation<GalleryRoute>();
+
         var categories = SampleRegistry.All
             .GroupBy(s => s.Category)
             .OrderBy(g => CategoryOrder(g.Key));
@@ -63,7 +151,7 @@ class GalleryApp : Component
                                 SampleIcon(sample, 36),
                                 TextBlock(sample.Title) with { FontSize = 12 }
                             ).MaxWidth(100).HAlign(HorizontalAlignment.Center),
-                            () => navigate(sample)
+                            () => nav.Navigate(new SampleDetail(sample.Title))
                         ).Width(130).Height(90)
                     ).ToArray()
                 )
@@ -76,38 +164,56 @@ class GalleryApp : Component
             )
         ).ToArray();
 
-        return FlexColumn(
-            HStack(12,
-                Heading("Reactor Charting Gallery").Foreground(Theme.PrimaryText).Flex(grow: 1),
-                ThemeToggle(isDark, setIsDark)
-            ).Padding(24, 24, 24, 0).VAlign(VerticalAlignment.Center),
-            Caption($"{SampleRegistry.All.Length} samples — powered by D3.js ported to C#")
-                .Foreground(Theme.SecondaryText)
-                .Padding(24, 0, 24, 0),
-            ScrollView(
-                VStack(24, sections).Padding(24, 12, 24, 24).Margin(4)
-            ).Flex(grow: 1, basis: 0)
+        return ScrollView(
+            VStack(24, sections).Padding(24, 12, 24, 24).Margin(4)
         );
     }
 
-    Element RenderSamplePage(GallerySample sample, Action goBack, bool isDark, Action<bool> setIsDark)
+    static string IconPath(GallerySample sample) =>
+        global::System.IO.Path.Combine(AppContext.BaseDirectory, "Icons", $"{sample.IconName}.svg");
+
+    static Element SampleIcon(GallerySample sample, double size) =>
+        Image(IconPath(sample)) with { Width = size, Height = size };
+
+    static int CategoryOrder(string category) => category switch
     {
-        return FlexColumn(
-            HStack(12,
-                Button("< Back", goBack),
-                SampleIcon(sample, 28),
-                Heading(sample.Title).Foreground(Theme.PrimaryText).Flex(grow: 1),
-                ThemeToggle(isDark, setIsDark)
-            ).Padding(24, 24, 24, 0).VAlign(VerticalAlignment.Center),
-            Caption(sample.Description)
-                .Foreground(Theme.SecondaryText)
-                .Padding(24, 8, 24, 0),
-            ScrollView(VStack(16,
+        "Bars" => 0,
+        "Lines" => 1,
+        "Areas" => 2,
+        "Dots" => 3,
+        "Radial" => 4,
+        "Hierarchies" => 5,
+        "Networks" => 6,
+        "Analysis" => 7,
+        "Controls" => 8,
+        "Interactive" => 9,
+        "Animation" => 10,
+        "Design" => 11,
+        _ => 99,
+    };
+}
+
+// ─── Sample detail page — chart + description + source ───────────────
+
+class SampleDetailPage : Component<GallerySample>
+{
+    public override Element Render()
+    {
+        var sample = Props;
+
+        return ScrollView(
+            VStack(16,
+                Heading(sample.Title).Foreground(Theme.PrimaryText),
+                TextBlock(sample.Description)
+                    .Foreground(Theme.SecondaryText)
+                    .Set(tb => tb.TextWrapping = TextWrapping.Wrap),
+
                 Border(sample.Render())
                     .Background(Theme.CardBackground)
                     .WithBorder(Theme.CardStroke)
                     .CornerRadius(8)
                     .Padding(16),
+
                 SubHeading("Source Code").Foreground(Theme.PrimaryText),
                 Border(
                     ScrollView(
@@ -128,37 +234,7 @@ class GalleryApp : Component
                 .WithBorder(Theme.SurfaceStroke)
                 .CornerRadius(6)
                 .Padding(16)
-            ).Padding(24, 0, 24, 24)).Flex(grow: 1, basis: 0)
+            ).Padding(24, 16, 24, 24)
         );
     }
-
-    static int CategoryOrder(string category) => category switch
-    {
-        "Bars" => 0,
-        "Lines" => 1,
-        "Areas" => 2,
-        "Dots" => 3,
-        "Radial" => 4,
-        "Hierarchies" => 5,
-        "Networks" => 6,
-        "Analysis" => 7,
-        "Controls" => 8,
-        "Interactive" => 9,
-        "Animation" => 10,
-        "Design" => 11,
-        _ => 99,
-    };
-
-    static Element ThemeToggle(bool isDark, Action<bool> setIsDark) =>
-        Button(isDark ? "\uE793" : "\uE708", () => setIsDark(!isDark))
-            .Foreground(Theme.AccentText)
-            .Set(b =>
-            {
-                b.FontFamily = new FontFamily("Segoe MDL2 Assets");
-                b.Width = 36;
-                b.Height = 36;
-                b.Padding = new Thickness(0);
-                b.MinWidth = 0;
-                b.MinHeight = 0;
-            });
 }

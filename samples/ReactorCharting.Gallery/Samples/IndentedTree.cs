@@ -25,8 +25,8 @@ public sealed class IndentedTreeSample : GallerySample
             [..rows.SelectMany((node, i) => {
                  double indent = startX + node.Depth * indentPx;
                  return new Element[] {
-                     hasChildren ? D3Path(pb.ToString(), null, Gray(120), 0)
-                                 : D3Circle(indent - 8, y + 9, 2.5) with { Fill = Gray(180) },
+                     hasChildren ? D3Path(pb.ToString(), null, ChartMutedForeground, 0)
+                                 : D3Circle(indent - 8, y + 9, 2.5) with { Fill = ChartSubtleStroke },
                      D3Dsl.Text(indent, y + 3, node.Data.Name, 10, nameColor),
                  };
              }),
@@ -89,9 +89,9 @@ public sealed class IndentedTreeSample : GallerySample
         return D3Canvas(W, H,
         [
             // Header
-            D3Rect(0, startY, W, rowH) with { Fill = Gray(230) },
-            D3Dsl.Text(startX, startY + 3, "Name", 10, Brush("#333333")),
-            D3Dsl.Text(typeCol, startY + 3, "Type", 10, Brush("#333333")),
+            D3Rect(0, startY, W, rowH) with { Fill = ChartSubtleFill },
+            D3Dsl.Text(startX, startY + 3, "Name", 10, ChartForeground),
+            D3Dsl.Text(typeCol, startY + 3, "Type", 10, ChartForeground),
 
             // Rows
             .. rows.Select((node, i) => (node, i, y: startY + (i + 1) * rowH))
@@ -102,23 +102,23 @@ public sealed class IndentedTreeSample : GallerySample
                     double indent = startX + node.Depth * indentPx;
                     bool hasChildren = node.Children.Count > 0;
                     bool isFolder = node.Data.Type == "folder";
-                    var nameColor = isFolder ? Brush(Palette[0]) : Gray(50);
+                    var nameColor = isFolder ? Brush(Palette[0]) : ChartForeground;
 
                     var indicator = hasChildren
                         ? D3Path(new PathBuilder(1)
                             .MoveTo(indent - 12, y + 6)
                             .LineTo(indent - 4, y + 6)
                             .LineTo(indent - 8, y + 12)
-                            .ClosePath().ToString(), null, Gray(120), 0)
-                        : (Element)(D3Circle(indent - 8, y + 9, r: 2.5) with { Fill = Gray(180) });
+                            .ClosePath().ToString(), null, ChartMutedForeground, 0)
+                        : (Element)(D3Circle(indent - 8, y + 9, r: 2.5) with { Fill = ChartSubtleStroke });
 
                     return (Element[])
                     [
-                        .. (i % 2 == 0 ? new[] { D3Rect(0, y, W, rowH) with { Fill = Gray(248) } } : Array.Empty<Element>()),
+                        .. (i % 2 == 0 ? new[] { D3Rect(0, y, W, rowH) with { Fill = ChartSubtleFill } } : Array.Empty<Element>()),
                         indicator,
                         D3Dsl.Text(indent, y + 3, node.Data.Name, 10, nameColor),
-                        D3Dsl.Text(typeCol, y + 3, node.Data.Type, 9, Gray(120)),
-                        D3Line(0, y + rowH, W, y + rowH) with { Stroke = Gray(235), StrokeThickness = 0.5 },
+                        D3Dsl.Text(typeCol, y + 3, node.Data.Type, 9, ChartMutedForeground),
+                        D3Line(0, y + rowH, W, y + rowH) with { Stroke = ChartSubtleStroke, StrokeThickness = 0.5 },
                     ];
                 }),
         ]);

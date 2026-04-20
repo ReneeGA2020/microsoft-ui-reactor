@@ -62,7 +62,7 @@ public class StackedBarChartSample : GallerySample
         var band = BandScale.Create(months).SetRange(0, plotW).SetPaddingInner(0.2).SetPaddingOuter(0.1);
 
         // Axes
-        var axisBrush = Gray(100, alpha: 180);
+        var axisBrush = ChartAxis;
         double legendX = W - right + 12;
         double legendY = top + 10;
 
@@ -93,7 +93,7 @@ public class StackedBarChartSample : GallerySample
              // Legend
              .. D3Legend(legendX, legendY, keys.Select((key, i) => (key, Brush(Palette[i])))),
 
-             D3Dsl.Text(left, 4, "Fruit Sales by Month (Stacked)", 13, Gray(40)),
+             D3Dsl.Text(left, 4, "Fruit Sales by Month (Stacked)", 13, ChartForeground),
             ]
         );
     }

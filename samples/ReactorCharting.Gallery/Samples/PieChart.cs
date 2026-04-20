@@ -45,12 +45,12 @@ public sealed class PieChartSample : GallerySample
                     {
                         D3ArcPath(a.StartAngle, a.EndAngle, cx, cy, outerRadius: 150,
                             fill: Brush(Palette[i % Palette.Count]),
-                            stroke: Brush("#ffffff"), strokeWidth: 1),
+                            stroke: ChartSurface, strokeWidth: 1),
                         D3Dsl.Text(cx + ox - 20, cy + oy - 7,
                             $"{a.Data.Name} ({a.Data.Value}%)", 11, Brush(Palette[i % Palette.Count])),
                     };
                 }),
-             D3Dsl.Text(cx - 60, 10, "Market Share", 16, Gray(40)),
+             D3Dsl.Text(cx - 60, 10, "Market Share", 16, ChartForeground),
             ]
         );
     }

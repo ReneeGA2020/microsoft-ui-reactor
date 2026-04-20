@@ -78,7 +78,7 @@ series.Select((s, si) => {
 
         return D3Canvas(W, H,
             [D3Line(marginLeft, yScale.Map(0), marginLeft + plotW, yScale.Map(0))
-                with { Stroke = Gray(200), StrokeThickness = 1 },
+                with { Stroke = ChartSubtleStroke, StrokeThickness = 1 },
              .. series.Select((s, si) =>
                 {
                     var pts = Enumerable.Range(0, n)
@@ -88,7 +88,7 @@ series.Select((s, si) => {
                         fill: Brush(Palette[si], opacity: 0.8));
                 }),
              .. D3Legend(marginLeft + 10, marginTop + 4, keys.Select((key, k) => (key, Brush(Palette[k], opacity: 0.8)))),
-             D3Dsl.Text(marginLeft + 100, 6, "Streamgraph (Centered Stack)", 14, Gray(40)),
+             D3Dsl.Text(marginLeft + 100, 6, "Streamgraph (Centered Stack)", 14, ChartForeground),
             ]
         );
     }

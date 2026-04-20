@@ -18,7 +18,7 @@ public class HorizontalBarChartSample : GallerySample
         var band = BandScale.Create(countries)
             .SetRange(0, plotH).SetPaddingInner(0.25).SetPaddingOuter(0.1);
 
-        var gridBrush = Gray(128, alpha: 40);
+        var gridBrush = ChartGrid;
         foreach (var t in xs.Ticks(6))
             D3Line(left + xs.Map(t), top, left + xs.Map(t), top + plotH)
                 with { Stroke = gridBrush };
@@ -52,12 +52,12 @@ public class HorizontalBarChartSample : GallerySample
         var band = BandScale.Create(countries).SetRange(0, plotH).SetPaddingInner(0.25).SetPaddingOuter(0.1);
 
         // Horizontal grid lines (vertical in this case — along X)
-        var gridBrush = Gray(128, alpha: 40);
+        var gridBrush = ChartGrid;
         var gridLines = xs.Ticks(6).Select(t =>
             D3Line(left + xs.Map(t), top, left + xs.Map(t), top + plotH) with { Stroke = gridBrush, StrokeThickness = 1 });
 
         // Axes
-        var axisBrush = Gray(100, alpha: 180);
+        var axisBrush = ChartAxis;
 
         return D3Canvas(W, H,
             [.. gridLines,
@@ -70,7 +70,7 @@ public class HorizontalBarChartSample : GallerySample
                  from el in new Element[]
                  {
                      D3Rect(left, y, barW, band.Bandwidth) with { Fill = fill, RadiusX = 2, RadiusY = 2 },
-                     D3Dsl.Text(left + barW + 4, y + band.Bandwidth / 2 - 7, $"{populations[t.i]:F0}M", 10, Gray(60)),
+                     D3Dsl.Text(left + barW + 4, y + band.Bandwidth / 2 - 7, $"{populations[t.i]:F0}M", 10, ChartMutedForeground),
                  }
                  select el),
 
@@ -81,9 +81,9 @@ public class HorizontalBarChartSample : GallerySample
 
              // Y axis labels
              .. countries.Select((country, i) =>
-                 TextRight(2, top + band.Map(country) + band.Bandwidth / 2 - 7, country, left - 6, 10, Gray(60))),
+                 TextRight(2, top + band.Map(country) + band.Bandwidth / 2 - 7, country, left - 6, 10, ChartMutedForeground)),
 
-             D3Dsl.Text(left, 4, "Population by Country (millions)", 13, Gray(40)),
+             D3Dsl.Text(left, 4, "Population by Country (millions)", 13, ChartForeground),
             ]
         );
     }

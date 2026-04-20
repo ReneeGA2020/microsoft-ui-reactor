@@ -41,6 +41,54 @@ public static class D3Dsl
     public static SolidColorBrush Gray(byte v, byte alpha = 255)
         => new(global::Windows.UI.Color.FromArgb(alpha, v, v, v));
 
+    // ── Theme-aware chart chrome brushes ──────────────────────────────
+    //
+    // Charts draw axes, gridlines, labels and titles that need enough contrast
+    // on both light and dark surfaces. Host applications set IsDarkTheme once
+    // per render (e.g. from the app's light/dark toggle) and all chart helpers
+    // — and any user code using ChartForeground/ChartAxis/etc. — pick the right
+    // brush automatically.
+
+    [ThreadStatic] private static bool _isDarkTheme;
+
+    public static bool IsDarkTheme
+    {
+        get => _isDarkTheme;
+        set => _isDarkTheme = value;
+    }
+
+    /// <summary>Primary text on a chart surface — titles, strong labels.</summary>
+    public static SolidColorBrush ChartForeground =>
+        _isDarkTheme ? Gray(235) : Gray(40);
+
+    /// <summary>Secondary text — tick labels, subtle annotations, legend labels.</summary>
+    public static SolidColorBrush ChartMutedForeground =>
+        _isDarkTheme ? Gray(190) : Gray(90);
+
+    /// <summary>Axis lines + their tick labels.</summary>
+    public static SolidColorBrush ChartAxis =>
+        _isDarkTheme ? Gray(190, 200) : Gray(100, 180);
+
+    /// <summary>Subtle horizontal/vertical gridlines behind the plot.</summary>
+    public static SolidColorBrush ChartGrid =>
+        _isDarkTheme ? Gray(200, 50) : Gray(128, 50);
+
+    /// <summary>Solid fill matching the chart's surrounding card — use for gap strokes between colored slices (pie / sunburst / icicle).</summary>
+    public static SolidColorBrush ChartSurface =>
+        _isDarkTheme ? Gray(32) : Gray(255);
+
+    /// <summary>Translucent surface — for layered ridge fills or separators that blend with the card.</summary>
+    public static SolidColorBrush ChartSurfaceAlpha(byte alpha) =>
+        _isDarkTheme ? Gray(32, alpha) : Gray(255, alpha);
+
+    /// <summary>Slightly elevated neutral surface — non-leaf tree fills, alternating rows.</summary>
+    public static SolidColorBrush ChartSubtleFill =>
+        _isDarkTheme ? Gray(60) : Gray(225);
+
+    /// <summary>Subtle neutral stroke — baselines, separators, non-accented borders.</summary>
+    public static SolidColorBrush ChartSubtleStroke =>
+        _isDarkTheme ? Gray(90) : Gray(185);
+
     public static string Fmt(double v) =>
         Math.Abs(v) >= 1e6 ? (v / 1e6).ToString("0.#", global::System.Globalization.CultureInfo.InvariantCulture) + "M" :
         Math.Abs(v) >= 1e3 ? (v / 1e3).ToString("0.#", global::System.Globalization.CultureInfo.InvariantCulture) + "k" :
@@ -104,14 +152,14 @@ public static class D3Dsl
     public static TextBlockElement Text(double x, double y, string text, double fontSize = 10, Brush? foreground = null) =>
         TextBlock(text)
             .FontSize(fontSize)
-            .Foreground(foreground ?? Gray(100))
+            .Foreground(foreground ?? ChartMutedForeground)
             .Canvas(x, y);
 
     /// <summary>Creates a positioned text label with right alignment and explicit width (for Y axis labels).</summary>
     public static TextBlockElement TextRight(double x, double y, string text, double width, double fontSize = 10, Brush? foreground = null) =>
         TextBlock(text)
             .FontSize(fontSize)
-            .Foreground(foreground ?? Gray(100))
+            .Foreground(foreground ?? ChartMutedForeground)
             .Width(width)
             .TextAlignment(TextAlignment.Right)
             .Canvas(x, y);
@@ -120,7 +168,7 @@ public static class D3Dsl
     public static TextBlockElement TextCenter(double x, double y, string text, double width, double fontSize = 10, Brush? foreground = null) =>
         TextBlock(text)
             .FontSize(fontSize)
-            .Foreground(foreground ?? Gray(100))
+            .Foreground(foreground ?? ChartMutedForeground)
             .Width(width)
             .TextAlignment(TextAlignment.Center)
             .Canvas(x, y);
@@ -192,7 +240,7 @@ public static class D3Dsl
         return items.SelectMany((item, i) => new Element[]
         {
             D3Rect(x, y + i * 22, 14, 14) with { Fill = item.color, RadiusX = 2, RadiusY = 2 },
-            Text(x + 20, y + i * 22, item.label, fontSize, Gray(60)),
+            Text(x + 20, y + i * 22, item.label, fontSize, ChartMutedForeground),
         }).ToArray();
     }
 
@@ -201,7 +249,7 @@ public static class D3Dsl
     public static Element[] D3Axes(LinearScale xs, LinearScale ys,
         double left, double top, double width, double height, int xTicks = 6, int yTicks = 5)
     {
-        var ab = Gray(100, 180);
+        var ab = ChartAxis;
         double bot = top + height;
         var elements = new List<Element>
         {
@@ -221,7 +269,7 @@ public static class D3Dsl
     /// <summary>Creates horizontal grid lines as a flat array of Elements.</summary>
     public static Element[] D3Grid(LinearScale ys, double left, double width, int ticks = 5)
     {
-        var gb = Gray(128, 40);
+        var gb = ChartGrid;
         return ys.Ticks(ticks)
             .Select(t => (Element)(D3Line(left, ys.Map(t), left + width, ys.Map(t)) with { Stroke = gb, StrokeThickness = 1 }))
             .ToArray();

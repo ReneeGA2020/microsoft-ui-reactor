@@ -47,7 +47,7 @@ var lines = allSeries.Select((series, s) =>
         var ys = new LinearScale([yMax + 3, yMin - 3], [top, top + height]).Nice();
 
         var monthLabels = months.Select((m, i) =>
-            D3Dsl.Text(xs.Map(i) - 10, top + height + 4, m, 10, Gray(100)));
+            D3Dsl.Text(xs.Map(i) - 10, top + height + 4, m, 10, ChartMutedForeground));
 
         var lines = allSeries.Select((series, s) =>
         {
@@ -64,7 +64,7 @@ var lines = allSeries.Select((series, s) =>
              .. monthLabels,
              .. lines,
              .. D3Legend(legendX, top + 10, labels.Select((label, s) => (label, Brush(colors[s])))),
-             D3Dsl.Text(2, top - 14, "\u00b0C", 11, Gray(80))]
+             D3Dsl.Text(2, top - 14, "\u00b0C", 11, ChartMutedForeground)]
         );
     }
 }

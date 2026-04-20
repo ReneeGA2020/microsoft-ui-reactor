@@ -74,5 +74,6 @@ public static class SampleRegistry
 
         // ── Design ────────────────────────────────────────────────
         new ColorPageSample(),
+        new ThemedChartSample(),
     ];
 }

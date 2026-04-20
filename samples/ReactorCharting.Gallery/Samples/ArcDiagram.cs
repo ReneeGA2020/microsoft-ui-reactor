@@ -16,7 +16,7 @@ public sealed class ArcDiagramSample : GallerySample
 
     public override string SourceCode => """
         D3Canvas(W, H,
-            [D3Line(...) with { Stroke = Gray(200) },
+            [D3Line(...) with { Stroke = ChartSubtleStroke },
              ..edges.Select((edge, ei) => {
                  var pb = new PathBuilder(3);
                  pb.MoveTo(x1, baseline);
@@ -25,7 +25,7 @@ public sealed class ArcDiagramSample : GallerySample
              }),
              ..Enumerable.Range(0, nodeCount).SelectMany(i => new Element[] {
                  D3Circle(nodeX[i], baseline, 8) with { Fill = fill },
-                 D3Dsl.Text(nodeX[i] - 24, baseline + 14, labels[i], 9, Gray(60)),
+                 D3Dsl.Text(nodeX[i] - 24, baseline + 14, labels[i], 9, ChartMutedForeground),
              }),
             ]
         )
@@ -57,10 +57,10 @@ public sealed class ArcDiagramSample : GallerySample
         double spacing = (W - padX * 2) / (nodeCount - 1);
         var nodeX = Enumerable.Range(0, nodeCount).Select(i => padX + i * spacing).ToArray();
 
-        var white = Brush("#ffffff");
+        var white = ChartSurface;
 
         return D3Canvas(W, H,
-            [D3Line(padX - 10, baseline, W - padX + 10, baseline) with { Stroke = Gray(200), StrokeThickness = 1 },
+            [D3Line(padX - 10, baseline, W - padX + 10, baseline) with { Stroke = ChartSubtleStroke, StrokeThickness = 1 },
              .. edges.Select((edge, ei) =>
              {
                  double x1 = nodeX[edge.s];
@@ -85,10 +85,10 @@ public sealed class ArcDiagramSample : GallerySample
                  return new Element[]
                  {
                      D3Circle(nodeX[i], baseline, 8) with { Fill = fill, Stroke = white, StrokeThickness = 1.5 },
-                     TextCenter(nodeX[i] - 24, baseline + 14, labels[i], 48, 9, Gray(60)),
+                     TextCenter(nodeX[i] - 24, baseline + 14, labels[i], 48, 9, ChartMutedForeground),
                  };
              }),
-             D3Dsl.Text(12, 6, "Arc Diagram", 14, Gray(51)),
+             D3Dsl.Text(12, 6, "Arc Diagram", 14, ChartForeground),
             ]
         );
     }

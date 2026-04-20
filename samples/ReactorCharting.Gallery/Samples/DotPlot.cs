@@ -19,7 +19,7 @@ public sealed class DotPlotSample : GallerySample
                  data.Where(d => d.cat == cat)
                      .Select(d => D3Circle(xs.Map(d.value), rowY, 5)
                          with { Fill = fill, Stroke = stroke })),
-             D3Dsl.Text(left, 6, "Dot Plot", 14, Gray(40))]
+             D3Dsl.Text(left, 6, "Dot Plot", 14, ChartForeground)]
         )
         """;
 
@@ -45,9 +45,9 @@ public sealed class DotPlotSample : GallerySample
 
         return D3Canvas(width, height,
             [// X axis
-             D3Line(left, axisY, left + pw, axisY) with { Stroke = Gray(100, alpha: 180) },
+             D3Line(left, axisY, left + pw, axisY) with { Stroke = ChartAxis },
              .. xs.Ticks(6).Select(t =>
-                 D3Dsl.Text(xs.Map(t) - 12, axisY + 4, Fmt(t), 10, Gray(100))),
+                 D3Dsl.Text(xs.Map(t) - 12, axisY + 4, Fmt(t), 10, ChartMutedForeground)),
              // Category rows and dots
              .. categories.SelectMany((cat, ci) =>
              {
@@ -56,13 +56,13 @@ public sealed class DotPlotSample : GallerySample
                  var stroke = Brush(Palette[ci % Palette.Count]);
                  return ((Element[])
                  [
-                     D3Dsl.Text(4, rowY - 7, cat, 11, Gray(60)),
-                     D3Line(left, rowY, left + pw, rowY) with { Stroke = Gray(128, alpha: 30) },
+                     D3Dsl.Text(4, rowY - 7, cat, 11, ChartMutedForeground),
+                     D3Line(left, rowY, left + pw, rowY) with { Stroke = ChartGrid },
                      .. data.Where(d => d.cat == cat)
                          .Select(d => D3Circle(xs.Map(d.value), rowY, 5) with { Fill = fill, Stroke = stroke }),
                  ]);
              }),
-             D3Dsl.Text(left, 6, "Dot Plot (strip chart)", 14, Gray(40))]
+             D3Dsl.Text(left, 6, "Dot Plot (strip chart)", 14, ChartForeground)]
         );
     }
 }

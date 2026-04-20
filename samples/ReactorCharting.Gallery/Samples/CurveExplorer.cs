@@ -91,11 +91,11 @@ public sealed class CurveExplorerSample : GallerySample
                     (Element)(D3Circle(xs.Map(d.x), ys.Map(d.y), 4) with
                     {
                         Fill = dotBrush,
-                        Stroke = Brush("#ffffff"),
+                        Stroke = ChartSurface,
                         StrokeThickness = 1.5,
                     })),
-                D3Dsl.Text(canvasW / 2 - 20, canvasH - 10, "X", 11, Gray(80)),
-                D3Dsl.Text(2, top - 14, "Y", 11, Gray(80)),
+                D3Dsl.Text(canvasW / 2 - 20, canvasH - 10, "X", 11, ChartMutedForeground),
+                D3Dsl.Text(2, top - 14, "Y", 11, ChartMutedForeground),
             ]);
 
             return VStack(12,

@@ -29,7 +29,7 @@ public sealed class TreemapSample : GallerySample
              ..labels,
              ..root.Children.Select(f =>
                 D3Rect(f.X0, f.Y0, f.Width, f.Height)
-                    with { Stroke = Gray(100), StrokeThickness = 1.5,
+                    with { Stroke = ChartMutedForeground, StrokeThickness = 1.5,
                            RadiusX = 2, RadiusY = 2 })]
         )
         """;
@@ -106,14 +106,14 @@ public sealed class TreemapSample : GallerySample
                     [
                         D3Rect(leaf.X0, leaf.Y0, w, h) with { Fill = fill, RadiusX = 2, RadiusY = 2 },
                         .. (w > 40 && h > 16 ? [D3Dsl.Text(leaf.X0 + 4, leaf.Y0 + 3, label, 9, Gray(30))] : (Element[])[]),
-                        .. (w > 40 && h > 30 ? [D3Dsl.Text(leaf.X0 + 4, leaf.Y0 + 15, $"{leaf.Data.Size} KB", 8, Gray(80))] : (Element[])[]),
+                        .. (w > 40 && h > 30 ? [D3Dsl.Text(leaf.X0 + 4, leaf.Y0 + 15, $"{leaf.Data.Size} KB", 8, ChartMutedForeground)] : (Element[])[]),
                     ];
                 }),
              .. root.Children
                 .Where(folder => folder.Width >= 1 && folder.Height >= 1)
                 .Select(folder =>
                     D3Rect(folder.X0, folder.Y0, folder.Width, folder.Height)
-                        with { Stroke = Gray(100), StrokeThickness = 1.5,
+                        with { Stroke = ChartMutedForeground, StrokeThickness = 1.5,
                                RadiusX = 2, RadiusY = 2 }),
             ]
         );

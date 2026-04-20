@@ -80,8 +80,8 @@ D3Path(pathData, stroke: Brush(Palette[0]), strokeWidth: 2)";
                      double x1 = xs.Map(t.i + 1.5);
                      return D3Rect(x0, top, x1 - x0, height) with { Fill = bandBrush };
                  }),
-             D3Dsl.Text(W / 2 - 20, H - 12, "Day", 11, Gray(80)),
-             D3Dsl.Text(2, top - 14, "\u00b0C", 11, Gray(80)),
+             D3Dsl.Text(W / 2 - 20, H - 12, "Day", 11, ChartMutedForeground),
+             D3Dsl.Text(2, top - 14, "\u00b0C", 11, ChartMutedForeground),
              D3Dsl.Text(left + 5, top + 5, "Shaded regions = missing sensor data", 10, Brush(Palette[3]))]
         );
     }

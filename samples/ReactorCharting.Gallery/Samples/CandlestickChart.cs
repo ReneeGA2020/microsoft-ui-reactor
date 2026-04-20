@@ -93,8 +93,8 @@ public class CandlestickChart : GallerySample
                  select el),
              // X-axis labels (every 5 days)
              .. Enumerable.Range(0, 4).Select(n => n * 5)
-                 .Select(i => D3Dsl.Text(xs.Map(i) - 12, top + height + 4, $"Day {i + 1}", 10, Gray(100))),
-             D3Dsl.Text(2, top - 14, "Price", 11, Gray(80)),
+                 .Select(i => D3Dsl.Text(xs.Map(i) - 12, top + height + 4, $"Day {i + 1}", 10, ChartMutedForeground)),
+             D3Dsl.Text(2, top - 14, "Price", 11, ChartMutedForeground),
              .. D3Legend(left + width - 120, top + 5, [("Bullish", bullBrush), ("Bearish", bearBrush)])]
         );
     }

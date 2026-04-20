@@ -46,7 +46,7 @@ public sealed class ScatterplotSample : GallerySample
             [.. D3Grid(ys, left, pw),
              .. D3Axes(xs, ys, left, top, pw, ph),
              .. points.Select(p => (Element)(D3Circle(xs.Map(p.x), ys.Map(p.y), 4) with { Fill = fill, Stroke = stroke })),
-             D3Dsl.Text(left, 6, "Scatterplot (50 random points)", 14, Gray(40))]
+             D3Dsl.Text(left, 6, "Scatterplot (50 random points)", 14, ChartForeground)]
         );
     }
 }

@@ -49,10 +49,10 @@ public sealed class AnimatedDonutSample : GallerySample
             D3Canvas(W, H, [
                 ..slices.SelectMany(i => new[] {
                     D3ArcPath(sa, ea, cx, cy, innerRadius: innerR, outerRadius: outerR,
-                        fill: Brush(Palette[i]), stroke: Brush("#ffffff"), strokeWidth: 2),
+                        fill: Brush(Palette[i]), stroke: ChartSurface, strokeWidth: 2),
                     TextCenter(cx + lx - 12, cy + ly - 8, Labels[i], ...),
                 }),
-                TextCenter(cx - 50, cy - 10, DatasetNames[datasetIdx], 100, 14, Gray(60)),
+                TextCenter(cx - 50, cy - 10, DatasetNames[datasetIdx], 100, 14, ChartMutedForeground),
             ]),
             Button("Next Dataset ▶", OnNext)
         );
@@ -134,12 +134,12 @@ public sealed class AnimatedDonutSample : GallerySample
                             D3ArcPath(a.Start, a.End, cx, cy,
                                 outerRadius: OuterR, innerRadius: InnerR, padAngle: PadAngle,
                                 fill: Brush(Palette[i % Palette.Count]),
-                                stroke: Brush("#ffffff"), strokeWidth: 2),
+                                stroke: ChartSurface, strokeWidth: 2),
                             TextCenter(cx + lx - 12, cy + ly - 8, Labels[i], 24, 12,
                                 Brush(Palette[i % Palette.Count])),
                         };
                     }),
-                    TextCenter(cx - 50, cy - 10, DatasetNames[datasetIdx], 100, 14, Gray(60)),
+                    TextCenter(cx - 50, cy - 10, DatasetNames[datasetIdx], 100, 14, ChartMutedForeground),
                 ]),
                 Button("Next Dataset \u25B6", OnNext).Center()
             ).HAlign(HorizontalAlignment.Center).Padding(16);

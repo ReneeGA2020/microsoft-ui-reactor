@@ -74,8 +74,8 @@ public sealed class ForceDirectedGraphSample : GallerySample
             .Run(300);
 
         // -- draw --
-        var edgeStroke = Gray(180);
-        var white = Brush("#ffffff");
+        var edgeStroke = ChartSubtleStroke;
+        var white = ChartSurface;
 
         return D3Canvas(W, H,
         [
@@ -93,9 +93,9 @@ public sealed class ForceDirectedGraphSample : GallerySample
                     Stroke = white,
                     StrokeThickness = 1.5,
                 },
-                TextCenter(n.X - 16, n.Y + 12, labels[i], 32, 9, Gray(60)),
+                TextCenter(n.X - 16, n.Y + 12, labels[i], 32, 9, ChartMutedForeground),
             }),
-            D3Dsl.Text(12, 6, "Force-Directed Graph", 14, Gray(51)),
+            D3Dsl.Text(12, 6, "Force-Directed Graph", 14, ChartForeground),
         ]);
     }
 }

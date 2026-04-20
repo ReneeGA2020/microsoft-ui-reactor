@@ -28,7 +28,7 @@ public sealed class SunburstSample : GallerySample
                     var (sa, ea, ir, or) = node.ToPolar(...);
                     return D3ArcPath(sa, ea, cx, cy,
                         innerRadius: ir, outerRadius: or,
-                        fill: fill, stroke: Gray(255), strokeWidth: 1);
+                        fill: fill, stroke: ChartSurface, strokeWidth: 1);
                 }),
              ..labels]
         )
@@ -104,11 +104,11 @@ public sealed class SunburstSample : GallerySample
                     [
                         D3ArcPath(startAngle, endAngle, cx, cy,
                             innerRadius: innerRadius, outerRadius: outerRadius,
-                            fill: fill, stroke: Gray(255), strokeWidth: 1),
+                            fill: fill, stroke: ChartSurface, strokeWidth: 1),
                         .. (showLabel ? [TextCenter(lx - 20, ly - 6, node.Data.Name, 40, 8, Gray(30))] : (Element[])[]),
                     ];
                 }),
-             TextCenter(cx - 20, cy - 7, "Disk", 40, 12, Gray(51)),
+             TextCenter(cx - 20, cy - 7, "Disk", 40, 12, ChartForeground),
             ]
         );
     }

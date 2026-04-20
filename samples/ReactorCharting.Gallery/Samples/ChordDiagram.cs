@@ -83,7 +83,7 @@ public sealed class ChordDiagramSample : GallerySample
             .. data.Chords
                 .Select(c => D3PathTranslated(ribbon.Generate(c), cx, cy,
                     fill: Brush(Palette[c.Source.Index % Palette.Count], opacity: 0.55))),
-            D3Dsl.Text(12, 6, "Chord Diagram — Regional Trade Flow", 14, Brush("#333333")),
+            D3Dsl.Text(12, 6, "Chord Diagram — Regional Trade Flow", 14, ChartForeground),
         ]);
     }
 }

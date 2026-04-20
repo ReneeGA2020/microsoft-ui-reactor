@@ -50,8 +50,8 @@ public class LineChart : GallerySample
              .. D3Axes(xs, ys, left, top, width, height),
              D3LinePath(data, x: d => xs.Map(d.x), y: d => ys.Map(d.y), stroke: lineBrush, strokeWidth: 2),
              .. data.Select(d => (Element)(D3Circle(xs.Map(d.x), ys.Map(d.y), 3) with { Fill = lineBrush })),
-             D3Dsl.Text(canvasW / 2 - 20, canvasH - 12, "Day", 11, Gray(80)),
-             D3Dsl.Text(2, top - 14, "\u00b0C", 11, Gray(80))]
+             D3Dsl.Text(canvasW / 2 - 20, canvasH - 12, "Day", 11, ChartMutedForeground),
+             D3Dsl.Text(2, top - 14, "\u00b0C", 11, ChartMutedForeground)]
         );
     }
 }

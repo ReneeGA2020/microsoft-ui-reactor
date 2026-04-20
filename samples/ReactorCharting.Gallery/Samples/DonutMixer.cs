@@ -89,8 +89,8 @@ public sealed class DonutMixerSample : GallerySample
                             Brush(Palette[i % Palette.Count])),
                     };
                 }),
-                TextCenter(cx - 30, cy - 10, $"{total:F0}", 60, 16, Gray(40)),
-                TextCenter(cx - 20, cy + 10, "total", 40, 10, Gray(120)),
+                TextCenter(cx - 30, cy - 10, $"{total:F0}", 60, 16, ChartForeground),
+                TextCenter(cx - 20, cy + 10, "total", 40, 10, ChartMutedForeground),
             ]);
 
             return HStack(24,

@@ -25,7 +25,7 @@ public class RidgePlot : GallerySample
             var ys = new LinearScale([0, peak], [baselineY, baselineY - rowStep * 1.2]);
             return new Element[] {
                 D3AreaPath(pts, x: d => xs.Map(d.x), y0: _ => baselineY, y1: d => ys.Map(d.y),
-                    fill: Brush("#ffffff", opacity: 0.85)),
+                    fill: ChartSurfaceAlpha(217)),
                 D3AreaPath(pts, x: d => xs.Map(d.x), y0: _ => baselineY, y1: d => ys.Map(d.y),
                     fill: Brush(Palette[r], opacity: 0.55)),
                 D3LinePath(pts, x: d => xs.Map(d.x), y: d => ys.Map(d.y),
@@ -88,16 +88,16 @@ public class RidgePlot : GallerySample
                 return (Element[])
                 [
                     D3AreaPath(pts, x: d => xScale.Map(d.x), y0: _ => baselineY, y1: d => yScale.Map(d.y),
-                        fill: Gray(255, alpha: 217)),
+                        fill: ChartSurfaceAlpha(217)),
                     D3AreaPath(pts, x: d => xScale.Map(d.x), y0: _ => baselineY, y1: d => yScale.Map(d.y),
                         fill: Brush(Palette[r], opacity: 0.55)),
                     D3LinePath(pts, x: d => xScale.Map(d.x), y: d => yScale.Map(d.y),
                         stroke: Brush(Palette[r]), strokeWidth: 1.5, curve: D3Curve.Natural),
-                    D3Line(marginLeft, baselineY, marginLeft + plotW, baselineY) with { Stroke = Gray(210), StrokeThickness = 0.5 },
-                    D3Dsl.Text(4, baselineY - rowStep * 0.5 - 6, labels[r], 11, Gray(80)),
+                    D3Line(marginLeft, baselineY, marginLeft + plotW, baselineY) with { Stroke = ChartSubtleStroke, StrokeThickness = 0.5 },
+                    D3Dsl.Text(4, baselineY - rowStep * 0.5 - 6, labels[r], 11, ChartMutedForeground),
                 ];
             }),
-            D3Dsl.Text(marginLeft, 4, "Ridgeline Plot", 14, Gray(40)),
+            D3Dsl.Text(marginLeft, 4, "Ridgeline Plot", 14, ChartForeground),
         ]);
     }
 }

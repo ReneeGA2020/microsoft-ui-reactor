@@ -52,9 +52,9 @@ public sealed class DonutChartSample : GallerySample
                             $"{a.Data.Name}", 10, Brush(Palette[i % Palette.Count])),
                     };
                 }),
-            D3Dsl.Text(cx - 24, cy - 12, $"${total:N0}", 14, Gray(40)),
-            D3Dsl.Text(cx - 16, cy + 6, "/ month", 10, Gray(120)),
-            D3Dsl.Text(cx - 80, 10, "Monthly Expenses", 16, Gray(40)),
+            D3Dsl.Text(cx - 24, cy - 12, $"${total:N0}", 14, ChartForeground),
+            D3Dsl.Text(cx - 16, cy + 6, "/ month", 10, ChartMutedForeground),
+            D3Dsl.Text(cx - 80, 10, "Monthly Expenses", 16, ChartForeground),
         ]);
     }
 }

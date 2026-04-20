@@ -63,7 +63,7 @@ public class GroupedBarChartSample : GallerySample
         var ysScreen = new LinearScale(ys.Domain, [top + plotH, top]);
 
         // Axes
-        var axisBrush = Gray(100, alpha: 180);
+        var axisBrush = ChartAxis;
         double legendX = W - right + 12;
         double legendY = top + 10;
 
@@ -95,7 +95,7 @@ public class GroupedBarChartSample : GallerySample
              // Legend
              .. D3Legend(legendX, legendY, seriesNames.Select((name, i) => (name, Brush(Palette[i])))),
 
-             D3Dsl.Text(left, 4, "Quarterly Sales by Product Line", 13, Gray(40)),
+             D3Dsl.Text(left, 4, "Quarterly Sales by Product Line", 13, ChartForeground),
             ]
         );
     }

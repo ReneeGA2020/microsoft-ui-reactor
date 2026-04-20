@@ -74,7 +74,7 @@ public sealed class OrgChartSample : GallerySample
         layout.Layout(root);
 
         var nodes = root.Descendants().ToList();
-        var linkBrush = Gray(100, alpha: 80);
+        var linkBrush = ChartAxis;
 
         return D3Canvas(W, H,
         [
@@ -98,7 +98,7 @@ public sealed class OrgChartSample : GallerySample
     static Element PersonCard(Person person, int depth)
     {
         var color = Brush(Palette[depth % Palette.Count]);
-        var roleBrush = Gray(100, alpha: 180);
+        var roleBrush = ChartAxis;
 
         return (Border(
             VStack(3,
@@ -111,9 +111,9 @@ public sealed class OrgChartSample : GallerySample
         ) with
         {
             CornerRadius = 8,
-            BorderBrush = Gray(100, alpha: 60),
+            BorderBrush = ChartAxis,
             BorderThickness = 1,
-            Background = Brush("#fcfcfd"),
+            Background = ChartSurface,
             Padding = new Thickness(6),
         }).Size(CardW, CardH);
     }

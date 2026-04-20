@@ -25,7 +25,7 @@ public sealed class IcicleSample : GallerySample
                     D3Rect(node.X0, node.Y0, w, h)
                         with { Fill = fill, RadiusX = 1, RadiusY = 1 },
                     D3Rect(node.X0, node.Y0, w, h)
-                        with { Stroke = Gray(255, alpha: 180), StrokeThickness = 0.5 },
+                        with { Stroke = ChartSurfaceAlpha(180), StrokeThickness = 0.5 },
                 }),
             ]
         )
@@ -109,9 +109,9 @@ public sealed class IcicleSample : GallerySample
                     return (Element[])
                     [
                         D3Rect(node.X0, node.Y0, w, h) with { Fill = fill, RadiusX = 1, RadiusY = 1 },
-                        D3Rect(node.X0, node.Y0, w, h) with { Stroke = Gray(255, alpha: 180), StrokeThickness = 0.5 },
+                        D3Rect(node.X0, node.Y0, w, h) with { Stroke = ChartSurfaceAlpha(180), StrokeThickness = 0.5 },
                         .. (w > 50 && h > 16 ? [D3Dsl.Text(node.X0 + 4, node.Y0 + 3, label, 9, Gray(20))] : (Element[])[]),
-                        .. (w > 50 && h > 30 ? [D3Dsl.Text(node.X0 + 4, node.Y0 + 16, valLabel, 8, Gray(60))] : (Element[])[]),
+                        .. (w > 50 && h > 30 ? [D3Dsl.Text(node.X0 + 4, node.Y0 + 16, valLabel, 8, ChartMutedForeground)] : (Element[])[]),
                     ];
                 }),
         ]);

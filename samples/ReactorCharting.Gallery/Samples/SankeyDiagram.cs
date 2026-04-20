@@ -106,8 +106,8 @@ public sealed class SankeyDiagramSample : GallerySample
                  string labelText = node.Label ?? node.Id;
 
                  var label = isOutput
-                     ? TextRight(pad + node.X0 - 6 - 90, labelY, labelText, 90, 10, Gray(40))
-                     : D3Dsl.Text(pad + node.X1 + 6, labelY, labelText, 10, Gray(40));
+                     ? TextRight(pad + node.X0 - 6 - 90, labelY, labelText, 90, 10, ChartForeground)
+                     : D3Dsl.Text(pad + node.X1 + 6, labelY, labelText, 10, ChartForeground);
 
                  return new Element[]
                  {
@@ -116,7 +116,7 @@ public sealed class SankeyDiagramSample : GallerySample
                      label,
                  };
              }),
-             D3Dsl.Text(12, 6, "Sankey Diagram \u2014 Energy Flow", 14, Gray(51)),
+             D3Dsl.Text(12, 6, "Sankey Diagram \u2014 Energy Flow", 14, ChartForeground),
             ]
         );
     }

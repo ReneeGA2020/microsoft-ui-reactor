@@ -60,9 +60,9 @@ public sealed class BoxPlotSample : GallerySample
         return D3Canvas(width, height,
             [.. D3Grid(ys, left, pw),
              // Y axis
-             D3Line(left, top, left, top + ph) with { Stroke = Gray(100, alpha: 180), StrokeThickness = 1 },
+             D3Line(left, top, left, top + ph) with { Stroke = ChartAxis, StrokeThickness = 1 },
              .. ys.Ticks(6).Select(t =>
-                 TextRight(0, ys.Map(t) - 7, Fmt(t), left - 6, 10, Gray(100))),
+                 TextRight(0, ys.Map(t) - 7, Fmt(t), left - 6, 10, ChartMutedForeground)),
              // Box plots per group
              .. (from entry in groupData.Select((sorted, g) => (sorted, g))
                  let min = entry.sorted[0]
@@ -95,10 +95,10 @@ public sealed class BoxPlotSample : GallerySample
                      // Median line
                      D3Line(bx, ys.Map(median), bx + boxWidth, ys.Map(median)) with { Stroke = stroke, StrokeThickness = 2.5 },
                      // Group label
-                     D3Dsl.Text(cx - 8, top + ph + 8, $"Group {groups[entry.g]}", 11, Gray(60)),
+                     D3Dsl.Text(cx - 8, top + ph + 8, $"Group {groups[entry.g]}", 11, ChartMutedForeground),
                  }
                  select el),
-             D3Dsl.Text(left, 6, "Box Plot (four groups)", 14, Gray(40))]
+             D3Dsl.Text(left, 6, "Box Plot (four groups)", 14, ChartForeground)]
         );
     }
 }
