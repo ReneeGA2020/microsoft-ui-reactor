@@ -182,12 +182,17 @@ For the complete catalog (every factory, modifier, enum) see
 [`skills/dsl-reference.md`](skills/dsl-reference.md). The 90% cases:
 
 ```csharp
-// Text + layout
+// Text + layout — prefer FlexRow/FlexColumn for linear layout; they use CSS Flexbox
+// semantics (grow/shrink/gap/wrap, justify-content, align-items) so the model matches
+// the web. VStack/HStack remain available when you specifically want StackPanel's
+// shrink-wrap behavior.
+FlexColumn(children...)         FlexRow(children...)
 VStack(spacing, children...)    HStack(spacing, children...)
 TextBlock("hi")  Heading("Title")    SubHeading("Section")  Caption("note")
 Border(child).CornerRadius(8).Background(Theme.CardBackground).Padding(16)
 ScrollView(VStack(...))
 Grid(columns: ["*", "200"], rows: ["Auto", "*"], cells.Grid(row, column))
+TitleBar("App") with { Subtitle = "Home", Content = ..., RightHeader = ... }
 
 // Controls
 Button("Click", () => ...)      TextField(value, setValue, placeholder)
@@ -329,7 +334,7 @@ with `dotnet --info`.
 | `useReducer` | `UseReducer(initial)` — updater is `Func<T,T>` |
 | `useEffect(() => {}, [dep])` | `UseEffect(() => {}, dep)` |
 | `useMemo(() => val, [dep])` | `UseMemo(() => val, dep)` |
-| `<div>` | `VStack() / HStack() / Border() / Flex()` |
+| `<div>` | `FlexColumn() / FlexRow() / Border()` (prefer over `VStack`/`HStack`) |
 | `<span>text</span>` | `TextBlock("text")` |
 | `<button onClick={fn}>` | `Button("label", fn)` |
 | `<input value={v} onChange={fn}>` | `TextField(v, fn)` |
