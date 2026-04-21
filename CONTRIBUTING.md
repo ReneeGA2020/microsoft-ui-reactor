@@ -255,7 +255,6 @@ tests/
 samples/
   Reactor.TestApp/                Interactive control showcase / demo app
   apps/                           Sample apps (wordpuzzle, ductfiles, regedit, etc.)
-  FlexPanelGallery/               FlexPanel layout gallery
   TodoApp/                        Todo app sample
 ```
 
