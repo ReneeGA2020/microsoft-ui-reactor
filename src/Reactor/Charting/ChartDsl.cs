@@ -26,6 +26,21 @@ public static partial class ChartDsl
 
     public static PieChartElement<T> PieChart<T>(IReadOnlyList<T> data, Func<T, double> value, Func<T, string>? label = null) =>
         new() { Data = data, ValueAccessor = value, LabelAccessor = label };
+
+    /// <summary>
+    /// Wraps any chart element with an alternate-view toggle. Pressing <b>T</b> or
+    /// <b>Alt+Shift+F11</b> toggles between the chart and the alternate view
+    /// (typically a data table). The currently-hidden view is removed from the
+    /// accessibility tree so screen readers only see the active presentation.
+    /// <para>
+    /// Use this with raw D3 chart elements that are not built via <see cref="ChartElement{T}"/>
+    /// (which has its own <c>.AlternateView()</c> modifier).
+    /// </para>
+    /// </summary>
+    /// <param name="chartElement">The chart element to wrap.</param>
+    /// <param name="alternateView">The alternate view element (e.g., a data table).</param>
+    public static Element WithAlternateView(Element chartElement, Element alternateView) =>
+        ChartAlternateViewWrapper.Wrap(chartElement, alternateView);
 }
 
 public enum ChartType { Line, Bar, Area }
