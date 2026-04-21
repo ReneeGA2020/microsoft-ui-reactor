@@ -1070,7 +1070,7 @@ return Button(Props.OnSelected) {
 | Bare children `{ c1, c2 }` | No (requires `Children = [...]`) | **No in v1** — requires `Children = [...]` (follow-up feature) |
 | Spread via `[..expr]` | Works | Works (identical — property side is unchanged) |
 | C# version required | C# 12+ (collection expressions) | New C# version shipping this feature |
-| `with { }` precedence gotcha | Same as A' | Same as A' — `factory() { X = V }.M()` currently parses initializer-first; post-initializer chains still want parens |
+| Post-initializer chaining (`expr.M()` after `{ }`) | Works without parens — `new T { X = V }.M()` parses as `(new T { X = V }).M()` | Works without parens — `Factory() { X = V }.M()` parses as `(Factory() { X = V }).M()` (primary-expression precedence, deliberately unlike `with`) |
 
 **What's better than Option A':**
 - **No `new` keyword.** Every container call-site is 4 characters shorter and reads as the
@@ -1114,17 +1114,28 @@ return Button(Props.OnSelected) {
 - F replaces the `with { }` copy with an in-place initializer on the just-constructed instance.
   That's both clearer (one construction, one config block, zero copies) and cheaper (no record
   clone per property-setting round).
-- F avoids B's `with { }`-precedence gotcha for the common "factory + configuration" case: you
-  write `Factory(args) { … }` and there's no "with-binds-tighter-than-dot" trap. (The gotcha
-  returns if you then chain `.Method()` after the initializer, same as on `new T(args) { … }` today.)
+- F fully sidesteps B's `with { }` precedence gotcha. The trailing initializer is specified at
+  **primary-expression precedence**, so `Factory(args) { X = V }.Method()` parses as
+  `(Factory(args) { X = V }).Method()` — the fluent chain attaches to the whole initialized
+  instance, no parentheses required. This is explicitly called out in the prototype's speclet as
+  a deliberate divergence from `with`, and covered by the prototype's `Chained_*` regression
+  tests. In practical terms: Reactor can freely mix initializer-then-fluent ordering
+  (`Text("hi") { FontSize = 14 }.Flex(grow: 1)`) without the parenthesization tax that `with` demands.
 
 **Compared to Current** (fluent):
 - Same visual grouping win as A' — `{ }` groups everything belonging to one element, instead
   of splitting across fluent chain / `with { }` / `.Set()`.
-- Unlike A', the factory-call shape is preserved, so `.Bold()`-style one-liners could still exist
-  as fluent extensions **on the record** and be chained before the initializer if desired:
-  `Text("hi").Bold() { FontSize = 14 }` — though the LDM request notes post-initializer chaining
-  wants parentheses in some shapes (same trap as A').
+- Unlike A', the factory-call shape is preserved, so `.Bold()`-style one-liners keep working
+  either side of the initializer: `Text("hi").Bold() { FontSize = 14 }` puts the fluent chain
+  before, and `Text("hi") { FontSize = 14 }.Flex(grow: 1)` puts it after. Because the trailing
+  initializer binds at primary-expression precedence, **both orderings work without parentheses**
+  — a strict improvement over Option B's `with { }`, which forces the fluent chain to go first
+  (or requires wrapping the `with { }` expression in parens to chain after it).
+- This matters directly for the attached-property question: third-party panels that contribute
+  `.Flex(...)` / `.Grid(...)` / `.Dock(...)` extension methods compose naturally with Factory
+  Initializers without the consumer having to pick a strict ordering. The preferred Reactor
+  call-site becomes "element's own properties in the `{ }` block, attached-property extensions
+  chained after" — which reads left-to-right with no parens.
 
 ### Open questions for Reactor specifically
 
