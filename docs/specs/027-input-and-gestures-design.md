@@ -1000,10 +1000,16 @@ WinUI's model matches the OS-level protocol:
   `StorageItems` (files), `ApplicationLink`, `WebLink`, plus arbitrary
   custom formats keyed by string (canonical form is a reverse-DNS or
   MIME-like identifier, e.g., `"application/x-reactor-task"`).
-- **Format deferral.** `DataPackage.SetDataProvider(format, handler)`
-  lets the source provide the payload lazily — only computed if the
-  target actually requests that format. Useful for expensive
-  serializations.
+- **Format deferral (first-class in WinUI).**
+  `DataPackage.SetDataProvider(format, DataProviderHandler)` lets the
+  source register a callback that's only invoked when a target actually
+  calls `GetDataAsync(format)` for that specific format. The handler
+  receives a `DataProviderRequest` with `GetDeferral()` for async
+  resolution, and the contract works cross-process — WinUI relays the
+  request to the source app even when the target is another app.
+  **Every format supports this, not just custom formats.** Text, URI,
+  HTML, RTF, bitmap, and StorageItems can all be supplied via a
+  provider instead of a pre-computed value.
 - **Cross-process contract.** Text, URI, HTML, RTF, bitmap, and
   StorageItems are universally interoperable. Custom formats only
   interoperate when both ends are in the same process (same app).
@@ -1016,16 +1022,24 @@ WinUI's model matches the OS-level protocol:
 2. **Cross-process data transfer is first-class.** A `DragData` record
    exposes text, URI, HTML, files, and bitmap cleanly, plus custom
    formats for advanced cases.
-3. **Drop targets are declarative.** Modifiers for `.OnDragEnter`,
+3. **Every format can be supplied lazily.** HTML/RTF generation,
+   bitmap rendering, file materialization, and custom serialization
+   are often the expensive parts of DnD. Each `.With*` method has a
+   `Func<T>` / `Func<CancellationToken, Task<T>>` overload that's
+   only invoked when a target actually requests that format — works
+   cross-process via WinUI's `DataProviderHandler` contract. The
+   source-side `getData` callback itself is also invoked lazily at
+   `DragStarting` time, not on every render.
+4. **Drop targets are declarative.** Modifiers for `.OnDragEnter`,
    `.OnDragOver`, `.OnDragLeave`, `.OnDrop` — all typed and value-based.
-4. **Drag visuals are composable.** A `dragVisual` callback returns a
+5. **Drag visuals are composable.** A `dragVisual` callback returns a
    `Element` that Reactor renders to a bitmap and hands to WinUI's
    `DragUI` — no raw `SoftwareBitmap` wrangling.
-5. **Operation negotiation is honest.** Source declares allowed ops;
+6. **Operation negotiation is honest.** Source declares allowed ops;
    target accepts a single op (respecting modifier keys). `DropCompleted`
    routes back to the source so it can finalize (e.g., remove the item
    after a Move).
-6. **Reordering within a single app feels natural.** In-process typed
+7. **Reordering within a single app feels natural.** In-process typed
    payloads + a `.OnDrop<T>` hook should make list reordering a
    ~15-line pattern.
 
@@ -1035,12 +1049,20 @@ WinUI's model matches the OS-level protocol:
 /// <summary>
 /// The payload for a drag-and-drop operation. Supports OS-standard formats
 /// (text, URI, HTML, RTF, files, bitmap) plus typed in-process payloads and
-/// arbitrary custom formats. Build with .With* methods on the source side;
-/// inspect with .TryGet* on the target side.
+/// arbitrary custom formats. Every format can be supplied eagerly (value
+/// already computed) or lazily (provider invoked only if a target requests
+/// that specific format — including cross-process targets, via WinUI's
+/// DataProviderHandler contract).
+///
+/// Build with .With* methods on the source side; inspect with .TryGet* on
+/// the target side. For each format there are three source-side overloads:
+///   .WithX(TValue value)                                     — eager
+///   .WithX(Func&lt;TValue&gt; provider)                           — lazy, sync
+///   .WithX(Func&lt;CancellationToken, Task&lt;TValue&gt;&gt; provider)   — lazy, async
 /// </summary>
 public sealed class DragData
 {
-    // ── Builder (source side) ───────────────────────────────────────────
+    // ── Static convenience factories ────────────────────────────────────
     public static DragData Text(string text) => new DragData().WithText(text);
     public static DragData Uri(Uri uri) => new DragData().WithUri(uri);
     public static DragData Files(IEnumerable<IStorageItem> files)
@@ -1048,50 +1070,93 @@ public sealed class DragData
     public static DragData Typed<T>(T payload) where T : class
         => new DragData().WithTypedPayload(payload);
 
+    // ── Text (eager + lazy) ─────────────────────────────────────────────
     public DragData WithText(string text);
+    public DragData WithText(Func<string> provider);
+    public DragData WithText(Func<CancellationToken, Task<string>> provider);
+
+    // ── URI (eager + lazy) ──────────────────────────────────────────────
     public DragData WithUri(Uri uri);
+    public DragData WithUri(Func<Uri> provider);
+    public DragData WithUri(Func<CancellationToken, Task<Uri>> provider);
+
+    // ── HTML (expensive to generate — lazy recommended) ─────────────────
     public DragData WithHtml(string html);
+    public DragData WithHtml(Func<string> provider);
+    public DragData WithHtml(Func<CancellationToken, Task<string>> provider);
+
+    // ── RTF (expensive to generate — lazy recommended) ──────────────────
     public DragData WithRtf(string rtf);
+    public DragData WithRtf(Func<string> provider);
+    public DragData WithRtf(Func<CancellationToken, Task<string>> provider);
+
+    // ── Bitmap (expensive — lazy-first API; eager overload for convenience) ─
     public DragData WithBitmap(SoftwareBitmap bmp);
+    public DragData WithBitmap(Func<CancellationToken, Task<SoftwareBitmap>> provider);
+    /// <summary>
+    /// Convenience: render a Reactor Element to a bitmap lazily. Only rasterized
+    /// if a target requests the bitmap format. Internally uses RenderTargetBitmap.
+    /// </summary>
+    public DragData WithBitmapFromElement(Func<Element> build);
+
+    // ── Files / StorageItems ────────────────────────────────────────────
     public DragData WithFiles(IEnumerable<IStorageItem> files);
+    public DragData WithFiles(Func<CancellationToken, Task<IEnumerable<IStorageItem>>> provider);
 
     /// <summary>
     /// Adds a typed in-process payload. Keyed by typeof(T).FullName; only
-    /// resolvable by targets inside the same app instance. Combine with
-    /// WithText/WithFiles to also provide cross-process formats.
+    /// resolvable by targets inside the same app instance. Eager only — the
+    /// payload is an object reference, so there's nothing to defer.
+    /// Combine with .WithText/.WithFiles (eager or lazy) to also provide
+    /// cross-process formats.
     /// </summary>
     public DragData WithTypedPayload<T>(T payload) where T : class;
 
+    // ── Custom formats (arbitrary identifier) ───────────────────────────
     /// <summary>
     /// Adds a custom format with a caller-chosen identifier. Use reverse-DNS
     /// or MIME-like strings (e.g., "application/x-myapp-foo") for
     /// cross-process formats; typed payloads are cleaner for in-process.
     /// </summary>
     public DragData WithCustomFormat(string formatId, object payload);
-
-    /// <summary>
-    /// Adds a deferred format — the provider is only invoked if a target
-    /// actually requests this format.
-    /// </summary>
-    public DragData WithDeferredFormat(string formatId, Func<Task<object>> provider);
+    public DragData WithCustomFormat(string formatId, Func<object> provider);
+    public DragData WithCustomFormat(string formatId,
+        Func<CancellationToken, Task<object>> provider);
 
     // ── Inspector (target side) ─────────────────────────────────────────
+    // Sync accessors — only succeed if the format is eagerly present OR
+    // was already resolved by an earlier request. For potentially-deferred
+    // formats, prefer the async accessors below.
     public bool TryGetText([MaybeNullWhen(false)] out string text);
     public bool TryGetUri([MaybeNullWhen(false)] out Uri uri);
     public bool TryGetHtml([MaybeNullWhen(false)] out string html);
+    public bool TryGetRtf([MaybeNullWhen(false)] out string rtf);
     public bool TryGetFiles([MaybeNullWhen(false)] out IReadOnlyList<IStorageItem> files);
     public bool TryGetBitmap([MaybeNullWhen(false)] out SoftwareBitmap bmp);
     public bool TryGetTypedPayload<T>([MaybeNullWhen(false)] out T payload) where T : class;
     public bool TryGetCustomFormat<T>(string formatId, [MaybeNullWhen(false)] out T payload);
 
-    public bool HasFormat(string formatId);
-    public IReadOnlyCollection<string> AvailableFormats { get; }
+    // Async accessors — resolve deferred providers on demand. These
+    // force the source's provider to run (cross-process hop if needed).
+    public Task<string?> GetTextAsync(CancellationToken ct = default);
+    public Task<Uri?> GetUriAsync(CancellationToken ct = default);
+    public Task<string?> GetHtmlAsync(CancellationToken ct = default);
+    public Task<string?> GetRtfAsync(CancellationToken ct = default);
+    public Task<IReadOnlyList<IStorageItem>?> GetFilesAsync(CancellationToken ct = default);
+    public Task<SoftwareBitmap?> GetBitmapAsync(CancellationToken ct = default);
+    public Task<T?> GetCustomFormatAsync<T>(string formatId, CancellationToken ct = default);
 
     /// <summary>
-    /// For targets that need async resolution of deferred formats.
+    /// Whether a format is advertised by the source. Cheap — doesn't trigger
+    /// provider resolution. Use during OnDragEnter/Over to decide whether
+    /// to accept the drop.
     /// </summary>
-    public Task<bool> TryGetCustomFormatAsync<T>(string formatId,
-        Action<T> onResolved, CancellationToken ct = default);
+    public bool HasFormat(string formatId);
+
+    /// <summary>
+    /// All formats advertised by the source (resolved or deferred).
+    /// </summary>
+    public IReadOnlyCollection<string> AvailableFormats { get; }
 }
 
 /// <summary>
@@ -1285,19 +1350,31 @@ return DropZone()
     });
 ```
 
-#### 6.8 Example — multi-format source
+#### 6.8 Example — multi-format source with lazy generation
 
-Drag a Task that also survives as text if dropped on another app:
+Drag a Task that survives as plain text, HTML (for rich-text targets),
+and a URI. Cheap formats are eager; expensive HTML rendering is
+deferred until a target actually asks for it:
 
 ```csharp
 .OnDragStart<TaskCard>(
     getData: () => DragData
-        .Text(task.Title)                            // for other apps
-        .WithTypedPayload(task)                       // for in-process
-        .WithUri(new Uri($"myapp://task/{task.Id}")), // for deep-linking
+        .Text(task.Title)                                 // eager — cheap
+        .WithTypedPayload(task)                            // eager — object ref
+        .WithUri(new Uri($"myapp://task/{task.Id}"))       // eager — cheap
+        .WithHtml(() => RenderTaskAsHtml(task))            // lazy — only if a rich-text target asks
+        .WithBitmapFromElement(() => TaskCard(task))       // lazy — only if a paint target asks
+        .WithCustomFormat(
+            "application/x-myapp-task-snapshot",
+            async ct => await SerializeTaskSnapshot(task, ct)),  // lazy async
     allowedOperations: DragOperations.Copy | DragOperations.Move,
     dragVisual: () => TaskCard(task).Opacity(0.8))
 ```
+
+Dragging onto Notepad triggers only `WithText`. Dragging onto Word
+triggers `WithHtml` (running `RenderTaskAsHtml` once). Dragging
+nowhere (cancel) triggers none of the lazy providers. The task's
+HTML serialization never runs unless it's actually needed.
 
 #### 6.9 Implementation notes
 
@@ -1340,11 +1417,42 @@ auto-scrolls. No extra work on our side, but worth documenting.
 4. `DropCompleted` reports the final operation to the source, which
    uses it to finalize (e.g., remove the source item if `Move`).
 
-**Deferred formats.** When the target reads a deferred format,
-Reactor calls the source's provider and awaits the result before the
-target's `OnDrop` handler sees the data. For synchronous targets, the
-API provides `TryGetCustomFormatAsync` with a callback. Common formats
-(text, URI, files) are never deferred in Reactor — only custom formats.
+**Deferred formats — implementation.** Every `.With*` overload that
+takes a `Func<T>` or `Func<CancellationToken, Task<T>>` registers via
+`DataPackage.SetDataProvider(formatId, handler)`. The handler adapter:
+
+```csharp
+dataPackage.SetDataProvider(StandardDataFormats.Html, request => {
+    var deferral = request.GetDeferral();
+    try
+    {
+        var cts = new CancellationTokenSource();
+        // DataProviderRequest doesn't expose cancellation directly; we tie the
+        // token to the request's deadline via a WinUI background task if needed.
+        var html = await userProvider(cts.Token).ConfigureAwait(false);
+        request.SetData(html);
+    }
+    finally { deferral.Complete(); }
+});
+```
+
+The provider runs on a background thread (WinUI guarantees this for
+`DataProviderHandler`). For cross-process drags, the target's
+`GetDataAsync` call is relayed back to the source process and the
+provider runs there. Providers should be thread-safe and avoid
+touching the UI thread without marshalling.
+
+**Sync vs async accessors on the target side.** `TryGetText` succeeds
+only if the format is either eager or already resolved by an earlier
+call. `GetTextAsync` always resolves — awaiting the provider if
+necessary. In typical `OnDrop` handlers, prefer the async accessors;
+they work uniformly regardless of how the source populated the format.
+
+**Typed payloads are never deferred.** `.WithTypedPayload<T>(T)` is
+eager-only — it's an object reference inside the same process, there's
+nothing to defer. Typed payloads also skip the `SetDataProvider`
+machinery entirely and are stashed in a process-local
+`ConditionalWeakTable<DataPackage, object>`.
 
 ---
 
@@ -1426,14 +1534,27 @@ Ships in two sub-phases so the 80% case lands before the full protocol.
 - Gallery sample: three-column kanban with typed-payload drag reordering.
 
 **6b — Cross-process + rich data transfer.**
-- Text / URI / HTML / RTF / files / bitmap source-side support.
+- Text / URI / HTML / RTF / files / bitmap source-side support —
+  each format with both eager and lazy (`Func<T>` +
+  `Func<CancellationToken, Task<T>>`) overloads.
+- `DataProviderHandler` adapter that converts Reactor's `Func<...>`
+  providers into WinUI deferrals (including thread marshalling and
+  deferral completion).
+- `WithBitmapFromElement(Func<Element>)` convenience — renders via
+  `RenderTargetBitmap` only when a paint target requests the bitmap
+  format.
 - Raw `.OnDrop<T>(Action<DragTargetArgs>)` overload for multi-format
   targets.
-- `DragData.WithDeferredFormat` + `TryGetCustomFormatAsync`.
+- Async target accessors (`GetTextAsync`, `GetHtmlAsync`,
+  `GetCustomFormatAsync<T>`, etc.) that resolve deferred providers.
 - `DragUIOverrideHandle` with caption / glyph / content-visibility.
-- `dragVisual` → `SoftwareBitmap` rendering via `RenderTargetBitmap`.
+- `dragVisual` → `SoftwareBitmap` rendering via `RenderTargetBitmap`
+  for the drag preview (distinct from `WithBitmapFromElement`, which
+  is the payload itself).
 - Gallery sample: file-import drop zone accepting Explorer drops; text
-  drop from an external browser.
+  drop from an external browser; a source that advertises expensive
+  HTML lazily and verifies (via logging) that the provider only fires
+  when the drop target is a rich-text consumer.
 
 **6c — `DropCompleted` finalization.**
 - Wire `onEnd: Action<DragEndContext>?` on source modifiers to
@@ -1556,6 +1677,10 @@ tier) on the next critical-review rescore, specifically:
 - Drag-and-drop with data transfer is first-class (Tier 6): typed
   in-process reordering, file drops from Explorer, and multi-format
   sources all work declaratively.
+- Lazy format generation is verified — the DnD gallery sample
+  advertises an expensive HTML payload and logs prove the provider
+  fires only when the target actually requests HTML (and never when
+  the drop is cancelled or routes to a text-only target).
 - Microbenchmark: re-rendering a 1,000-item list with fresh pointer
   handlers completes in single-digit milliseconds vs today's hundreds.
 - At least one original showcase app uses `OnPan`, one uses
