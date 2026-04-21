@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -32,6 +33,8 @@ public sealed class TreemapSample : GallerySample
                     with { Stroke = ChartMutedForeground, StrokeThickness = 1.5,
                            RadiusX = 2, RadiusY = 2 })]
         )
+            .AutomationName("Treemap")
+            .FullDescription("Treemap of file sizes in a software project with rectangles proportional to file size in kilobytes across src, tests, and config folders.")
         """;
 
     record FileNode(string Name, double Size = 0, FileNode[]? Children = null);
@@ -116,7 +119,9 @@ public sealed class TreemapSample : GallerySample
                         with { Stroke = ChartMutedForeground, StrokeThickness = 1.5,
                                RadiusX = 2, RadiusY = 2 }),
             ]
-        );
+        )
+            .AutomationName("Treemap")
+            .FullDescription("Treemap of file sizes in a software project with rectangles proportional to file size in kilobytes across src, tests, and config folders.");
     }
 
 }

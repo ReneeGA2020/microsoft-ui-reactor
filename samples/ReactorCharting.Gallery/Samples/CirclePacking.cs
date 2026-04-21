@@ -30,7 +30,9 @@ public sealed class CirclePackingSample : GallerySample
             else
                 return new[] { D3Circle(nx, ny, r) with { Fill = Gray(200, alpha: alpha), Stroke = ChartMutedForeground } };
         });
-        D3Canvas(W, H, [..elements, title]);
+        D3Canvas(W, H, [..elements, title])
+            .AutomationName("Organization Headcount")
+            .FullDescription("Circle packing of an organization hierarchy with nested circles showing team containment and leaf sizes proportional to headcount across 14 teams.")
         """;
 
     record OrgNode(string Name, double Value = 0, OrgNode[]? Children = null);
@@ -118,7 +120,9 @@ public sealed class CirclePackingSample : GallerySample
                 }
             }),
             D3Dsl.Text(10, 5, "Organization Headcount", 13, ChartForeground),
-        ]);
+        ])
+            .AutomationName("Organization Headcount")
+            .FullDescription("Circle packing of an organization hierarchy with nested circles showing team containment and leaf sizes proportional to headcount across 14 teams.");
     }
 
 }

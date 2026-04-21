@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using static Microsoft.UI.Reactor.Charting.D3Dsl;
@@ -24,7 +25,9 @@ D3Canvas(W, H,
      D3AreaPath(redPts,   x: d => xs.Map(d.x), y0: d => ys.Map(d.y0), y1: d => ys.Map(d.y1), fill: redFill),
      D3LinePath(data, x: d => xs.Map(d.X), y: d => ys.Map(d.A), stroke: greenBrush, curve: MonotoneX),
      D3LinePath(data, x: d => xs.Map(d.X), y: d => ys.Map(d.B), stroke: redBrush, curve: MonotoneX),
-     ..legend, title]);";
+     ..legend, title])
+    .AutomationName(""Difference Chart (Revenue vs Expenses)"")
+    .FullDescription(""Surplus/deficit difference chart comparing Revenue and Expenses over 24 months, with green fill where Revenue exceeds Expenses and red where Expenses exceed Revenue."")";
 
     private record struct Point(double X, double A, double B);
 
@@ -84,6 +87,8 @@ D3Canvas(W, H,
                 stroke: redBrush, strokeWidth: 2, curve: D3Curve.MonotoneX),
             .. D3Legend(lx, marginTop + 6, [("Revenue", greenBrush), ("Expenses", redBrush)]),
             Microsoft.UI.Reactor.Charting.D3Dsl.Text(marginLeft, 4, "Difference Chart (Revenue vs Expenses)", 14, ChartForeground),
-        ]);
+        ])
+            .AutomationName("Difference Chart (Revenue vs Expenses)")
+            .FullDescription("Surplus/deficit difference chart comparing Revenue and Expenses over 24 months, with green fill where Revenue exceeds Expenses and red where Expenses exceed Revenue.");
     }
 }

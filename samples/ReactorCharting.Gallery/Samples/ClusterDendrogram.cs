@@ -30,7 +30,9 @@ public sealed class ClusterDendrogramSample : GallerySample
             }));
         var circles = nodes.Select(node =>
             D3Circle(node.X, node.Y, isLeaf ? 3.5 : 4.5) with { Fill = fill });
-        D3Canvas(W, H, [..links, ..circles, ..labels]);
+        D3Canvas(W, H, [..links, ..circles, ..labels])
+            .AutomationName("Cluster Dendrogram")
+            .FullDescription("Cluster dendrogram of animal taxonomy with 16 species organized under phyla, classes, and orders, with leaves aligned at equal depth.")
         """;
 
     record TaxNode(string Name, TaxNode[]? Children = null);
@@ -118,7 +120,9 @@ public sealed class ClusterDendrogramSample : GallerySample
                     label,
                 };
             }),
-        ]);
+        ])
+            .AutomationName("Cluster Dendrogram")
+            .FullDescription("Cluster dendrogram of animal taxonomy with 16 species organized under phyla, classes, and orders, with leaves aligned at equal depth.");
     }
 
 }

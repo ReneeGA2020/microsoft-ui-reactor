@@ -29,6 +29,8 @@ public sealed class ArcDiagramSample : GallerySample
              }),
             ]
         )
+            .AutomationName("Arc Diagram")
+            .FullDescription("Arc diagram with 10 nodes on a horizontal baseline connected by 12 semicircular arcs.")
         """;
 
     public override Element Render()
@@ -90,6 +92,8 @@ public sealed class ArcDiagramSample : GallerySample
              }),
              D3Dsl.Text(12, 6, "Arc Diagram", 14, ChartForeground),
             ]
-        );
+        )
+            .AutomationName("Arc Diagram")
+            .FullDescription("Arc diagram with 10 nodes on a horizontal baseline connected by 12 semicircular arcs.");
     }
 }

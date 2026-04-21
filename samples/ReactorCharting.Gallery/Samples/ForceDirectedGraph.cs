@@ -33,7 +33,9 @@ public sealed class ForceDirectedGraphSample : GallerySample
             D3Circle(n.X, n.Y, 10) with
                 { Fill = Brush(Palette[categories[i]]), Stroke = white });
 
-        return D3Canvas(W, H, [..edges, ..nodes, ..labels]);
+        return D3Canvas(W, H, [..edges, ..nodes, ..labels])
+            .AutomationName("Force-Directed Graph")
+            .FullDescription("Network diagram of 15 people in 4 groups connected by 22 edges.");
         """;
 
     public override Element Render()
@@ -96,6 +98,8 @@ public sealed class ForceDirectedGraphSample : GallerySample
                 TextCenter(n.X - 16, n.Y + 12, labels[i], 32, 9, ChartMutedForeground),
             }),
             D3Dsl.Text(12, 6, "Force-Directed Graph", 14, ChartForeground),
-        ]);
+        ])
+            .AutomationName("Force-Directed Graph")
+            .FullDescription("Network diagram of 15 people in 4 groups connected by 22 edges.");
     }
 }

@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -21,6 +22,8 @@ public sealed class DotPlotSample : GallerySample
                          with { Fill = fill, Stroke = stroke })),
              D3Dsl.Text(left, 6, "Dot Plot", 14, ChartForeground)]
         )
+            .AutomationName("Dot Plot (strip chart)")
+            .FullDescription("Dot plot showing values for 5 categories (Alpha, Beta, Gamma, Delta, Epsilon) along a shared x axis.")
         """;
 
     public override Element Render()
@@ -63,6 +66,8 @@ public sealed class DotPlotSample : GallerySample
                  ]);
              }),
              D3Dsl.Text(left, 6, "Dot Plot (strip chart)", 14, ChartForeground)]
-        );
+        )
+            .AutomationName("Dot Plot (strip chart)")
+            .FullDescription("Dot plot showing values for 5 categories (Alpha, Beta, Gamma, Delta, Epsilon) along a shared x axis.");
     }
 }

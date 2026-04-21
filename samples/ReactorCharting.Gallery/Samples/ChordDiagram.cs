@@ -30,7 +30,9 @@ public sealed class ChordDiagramSample : GallerySample
         });
         var ribbons = data.Chords.Select(c =>
             D3PathTranslated(ribbon.Generate(c), cx, cy, fill: Brush(color, opacity: 0.55)));
-        D3Canvas(W, H, [..arcElements, ..ribbons, title]);
+        D3Canvas(W, H, [..arcElements, ..ribbons, title])
+            .AutomationName("Chord Diagram — Regional Trade Flow")
+            .FullDescription("Chord diagram showing trade flow between 5 world regions with ribbons indicating pairwise connections.");
         """;
 
     public override Element Render()
@@ -84,6 +86,8 @@ public sealed class ChordDiagramSample : GallerySample
                 .Select(c => D3PathTranslated(ribbon.Generate(c), cx, cy,
                     fill: Brush(Palette[c.Source.Index % Palette.Count], opacity: 0.55))),
             D3Dsl.Text(12, 6, "Chord Diagram — Regional Trade Flow", 14, ChartForeground),
-        ]);
+        ])
+            .AutomationName("Chord Diagram — Regional Trade Flow")
+            .FullDescription("Chord diagram showing trade flow between 5 world regions with ribbons indicating pairwise connections.");
     }
 }

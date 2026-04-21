@@ -37,6 +37,8 @@ public sealed class DonutMixerSample : GallerySample
         var arcs = PieGenerator.Generate(values, v => v);
         D3ArcPath(arc.StartAngle, arc.EndAngle, cx, cy,
             outerRadius: 140, innerRadius: innerR)
+        .AutomationName("Donut Mixer")
+        .FullDescription("Interactive donut chart with 6 budget categories and sliders to adjust wedge sizes and inner radius.");
         """;
 
     static readonly string[] Labels = ["Housing", "Food", "Transport", "Utilities", "Health", "Savings"];
@@ -104,7 +106,9 @@ public sealed class DonutMixerSample : GallerySample
                         TextBlock($"{innerR:F0}px") with { FontSize = 11 }
                     )
                 ).Padding(8)
-            ).Padding(16);
+            ).Padding(16)
+                .AutomationName("Donut Mixer")
+                .FullDescription("Interactive donut chart with 6 budget categories and sliders to adjust wedge sizes and inner radius.");
         });
     }
 }

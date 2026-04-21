@@ -32,6 +32,10 @@ class LineChartDemo : Component
             SubHeading("Line Chart"),
             LineChart(data, d => d.Month, d => d.Revenue)
                 .Title("Monthly Revenue — Line")
+                .SeriesName("Revenue")
+                .Units("months", "USD")
+                .AxisLabel(Charting.Accessibility.ChartAxisType.X, "Month")
+                .AxisLabel(Charting.Accessibility.ChartAxisType.Y, "Revenue (USD)")
                 .Width(600).Height(250)
                 .Stroke("#0078D4").StrokeWidth(2.5)
                 .ShowGrid(true).ShowAxes(true)
@@ -54,6 +58,10 @@ class BarChartDemo : Component
             SubHeading("Bar Chart"),
             BarChart(data, d => d.Month, d => d.Revenue)
                 .Title("Quarterly Revenue — Bar")
+                .SeriesName("Revenue")
+                .Units("quarters", "USD")
+                .AxisLabel(Charting.Accessibility.ChartAxisType.X, "Quarter")
+                .AxisLabel(Charting.Accessibility.ChartAxisType.Y, "Revenue (USD)")
                 .Width(600).Height(250)
                 .Fill("#50C878")
                 .ShowGrid(true).ShowAxes(true)
@@ -79,6 +87,10 @@ class AreaChartDemo : Component
             SubHeading("Area Chart"),
             AreaChart(data, d => d.Month, d => d.Revenue)
                 .Title("Monthly Revenue — Area")
+                .SeriesName("Revenue")
+                .Units("months", "USD")
+                .AxisLabel(Charting.Accessibility.ChartAxisType.X, "Month")
+                .AxisLabel(Charting.Accessibility.ChartAxisType.Y, "Revenue (USD)")
                 .Width(600).Height(250)
                 .Stroke("#9B59B6").Fill("#9B59B6")
                 .FillOpacity(0.2)
@@ -105,6 +117,7 @@ class PieChartDemo : Component
             SubHeading("Pie Chart"),
             PieChart(data, d => d.Value, d => d.Name)
                 .Title("Team Distribution")
+                .Description("Pie chart showing team size across Engineering, Marketing, Sales, and Support.")
                 .Width(300).Height(300)
                 .InnerRadius(60)
                 .PadAngle(0.03)
@@ -139,6 +152,9 @@ class CombinedChartDemo : Component
             ComboBox(years, year, setYear),
             AreaChart(data, d => d.Month, d => d.Revenue)
                 .Title("Revenue by Year")
+                .SeriesName("Revenue")
+                .Units("months", "USD")
+                .Interactive()
                 .Width(600).Height(250)
                 .Stroke("#0078D4").Fill("#0078D4")
                 .FillOpacity(0.15)
@@ -166,6 +182,8 @@ class DynamicDataDemo : Component
                     .ToList())),
             BarChart<SalesPoint>(points, d => d.Month, d => d.Revenue)
                 .Title("Dynamic Revenue Data")
+                .SeriesName("Revenue")
+                .Units("months", "USD")
                 .Width(600).Height(250)
                 .Fill("#E74C3C")
                 .ShowGrid(true).ShowAxes(true)

@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -32,6 +33,8 @@ public sealed class IndentedTreeSample : GallerySample
              }),
             ]
         )
+            .AutomationName("Indented Tree")
+            .FullDescription("Indented tree listing of a file system with 25 items organized as folders and files with expand/collapse indicators and alternating row stripes.")
         """;
 
     record Row(string Id, string? ParentId, string Name, string Type);
@@ -121,7 +124,9 @@ public sealed class IndentedTreeSample : GallerySample
                         D3Line(0, y + rowH, W, y + rowH) with { Stroke = ChartSubtleStroke, StrokeThickness = 0.5 },
                     ];
                 }),
-        ]);
+        ])
+            .AutomationName("Indented Tree")
+            .FullDescription("Indented tree listing of a file system with 25 items organized as folders and files with expand/collapse indicators and alternating row stripes.");
     }
 
 }

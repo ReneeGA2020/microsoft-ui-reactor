@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -22,6 +23,8 @@ public sealed class PieChartSample : GallerySample
                 D3Dsl.Text(cx + lx, cy + ly, label, 11, brush),
             })
         )
+            .AutomationName("Market Share")
+            .FullDescription("Pie chart showing market share: Chrome 65%, Safari 18%, Firefox 7%, Edge 5%, Other 5%.")
         """;
 
     public override Element Render()
@@ -52,6 +55,8 @@ public sealed class PieChartSample : GallerySample
                 }),
              D3Dsl.Text(cx - 60, 10, "Market Share", 16, ChartForeground),
             ]
-        );
+        )
+            .AutomationName("Market Share")
+            .FullDescription("Pie chart showing market share: Chrome 65%, Safari 18%, Firefox 7%, Edge 5%, Other 5%.");
     }
 }

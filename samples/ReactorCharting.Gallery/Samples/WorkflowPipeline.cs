@@ -36,6 +36,8 @@ public sealed class WorkflowPipelineSample : GallerySample
                 Progress(stage.Progress),
                 TextBlock(stage.Status),
             )) with { CornerRadius = 8, BorderBrush = statusColor, ... };
+        .AutomationName("Workflow Pipeline")
+        .FullDescription("CI/CD pipeline with 8 stages from Source to Deploy connected by dashed bezier links.");
         """;
 
     record Stage(string Name, string Icon, double Progress, string Status, int Column, int Row);
@@ -82,7 +84,9 @@ public sealed class WorkflowPipelineSample : GallerySample
             // Stage cards
             .. Stages.Select((s, i) =>
                 StageCard(s).Canvas(cx[i] - CardW / 2, cy[i] - CardH / 2)),
-        ]);
+        ])
+            .AutomationName("Workflow Pipeline")
+            .FullDescription("CI/CD pipeline with 8 stages from Source to Deploy connected by dashed bezier links.");
     }
 
     static Element StageCard(Stage s)

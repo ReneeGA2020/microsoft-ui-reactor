@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -19,7 +20,10 @@ var lines = allSeries.Select((series, s) =>
     var data = series.Select((v, i) => (x: (double)i, y: v)).ToArray();
     return D3LinePath(data, x: d => xs.Map(d.x), y: d => ys.Map(d.y),
         stroke: Brush(colors[s]), strokeWidth: 2);
-});";
+})
+    .AutomationName(""Monthly Temperatures (°C)"")
+    .FullDescription(""Multi-line chart comparing monthly average temperatures for New York, London, and Tokyo across 12 months."")
+";
 
     public override Element Render()
     {
@@ -65,6 +69,8 @@ var lines = allSeries.Select((series, s) =>
              .. lines,
              .. D3Legend(legendX, top + 10, labels.Select((label, s) => (label, Brush(colors[s])))),
              D3Dsl.Text(2, top - 14, "\u00b0C", 11, ChartMutedForeground)]
-        );
+        )
+            .AutomationName("Monthly Temperatures (\u00b0C)")
+            .FullDescription("Multi-line chart comparing monthly average temperatures for New York, London, and Tokyo across 12 months.");
     }
 }

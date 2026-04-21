@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -27,6 +28,8 @@ public class CandlestickChart : GallerySample
              }),
             ]
         )
+            .AutomationName("Stock Price Candlestick Chart")
+            .FullDescription("Candlestick chart showing 20 trading days of OHLC price data, with green candles for bullish and red for bearish days.")
         """;
 
     public override Element Render()
@@ -96,6 +99,8 @@ public class CandlestickChart : GallerySample
                  .Select(i => D3Dsl.Text(xs.Map(i) - 12, top + height + 4, $"Day {i + 1}", 10, ChartMutedForeground)),
              D3Dsl.Text(2, top - 14, "Price", 11, ChartMutedForeground),
              .. D3Legend(left + width - 120, top + 5, [("Bullish", bullBrush), ("Bearish", bearBrush)])]
-        );
+        )
+            .AutomationName("Stock Price Candlestick Chart")
+            .FullDescription("Candlestick chart showing 20 trading days of OHLC price data, with green candles for bullish and red for bearish days.");
     }
 }

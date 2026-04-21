@@ -38,7 +38,9 @@ public sealed class NestedListExplorerSample : GallerySample
                   .Size(folder.Width, folder.Height)
                   .Canvas(folder.X0, folder.Y0)
             )]
-        );
+        )
+            .AutomationName("Nested List Explorer")
+            .FullDescription("Treemap of 4 product categories with scrollable list views showing items and prices.");
         """;
 
     record CatalogItem(string Name, double Size = 0, CatalogItem[]? Subs = null);
@@ -121,6 +123,8 @@ public sealed class NestedListExplorerSample : GallerySample
                     .Size(folder.Width, folder.Height)
                     .Canvas(folder.X0, folder.Y0);
                 }),
-        ]);
+        ])
+            .AutomationName("Nested List Explorer")
+            .FullDescription("Treemap of 4 product categories with scrollable list views showing items and prices.");
     }
 }

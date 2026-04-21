@@ -35,3 +35,8 @@ screenshots:
     component: DynamicDataDemo
     region: client
     format: png
+  - id: accessible-chart
+    description: "Accessible chart with screen-reader annotations and keyboard navigation"
+    component: AccessibleChartDemo
+    region: client
+    format: png
