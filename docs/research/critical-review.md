@@ -11,10 +11,14 @@ rather than a principled declarative UI framework.
 
 Reactor is an ambitious attempt to bring React-style declarative UI to WinUI 3.
 It has impressive breadth of control coverage (94% of WinUI controls wrapped),
-a now-solid component model foundation, and a faithful hooks system. The two
-largest gaps from the previous review — navigation and commanding — have both
-shipped as comprehensive systems. But significant problems remain, and some of
-the new features have implementation concerns that temper the enthusiasm:
+a now-solid component model foundation, and a faithful hooks system. The last
+72 hours alone landed four substantial systems: async resources (a React
+Query-equivalent), a full charting accessibility layer (8 layers across 18
+commits), an MCP devtools surface for AI-agent-driven automation, and ETW
+tracing. The framework is no longer short on features — it is now short on
+the integration and polish to make those features compose reliably in real
+apps. Significant problems remain, and several of the new shipments have
+implementation concerns that temper the enthusiasm:
 
 1. **The component model is now a real framework foundation** — context system,
    memoization, generic hook state, persisted state, and post-render effect
@@ -69,6 +73,36 @@ the new features have implementation concerns that temper the enthusiasm:
 9. **The `.Set()` escape hatch is still load-bearing** — navigation and commanding
    reduce its surface area, but the majority of input handling, gestures, advanced
    styling, and composition-layer access still require it
+10. **Async data is now a framework feature, not a developer chore** — `UseResource`,
+    `UseInfiniteResource`, `UseMutation`, and a shared `QueryCache` cover the
+    React Query / SWR territory in-framework, with a `Pending` element for
+    suspense-like fallbacks, focus revalidation, and a DataGrid integration
+    (hook-based paging on by default). Four hook-rule analyzers
+    (REACTOR_HOOKS_001/004/005/006) back it up. But the API is fresh, has
+    zero field evidence of correctness at scale, and the cache is
+    in-process-only
+11. **Charting is now a genuine sub-framework** — 43 D3-ported chart samples,
+    plus a comprehensive 8-layer accessibility infrastructure
+    (ChartAutomationPeer, ChartPalette with WCAG-hardening, ChartSummarizer,
+    ChartKeyboardNavigator, ChartLiveAnnouncer, alternate-view convention,
+    forced-colors + reduced-motion, 12 chart-specific scanner rules). No other
+    C# declarative framework ships a chart accessibility system of this
+    depth. But sonification is absent, the ForceGraph a11y story is
+    explicitly "decorative only," and hit-target expansion requires opt-in
+12. **Devtools is now an MCP surface for AI agents, not just a preview** —
+    `reactor.tree`/`click`/`type`/`state`/`windows`/`screenshot`/etc. over
+    both HTTP and stdio transports, with stable window-scoped node ids, a
+    `mur devtools` supervisor, rolling observability logs, and CLI parity.
+    This is uniquely ahead of the entire competition (nobody else ships an
+    MCP devtools surface). But it's Windows-only, DEBUG-gated, read-only for
+    state, and the previous VS Code preview has been replaced rather than
+    augmented
+13. **ETW tracing exists** — `Microsoft-UI-Reactor` EventSource emits
+    reconcile/render/state/MCP/lifecycle keywords to classic ETW and
+    EventPipe. This closes part of the "no performance profiling" critique
+    from Section 13, but it's coarse-grained (no per-component render
+    timing) and requires external tooling (PerfView, dotnet-trace) to
+    consume
 
 **Verdict:** Reactor has crossed a third important threshold. The first was the
 component model foundation (context, memoization, hooks). The second was the
@@ -81,20 +115,27 @@ guardrails." Navigation and commanding continue to mature with incremental
 improvements (destination guards, deep link enhancements, diagnostics).
 
 The distance from "impressive demo" to "ships to real users" has narrowed
-further. Styling was the weakest mid-tier area and has received a focused
-investment: style caching, per-element theme control, a color scheme hook,
-lightweight styling (WinUI resource overrides through a fluent API), and Roslyn
-analyzers. Accessibility was the weakest foundation-level area and has now
-received the investment it needed: SemanticPanel, AccessibilityScanner,
-UseFocusTrap, a11y Roslyn analyzers, and a dedicated showcase sample. WinForms
-interop expands the adoption story for brownfield applications. The critical
-path now runs through: custom branded theme definitions (still missing),
-fixing the UseColorScheme/RequestedTheme composition bug, remaining imperative
-accessibility hooks (UseAnnounce, UseReducedMotion), animation general-purpose
-value support, and reducing the `.Set()` surface area further. The framework
-is no longer blocked on any single P0 gap, and the sum of its P1/P2 gaps has
-shrunk meaningfully — but it still adds up to a real distance from
-production-readiness for apps that need polish.
+further. Async data loading was the single largest remaining feature gap
+(the old "React has had Suspense since 2018" critique) and has now been
+addressed with a fully typed ADT-based system, not a bolt-on. Charting
+accessibility transforms Reactor's charting surface from "pretty graphics
+that screen readers can't see" into arguably the most accessible chart
+library on any platform. Devtools MCP is an unconventional bet — that the
+future of UI debugging is AI-agent automation rather than human devtools —
+and whether it pays off depends on adoption patterns nobody can predict
+yet. The critical path now runs through: (1) stress-testing async resources
+and QueryCache under realistic load — this is a brand-new subsystem with
+no production miles; (2) the showcase apps still not using the framework's
+own features (Outlook clone still uses `UseState<string>` for navigation);
+(3) fixing the UseColorScheme/RequestedTheme composition bug; (4) custom
+branded theme resources (still missing after multiple iterations); (5)
+remaining imperative accessibility hooks (UseAnnounce, UseReducedMotion);
+(6) chart sonification and hit-target-always-on; (7) devtools state
+mutation and source mapping; (8) reducing the `.Set()` surface area. The
+framework is no longer blocked on any single P0 gap, but the sum of its
+P1/P2 gaps has grown slightly larger as new features arrive faster than
+integration testing. "Features exist" now outpaces "features compose
+correctly in real apps" by a wider margin than a quarter ago.
 
 ---
 
@@ -103,6 +144,7 @@ production-readiness for apps that need polish.
 1. [The DSL: C# as a UI Language](#1-the-dsl-c-as-a-ui-language)
 2. [Component Model](#2-component-model)
 3. [State Management](#3-state-management)
+3a. [Async Resources (new)](#3a-async-resources)
 4. [The Reconciler](#4-the-reconciler)
 5. [Layout System](#5-layout-system)
 6. [Styling and Theming](#6-styling-and-theming)
@@ -111,8 +153,10 @@ production-readiness for apps that need polish.
 9. [Lists and Collections](#9-lists-and-collections)
 10. [Animation](#10-animation)
 11. [Accessibility](#11-accessibility)
+11a. [Charting and Chart Accessibility (new)](#11a-charting-and-chart-accessibility)
 12. [Input Handling and Events](#12-input-handling-and-events)
 13. [Developer Experience](#13-developer-experience)
+13a. [Devtools MCP and ETW Tracing (new)](#13a-devtools-mcp-and-etw-tracing)
 14. [The .Set() Problem](#14-the-set-problem)
 15. [Component-by-Component Scorecard](#15-component-by-component-scorecard)
 16. [Conclusion](#16-conclusion)
@@ -452,10 +496,12 @@ diagnostic. The cache stores `object?`, so a type mismatch (one component persis
 `InvalidCastException` on the next mount. There's no namespacing, no type
 validation, no collision warning.
 
-**5. No Suspense or lazy loading.** Still missing. React's `Suspense` +
-`React.lazy()` for code-split components has no equivalent. SwiftUI and Compose
-also lack this, so Reactor is not uniquely deficient — but React has had it since
-2018.
+**5. No lazy-loaded / code-split components.** React's `React.lazy()` for
+dynamically imported code-split components has no equivalent. Async *data* is
+now handled via `UseResource` / `Pending` (see Section 3a), but async *code*
+loading isn't a scenario Reactor addresses — a single .exe loads everything
+at startup. SwiftUI and Compose also lack this, so Reactor is not uniquely
+deficient on this axis.
 
 **6. Component props are still untyped at the element level.** `ComponentElement`
 stores props as `object?`. Props are set via `IPropsReceiver.SetProps(object props)`
@@ -534,6 +580,9 @@ React has ESLint rules to catch common mistakes, and Reactor has no tooling).
 - `UseCollection<T>` — ObservableCollection bridge
 - `UseContext<T>` — **NEW** — reads nearest ancestor's context value
 - `UsePersisted<T>` — **NEW** — state that survives unmount/remount
+- `UseResource<T>` — **NEW** — async single-fetch with cache + ADT state (see Section 3a)
+- `UseInfiniteResource<T>` — **NEW** — cursor-paginated async fetch (see Section 3a)
+- `UseMutation<TIn,TOut>` — **NEW** — write-side async with invalidation (see Section 3a)
 - `UseWindowSize` / `UseBreakpoint` — responsive hooks
 
 ### What's improved
@@ -602,6 +651,239 @@ framework where window/session restoration is expected, in-memory-only persisten
 is a partial answer. SwiftUI's `@SceneStorage` and Compose's `rememberSaveable`
 both tie into the platform's state restoration lifecycle. Reactor's cache is process-
 scoped only.
+
+---
+
+## 3a. Async Resources
+
+### The async story: a major new subsystem landed in 72 hours
+
+The previous version of this review lumped async under "state management" and
+said: "React has had Suspense since 2018." In the last three days, Reactor
+shipped a full async data subsystem — `AsyncValue<T>` ADT, `UseResource`,
+`UseInfiniteResource`, `UseMutation`, `Pending` / `PendingScope`, a shared
+`QueryCache`, focus revalidation, cache-entry subscription invalidation, a
+DataGrid hook-paging path enabled by default, four hook-rule analyzers,
+and ~15 self-host + framerate fixtures covering edit lifecycle, sequential
+prefixes, and churn. The commit range is `3814def..9f2f5de` (PR #29, ~40
+sub-commits). **The honest assessment: this is a principled, well-designed
+subsystem that closes a genuine capability gap — but it is also brand-new
+code with no field evidence, and the design decisions that differentiate it
+from TanStack Query introduce their own tradeoffs.**
+
+### What shipped
+
+```csharp
+// AsyncValue: discriminated union of Loading / Data / Error / Reloading.
+// Pattern-match exhaustively.
+var fruit = UseResource(async ct => await FetchFruitAsync(id, ct), id);
+return fruit switch
+{
+    Loading<Fruit>    => Spinner(),
+    Data<Fruit> d     => FruitCard(d.Value),
+    Reloading<Fruit> r => FruitCard(r.Stale).Opacity(0.7),
+    Error<Fruit> e    => ErrorBox(e.Exception.Message, retry: fruit.Retry),
+    _                 => null
+};
+
+// Cursor-based infinite pagination (not offset-based)
+var page = UseInfiniteResource(
+    initialCursor: null,
+    fetcher: async (cursor, ct) => await api.GetPageAsync(cursor, ct));
+// page.Pages, page.HasMore, page.LoadMore()
+
+// Mutations with optimistic invalidation
+var save = UseMutation<Employee, Unit>(
+    async (emp, ct) => await api.PatchAsync(emp, ct),
+    invalidateKeys: ["employees.list", "employees.detail"]);
+Button("Save", () => save.Trigger(current));
+// save.IsRunning / save.Error / save.Result
+
+// Suspense-style fallback regions
+PendingScope(
+    Spinner(),                // fallback while any UseResource inside is Loading
+    Children(fruitView, listView))
+
+// Cache invalidation by pattern
+QueryCache.Default.Invalidate("employees.*");
+```
+
+Backing infrastructure: `QueryCache` with per-key locks, subscription
+ref-counting, background eviction on a shared timer, TTL + pattern
+invalidation, `EntryChanged` event; `DataPageCache` for infinite-pagination
+chunk storage; `IDataSource<T>` adapter so `DataGrid` can consume the hook
+path without changing its public API; offset-cursor short-circuit for
+batched sequential loads; `UseHookBasedPaging` flag (default on as of commit
+4ce1eba).
+
+Four Roslyn hook-rule analyzers ship alongside:
+
+| Analyzer | Severity | Detects |
+|---|---|---|
+| REACTOR_HOOKS_001 | Warning | Hook called conditionally (inside `if`/`while`/`?:`) |
+| REACTOR_HOOKS_004 | Warning | Hook deps include a freshly allocated value (array, closure, record literal) |
+| REACTOR_HOOKS_005 | Warning | Hook called outside a `Render()` override or a `Use*` method |
+| REACTOR_HOOKS_006 | Info | `UseResource` fetcher name suggests a write (`Save*`, `Post*`, `Delete*`) — use `UseMutation` |
+
+This is the hook-rule coverage the DX section previously criticized Reactor
+for not having. The four rules correspond roughly to the top findings
+`eslint-plugin-react-hooks` surfaces in a React codebase.
+
+### What's actually good about this (credit where due)
+
+**The ADT is the right shape.** `AsyncValue<T>` as a sealed record hierarchy
+with `Loading` / `Data` / `Error` / `Reloading` is more expressive than
+React's `{ isLoading, data, error }` tuple. The four-state design makes
+stale-while-revalidate a type-level concept — a UI can render the stale
+payload with reduced opacity while `Reloading<T>` carries the old value.
+Riverpod's `AsyncValue` proves this pattern works; Reactor's adoption is
+principled, not trend-chasing.
+
+**Hook-owned cancellation is correct.** Every fetcher takes a
+`CancellationToken` that the hook itself owns. Unmount cancels the token.
+A component navigating away mid-fetch doesn't leak the in-flight request.
+React's `useEffect`-based fetch patterns require developers to thread the
+token themselves, which they frequently don't. Reactor forces the right
+pattern.
+
+**`QueryCache` is serious infrastructure.** Per-key `SemaphoreSlim` locks
+prevent duplicate concurrent fetches for the same key. Subscription ref-counts
+track how many live components observe each key. Background eviction runs on
+a shared timer (not per-entry `Timer` allocations). TTL and pattern-based
+invalidation (`Invalidate("employees.*")`) cover the common use cases. The
+`EntryChanged` event lets mutations invalidate downstream readers without a
+global re-render. This is the level of engineering a long-lived desktop app
+cache needs.
+
+**DataGrid integration is a real proof point.** Commit `49e1fe4` routes
+`DataGrid` row-commit through `UseMutation`. Commit `f43684a` adds a hook-
+paging path. Commit `4ce1eba` flips the default to on. This isn't a demo —
+a production-sized control was migrated to the hook path and the tests pass.
+If async resources were toy infrastructure, this migration would have
+surfaced cracks; it didn't.
+
+**`REACTOR_HOOKS_006` is a nice touch.** The analyzer reads the name of the
+fetcher delegate passed to `UseResource` and warns if it starts with `Save`,
+`Post`, `Put`, `Delete`, or contains "mutation" — nudging the developer
+toward `UseMutation` instead. This is pit-of-success design: it catches the
+most common conceptual mistake at edit time.
+
+**Self-host fixtures cover real scenarios.** `PendingChurn` framerate
+fixture, `DataGridEditMutation` fixture, placeholder-count parity for
+sequential-prefix loads, edit-lifecycle parity under hook-based paging. This
+is more thorough coverage at ship time than navigation or commanding got.
+
+### What's still concerning (skeptic's view)
+
+**1. `QueryCache` is in-process-only.** Cache is lost on app exit. For
+desktop apps with session restoration expectations (dashboards that users
+leave open for days), expensive computed data re-fetches from zero every
+cold start. SwiftUI's `@SceneStorage` and Compose's `rememberSaveable` don't
+solve this either, but TanStack Query has a documented persistence plugin.
+Reactor ships the subsystem without a persistence story. The spec mentions
+"serialize on evict" as future work.
+
+**2. Cache keys are string-derived but not user-visible by default.** The
+key is computed from `CallerHookId + DepsHash`. Two components calling the
+same fetcher with identical deps get *different* cache entries unless they
+override with an explicit `CacheKey`. This differs from TanStack Query,
+where cache sharing is by explicit named key by default. Developers porting
+TanStack Query mental models will be surprised when "the same query" fetches
+twice because it runs in two sibling components. The right answer —
+explicit `CacheKey` — requires reading the spec carefully.
+
+**3. No automatic retry.** Network transient failures are common in
+production. `UseResource` throws the error into `AsyncValue.Error<T>` with
+zero retries by default. Spec 020 D10 defends this as intentional ("don't
+hide bugs"), which is a defensible philosophical position but conflicts
+with production reality. Every serious consumer will add a retry wrapper
+locally, which means the framework is punting a design decision to
+application code.
+
+**4. `StaleTime` defaults to zero (always refetch on mount).** Conservative,
+but costly. A `UsePersisted`-equivalent for `AsyncValue` (cache survives
+unmount/remount with a configurable `StaleTime`) isn't the default — a
+component that unmounts and remounts refetches unless the cache entry is
+still live (ref-counted to zero, kept via TTL). The docs recommend thinking
+about TTL per key, but most developers won't.
+
+**5. `PendingScope` boxes context values.** The scope is delivered via
+`Context<PendingScope?>` — and `ContextScope` stores values as `object?`.
+Every `PendingScope` push is a boxing allocation. Section 2 flagged this
+same issue for `Context<T>` generally; the async subsystem inherits it.
+
+**6. `UseMutation.InvalidateKeys` is `string[]`, not structured.** Flat
+strings. You cannot say "invalidate anything that depends on employee 42"
+without writing `InvalidatePattern("employees.*42*")` yourself. Compared to
+TanStack Query's `queryKey` arrays (which can be partial-matched), this is
+coarser. It's consistent with the rest of the key design (flat strings), but
+the consistency locks in a limitation.
+
+**7. Performance at scale is untested.** The cache's eviction sweep is O(n)
+per tick; per-key locks could bottleneck under concurrent churn; the
+ref-count / subscription machinery hasn't been profiled with thousands of
+live queries. PR #29 ships unit + selfhost tests but no stress/soak tests
+against a realistic dashboard app. The previous review criticized Reactor
+for the same pattern in other subsystems; async resources repeat it.
+
+**8. `Pending` fallback has only one level of granularity.** A single
+`PendingScope` covers all nested `UseResource` calls — there's no
+per-query suspension boundary. React Suspense lets you nest `<Suspense>`
+boundaries for different parts of a layout, so the header resolves
+independently of the list body. Reactor's scope-based approach is coarser
+and less composable.
+
+**9. Focus revalidation exists but is new and unproven.** Commit `66b3cbb`
+adds focus revalidation + `EntryChanged` subscriptions. This closes a gap
+with TanStack Query's `refetchOnWindowFocus`. But "focus" on Windows desktop
+is a different event model than web browsers — multi-window apps, background
+windows, minimize/restore. The implementation is fresh and hasn't been
+field-tested against the range of window-lifecycle scenarios WinUI exposes.
+
+**10. The DataGrid hook-path flag is on by default but still feature-flagged.**
+`UseHookBasedPaging` is a flag in headtrax (an internal product, per commit
+`4ce1eba`). Flags that ship "on by default" usually persist as flags longer
+than intended because nobody wants to commit to removing the escape hatch.
+The two code paths (legacy DataPageCache vs. new hook-based) both have to be
+maintained until the flag is removed, which accrues tech debt.
+
+**11. No devtools surface for the cache.** TanStack Query Devtools shows
+live cache state, query timings, mutation history, and lets you invalidate
+keys manually — a major productivity boost when debugging async UI. Reactor
+has no equivalent. The `reactor.state` MCP tool (Section 13a) exposes hook
+shape but not cache state. Diagnosing "why is this query returning stale
+data?" requires reading the source.
+
+**12. The spec is 10 pages long and the concepts stack quickly.**
+`AsyncValue<T>`, `Pending` element vs. `PendingScope`, `UseResource` vs.
+`UseInfiniteResource` vs. `UseMutation`, cache-key derivation, TTL vs.
+`StaleTime`, invalidation patterns, focus revalidation, optimistic updates,
+and the four hook analyzers. The concept budget is real. A React developer
+who's used TanStack Query will find most of this familiar, but someone
+coming in fresh has a steep climb. The `async-resources-cookbook` doc helps,
+but the API surface is large for a framework that aims at approachability.
+
+### Revised async resources verdict
+
+**Previously graded under State Management: no async story. Now: B+.**
+
+Async resources is a substantial new capability that closes a genuine gap.
+The ADT design, the `QueryCache` infrastructure, the DataGrid integration,
+and the four hook analyzers are principled and well-executed. The grade is
+B+, not A, because: the subsystem is brand-new with no field evidence;
+cache is in-process-only (no persistence); no automatic retry; performance
+at scale is untested; no devtools; and the concept count is high relative
+to the competition's simpler `isLoading`/`data` tuples.
+
+The competition comparison is closer than the rest of Reactor's feature
+areas. React has TanStack Query / SWR — battle-tested, with persistence
+adapters, devtools, optimistic updates, retry policy, prefetching, and a
+multi-year stability track record. SwiftUI has `async let` / `.task` but no
+cache. Compose has nothing standardized (developers use Coroutines + StateFlow
+ad-hoc). Reactor's position is above Compose (nothing shipped), near SwiftUI
+(comparable primitives, no cache), and behind React's ecosystem (mature
+tooling). For a feature this new, B+ reflects promise more than proven
+value.
 
 ---
 
@@ -757,6 +1039,26 @@ SwiftUI and Compose don't have this problem because they own the entire layout
 pipeline. Reactor bolted Flexbox onto a platform that has its own (different) layout
 model.
 
+A notable recent addition: the skills/design docs now **prefer FlexPanel over
+StackPanel** for layout work (commit `791f380`), which means the framework's
+own guidance is steering developers toward the parallel layout system rather
+than WinUI-native. Whether that's the right call depends on whether FlexPanel
+is performant enough to be the default — a claim the docs make but that no
+profiling in the repository actually supports.
+
+**3a. FlexPanel measure had a CSS-semantics bug that was just fixed.** Commit
+`397f274` (April 19) rewrote `FlexPanel.cs` to "align measure with CSS block-
+level semantics" — 60 lines added, 45 removed, no commit-message detail. The
+companion test file (`FlexPanelCssBehaviorFixtures.cs`, 526 lines) is a
+behavioral parity suite against `WebViewCssMeasurement` (CSS measured via an
+embedded WebView2). That's a strong testing pattern — pinning behavior
+against a real browser's layout engine — but it also tells you something
+uncomfortable: until this landed, FlexPanel's measure was *not* CSS-
+equivalent, and there was no mechanism to detect when it drifted. The fact
+that CSS-compliance now has a 526-line fixture file is the right fix; the
+fact that it wasn't there from day one is a process gap. How many existing
+Reactor apps have subtly wrong FlexPanel layouts they didn't notice?
+
 **4. No safe area or inset handling.** WinUI desktop apps have title bars,
 task bars, and potentially custom chrome. Reactor has no `SafeArea` concept. SwiftUI
 has `.ignoresSafeArea()` and `.safeAreaInset()`. Compose has `WindowInsets`. Reactor
@@ -908,6 +1210,16 @@ Each has matching unit tests via `CSharpAnalyzerVerifier`. DUCT001 includes a
 `UseThemeRefCodeFix` that maps known colors to tokens (`#FFFFFF` → `Theme.PrimaryBackground`,
 `#0078D4` → `Theme.Accent`). DUCT003 has `RequestedThemeSetCodeFix` for
 the `.Set()` → `.RequestedTheme()` transformation.
+
+**Naming inconsistency (minor but real).** Spec 018 renamed the framework
+from "Duct" to "Microsoft.UI.Reactor". Commit `55dc53f` renamed
+`DUCT_A11Y_*` → `REACTOR_A11Y_*` and `DUCT_LOC001` → `REACTOR_LOC001`, but
+the three theming analyzers (`DUCT001`/`DUCT002`/`DUCT003`) kept their
+original IDs. The result is a public API surface where some diagnostics use
+the old product name and others use the new one. A customer's `.editorconfig`
+suppressing "all Reactor diagnostics" would have to list both prefixes. This
+is a small consistency issue that the rename commit acknowledged and
+deferred.
 
 ### What's actually good about this (credit where due)
 
@@ -2621,6 +2933,227 @@ time.
 
 ---
 
+## 11a. Charting and Chart Accessibility
+
+### Why this warrants its own section
+
+The critical review has not previously covered charting because the charting
+surface was a separate experimental project — a D3-port demo gallery with no
+framework integration. In the last 72 hours, that changed dramatically.
+Spec 026 (840 lines) landed, followed by 9 implementation phases (commits
+`d4893eb..225655c`, PR #54, ~3,000 lines of source plus 1,500+ lines of
+fixtures and tests). The result is a full charting sub-framework with 43
+chart samples, an 8-layer accessibility infrastructure, theme-aware brushes
+for dark mode, a native `TitleBar` shell in the sample app, forced-colors
+remapping, reduced-motion honoring, and 12 chart-specific scanner rules.
+
+**This is a genuine sub-framework now, not a demo.** WinUI has no built-in
+chart library — enterprise WinUI apps typically use LiveCharts, OxyPlot,
+or the Telerik/DevExpress commercial controls. Reactor shipping an
+accessible D3-equivalent is a real competitive position. SwiftUI ships
+Apple's Charts framework (iOS 16+, 50+ chart types, audio graphs),
+Compose has Vico and community libraries, Jetpack has no canonical
+choice. Reactor's charting + accessibility is arguably ahead of everything
+except Apple Charts on accessibility depth — and Apple has the advantage
+of OS-integrated VoiceOver sonification.
+
+### What shipped — the 8-layer architecture
+
+**Layer 1: Automation peer infrastructure.** `ChartAutomationPeer` implements
+`IGridProvider` (series × points grid) and `ITableProvider` (column
+headers for axis labels). `ChartPointProvider` exposes per-point peers with
+`IValueProvider`, and commit `9d0b4f9` adds `IScrollProvider` for large
+datasets. `IChartAccessibilityData` is the accessor contract charts
+implement to expose their data model to the peer.
+
+**Layer 2: Per-point labels and auto-summarization.** `ChartSummarizer`
+generates screen-reader summary text: "Line chart, 5 series, 120 points.
+Revenue trending upward by 12% over 6 months. Peak: $42K in October."
+`.Description(accessor)` lets apps override per-point labels; defaults
+cover the common cases.
+
+**Layer 3: Alternate-view convention.** `.AlternateView(Element)` attaches
+a developer-supplied alternate (usually a DataGrid). `ChartAlternateViewWrapper`
+handles the T-key toggle, focus save/restore, and live-region announcement
+("Switched to table view"). The framework owns the keybinding and focus
+lifecycle; the app owns the table content.
+
+**Layer 4: Keyboard navigation.** `ChartKeyboardNavigator` implements:
+arrow keys walk points/series, Home/End jump to edges, Ctrl+arrow steps
+by series/axis, +/- zoom, Shift+arrow brush, L focuses legend, T toggles
+alternate view. This is the Highcharts/Power BI keyboard model translated
+to WinUI.
+
+**Layer 5: Focus context.** `ChartFocusContext` captures and restores
+focus across view transitions (chart → alternate view → back to chart,
+preserving the previously-focused point).
+
+**Layer 6: Live announcements.** `ChartLiveAnnouncer` is a debounced
+(400ms trailing) live-region announcer for dynamic changes — brush
+selection, zoom level, filter changes. Polite region for normal updates,
+assertive only for errors. Scanner rule A11Y_CHART_007 warns against
+`.AnnounceEveryFrame()` abuse.
+
+**Layer 7: Forced colors, reduced motion, double encoding.**
+`ChartPalette.ForcedColors` swaps to `[CanvasText, Highlight, LinkText,
+GrayText]` when Windows high-contrast mode is active. `ChartPalette.Harden`
+runs LCH-space lightness adjustment on a brand palette to meet WCAG AA
+contrast against a given background — deterministic, not heuristic.
+`ChartPalette.ColorblindSimulate` uses a simplified Brettel matrix for
+deuteranopia/protanopia/tritanopia. `ReactorHost` honors
+`WindowsThemeSettings.HighContrast` and `UISettings.AnimationsEnabled`,
+wiring reduced-motion via a render context flag. All series are double-
+encoded (color + shape + dash) by default — `.ColorOnly()` is an opt-out
+that triggers a warning.
+
+**Layer 8: Scanner rules.** 12 chart-specific rules
+(A11Y_CHART_001..012) detect: missing title, missing axis labels, missing
+per-point labels, color-only encoding, insufficient contrast, palette
+hardening suggestions, animate-every-frame abuse, sparse data handling,
+tiny hit targets, and more. The scanner's rich context (WCAG criterion,
+suggested fix with `reactor charts harden` code snippet) targets AI-
+agent consumption.
+
+### What's actually good about this (credit where due)
+
+**The `Harden` utility is rare and valuable.** Most frameworks punt on
+"make my brand palette accessible." `ChartPalette.Harden(brandColors,
+background)` returns a new palette with LCH lightness adjusted to meet
+WCAG AA contrast. Deterministic. Per-color. Embedded in scanner fix
+suggestions. No other C# declarative framework has this — Highcharts has
+a similar feature via CSS custom properties, but it requires manual CSS;
+Reactor's is a one-line C# API.
+
+**Double-encoding is on by default.** Color + shape + dash are applied
+automatically for every series. This is the most common accessibility
+failure in charts (color-only bar charts, color-only line charts) and
+Reactor prevents it at the framework level. The `.ColorOnly()` opt-out
+exists for when it's justified but warns via the scanner.
+
+**The 43-sample gallery got made accessible in one pass.** Commit
+`229e41b` updated every chart sample (AnimatedDonut, BarChart, BoxPlot,
+CandlestickChart, ChordDiagram, ForceDirectedGraph, Sankey, Sunburst,
+Treemap, 34 others) to use `.Title()`, `.Description()`, and the a11y
+infrastructure. No new chart types were added; existing ones were
+retrofitted. This is exactly the "features compose in real apps" work
+the previous review criticized the framework for *not* doing. It's a
+real counter-example — one domain where the framework's own showcase
+actually uses its own new features comprehensively.
+
+**The reduced-motion integration is framework-level.** `ReactorHost` now
+reads `UISettings.AnimationsEnabled` and exposes a render-context flag.
+Charts (and any other animation consumer) can check this flag and skip
+entry/exit animations. This is better than the `UseReducedMotion` hook
+that Section 11 criticized as "still unbuilt" — charts have it, generic
+components don't yet.
+
+**Scanner rules with `reactor charts harden` code snippets.** A11Y_CHART_
+fix suggestions are structured for agent consumption: the fix includes the
+exact CLI command to run and the exact C# modifier to add. This is the
+payoff of the scanner-diagnostic investment — an AI agent reading the
+scanner output can generate a PR without re-reading source.
+
+### What's still concerning (skeptic's view)
+
+**1. No sonification.** Apple Charts supports audio graphs — each point
+plays a tone proportional to its Y-value, letting blind users detect
+patterns they can't see. Highcharts has a sonification plugin. Reactor's
+spec explicitly lists sonification as an "A+ ceiling feature deferred" — a
+feature gap versus the named competitors. Not shipping this is defensible
+(it's a lot of engineering), but it's the single biggest remaining
+accessibility differentiator.
+
+**2. ForceGraph a11y is explicitly decorative-only.** Spec 026 §11 says
+"force graph physics is decorative; accessibility ships as structure, not
+motion." A screen reader user on a ForceDirectedGraph gets the node list
+and edge list but no way to explore the graph interactively. For dense
+graphs (>200 nodes), this is a non-trivial UX problem. The spec asks
+whether a dialog-based "graph explorer" would be better (open question 1).
+No answer yet.
+
+**3. Hit-target expansion requires `.Interactive()`.** Points smaller than
+24×24px get a transparent hit-shape overlay to meet WCAG 2.5.8, but only
+when `.Interactive()` is set. Static charts — which are the majority of
+analytics dashboards — don't get this. Accessibility of static charts
+should not depend on developer action; this should be always-on, with
+opt-out for decorative cases.
+
+**4. Forced-colors palette clips to 4 series.** Under Windows high-
+contrast, series cycle over 4 system colors (`CanvasText`, `Highlight`,
+`LinkText`, `GrayText`). Beyond 4 series, colors collide and the only
+remaining distinction is shape/dash. Spec 026 notes this clipping but
+doesn't address the graceful fallback — what's the UX when you have 12
+series in HC mode? No guidance.
+
+**5. Per-point `ChartPointProvider` instances allocate under inspection.**
+Every time an assistive tech walks the UIA tree, `ChartPointProvider` peers
+are created for every data point. A 10,000-point scatterplot creates 10,000
+peer instances. They're lightweight, but under stress (repeated UIA walks
+from Narrator + automation tests) the allocation rate could matter. No
+benchmarks in the spec or tests.
+
+**6. Sparse data / single-point charts unspecified.** Open question 4 asks
+whether sparklines <80×40px should skip full UIA grid exposure. Still
+unresolved. A stock ticker with 1,000 mini-sparklines all advertising a
+full grid peer is pathological but unconstrained by the current design.
+
+**7. "Alternate view" convention depends on app-supplied content.** The
+framework owns the T-key binding and the focus transition, but the app
+supplies the `.AlternateView(Element)` — usually a DataGrid. A naive app
+will supply a static table that doesn't mirror filter/sort state of the
+chart. There's no canonical sample of a fully-integrated alternate view
+(dynamic, sorted, filtered to match the chart). Open question 5 from the
+spec asks for this; it didn't ship in phase 1-9.
+
+**8. Live-region debounce is hard-coded to 400ms.** No way to customize.
+For truly time-critical scenarios (live-updating alert dashboard), 400ms
+trailing feels slow. For UI churn (rapid keyboard zoom), 400ms is
+reasonable. A single hard-coded value can't serve both.
+
+**9. Chart accessibility is not integrated with `AccessibilityScanner`'s
+general rules.** The chart-specific rules (A11Y_CHART_001..012) live in the
+same scanner but don't cross-reference the general a11y rules. A chart
+without `.Title()` fails A11Y_CHART_001 *and* A11Y_001 ("element has no
+name"). Both warnings fire. This is noise — either the rules should
+merge when they overlap, or one should defer to the other.
+
+**10. Testing is thorough on the selfhost path but sparse on E2E.** The
+`ChartAccessibilityFixtures` file (343 lines after phase 4) is a selfhost
+fixture battery covering peer creation, summarizer output, palette
+hardening, scanner rules. But the Appium E2E coverage for charts is thin —
+`ChartAccessibilityTests.cs` is 153 lines, roughly 8–10 tests. Narrator /
+NVDA actual-behavior validation (the thing that really matters for a11y)
+requires manual testing in the `charting/App.cs` doc-app.
+
+### Charting verdict
+
+**New section, first grade: B+.**
+
+The charting infrastructure and its accessibility layer are the most
+comprehensive I've seen in any C# declarative framework. The architectural
+choices (layered accessibility, scanner integration, LCH-space palette
+hardening, forced-colors honoring, framework-level reduced-motion) are
+principled and well-executed. The 43-sample gallery getting retrofitted
+in one pass is exactly the "features compose in real apps" behavior the
+framework needs to show more of.
+
+The grade is B+, not A, because: no sonification (a real competitive gap
+versus Apple Charts and Highcharts), ForceGraph a11y is decorative-only,
+hit-target expansion is opt-in when it should be always-on, per-point
+peer allocation is unbounded, the "alternate view" convention lacks a
+canonical fully-integrated sample, live-region debounce is hard-coded,
+chart scanner rules don't merge with general rules, and E2E test
+coverage is thin. The layered design is right; the corners haven't been
+swept yet.
+
+This is also a new sub-framework that hasn't been stress-tested in real
+apps. `ReactorCharting.Gallery` is comprehensive but synthetic. No
+third-party dashboard app has adopted it. No performance characterization
+under 10k+ points. No survey of screen reader users validating the
+summarizer output. The foundation is strong; the field evidence is zero.
+
+---
+
 ## 12. Input Handling and Events
 
 ### What Reactor has
@@ -2693,52 +3226,310 @@ exactly the kinds of changes you make during UI development (adding a new
 component, restructuring a layout). React's Fast Refresh and Compose's Live Edit
 are purpose-built for UI changes and handle a wider range of edits.
 
-**2. Preview system is functional but not a visual designer.** Reactor has a
-`--preview [ComponentName]` CLI flag that launches a component in isolation, a
-`--preview-list` to discover all components, and a `PreviewCaptureServer` that
-streams JPEG frames over HTTP. A VS Code extension (`vscode-reactor`) consumes this
-to show a live preview panel beside the editor, with a component dropdown
-selector and automatic switching when the active editor changes.
+**2. The preview system has been renamed to "devtools" and replaced, not just
+augmented.** The previous `--preview [ComponentName]` CLI flag is gone.
+Commit `27e89d9` renamed the surface to `--devtools`, and the preview
+feature (live screenshot stream) now sits *inside* the devtools MCP server
+(see Section 13a for the full devtools discussion). The VS Code extension
+was updated with legacy fallback (`8828ab5`) so existing users shouldn't be
+broken, but the naming change signals the team's priority: MCP automation
+for AI agents is now the headline, live-screenshot-preview is a secondary
+capability.
 
-This is a thoughtful system — the HTTP capture server, frame streaming, and
-dynamic component switching without process restart are well-engineered. It's
-more than many frameworks provide.
+For non-agent users, this is a regression in mental model. The old `--preview`
+flag was discoverable by name; `--devtools --screenshot` requires knowing
+that screenshots are a devtools sub-capability. The VS Code extension's live
+preview panel still works, but the top-level story is now "AI agents can
+drive your app" rather than "look at your component without running the app."
 
-However, it's fundamentally a **screenshot stream** of a real WinUI window, not
-an interactive preview. You can't click or interact with the preview in VS Code.
-SwiftUI's Xcode Previews are interactive — you can click buttons, type in fields,
-and see state changes in the canvas. Compose's Preview renders actual composables
-inline in the IDE. Reactor's approach is closer to a live screenshot — useful for
-visual iteration but not for testing interactions.
+The fundamental limitation remains: it's a live screenshot, not an
+interactive preview in the IDE. SwiftUI Xcode Previews are interactive;
+Compose Preview renders composables inline. Reactor's preview is still
+"look at the app as it renders."
 
-The bigger gap is the lack of a **visual designer**. None of the competition
-really has this either (SwiftUI's canvas is previews, not a designer), but for
-WinUI developers coming from XAML's Visual Studio designer, this is a step
-backward. A property inspector, element picker, or layout visualizer would
-significantly close this gap.
+**3. Error messages from the reconciler are mostly runtime-only, but hook
+rule violations are now caught at edit time.** Spec 020 shipped four hook
+analyzers alongside async resources:
 
-**3. Error messages from the reconciler are runtime-only.** If you violate hook
-rules (calling hooks conditionally), you get a runtime `InvalidOperationException`:
-"Hook at index N is X, expected Y. Hooks must be called in the same order every
-render." This is a runtime crash, not a compile-time warning. React has the
-`eslint-plugin-react-hooks` that catches this at edit time. Reactor has no static
-analysis for hook rule violations.
+- `REACTOR_HOOKS_001` — hook called conditionally
+- `REACTOR_HOOKS_004` — deps include freshly allocated values (array, closure)
+- `REACTOR_HOOKS_005` — hook called outside Render or a custom-hook method
+- `REACTOR_HOOKS_006` — UseResource fetcher looks like a mutation
 
-**4. Debugging the reconciler requires deep framework knowledge.** When a UI
-update doesn't look right, there's no equivalent of React DevTools (component
-tree inspector, state viewer, profiler) or Compose's Layout Inspector. You're
-left with `System.Diagnostics.Debug.WriteLine` sprinkled through the reconciler
-code and the `ILogger` interface.
+This closes a specific gap the previous review flagged: "React has
+`eslint-plugin-react-hooks`; Reactor has no static analysis for hook rule
+violations." Now it does — for four rules. React's ESLint plugin has ~10
+rules (exhaustive-deps, rules-of-hooks, and variants). Reactor has ~4.
+Closer than before but not parity; the two missing-deps rules
+(REACTOR_HOOKS_002/003) are listed as "require control-flow / data-flow
+analysis" in `HookRulesAnalyzer.cs:35` — i.e., harder, deferred. The most
+valuable ESLint rule (`react-hooks/exhaustive-deps`) is still missing.
 
-**5. No performance profiling.** There's no built-in way to measure:
-- How long a render takes
-- How many elements were diffed
-- How many WinUI controls were touched
-- Which components are re-rendering unnecessarily
-- Memory allocation per render cycle
+**4. Debugging the reconciler now has MCP devtools (see Section 13a).** The
+Claude-driven `reactor.tree`, `reactor.state`, and `reactor.logs` tools
+replace manual `Debug.WriteLine`. The component tree is inspectable as JSON;
+hook shape is readable; logs are rolling with per-call observability. For
+developers who work with AI coding agents, this is a significant DX
+improvement. For developers who don't, it's still a CLI-only flow —
+there's no React DevTools-style UI showing the live component tree in
+a browser panel.
 
-React has the React Profiler. Compose has recomposition counts in Layout
-Inspector. Reactor has nothing.
+**5. Performance profiling now exists via ETW, with limits.** Commit
+`310a299` added `Microsoft-UI-Reactor` ETW provider with 6 keywords and 5
+tasks: Reconcile start/stop, component render boundaries, state change,
+MCP call, effects-flush, child-reconcile. This closes part of the "no
+performance profiling" gap. Consumers use standard tooling — PerfView,
+dotnet-trace, WPA — to view traces.
+
+The grade is "exists but coarse":
+
+- **What you can see:** Reconciliation duration, how many components were
+  rendered, effects flush timing, MCP dispatch latency, the build tag
+  emitted into traces for correlation.
+- **What you still can't see:** Per-component render timing (only aggregate
+  start/stop boundaries), per-hook execution timing (no breakdown inside
+  `FlushEffects`), memory allocation per render cycle, render-tree diff
+  shape, element-pool hit rate. React DevTools Profiler shows per-component
+  render times and flame graphs. Compose Layout Inspector shows
+  recomposition counts per composable. Reactor's ETW is *infrastructure*
+  for profiling; the viewer and per-component drill-down still have to be
+  built on top.
+
+Additionally, ETW is Windows-only (not an issue given Reactor is WinUI-only),
+classic-ETW tooling is intimidating for newcomers (PerfView has a learning
+curve), and there's no built-in summary view for common questions ("which
+component re-renders most frequently?"). Commit `a0ea276` added
+`ReactorEventSourceCoverageTests.cs` (116 lines) which validates emit-guard
+behavior but doesn't benchmark the overhead when tracing is on.
+
+**6. Unit test coverage jumped meaningfully.** Commit `a0ea276` added 16
+new test files totaling 4,222 lines of coverage tests — accessibility
+scanner, attached extensions, curves, voronoi, lockfile registry, element
+extensions, element records, intl accessor, navigation diagnostics,
+property grid arrays, ReactorEventSource, theme tokens, Yoga layout, and
+more. This is a real reliability investment. The previous review noted
+that "E2E tests were silently broken" as a process gap; the coverage-test
+expansion is the corrective action. Whether it catches all the important
+regressions remains to be seen, but the *investment* is unambiguous.
+
+---
+
+## 13a. Devtools MCP and ETW Tracing
+
+### Why this warrants its own section
+
+In a three-day span, Reactor shipped ~60 commits under spec 024 (AI Agent
+Devtools) and spec 025 (Devtools CLI Parity) that built out an MCP
+(Model Context Protocol) server for AI-agent-driven UI automation. This
+is unusual enough that it deserves its own section — no other C# UI
+framework has anything comparable. Whether it's the right bet is a
+separate question from whether it's well-built.
+
+### What shipped
+
+```bash
+# Supervisor spawns the app with devtools enabled and exits cleanly
+mur devtools ./App.csproj
+
+# CLI parity — agents (or humans) can call MCP tools via `mur devtools call`
+mur devtools call reactor.tree --window main
+mur devtools call reactor.click --selector "Button#submit"
+mur devtools call reactor.state --node "r:main/Counter"
+mur devtools call reactor.screenshot --output screen.png
+
+# Or use named verbs
+mur devtools tree
+mur devtools click "Button#submit"
+mur devtools logs --tail 50
+
+# MCP fragment for Claude Desktop / other MCP clients
+mur devtools --print-config
+```
+
+Tools exposed over MCP (HTTP JSON-RPC on loopback + stdio as of phase 4.1):
+
+| Tool | Purpose |
+|---|---|
+| `reactor.windows` | List open windows with ids and titles |
+| `reactor.tree` | Full element tree with stable ids, view=full adds layout/context/visual |
+| `reactor.state` | Hook shape (not values) for a node |
+| `reactor.logs` | Rolling log with per-call observability |
+| `reactor.screenshot` | PNG screenshot of a window |
+| `reactor.click` / `reactor.invoke` | UIA invoke on an element |
+| `reactor.type` / `reactor.focus` | Keyboard simulation |
+| `reactor.toggle` / `reactor.select` / `reactor.scroll` | UIA pattern invocations |
+| `reactor.fire` | Direct event injection for non-UIA controls |
+| `reactor.waitFor` | Wait until a selector resolves |
+| `reactor.switchComponent` | Swap the active preview component (invalidates stale tree ids — commit `274ec54`) |
+| `reactor.reload` | Hot-reload the app (exit-code-42 restart pattern) |
+
+Backing infrastructure: `DevtoolsMcpServer`, `McpDispatcher` (extracted
+for testability, `d992189`), `NodeIdBuilder` + `NodeRegistry` with stable
+window-scoped ids, `SelectorParser`, `WindowRegistry`, single-instance
+enforcement via `LockfileRegistry` (pid probe + HTTP liveness check),
+rolling log with per-call observability (`fc2f93f`), `--print-config` that
+emits an MCP config fragment ready for paste into Claude Desktop
+(`539b22e`), stdio transport alongside HTTP (`7cf59c7`), security review
+document (`477bd17`).
+
+### What's actually good about this (credit where due)
+
+**The architectural choice to use UIA is correct.** Rather than reinventing
+hit-testing or pixel automation, Reactor leans on Windows UI Automation —
+the platform-native accessibility bus. Every WinUI control already has a
+UIA peer; Reactor just routes `reactor.click` through `IInvokeProvider`.
+This means custom controls don't need special support, and tests authored
+against the devtools surface also validate accessibility (a test that can
+find a control by name is a test that Narrator can find it too). Compared
+to Playwright/Selenium-style pixel automation, this is a much better bus.
+
+**Node ids are stable, human-readable, and window-scoped.** `r:main/Counter.btn-inc`
+survives re-renders, theme changes, and re-layouts because it encodes
+component tree position, not visual tree position. Window-scoped ids
+(`r:<window>/<local>`) handle multi-window correctly. The selector
+resolution order (explicit id → automation id → name → type+index → source
+location) gives agents multiple escape routes when the primary path fails.
+
+**The MCP surface is deliberately minimal in v1.** Read tree, read state,
+invoke/click/type, screenshot, reload. No cache inspection, no hook
+mutation, no tree diffing. The spec (`#10 open question`) explicitly says
+these are deferred until real client-side patterns emerge. This is the
+right discipline — ship what's needed, avoid speculative tools.
+
+**Stdio transport landed alongside HTTP (phase 4.1, commit `7cf59c7`).**
+This closes the obvious agent-integration gap: Claude Desktop and other
+MCP clients that launch a stdio subprocess no longer need HTTP port
+binding. This contradicts the spec's earlier defense of HTTP-only; the
+team reversed course within the phase. The fact that it shipped quickly
+is a positive signal, but the docs and earlier commits may still reflect
+the HTTP-only design.
+
+**Single-instance enforcement via lockfile is correct.** A lockfile with
+pid-probe + HTTP liveness check prevents two devtools processes from
+fighting over the node-id space. Stale lockfiles are detected and
+cleared. This kind of infrastructure work is easy to skip; Reactor did
+it properly.
+
+**CLI parity (spec 025) means humans can use it too.** `mur devtools list`,
+`mur devtools tree`, `mur devtools screenshot` work as standalone
+commands — agents aren't the only consumer. The generic `mur devtools call
+<tool> --args` escape hatch handles anything the named verbs don't. Commit
+`4768224` addressed PR feedback on atomic write, lifetimes, and stdout
+streaming — the review pass was thorough.
+
+**Stress harnesses exist.** Commit `8562438` adds in-process and E2E stress
+harnesses for MCP lifecycle — this is infrastructure the team cares about
+stressing under concurrent load before shipping. Test coverage for the
+devtools subsystem is genuinely robust (23+ integration tests via
+`McpDispatcher` self-host fixtures, plus E2E stress).
+
+### What's still concerning (skeptic's view)
+
+**1. The premise is a bet.** Devtools MCP assumes AI agents are a
+primary UI-debugging audience. If that bet is right, Reactor is uniquely
+positioned. If it's wrong — if developers still prefer traditional GUI
+devtools (React DevTools, Xcode Instruments) — then this infrastructure
+serves a small user population. The competitive landscape today is React
+DevTools and Layout Inspector; AI-agent automation is a supplement to
+those, not a replacement. Reactor shipped the supplement before the
+primary.
+
+**2. State is read-only.** `reactor.state` returns hook shape but not
+values (commit `bc132a3` — "shape, not values"). There's no `reactor.setState`
+to mutate component state directly. The spec defends this as "agents
+should use event handlers" — but in deterministic testing or
+debugging, direct state mutation would be faster. An agent trying to
+reproduce "the app in state X" has to compose a chain of event
+invocations; TanStack Query Devtools lets you edit cache entries live,
+which is one-click. The "shape not values" choice is privacy-conscious
+but limits introspection power.
+
+**3. Tree diffing is deferred.** The spec punts `reactor.snapshot(name)` /
+`reactor.diff(A, B)` to phase 3, hypothesizing that agents will cache
+trees locally and diff client-side. That's defensible when agents have
+unlimited context, but agents running in constrained environments (CI,
+token-budgeted LLM sessions) may not have the context window for paired
+trees. Server-side diffing would be materially cheaper. No evidence yet
+whether the hypothesis holds.
+
+**4. Window lifecycle is polled, not pushed.** An agent calling
+`reactor.windows` sees a snapshot. New windows aren't pushed; the
+agent has to re-poll. For a short-lived modal that appears and closes
+within 100ms, the agent might miss it entirely. No subscription/notification
+model.
+
+**5. No source mapping in v1.** The tree response includes a `reactor`
+block intended to carry source file + line (from spec 010 Source
+Mapping). That spec hasn't landed. Without it, agents can't correlate a
+tree node back to the C# component that created it. This is the most
+important agent capability — "show me the code that made this button"
+— and it's a v1.1 at best.
+
+**6. No cache inspection.** Async resources (Section 3a) ship with a
+`QueryCache` but the devtools surface doesn't expose it. An agent
+debugging "why is this query stale?" has no tool. TanStack Query
+Devtools is the gold standard here; Reactor has nothing equivalent.
+
+**7. No performance profiling via MCP.** ETW traces exist (see Section
+13) but there's no `reactor.profile` tool to start/stop/export traces
+from an MCP session. An agent suspecting a performance regression has to
+spawn PerfView out-of-band. The profiling and the MCP surface are two
+separate tools, not an integrated workflow.
+
+**8. Selector ambiguity returns errors, not first-match.** Agents
+hitting an ambiguous selector (e.g., `"Button"` with 3 buttons) have to
+disambiguate and re-call. This is correct for determinism but chatty —
+more turns = more LLM tokens = more latency. A `--first` or
+`--require-unique` flag would let agents opt into the tradeoff.
+
+**9. DEBUG-gated with risk of Release leak.** The devtools surface is
+intended for DEBUG builds only, but it's controlled by a compile-time
+`#if DEBUG` and a runtime flag. If a Release build accidentally enables
+devtools (misconfigured env var, test flag left on), any local process
+can drive the app. The security review (`477bd17`) addresses loopback-
+only binding but doesn't prevent the accidental enablement path. A
+startup banner warning when devtools is on in a Release-like build would
+reduce the risk.
+
+**10. The UI preview surface was replaced, not augmented.** The previous
+`--preview` flag was purpose-built for human developers iterating on a
+single component. `--devtools` is purpose-built for agents. The team
+chose to *rename* preview → devtools (commit `27e89d9`) rather than
+keeping both. The VS Code extension's legacy fallback keeps things
+working, but the message is clear: agents are the primary audience.
+Non-agent users are a supported secondary.
+
+**11. ETW tracing lives separately from the MCP surface.** The
+`Microsoft-UI-Reactor` EventSource and the devtools MCP server are
+parallel telemetry surfaces — one streams ETW events, the other responds
+to JSON-RPC calls. There's no integration (can't start an ETW trace via
+MCP; can't correlate devtools activity to trace events by session id).
+Two telemetry stories, no bridge.
+
+### Devtools + tracing verdict
+
+**New section, first grade: B.**
+
+Devtools MCP is genuinely unique — no C# UI framework (and for that
+matter, no declarative UI framework on any platform) ships an MCP server
+for AI-agent-driven automation. The architectural choices (UIA as the
+bus, stable window-scoped node ids, MCP as the protocol, stdio + HTTP
+transports, CLI parity, single-instance enforcement) are correct. The
+implementation (DevtoolsMcpServer, McpDispatcher, NodeRegistry,
+SelectorParser, stress harnesses) is serious infrastructure.
+
+ETW tracing exists but is infrastructure-grade rather than developer-
+facing. Consumers need PerfView or dotnet-trace. Per-component render
+timing and per-hook execution breakdowns are not emitted. There's no
+built-in viewer.
+
+The grade is B because: state is read-only, tree diffing is deferred,
+source mapping is v1.1, cache inspection and performance profiling
+aren't in the MCP surface, the audience is narrow (AI agents first,
+humans second), and the VS Code extension's interactive-preview story
+has regressed relative to the old `--preview` flag. The bet on AI
+agents as a primary audience is unconventional; whether it pays off
+depends on adoption patterns that don't exist yet.
 
 ---
 
@@ -2812,17 +3603,20 @@ SwiftUI, Compose).
 | **Component Model** | B+ | A | A | A | Context, memoization, generic hooks; reflection in memo check, no slots |
 | **Local State** | A- | A | A | A | Generic hooks, post-render cleanup, persisted state; dep arrays still box |
 | **Global State** | B+ | A | A | A | Context + UseContext + .Provide(); boxing in scope stack, no selector |
-| **Reconciler** | B- | A | A- | A | Works but monolithic, no concurrent mode |
-| **Layout** | B+ | B+ | A | A | Flex is good; Grid is stringly-typed |
+| **Async Data** | B+ | A (TanStack) | B+ | C | **NEW section 3a.** UseResource/UseInfiniteResource/UseMutation/Pending, AsyncValue ADT, QueryCache with TTL+pattern invalidation, focus revalidation, DataGrid hook-paging. In-process cache only, no retry default, zero field evidence |
+| **Reconciler** | B- | A | A- | A | Works but monolithic, no concurrent mode; Grid-children-on-type-flip fix (e86ff69) closes a real bug |
+| **Layout** | B+ | B+ | A | A | Flex is good; Grid is stringly-typed; FlexPanel CSS semantics just got corrected (commit 397f274) — previous behavior was drift-prone |
 | **Theming** | B- | B+ | A | A | Style caching fixes XamlReader.Load perf; RequestedTheme modifier; UseColorScheme hook (reads app theme, not element effective); 3 ThemeRef props; no custom resources |
-| **Navigation** | B+ | A | A | A | Type-safe routes, dev-owned stack, GPU transitions, source+destination guards, caching, serialization, enhanced deep linking (query strings, wildcards, optional params), diagnostics; ConnectedTransition is stub, no adaptive multi-pane, E2E now running (43 Appium tests) |
-| **Commanding** | B+ | N/A | C+ | N/A | Define-once commands, 16 standard, async lifecycle, focus-scoped accelerators; no competitor has this. Accelerator rebuild per render, labels not localized, no command routing, no palette UI |
+| **Navigation** | B+ | A | A | A | Type-safe routes, dev-owned stack, GPU transitions, source+destination guards, caching, serialization, enhanced deep linking, diagnostics; ConnectedTransition still a stub, no adaptive multi-pane |
+| **Commanding** | B+ | N/A | C+ | N/A | Define-once commands, 16 standard, async lifecycle, focus-scoped accelerators; accelerator rebuild per render, labels not localized, no command routing, no palette UI |
 | **Lists/Collections** | B | B+ | A | A | Virtualization exists, no sections |
-| **Animation** | B- | B | A | A | Curve DSL, enter+exit, interaction states (hover/press/focus), keyframes, stagger+enter integration, scroll-linked, WithAnimation (all 5 props); 4 prior bugs fixed; compositor-property-bound ceiling; no per-frame hooks |
-| **Accessibility** | B- | B | A | A | 16 modifiers + SemanticPanel (custom peers for composites), UseFocusTrap hook, 3 Roslyn a11y analyzers, runtime WCAG scanner, 22+ E2E tests; SemanticPanel limited to 2 patterns, focus trap doesn't cycle, remaining hooks unbuilt |
-| **Input/Events** | C | B | A | A | Semantic events good; commanding helps but no gesture system, no pointer enter/exit, rest is .Set() |
-| **Styling** | B- | B+ | A | A | Lightweight styling is a genuine differentiator; ResourceBuilder fluent API; 3 Roslyn analyzers; stringly-typed resource keys; analyzer coverage shallow |
-| **Developer Experience** | C+ | A | B+ | B+ | Hot reload works; preview is screenshot-only; no devtools |
+| **Animation** | B- | B | A | A | Curve DSL, enter+exit, interaction states, keyframes, stagger, WithAnimation; compositor-property-bound ceiling; no per-frame hooks |
+| **Accessibility** | B | B | A | A | 16 modifiers + SemanticPanel, UseFocusTrap, 3 Roslyn a11y analyzers, runtime WCAG scanner; SemanticPanel limited to 2 patterns, focus trap doesn't cycle, remaining hooks unbuilt. **Grade rose from B- to B** mostly because of charting a11y (below) — the general surface is unchanged |
+| **Charting + Chart A11y** | B+ | N/A | A (Apple Charts) | C (Vico/ad-hoc) | **NEW section 11a.** 43 samples + 8-layer a11y (ChartAutomationPeer, ChartPalette.Harden/ColorblindSimulate, keyboard nav, live announcer, alternate view, forced-colors, 12 scanner rules). No sonification, ForceGraph a11y decorative-only, hit-target expansion opt-in |
+| **Input/Events** | C | B | A | A | Semantic events good; no gesture system, no pointer enter/exit, rest is .Set() |
+| **Styling** | B- | B+ | A | A | Lightweight styling is a genuine differentiator; ResourceBuilder fluent API; 3 Roslyn analyzers; stringly-typed resource keys; analyzer coverage shallow; DUCT_/REACTOR_ ID inconsistency |
+| **Developer Experience** | B | A | B+ | B+ | **Rose from C+ to B.** Hot reload works; MCP devtools + ETW + 4 hook analyzers + 4,222 lines of new coverage tests close real gaps. Still no GUI devtools, preview is screenshot-only, no per-component render timing, no cache inspector |
+| **Devtools + Tracing** | B | B+ (DevTools) | A (Instruments) | B+ (LI) | **NEW section 13a.** MCP server (HTTP+stdio), 12+ MCP tools, stable node ids, supervisor, CLI parity, ETW provider with 6 keywords. State is read-only, no diff in v1, no source map in v1, no cache inspection, ETW has no per-component timing |
 | **Control Coverage** | A | N/A | A | A | 94% of WinUI wrapped |
 | **Error Handling** | B | B+ | D | D | ErrorBoundary exists (rare feature) |
 | **Localization** | B+ | B | B | B | ICU-based, full system, now using Context |
@@ -2943,6 +3737,44 @@ This is a red flag for a framework that wants to be production-ready.
     multiple framework features build on the same primitive, that's good
     architecture.
 
+14. **Async data is now a real framework feature.** `UseResource`,
+    `UseInfiniteResource`, `UseMutation`, and `Pending` close what was the
+    single largest remaining capability gap. The `AsyncValue<T>` ADT is more
+    expressive than React's tuple-based approach. The `QueryCache` is serious
+    infrastructure with per-key locks, ref-counted subscriptions, and TTL +
+    pattern invalidation. `DataGrid` was migrated to the hook path as a real
+    integration test. And four `REACTOR_HOOKS_*` analyzers now catch common
+    mistakes at edit time. This is the most complete async data story in any
+    C# declarative framework.
+
+15. **Charting accessibility is arguably the best on any platform.** 8 layers,
+    12 scanner rules, WCAG-hardening palette transform, LCH-space adjustment,
+    colorblind simulation, keyboard navigation matching Highcharts/Power BI,
+    forced-colors remap, reduced-motion integration, debounced live regions,
+    and the 43-sample gallery fully retrofitted. Only Apple Charts exceeds
+    this on sonification; Reactor matches or exceeds on every other a11y
+    dimension. This is a genuine competitive differentiator for enterprise
+    WinUI apps that need Section 508 compliance.
+
+16. **MCP devtools is unconventional but correctly built.** `reactor.tree`,
+    `reactor.click`, `reactor.type`, `reactor.state`, `reactor.screenshot`,
+    `reactor.reload` over HTTP + stdio. Stable window-scoped node ids.
+    UIA-based automation. Single-instance lockfile. CLI parity. No
+    competitor has this. Whether AI-agent-driven automation is the future
+    of UI debugging is debatable; the bet itself is defensible.
+
+17. **Hook rules are now compile-time checked.** `REACTOR_HOOKS_001/004/
+    005/006` catch conditional hooks, unstable deps, hooks outside Render,
+    and non-idempotent fetchers. The previous review flagged the absence of
+    `eslint-plugin-react-hooks` equivalent; that gap is now partially closed
+    (4 rules vs. React's ~10). The hardest rule (`exhaustive-deps`) is still
+    deferred as control-flow-analysis work.
+
+18. **ETW tracing exists.** `Microsoft-UI-Reactor` EventSource emits to
+    classic ETW and EventPipe. PerfView / dotnet-trace can consume. This is
+    the first real performance-profiling infrastructure the framework has
+    had, closing part of Section 13's "no performance profiling" critique.
+
 ### What prevents Reactor from being production-ready
 
 1. **The showcase apps don't use the framework's own features.** This is the
@@ -3018,6 +3850,41 @@ This is a red flag for a framework that wants to be production-ready.
    but it limits the brownfield migration story to "WinForms-primary apps
    adopting Reactor panels," not "Reactor apps embedding legacy WinForms controls."
 
+9. **Async resources shipped without field evidence or performance
+   characterization.** The subsystem is principled and well-tested at the unit
+   level, but there are no stress tests for large caches (thousands of keys),
+   concurrent fetches, or long-running app scenarios where the cache accumulates
+   indefinitely. `QueryCache` eviction is O(n) per tick; per-key locks could
+   bottleneck under churn; no benchmarks exist. `UseHookBasedPaging` is enabled
+   by default on `DataGrid` but still feature-flagged, meaning two code paths
+   (legacy + new) both have to be maintained. And there's no devtools surface
+   for the cache — TanStack Query Devtools is a major productivity feature
+   that Reactor has no equivalent of.
+
+10. **The velocity is creating an integration deficit.** In three days the
+    framework shipped: async resources (full subsystem, ~40 commits), charting
+    accessibility (8 layers, ~18 commits, 3,000+ lines of src), devtools MCP
+    (24 tools, HTTP + stdio, ~25 commits), ETW tracing, FlexPanel CSS
+    compliance fix, 4,222 lines of new coverage tests, and a partial
+    analyzer rename. Each feature is individually well-engineered. But the
+    showcase apps (Outlook clone, file manager, registry editor, word
+    puzzle game) — the only proof that features compose in a real UI — still
+    don't use any of this. The charting gallery was retrofitted (a real
+    proof point); the apps that were supposed to prove navigation,
+    commanding, context, and memoization compose together still don't use
+    any of them. The pipeline of "ship feature + isolated demo + move on to
+    next feature" accelerates each iteration while the integration debt
+    quietly compounds.
+
+11. **Naming and conceptual churn.** Spec 018 renamed Duct → Reactor;
+    commit 55dc53f renamed half the analyzer ids (A11Y + Loc) while
+    leaving the theming ids (DUCT001-003) alone; `Factories.Text` →
+    `TextBlock`; `--preview` → `--devtools`; Monaco moved out of core into
+    a sample. These are all individually defensible, but cumulatively
+    they're a lot of churn for a framework that's not yet at v1. Customers
+    following along will have to update editorconfig suppressions,
+    docs, sample code, and muscle memory.
+
 ### The fundamental question (revisited)
 
 Is Reactor a *framework* or a *wrapper*?
@@ -3064,54 +3931,88 @@ smaller but still too large.
 
 ### To become production-ready, Reactor needs to:
 
-1. **Adopt its own features in the showcase apps.** The Outlook clone should
-   use UseNavigation, Context, StandardCommand, SemanticPanel, and
-   UsePersisted. This is the highest-leverage work — it proves composition and
-   finds real bugs. The a11y-showcase is encouraging but isolated.
-2. **Audit and harden the CI pipeline.** The E2E test filter bug (44 invisible
-   tests) was a process failure, not a code failure. What other test
-   configurations are silently broken? A CI health check that validates test
-   counts, detects regressions in test discovery, and alerts on suspicious
-   drops would prevent this class of issue.
-3. **Do a performance pass.** Profile a real render cycle. Measure the cost of
-   reflection-based ShouldUpdate, XamlReader.Load theming, accelerator rebuild,
-   wrapper elements (now 4 types: Border, Grid×2, SemanticPanel), and the
-   AccessibilityScanner overhead. Fix what's expensive.
-4. **Localize StandardCommand labels.** The framework's own commanding system
-   should use the framework's own localization system. This is embarrassing in
-   its absence.
-5. **Fix UseColorScheme to read element effective theme, not app theme.** This
-   is a bug that undermines the RequestedTheme + UseColorScheme composition
-   story. The fix is to read the mounted FrameworkElement's ActualTheme, not
-   Application.Current.RequestedTheme.
-6. **Finish the theming story.** Custom theme resource definitions, more than 3
-   ThemeRef binding properties, type-safe resource key constants for lightweight
-   styling.
-7. **Add command routing to the focused view.** This is the missing piece that
-   makes Cut/Copy/Paste work in multi-panel apps.
-8. **Extend SemanticPanel to more automation patterns.** `IToggleProvider`,
-   `IExpandCollapseProvider`, and `ISelectionProvider` are the next three most
-   common patterns for composite widgets. Without them, custom toggle switches,
-   collapsible sections, and multi-select widgets can't describe themselves.
-9. **Fix UseFocusTrap cycling.** The current implementation traps focus but
-   doesn't wrap Tab to the first/last element. The WAI-ARIA Dialog Pattern
-   requires this. It's a small fix with big accessibility impact.
+1. **Adopt its own features in the showcase apps.** This has been the
+   dominant critique for three review cycles now. The Outlook clone should
+   use `UseNavigation`, `Context`, `StandardCommand`, `SemanticPanel`,
+   `UsePersisted`, *and now* `UseResource`. The charting gallery getting
+   fully retrofitted with accessibility in one pass (commit 229e41b) proves
+   the team can do this work — they just haven't prioritized it for the
+   flagship apps. The gap between "ReactorCharting.Gallery uses all the
+   new chart a11y features" and "the Outlook clone still uses
+   `UseState<string>` for navigation" is where production confidence lives
+   or dies.
+2. **Stress-test async resources before claiming production-ready.** Large
+   caches, concurrent fetches, long-running sessions, memory growth under
+   churn, per-key lock contention, subscription ref-count correctness under
+   rapid mount/unmount. The subsystem is brand-new; unit tests prove
+   correctness, but no soak tests prove it scales. A TanStack-Query-Devtools-
+   equivalent for `QueryCache` would also materially improve debugging.
+3. **Audit and harden the CI pipeline.** The E2E test filter bug (44 invisible
+   tests) was a process failure. What other test configurations are silently
+   broken? Commit `a0ea276` added 4,222 lines of coverage tests, which is
+   real investment, but a CI health check that validates test counts and
+   alerts on regression in test discovery would prevent recurrence.
+4. **Do a performance pass using the new ETW infrastructure.** ETW tracing
+   now exists — use it. Profile a real render cycle. Measure: reflection-
+   based ShouldUpdate, XamlReader.Load theming, accelerator rebuild, wrapper
+   elements (now 5 types: Border, Grid×2, SemanticPanel, potentially
+   ChartAlternateViewWrapper), AccessibilityScanner overhead, ChartPointProvider
+   allocation rate on large charts, QueryCache eviction cost. Per-component
+   render timing is missing from ETW; add it.
+5. **Localize StandardCommand labels.** Still unfixed. The framework's own
+   commanding system should use the framework's own localization system.
+6. **Fix UseColorScheme to read element effective theme, not app theme.**
+   Still unfixed. The fix is to read the mounted FrameworkElement's
+   ActualTheme, not Application.Current.RequestedTheme.
+7. **Finish the theming story.** Custom theme resource definitions, more than
+   3 ThemeRef binding properties, type-safe resource key constants for
+   lightweight styling. Still unshipped.
+8. **Add command routing to the focused view.** Still missing. Cut/Copy/Paste
+   in multi-panel apps continues to require manual wiring.
+9. **Extend SemanticPanel to more automation patterns.** `IToggleProvider`,
+   `IExpandCollapseProvider`, `ISelectionProvider` — the most common after
+   Value/RangeValue.
+10. **Fix UseFocusTrap cycling.** Tab should wrap to first/last; currently
+    just traps.
+11. **Add chart sonification or the "audio graph" alternative.** Apple
+    Charts and Highcharts ship this. It's the single biggest remaining
+    chart-a11y competitive gap.
+12. **Finish devtools v1.1.** Source mapping (spec 010), tree diffing,
+    state mutation (`reactor.setState`), cache inspection. Without source
+    mapping, agents can't map tree nodes back to authored components.
+13. **Complete the `REACTOR_*` analyzer rename.** Finish what commit `55dc53f`
+    started — DUCT001/002/003 still carry the old product name.
+14. **Finish exhaustive-deps analyzer.** `REACTOR_HOOKS_002/003` are deferred
+    pending control-flow analysis. This is the single most valuable ESLint
+    rule React developers rely on.
 
-The trajectory is right, and the velocity is notable. In the last 24 hours
-alone: SemanticPanel solves the hardest accessibility architecture problem,
-AccessibilityScanner and 3 Roslyn analyzers add the diagnostic layers that were
-entirely missing, UseFocusTrap is the first imperative accessibility hook,
-destination-side navigation guards close a real gap, deep link enhancements
-make the routing system more practical, the E2E test filter fix surfaces 43
-previously invisible Appium tests, and WinForms interop opens a brownfield
-adoption story.
+The trajectory is right, and the velocity is notable — probably *too*
+notable. In the last 72 hours: async resources (full subsystem, closing
+the biggest remaining capability gap), charting accessibility (8-layer
+system, uniquely comprehensive), devtools MCP (unconventional but
+correctly built), ETW tracing (infrastructure for profiling), FlexPanel
+CSS compliance fix (closes a silent behavioral drift), and 4,222 lines of
+coverage tests.
 
-Navigation and commanding moved Reactor from "component library with hooks" to
-"framework with application architecture." The accessibility diff moves the
-story from "annotations on primitives" to "a system with semantic, diagnostic,
-and behavioral layers." WinForms interop moves the adoption story from
-"greenfield only" to "brownfield migration possible." These are real capability
-expansions, not just polish.
+Navigation and commanding moved Reactor from "component library with hooks"
+to "framework with application architecture." The accessibility diff moved
+the story from "annotations on primitives" to "a system with semantic,
+diagnostic, and behavioral layers." WinForms interop moved the adoption
+story from "greenfield only" to "brownfield migration possible." Async
+resources now moves the data story from "do it yourself" to "first-class
+subsystem." Charting accessibility moves chart a11y from "WinUI has no
+charts anyway" to "Reactor's charts are more accessible than most native
+iOS/Android chart libraries." Devtools MCP moves the testing story from
+"write Appium tests" to "AI agents can drive your app." These are real
+capability expansions, not just polish.
+
+But the velocity is outpacing the integration. Three review cycles in a
+row have flagged the same critique: the showcase apps don't use the
+framework's own features. The velocity of new-feature shipping has
+accelerated; the velocity of "use the new feature in a real app"
+hasn't. That ratio is the risk: a framework that ships features faster
+than it integrates them accumulates un-field-tested surface area, which
+is exactly how production bugs hide until someone else hits them.
 
 But three themes keep recurring across every feature area:
 
@@ -3132,16 +4033,55 @@ But three themes keep recurring across every feature area:
 
 3. **The showcase apps remain the credibility gap.** Every new feature ships
    with its own isolated demo, proving the feature works in a clean context.
-   But the Outlook clone — the framework's most complex and most public app —
-   still doesn't use navigation, commanding, context, memoization, or the new
-   accessibility features. Until it does, the claim "these features compose in
-   real apps" is unproven.
+   The charting gallery is the one bright exception — 43 samples were fully
+   retrofitted to use the new chart a11y features, and they *work*. But the
+   Outlook clone, file manager, registry editor, and word puzzle game — the
+   framework's most complex and most public *general-purpose* apps — still
+   don't use navigation, commanding, context, memoization, persisted state,
+   async resources, SemanticPanel, or UseFocusTrap. Until they do, "these
+   features compose in real apps" is a claim supported by demos, not proof.
 
-Reactor now has three features where it's genuinely ahead of the competition:
-commanding (no competitor has define-once commands), lightweight styling (no
-competitor surfaces WinUI's per-control resource overrides), and the
-AccessibilityScanner (no other C# UI framework has framework-integrated
-runtime WCAG diagnostics with structured AI-agent-friendly output). These
-are real differentiators, not just catch-up. The gap between "features exist"
-and "features compose correctly in real apps" is where the remaining work
-lives. That gap is narrower than before — and shrinking with each iteration.
+4. **New theme: feature velocity now outpaces integration velocity by a
+   widening margin.** In 72 hours: one new subsystem (async resources), one
+   new sub-framework (charting + chart a11y), one new paradigm (MCP
+   devtools), one new profiling story (ETW). None of these are small. And
+   they land before the previous cycle's features (SemanticPanel,
+   UseFocusTrap, NavigationDemo, StandardCommand) have been integrated into
+   the flagship apps. The ratio of feature-land-time to feature-integration-
+   time is getting worse, not better. Sustainable framework development
+   requires the second to keep up with the first.
+
+Reactor now has *five* features where it's genuinely ahead of the
+competition:
+1. **Commanding** — no competitor has define-once commands with metadata
+   bundling, standard commands, async lifecycle, and focus-scoped accelerators.
+2. **Lightweight styling** — no competitor surfaces WinUI's per-control
+   resource key overrides.
+3. **AccessibilityScanner + chart a11y** — no other C# UI framework ships
+   framework-integrated runtime WCAG diagnostics with structured AI-agent-
+   friendly output, and no declarative framework on any platform ships an
+   8-layer chart accessibility system.
+4. **Devtools MCP** — no competitor ships an MCP server for AI-agent-driven
+   UI automation. Whether that bet pays off depends on adoption patterns
+   that don't exist yet.
+5. **ErrorBoundary** — neither SwiftUI nor Compose has this; React does.
+
+These are real differentiators, not catch-up. But differentiators only
+matter if customers can reach them. The gap between "features exist" and
+"features compose correctly in real apps, under production load, in a
+maintained showcase" is where the remaining work lives. That gap has
+narrowed on charting (one gallery fully retrofitted), but widened on
+everything else (async resources, devtools, ETW, accessibility
+improvements to the general surface all sit behind isolated demos). Net
+direction: the framework is more capable than it was a week ago *and*
+further from "production-ready" because the new capability hasn't been
+integration-tested.
+
+The honest final grade for this review: **Reactor is a remarkable
+framework being developed at a pace that is both impressive and
+uncomfortable.** Impressive because no declarative C# UI framework has
+ever moved this fast and covered this much ground. Uncomfortable because
+every review cycle, the integration debt gets larger and the critique
+"showcase apps don't use these features" gets more true, not less. At
+some point the team will need to spend a sprint doing nothing but
+retrofitting the Outlook clone, or the pattern will become irreversible.
