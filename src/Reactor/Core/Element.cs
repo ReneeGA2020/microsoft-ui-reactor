@@ -1421,6 +1421,18 @@ public record CanvasElement(Element[] Children) : Element
 
     /// <summary>When true, hit targets are not expanded to 24×24. Scanner flags as A11Y_CHART_005.</summary>
     internal bool IsTightHitTest { get; init; }
+
+    /// <summary>
+    /// When set, a custom focus indicator color is used instead of the default double-ring.
+    /// Scanner validates it meets 3:1 contrast (A11Y_CHART_006).
+    /// </summary>
+    internal global::Windows.UI.Color? CustomFocusColor { get; init; }
+
+    /// <summary>
+    /// When true, the chart announces every animation frame via the live region,
+    /// which floods assistive technology. Scanner flags as A11Y_CHART_007.
+    /// </summary>
+    internal bool IsAnnounceEveryFrame { get; init; }
 }
 
 // ════════════════════════════════════════════════════════════════════════

@@ -77,6 +77,8 @@ public sealed class ChartElement<T> : IChartAccessibilityData
     private bool _tightHitTest;
     private Action<T, int>? _onPointInvoke;
     private Action<ChartRange>? _onBrushChanged;
+    private global::Windows.UI.Color? _customFocusColor;
+    private bool _announceEveryFrame;
 
     public ChartElement<T> Width(double w) { _width = w; return this; }
     public ChartElement<T> Height(double h) { _height = h; return this; }
@@ -161,6 +163,12 @@ public sealed class ChartElement<T> : IChartAccessibilityData
     /// <summary>Callback invoked when brush selection changes.</summary>
     public ChartElement<T> OnBrushChanged(Action<ChartRange> handler) { _onBrushChanged = handler; _interactive = true; return this; }
 
+    /// <summary>Overrides the default double-ring focus indicator color. Scanner validates contrast (A11Y_CHART_006).</summary>
+    public ChartElement<T> FocusColor(global::Windows.UI.Color color) { _customFocusColor = color; return this; }
+
+    /// <summary>Announces every animation frame via live region. Not recommended — floods assistive technology. Triggers scanner warning A11Y_CHART_007.</summary>
+    public ChartElement<T> AnnounceEveryFrame() { _announceEveryFrame = true; return this; }
+
     // ── Internal accessors for scanner ───────────────────────────────
     internal bool IsColorOnly => _colorOnly;
     internal bool IsInteractive => _interactive;
@@ -205,7 +213,8 @@ public sealed class ChartElement<T> : IChartAccessibilityData
     private Element BuildElement(IReadOnlyList<T> data)
     {
         if (data.Count == 0)
-            return AttachChartData(D3Canvas(_width, _height));
+            return AttachChartData(D3Canvas(_width, _height))
+                .AutomationName("Plot area");
 
         double plotLeft = _marginLeft, plotTop = _marginTop;
         double plotWidth = _width - _marginLeft - _marginRight;
@@ -224,7 +233,12 @@ public sealed class ChartElement<T> : IChartAccessibilityData
         if (_onReady is { } cb)
             canvas = canvas.Set(c => cb(new ChartHandle<T>(c)));
 
-        return AttachChartData(canvas);
+        canvas = AttachChartData(canvas);
+
+        // Viewport UIA: plot area gets accessible name and live region
+        return canvas
+            .AutomationName("Plot area")
+            .LiveRegion(Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
     }
 
     private Core.CanvasElement AttachChartData(Core.CanvasElement canvas) =>
@@ -237,6 +251,8 @@ public sealed class ChartElement<T> : IChartAccessibilityData
             IsInteractive = _interactive,
             IsKeyboardDisabled = _disableKeyboard,
             IsTightHitTest = _tightHitTest,
+            CustomFocusColor = _customFocusColor,
+            IsAnnounceEveryFrame = _announceEveryFrame,
         };
 
     private Element[] RenderData(IReadOnlyList<T> data, LinearScale xScale, LinearScale yScale,

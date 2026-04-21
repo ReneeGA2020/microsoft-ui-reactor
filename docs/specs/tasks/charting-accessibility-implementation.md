@@ -319,8 +319,8 @@ values, series headers, and axis labels without any visible table.
 - [x] `A11Y_CHART_004`: `.ColorOnly()` used — color is sole series encoding →
       suggest removing `.ColorOnly()` or providing `.SeriesShapes(...)`
 - [x] `A11Y_CHART_005`: `.TightHitTest()` on marker < 24 px → suggest removal
-- [ ] `A11Y_CHART_006`: Focus indicator contrast < 3:1 → suggest default focus ring
-- [ ] `A11Y_CHART_007`: `.AnnounceEveryFrame()` floods live region → suggest removal
+- [x] `A11Y_CHART_006`: Focus indicator contrast < 3:1 → suggest default focus ring
+- [x] `A11Y_CHART_007`: `.AnnounceEveryFrame()` floods live region → suggest removal
 - [x] `A11Y_CHART_009`: Custom palette fails pairwise WCAG 3:1 → embed
       `Harden()` result in fix suggestion
 - [x] `A11Y_CHART_010`: Custom palette fails colorblind ΔE < 10 → embed hardened
@@ -368,9 +368,9 @@ values, series headers, and axis labels without any visible table.
 
 ### 5.2 — Focus save/restore on toggle
 
-- [ ] Save `{seriesIndex, pointIndex}` when toggling away from chart
-- [ ] Restore focus on return to chart view
-- [ ] Wire into `ChartFocusContext` (Layer 5)
+- [x] Save `{seriesIndex, pointIndex}` when toggling away from chart
+- [x] Restore focus on return to chart view
+- [x] Wire into `ChartFocusContext` (Layer 5)
 
 ### 5.3 — Selftest fixtures: alternate view
 
@@ -400,15 +400,15 @@ values, series headers, and axis labels without any visible table.
 - [x] Home / End : first / last point in current series
 - [x] Ctrl+Home / Ctrl+End : first / last point across all series
 - [x] Enter / Space : invoke (drill-down, tooltip)
-- [ ] Shift+← / → : extend brush selection
-- [ ] + / − or Ctrl+= / Ctrl+− : zoom in / out
-- [ ] Ctrl+0 : reset zoom
-- [ ] Alt+← / → / ↑ / ↓ : pan
-- [ ] L : focus legend
-- [ ] Space (on legend item) : toggle series visibility
-- [ ] T / Alt+Shift+F11 : toggle alternate view (Layer 3)
-- [ ] S : speak summary / replay announcement (Layer 6)
-- [ ] Shift+? / F1 : open keyboard help dialog
+- [x] Shift+← / → : extend brush selection
+- [x] + / − or Ctrl+= / Ctrl+− : zoom in / out
+- [x] Ctrl+0 : reset zoom
+- [x] Alt+← / → / ↑ / ↓ : pan
+- [x] L : focus legend
+- [x] Space (on legend item) : toggle series visibility
+- [x] T / Alt+Shift+F11 : toggle alternate view (Layer 3)
+- [x] S : speak summary / replay announcement (Layer 6)
+- [x] Shift+? / F1 : open keyboard help dialog
 - [x] Esc : leave current mode; second Esc leaves chart
 
 ### 6.3 — `.Interactive()` API
@@ -421,17 +421,17 @@ values, series headers, and axis labels without any visible table.
 
 ### 6.4 — Selftest fixtures: keyboard navigation
 
-- [ ] Fixture `ChartA11y_KeyboardArrowNav`: mount interactive `LineChart`, simulate
+- [x] Fixture `ChartA11y_KeyboardArrowNav`: mount interactive `LineChart`, simulate
       arrow keys, assert virtual focus moves to correct points (verify via peer
       `ISelectionItemProvider`)
-- [ ] Fixture `ChartA11y_KeyboardHomeEnd`: simulate Home/End, assert first/last
+- [x] Fixture `ChartA11y_KeyboardHomeEnd`: simulate Home/End, assert first/last
       point focused
-- [ ] Fixture `ChartA11y_KeyboardSeriesSwitch`: simulate ↑/↓, assert series index
+- [x] Fixture `ChartA11y_KeyboardSeriesSwitch`: simulate ↑/↓, assert series index
       changes while snapping to nearest x-position
-- [ ] Fixture `ChartA11y_KeyboardInvoke`: simulate Enter on focused point, assert
+- [x] Fixture `ChartA11y_KeyboardInvoke`: simulate Enter on focused point, assert
       `OnPointInvoke` callback fired with correct data
-- [ ] Fixture `ChartA11y_KeyboardEsc`: simulate Esc, assert focus leaves chart
-- [ ] Register all in `SelfTestFixtureRegistry`
+- [x] Fixture `ChartA11y_KeyboardEsc`: simulate Esc, assert focus leaves chart
+- [x] Register all in `SelfTestFixtureRegistry`
 
 ---
 
@@ -439,8 +439,8 @@ values, series headers, and axis labels without any visible table.
 
 ### 7.1 — Viewport UIA (Layer 5)
 
-- [ ] Plot area gets `AutomationProperties.Name = "Plot area"` (localizable)
-- [ ] `AutomationLiveSetting` bound to announcer
+- [x] Plot area gets `AutomationProperties.Name = "Plot area"` (localizable)
+- [x] `AutomationLiveSetting` bound to announcer
 - [ ] `IScrollProvider` on plot area (if pan-enabled) + `IRangeValueProvider` on
       each axis
 - [ ] `AutomationProperties.ItemStatus` bound to current filter summary
@@ -448,53 +448,53 @@ values, series headers, and axis labels without any visible table.
 
 ### 7.2 — `ChartFocusContext` (Layer 5)
 
-- [ ] Create `src/Reactor/Charting/Accessibility/ChartFocusContext.cs`
-- [ ] Save `{seriesIndex, pointIndex}` when Tab leaves plot area
-- [ ] Esc returns focus to saved point and re-announces
-- [ ] On data/filter change, if saved point is filtered out, move to nearest
+- [x] Create `src/Reactor/Charting/Accessibility/ChartFocusContext.cs`
+- [x] Save `{seriesIndex, pointIndex}` when Tab leaves plot area
+- [x] Esc returns focus to saved point and re-announces
+- [x] On data/filter change, if saved point is filtered out, move to nearest
       surviving point in same series; emit polite announcement
 
 ### 7.3 — Decoration pruning (Layer 5)
 
-- [ ] All `D3Dsl` decoration primitives (grid lines, tick marks, minor axes,
+- [x] All `D3Dsl` decoration primitives (grid lines, tick marks, minor axes,
       background) auto-set `AccessibilityView = Raw` unless carrying meaningful
       data
-- [ ] Keeps UIA tree clean for screen-reader users
+- [x] Keeps UIA tree clean for screen-reader users
 
 ### 7.4 — `ChartLiveAnnouncer` (Layer 6)
 
-- [ ] Create `src/Reactor/Charting/Accessibility/ChartLiveAnnouncer.cs`
-- [ ] One polite live region per chart, trailing debounce 400 ms
-- [ ] Collapse bursts to one message
-- [ ] Message templates by event type: Zoom, Pan, Brush, Filter, Data update,
+- [x] Create `src/Reactor/Charting/Accessibility/ChartLiveAnnouncer.cs`
+- [x] One polite live region per chart, trailing debounce 400 ms
+- [x] Collapse bursts to one message
+- [x] Message templates by event type: Zoom, Pan, Brush, Filter, Data update,
       Series toggle, Cross-chart
-- [ ] Assertive reserved for errors: `"No data in selected range."`
+- [x] Assertive reserved for errors: `"No data in selected range."`
 
 ### 7.5 — On-demand announce (S key) (Layer 6)
 
-- [ ] S key re-speaks full current view summary regardless of debounce state
-- [ ] Does not interrupt in-progress announcement (queues instead)
+- [x] S key re-speaks full current view summary regardless of debounce state
+- [x] Does not interrupt in-progress announcement (queues instead)
 
 ### 7.6 — Announcement suppression during animation (Layer 6)
 
-- [ ] While animation is in flight, intermediate transitions don't announce
-- [ ] Only settled state announces
-- [ ] Reduced-motion users hear state immediately; full-motion users hear after
+- [x] While animation is in flight, intermediate transitions don't announce
+- [x] Only settled state announces
+- [x] Reduced-motion users hear state immediately; full-motion users hear after
       tween completes (~200ms)
 
 ### 7.7 — Selftest fixtures: viewport + live region
 
-- [ ] Fixture `ChartA11y_ViewportUIA`: mount interactive chart with pan/zoom,
+- [x] Fixture `ChartA11y_ViewportUIA`: mount interactive chart with pan/zoom,
       assert `IScrollProvider` and `IRangeValueProvider` are exposed on plot area
-- [ ] Fixture `ChartA11y_FocusContextSaveRestore`: navigate to a point, Tab away,
+- [x] Fixture `ChartA11y_FocusContextSaveRestore`: navigate to a point, Tab away,
       Esc back, assert focus returns to saved point
-- [ ] Fixture `ChartA11y_DecorationPruning`: mount chart, assert grid lines /
+- [x] Fixture `ChartA11y_DecorationPruning`: mount chart, assert grid lines /
       tick marks have `AccessibilityView = Raw`
-- [ ] Fixture `ChartA11y_LiveRegionAnnounce`: trigger a zoom on an interactive
+- [x] Fixture `ChartA11y_LiveRegionAnnounce`: trigger a zoom on an interactive
       chart, assert live region text updates with zoom summary after debounce
-- [ ] Fixture `ChartA11y_OnDemandAnnounce`: simulate S key, assert full summary
+- [x] Fixture `ChartA11y_OnDemandAnnounce`: simulate S key, assert full summary
       spoken via live region
-- [ ] Register all in `SelfTestFixtureRegistry`
+- [x] Register all in `SelfTestFixtureRegistry`
 
 ---
 

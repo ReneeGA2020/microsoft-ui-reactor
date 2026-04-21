@@ -461,6 +461,8 @@ public static class AccessibilityScanner
         CheckChartRawColors(canvas, ctx, findings);
         CheckChartInteractiveKeyboard(canvas, ctx, findings);
         CheckChartTightHitTest(canvas, ctx, findings);
+        CheckChartFocusIndicatorContrast(canvas, ctx, findings);
+        CheckChartAnnounceEveryFrame(canvas, ctx, findings);
     }
 
     /// <summary>A11Y_CHART_001: Chart has no Title/AutomationName and no derivable name.</summary>
@@ -734,6 +736,66 @@ public static class AccessibilityScanner
                 Modifier = "TightHitTest",
                 SuggestedValue = null,
                 CodeSnippet = "Remove .TightHitTest() to enable automatic 24×24 hit target expansion",
+            },
+            Context = ctx.BuildContext(canvas, GetSiblingTexts(ctx)),
+        });
+    }
+
+    /// <summary>A11Y_CHART_006: Custom focus indicator color has insufficient contrast (&lt; 3:1) against chart background.</summary>
+    private static void CheckChartFocusIndicatorContrast(CanvasElement canvas, ScanContext ctx, List<A11yDiagnostic> findings)
+    {
+        if (canvas.CustomFocusColor is not { } focusColor) return;
+
+        // Check contrast against both light and dark chart backgrounds
+        var fc = new Charting.D3.D3Color(focusColor.R, focusColor.G, focusColor.B);
+        var lightBg = new Charting.D3.D3Color(255, 255, 255);
+        var darkBg = new Charting.D3.D3Color(30, 30, 30);
+
+        double lightContrast = Charting.Accessibility.ChartPalette.ContrastRatio(fc, lightBg);
+        double darkContrast = Charting.Accessibility.ChartPalette.ContrastRatio(fc, darkBg);
+
+        // Fail if the custom color doesn't meet 3:1 against either background
+        if (lightContrast >= 3.0 && darkContrast >= 3.0)
+            return;
+
+        findings.Add(new A11yDiagnostic
+        {
+            Id = "A11Y_CHART_006",
+            Severity = "warning",
+            Message = $"Custom focus indicator color has contrast ratio {Math.Min(lightContrast, darkContrast):F1}:1 — minimum 3:1 required (WCAG 2.4.13). Use the default double-ring focus indicator.",
+            WcagCriterion = "2.4.13",
+            ElementType = "CanvasElement (Chart)",
+            AutomationId = GetAutomationId(canvas),
+            ComponentType = ctx.CurrentComponent,
+            Fix = new A11yFixSuggestion
+            {
+                Modifier = "FocusColor",
+                SuggestedValue = null,
+                CodeSnippet = "Remove .FocusColor(...) to use the default double-ring focus indicator",
+            },
+            Context = ctx.BuildContext(canvas, GetSiblingTexts(ctx)),
+        });
+    }
+
+    /// <summary>A11Y_CHART_007: .AnnounceEveryFrame() floods the live region with rapid-fire announcements.</summary>
+    private static void CheckChartAnnounceEveryFrame(CanvasElement canvas, ScanContext ctx, List<A11yDiagnostic> findings)
+    {
+        if (!canvas.IsAnnounceEveryFrame) return;
+
+        findings.Add(new A11yDiagnostic
+        {
+            Id = "A11Y_CHART_007",
+            Severity = "warning",
+            Message = ".AnnounceEveryFrame() causes the chart to announce every animation frame — this floods the live region and overwhelms screen-reader users",
+            WcagCriterion = "4.1.3",
+            ElementType = "CanvasElement (Chart)",
+            AutomationId = GetAutomationId(canvas),
+            ComponentType = ctx.CurrentComponent,
+            Fix = new A11yFixSuggestion
+            {
+                Modifier = "AnnounceEveryFrame",
+                SuggestedValue = null,
+                CodeSnippet = "Remove .AnnounceEveryFrame() — the chart's live region already debounces announcements to settled states",
             },
             Context = ctx.BuildContext(canvas, GetSiblingTexts(ctx)),
         });

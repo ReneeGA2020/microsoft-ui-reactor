@@ -26,7 +26,9 @@ public class ChartScannerRuleTests
         string? automationName = null,
         bool isInteractive = false,
         bool isKeyboardDisabled = false,
-        bool isTightHitTest = false)
+        bool isTightHitTest = false,
+        global::Windows.UI.Color? customFocusColor = null,
+        bool isAnnounceEveryFrame = false)
     {
         var canvas = new CanvasElement([])
         {
@@ -39,6 +41,8 @@ public class ChartScannerRuleTests
             IsInteractive = isInteractive,
             IsKeyboardDisabled = isKeyboardDisabled,
             IsTightHitTest = isTightHitTest,
+            CustomFocusColor = customFocusColor,
+            IsAnnounceEveryFrame = isAnnounceEveryFrame,
         };
 
         if (automationName != null)
@@ -407,5 +411,76 @@ public class ChartScannerRuleTests
 
         var findings = AccessibilityScanner.Scan(tree);
         Assert.DoesNotContain(findings, f => f.Id.StartsWith("A11Y_CHART_"));
+    }
+
+    // ── A11Y_CHART_006: Focus indicator contrast ────────────────────
+
+    [Fact]
+    public void A11Y_CHART_006_LowContrastFocusColor_Flagged()
+    {
+        // Very light gray fails 3:1 contrast against white background (~1.7:1)
+        var canvas = MakeChartCanvas(
+            chartData: DataWithSeries(name: "Revenue"),
+            customFocusColor: global::Windows.UI.Color.FromArgb(255, 200, 200, 200));
+        var tree = VStack(canvas);
+
+        var findings = AccessibilityScanner.Scan(tree);
+        Assert.Contains(findings, f => f.Id == "A11Y_CHART_006");
+        var diag = findings.First(f => f.Id == "A11Y_CHART_006");
+        Assert.Equal("2.4.13", diag.WcagCriterion);
+        Assert.Equal("FocusColor", diag.Fix.Modifier);
+    }
+
+    [Fact]
+    public void A11Y_CHART_006_HighContrastFocusColor_Passes()
+    {
+        // Bright red has high contrast against both backgrounds
+        var canvas = MakeChartCanvas(
+            chartData: DataWithSeries(name: "Revenue"),
+            customFocusColor: global::Windows.UI.Color.FromArgb(255, 255, 0, 0));
+        var tree = VStack(canvas);
+
+        var findings = AccessibilityScanner.Scan(tree);
+        Assert.DoesNotContain(findings, f => f.Id == "A11Y_CHART_006");
+    }
+
+    [Fact]
+    public void A11Y_CHART_006_NoCustomFocusColor_Passes()
+    {
+        var canvas = MakeChartCanvas(
+            chartData: DataWithSeries(name: "Revenue"));
+        var tree = VStack(canvas);
+
+        var findings = AccessibilityScanner.Scan(tree);
+        Assert.DoesNotContain(findings, f => f.Id == "A11Y_CHART_006");
+    }
+
+    // ── A11Y_CHART_007: AnnounceEveryFrame floods live region ───────
+
+    [Fact]
+    public void A11Y_CHART_007_AnnounceEveryFrame_Flagged()
+    {
+        var canvas = MakeChartCanvas(
+            chartData: DataWithSeries(name: "Revenue"),
+            isAnnounceEveryFrame: true);
+        var tree = VStack(canvas);
+
+        var findings = AccessibilityScanner.Scan(tree);
+        Assert.Contains(findings, f => f.Id == "A11Y_CHART_007");
+        var diag = findings.First(f => f.Id == "A11Y_CHART_007");
+        Assert.Equal("4.1.3", diag.WcagCriterion);
+        Assert.Equal("AnnounceEveryFrame", diag.Fix.Modifier);
+    }
+
+    [Fact]
+    public void A11Y_CHART_007_NoAnnounceEveryFrame_Passes()
+    {
+        var canvas = MakeChartCanvas(
+            chartData: DataWithSeries(name: "Revenue"),
+            isAnnounceEveryFrame: false);
+        var tree = VStack(canvas);
+
+        var findings = AccessibilityScanner.Scan(tree);
+        Assert.DoesNotContain(findings, f => f.Id == "A11Y_CHART_007");
     }
 }

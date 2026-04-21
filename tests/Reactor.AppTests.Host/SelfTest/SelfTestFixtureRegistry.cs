@@ -118,6 +118,18 @@ internal static class SelfTestFixtureRegistry
         "ChartA11y_Scanner_InteractiveNoKeyboard",
         "ChartA11y_AlternateViewToggle",
         "ChartA11y_AlternateViewNoOp",
+        // Chart accessibility (Phase 6 — keyboard navigation)
+        "ChartA11y_KeyboardArrowNav",
+        "ChartA11y_KeyboardHomeEnd",
+        "ChartA11y_KeyboardSeriesSwitch",
+        "ChartA11y_KeyboardInvoke",
+        "ChartA11y_KeyboardEsc",
+        // Chart accessibility (Phase 7 — viewport + live region)
+        "ChartA11y_ViewportUIA",
+        "ChartA11y_FocusContextSaveRestore",
+        "ChartA11y_DecorationPruning",
+        "ChartA11y_LiveRegionAnnounce",
+        "ChartA11y_OnDemandAnnounce",
 
         "MdHtml_HtmlGeneration",
         "MdHtml_HtmlInWebView2",
@@ -637,6 +649,18 @@ internal static class SelfTestFixtureRegistry
         "ChartA11y_Scanner_InteractiveNoKeyboard" => new ChartAccessibilityFixtures.ScannerInteractiveNoKeyboard(harness),
         "ChartA11y_AlternateViewToggle" => new ChartAccessibilityFixtures.AlternateViewToggle(harness),
         "ChartA11y_AlternateViewNoOp" => new ChartAccessibilityFixtures.AlternateViewNoOp(harness),
+        // Chart accessibility (Phase 6 — keyboard navigation)
+        "ChartA11y_KeyboardArrowNav" => new ChartAccessibilityFixtures.KeyboardArrowNav(harness),
+        "ChartA11y_KeyboardHomeEnd" => new ChartAccessibilityFixtures.KeyboardHomeEnd(harness),
+        "ChartA11y_KeyboardSeriesSwitch" => new ChartAccessibilityFixtures.KeyboardSeriesSwitch(harness),
+        "ChartA11y_KeyboardInvoke" => new ChartAccessibilityFixtures.KeyboardInvoke(harness),
+        "ChartA11y_KeyboardEsc" => new ChartAccessibilityFixtures.KeyboardEsc(harness),
+        // Chart accessibility (Phase 7 — viewport + live region)
+        "ChartA11y_ViewportUIA" => new ChartAccessibilityFixtures.ViewportUIA(harness),
+        "ChartA11y_FocusContextSaveRestore" => new ChartAccessibilityFixtures.FocusContextSaveRestore(harness),
+        "ChartA11y_DecorationPruning" => new ChartAccessibilityFixtures.DecorationPruning(harness),
+        "ChartA11y_LiveRegionAnnounce" => new ChartAccessibilityFixtures.LiveRegionAnnounce(harness),
+        "ChartA11y_OnDemandAnnounce" => new ChartAccessibilityFixtures.OnDemandAnnounce(harness),
 
         "MdHtml_HtmlGeneration" => new MarkdownHtmlFixtures.HtmlGeneration(harness),
         "MdHtml_HtmlInWebView2" => new MarkdownHtmlFixtures.HtmlInWebView2(harness),

@@ -7,14 +7,14 @@ namespace Microsoft.UI.Reactor.Charting.Accessibility;
 /// Wraps a chart element with an alternate-view toggle. When enabled, pressing T or
 /// Alt+Shift+F11 toggles between the chart and the alternate view (typically a data table).
 /// The currently-hidden view is set to <c>AccessibilityView.Raw</c> so screen readers
-/// only see the active presentation.
+/// only see the active presentation. Focus position is saved/restored across toggles.
 /// </summary>
 internal static class ChartAlternateViewWrapper
 {
     /// <summary>
     /// Wraps <paramref name="chartElement"/> with toggle support for <paramref name="alternateView"/>.
     /// </summary>
-    internal static Element Wrap(Element chartElement, Element alternateView)
+    internal static Element Wrap(Element chartElement, Element alternateView, ChartFocusContext? focusContext = null)
     {
         return new FuncElement(ctx =>
         {
@@ -34,6 +34,15 @@ internal static class ChartAlternateViewWrapper
 
                 if (isToggle || isAltShiftF11)
                 {
+                    if (!isShowingAlternate && focusContext is not null)
+                    {
+                        // Save focus position before switching to alternate view
+                        var pos = focusContext.HasSavedPosition
+                            ? (focusContext.SavedSeriesIndex, focusContext.SavedPointIndex)
+                            : (0, 0);
+                        focusContext.SavePosition(pos.Item1, pos.Item2);
+                    }
+
                     setIsShowingAlternate(!isShowingAlternate);
                     e.Handled = true;
                 }

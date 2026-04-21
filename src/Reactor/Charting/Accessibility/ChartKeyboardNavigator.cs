@@ -9,6 +9,8 @@ namespace Microsoft.UI.Reactor.Charting.Accessibility;
 /// </summary>
 internal static class ChartKeyboardNavigator
 {
+    internal record FocusState(int SeriesIndex, int PointIndex, bool HasFocus, int BrushStart = -1, int BrushEnd = -1, bool LegendFocused = false);
+
     /// <summary>
     /// Wraps <paramref name="chartElement"/> with keyboard navigation support.
     /// The chart's <see cref="IChartAccessibilityData"/> is used to determine
@@ -51,9 +53,67 @@ internal static class ChartKeyboardNavigator
             void HandleKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
             {
                 var key = e.Key;
+                bool ctrl = IsModifierPressed(global::Windows.System.VirtualKey.Control);
+                bool shift = IsModifierPressed(global::Windows.System.VirtualKey.Shift);
+                bool alt = IsModifierPressed(global::Windows.System.VirtualKey.Menu);
                 int newSi = si, newPi = pi;
                 bool handled = true;
                 bool activate = false;
+
+                // Alt+arrows → pan
+                if (alt && !ctrl && !shift)
+                {
+                    switch (key)
+                    {
+                        case global::Windows.System.VirtualKey.Left:
+                            options.OnPan?.Invoke(-1, 0);
+                            break;
+                        case global::Windows.System.VirtualKey.Right:
+                            options.OnPan?.Invoke(1, 0);
+                            break;
+                        case global::Windows.System.VirtualKey.Up:
+                            options.OnPan?.Invoke(0, -1);
+                            break;
+                        case global::Windows.System.VirtualKey.Down:
+                            options.OnPan?.Invoke(0, 1);
+                            break;
+                        default:
+                            handled = false;
+                            break;
+                    }
+                    if (handled) { e.Handled = true; return; }
+                }
+
+                // Shift+arrows → brush selection
+                if (shift && !ctrl && !alt)
+                {
+                    switch (key)
+                    {
+                        case global::Windows.System.VirtualKey.Left:
+                        {
+                            int brushStart = focusState.BrushStart >= 0 ? focusState.BrushStart : pi;
+                            int brushEnd = Math.Max(0, (focusState.BrushEnd >= 0 ? focusState.BrushEnd : pi) - 1);
+                            setFocusState(focusState with { PointIndex = brushEnd, HasFocus = true, BrushStart = brushStart, BrushEnd = brushEnd });
+                            options.OnBrushChanged?.Invoke(Math.Min(brushStart, brushEnd), Math.Max(brushStart, brushEnd));
+                            e.Handled = true;
+                            return;
+                        }
+                        case global::Windows.System.VirtualKey.Right:
+                        {
+                            int brushStart = focusState.BrushStart >= 0 ? focusState.BrushStart : pi;
+                            int brushEnd = Math.Min(series[si].Points.Count - 1, (focusState.BrushEnd >= 0 ? focusState.BrushEnd : pi) + 1);
+                            setFocusState(focusState with { PointIndex = brushEnd, HasFocus = true, BrushStart = brushStart, BrushEnd = brushEnd });
+                            options.OnBrushChanged?.Invoke(Math.Min(brushStart, brushEnd), Math.Max(brushStart, brushEnd));
+                            e.Handled = true;
+                            return;
+                        }
+                        // Shift+? → help dialog
+                        case (global::Windows.System.VirtualKey)191 when IsShiftOemSlash(key):
+                            options.OnShowHelp?.Invoke();
+                            e.Handled = true;
+                            return;
+                    }
+                }
 
                 switch (key)
                 {
@@ -81,12 +141,12 @@ internal static class ChartKeyboardNavigator
 
                     // Home / End
                     case global::Windows.System.VirtualKey.Home:
-                        if (IsCtrlPressed()) { newSi = 0; newPi = 0; }
+                        if (ctrl) { newSi = 0; newPi = 0; }
                         else newPi = 0;
                         activate = true;
                         break;
                     case global::Windows.System.VirtualKey.End:
-                        if (IsCtrlPressed())
+                        if (ctrl)
                         {
                             newSi = seriesCount - 1;
                             newPi = series[newSi].Points.Count - 1;
@@ -98,15 +158,63 @@ internal static class ChartKeyboardNavigator
                         activate = true;
                         break;
 
-                    // Enter / Space : invoke
+                    // Enter / Space : invoke (or toggle series if legend focused)
                     case global::Windows.System.VirtualKey.Enter:
                     case global::Windows.System.VirtualKey.Space:
-                        options.OnPointInvoke?.Invoke(si, pi);
+                        if (focusState.LegendFocused)
+                            options.OnSeriesToggle?.Invoke(si);
+                        else
+                            options.OnPointInvoke?.Invoke(si, pi);
                         break;
 
                     // Esc : deactivate focus indicator / leave chart
                     case global::Windows.System.VirtualKey.Escape:
-                        setFocusState(new FocusState(si, pi, false));
+                        if (focusState.LegendFocused)
+                            setFocusState(focusState with { LegendFocused = false });
+                        else
+                            setFocusState(new FocusState(si, pi, false));
+                        break;
+
+                    // + / = : zoom in
+                    case global::Windows.System.VirtualKey.Add:
+                    case (global::Windows.System.VirtualKey)187 when ctrl: // Ctrl+=
+                        options.OnZoom?.Invoke(1.0);
+                        break;
+
+                    // - : zoom out
+                    case global::Windows.System.VirtualKey.Subtract:
+                    case (global::Windows.System.VirtualKey)189 when ctrl: // Ctrl+-
+                        options.OnZoom?.Invoke(-1.0);
+                        break;
+
+                    // Ctrl+0 : reset zoom
+                    case (global::Windows.System.VirtualKey)48 when ctrl:
+                        options.OnZoomReset?.Invoke();
+                        break;
+
+                    // L : focus legend
+                    case global::Windows.System.VirtualKey.L when !ctrl && !alt:
+                        if (options.HasLegend)
+                        {
+                            setFocusState(focusState with { LegendFocused = true, HasFocus = true });
+                            options.OnFocusLegend?.Invoke();
+                        }
+                        break;
+
+                    // T : toggle alternate view
+                    case global::Windows.System.VirtualKey.T when !ctrl && !alt:
+                        // Handled by ChartAlternateViewWrapper — let it bubble
+                        handled = false;
+                        break;
+
+                    // S : speak summary / replay announcement
+                    case global::Windows.System.VirtualKey.S when !ctrl && !alt:
+                        options.OnRequestSummary?.Invoke();
+                        break;
+
+                    // F1 : keyboard help
+                    case global::Windows.System.VirtualKey.F1:
+                        options.OnShowHelp?.Invoke();
                         break;
 
                     default:
@@ -118,14 +226,17 @@ internal static class ChartKeyboardNavigator
                 {
                     bool hasFocus = activate || focusState.HasFocus;
                     if (newSi != si || newPi != pi || hasFocus != focusState.HasFocus)
+                    {
+                        // Clear brush selection on non-shift navigation
                         setFocusState(new FocusState(newSi, newPi, hasFocus));
+                    }
                     e.Handled = true;
                 }
             }
 
             // Build focus indicator overlay when active
             Element? focusOverlay = null;
-            if (focusState.HasFocus && si < seriesCount && pi < series[si].Points.Count)
+            if (focusState.HasFocus && !focusState.LegendFocused && si < seriesCount && pi < series[si].Points.Count)
             {
                 focusOverlay = BuildFocusIndicator(
                     chartData, si, pi, chartWidth, chartHeight, seriesCount, maxPoints);
@@ -201,14 +312,18 @@ internal static class ChartKeyboardNavigator
             .AccessibilityView(Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
     }
 
-    private static bool IsCtrlPressed()
+    private static bool IsModifierPressed(global::Windows.System.VirtualKey key)
     {
-        var state = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(
-            global::Windows.System.VirtualKey.Control);
+        var state = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(key);
         return (state & global::Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
     }
 
-    internal record FocusState(int SeriesIndex, int PointIndex, bool HasFocus);
+    /// <summary>
+    /// Detects Shift+/ which produces the ? character on US keyboard layouts.
+    /// VirtualKey.Number191 is the /? key on US layouts.
+    /// </summary>
+    private static bool IsShiftOemSlash(global::Windows.System.VirtualKey key)
+        => key == (global::Windows.System.VirtualKey)191;
 }
 
 /// <summary>
@@ -221,4 +336,40 @@ internal record ChartKeyboardOptions
     /// Parameters: seriesIndex, pointIndex.
     /// </summary>
     public Action<int, int>? OnPointInvoke { get; init; }
+
+    /// <summary>Called when brush selection changes. Parameters: start pointIndex, end pointIndex.</summary>
+    public Action<int, int>? OnBrushChanged { get; init; }
+
+    /// <summary>Called to toggle a series on/off (legend space key). Parameter: seriesIndex.</summary>
+    public Action<int>? OnSeriesToggle { get; init; }
+
+    /// <summary>The alternate view element, if set. Enables T key toggle.</summary>
+    public Element? AlternateView { get; init; }
+
+    /// <summary>Called to announce the current summary (S key).</summary>
+    public Action? OnRequestSummary { get; init; }
+
+    /// <summary>Whether zoom is enabled (enables +/- and Ctrl+= keys).</summary>
+    public bool ZoomEnabled { get; init; }
+
+    /// <summary>Called when zoom changes. Parameter: delta (positive = zoom in, negative = zoom out).</summary>
+    public Action<double>? OnZoom { get; init; }
+
+    /// <summary>Whether pan is enabled (enables Alt+arrow keys).</summary>
+    public bool PanEnabled { get; init; }
+
+    /// <summary>Called when pan changes. Parameters: deltaX, deltaY.</summary>
+    public Action<double, double>? OnPan { get; init; }
+
+    /// <summary>Called to reset zoom to default view (Ctrl+0).</summary>
+    public Action? OnZoomReset { get; init; }
+
+    /// <summary>Legend element to focus when L is pressed.</summary>
+    public bool HasLegend { get; init; }
+
+    /// <summary>Called when L key is pressed to move focus to the legend.</summary>
+    public Action? OnFocusLegend { get; init; }
+
+    /// <summary>Called when Shift+? or F1 is pressed to show keyboard help.</summary>
+    public Action? OnShowHelp { get; init; }
 }

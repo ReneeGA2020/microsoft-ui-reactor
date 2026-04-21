@@ -345,25 +345,30 @@ public static class D3Dsl
         double bot = top + height;
         var elements = new List<Element>
         {
-            D3Line(left, bot, left + width, bot) with { Stroke = ab, StrokeThickness = 1 },
-            D3Line(left, top, left, bot) with { Stroke = ab, StrokeThickness = 1 },
+            (D3Line(left, bot, left + width, bot) with { Stroke = ab, StrokeThickness = 1 })
+                .AccessibilityView(Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw),
+            (D3Line(left, top, left, bot) with { Stroke = ab, StrokeThickness = 1 })
+                .AccessibilityView(Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw),
         };
 
         foreach (var t in xs.Ticks(xTicks))
-            elements.Add(Text(xs.Map(t) - 12, bot + 4, Fmt(t), 10, ab));
+            elements.Add(Text(xs.Map(t) - 12, bot + 4, Fmt(t), 10, ab)
+                .AccessibilityView(Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw));
 
         foreach (var t in ys.Ticks(yTicks))
-            elements.Add(TextRight(0, ys.Map(t) - 7, Fmt(t), left - 6, 10, ab));
+            elements.Add(TextRight(0, ys.Map(t) - 7, Fmt(t), left - 6, 10, ab)
+                .AccessibilityView(Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw));
 
         return elements.ToArray();
     }
 
-    /// <summary>Creates horizontal grid lines as a flat array of Elements.</summary>
+    /// <summary>Creates horizontal grid lines as a flat array of Elements. Auto-set to AccessibilityView.Raw.</summary>
     public static Element[] D3Grid(LinearScale ys, double left, double width, int ticks = 5)
     {
         var gb = ChartGrid;
         return ys.Ticks(ticks)
-            .Select(t => (Element)(D3Line(left, ys.Map(t), left + width, ys.Map(t)) with { Stroke = gb, StrokeThickness = 1 }))
+            .Select(t => (Element)(D3Line(left, ys.Map(t), left + width, ys.Map(t)) with { Stroke = gb, StrokeThickness = 1 })
+                .AccessibilityView(Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw))
             .ToArray();
     }
 }
