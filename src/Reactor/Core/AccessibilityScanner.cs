@@ -447,7 +447,20 @@ public static class AccessibilityScanner
     /// <summary>Runs all chart-specific accessibility rules on chart CanvasElements.</summary>
     private static void CheckChartRules(Element el, ScanContext ctx, List<A11yDiagnostic> findings)
     {
-        if (el is not CanvasElement canvas || canvas.ChartData is null)
+        CanvasElement? canvas = null;
+
+        if (el is CanvasElement c && c.ChartData is not null)
+        {
+            canvas = c;
+        }
+        else if (el.Attached?.TryGetValue(typeof(Charting.Accessibility.ChartScannerHint), out var hint) == true
+            && hint is Charting.Accessibility.ChartScannerHint scannerHint)
+        {
+            // FuncElement wrappers (keyboard navigator) carry the inner canvas as a scanner hint
+            canvas = scannerHint.InnerCanvas;
+        }
+
+        if (canvas is null || canvas.ChartData is null)
             return;
 
         var chartData = canvas.ChartData;
@@ -469,8 +482,8 @@ public static class AccessibilityScanner
     private static void CheckChartTitle(CanvasElement canvas, Charting.Accessibility.IChartAccessibilityData data,
         ScanContext ctx, List<A11yDiagnostic> findings)
     {
-        // Has explicit AutomationName?
-        if (HasAutomationName(canvas)) return;
+        // Has explicit AutomationName? (Ignore "Plot area" — that's an auto-set structural label)
+        if (HasAutomationName(canvas) && canvas.Modifiers?.AutomationName != "Plot area") return;
         // Has Title?
         if (!string.IsNullOrWhiteSpace(data.Name)) return;
 

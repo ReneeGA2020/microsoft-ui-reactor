@@ -189,6 +189,10 @@ public sealed class ChartElement<T> : IChartAccessibilityData
         // Wrap with keyboard navigator if interactive
         if (_interactive)
         {
+            // Capture the inner canvas for the scanner — the FuncElement wrapper is
+            // opaque to static analysis, so we attach a hint the scanner can find.
+            var innerCanvas = chart as Core.CanvasElement;
+
             chart = Accessibility.ChartKeyboardNavigator.Wrap(
                 chart, this, _width, _height, _disableKeyboard,
                 new Accessibility.ChartKeyboardOptions
@@ -201,10 +205,19 @@ public sealed class ChartElement<T> : IChartAccessibilityData
                         }
                         : null,
                 });
+
+            if (innerCanvas is not null)
+                chart = chart.SetAttached(new Accessibility.ChartScannerHint(innerCanvas));
         }
 
         if (_alternateView is { } alt)
             chart = Accessibility.ChartAlternateViewWrapper.Wrap(chart, alt);
+
+        // Establish logical tab order within the chart container:
+        // Title/toolbar (index 0) → Legend (index 1) → Plot area (index 2) → Overlays (index 3)
+        // The chart canvas is the plot area; title and legend are managed by the peer tree.
+        if (_interactive)
+            chart = chart.TabIndex(2);
 
         return chart;
     }
@@ -235,10 +248,19 @@ public sealed class ChartElement<T> : IChartAccessibilityData
 
         canvas = AttachChartData(canvas);
 
-        // Viewport UIA: plot area gets accessible name and live region
+        // Viewport UIA: plot area gets accessible name, live region, and item status
+        var seriesCount = ((IChartAccessibilityData)this).Series.Count;
+        var itemStatus = $"{seriesCount} series, {data.Count} points";
+        if (_xUnits is not null || _yUnits is not null)
+        {
+            var units = new[] { _xUnits, _yUnits }.Where(u => u is not null);
+            itemStatus += $" ({string.Join(", ", units)})";
+        }
+
         return canvas
             .AutomationName("Plot area")
-            .LiveRegion(Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
+            .LiveRegion(Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite)
+            .ItemStatus(itemStatus);
     }
 
     private Core.CanvasElement AttachChartData(Core.CanvasElement canvas) =>
@@ -446,7 +468,8 @@ public sealed class PieChartElement<T> : IChartAccessibilityData
     private Element BuildElement(IReadOnlyList<T> data)
     {
         if (data.Count == 0)
-            return AttachChartData(D3Canvas(_width, _height));
+            return AttachChartData(D3Canvas(_width, _height))
+                .AutomationName("Plot area");
 
         var palette = _colorPalette ?? D3Color.Category10;
         double cx = _width / 2, cy = _height / 2;
@@ -462,7 +485,14 @@ public sealed class PieChartElement<T> : IChartAccessibilityData
         if (_onReady is { } cb)
             canvas = canvas.Set(c => cb(new PieChartHandle<T>(c)));
 
-        return AttachChartData(canvas);
+        canvas = AttachChartData(canvas);
+
+        // Viewport UIA: plot area gets accessible name, live region, and item status
+        var itemStatus = $"1 series, {data.Count} slices";
+        return canvas
+            .AutomationName("Plot area")
+            .LiveRegion(Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite)
+            .ItemStatus(itemStatus);
     }
 
     private Core.CanvasElement AttachChartData(Core.CanvasElement canvas) =>

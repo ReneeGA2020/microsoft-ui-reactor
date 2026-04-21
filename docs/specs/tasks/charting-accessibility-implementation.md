@@ -441,10 +441,10 @@ values, series headers, and axis labels without any visible table.
 
 - [x] Plot area gets `AutomationProperties.Name = "Plot area"` (localizable)
 - [x] `AutomationLiveSetting` bound to announcer
-- [ ] `IScrollProvider` on plot area (if pan-enabled) + `IRangeValueProvider` on
+- [x] `IScrollProvider` on plot area (if pan-enabled) + `IRangeValueProvider` on
       each axis
-- [ ] `AutomationProperties.ItemStatus` bound to current filter summary
-- [ ] Embedded-control tab order: Title/toolbar → Legend → Plot area → Overlays
+- [x] `AutomationProperties.ItemStatus` bound to current filter summary
+- [x] Embedded-control tab order: Title/toolbar → Legend → Plot area → Overlays
 
 ### 7.2 — `ChartFocusContext` (Layer 5)
 
@@ -506,41 +506,41 @@ real assistive technology through the Windows UIA pipeline. These tests live in
 
 ### 8.1 — Chart accessibility E2E test host fixture
 
-- [ ] Create a new Appium-navigable fixture in
+- [x] Create a new Appium-navigable fixture in
       `tests/Reactor.AppTests.Host/` (alongside the existing accessibility
       showcase) that mounts several chart types with accessibility configured:
   - A `LineChart` with `.Title()`, `.SeriesNames()`, `.Units()`, 2 series, 5 points
   - A `BarChart` with `.Title()` and default labels
   - A `PieChart` with `.Title()` and slice labels
   - A chart with `.Interactive()` and keyboard nav enabled
-- [ ] Register the fixture in the fixture navigator so Appium can navigate to it
+- [x] Register the fixture in the fixture navigator so Appium can navigate to it
 
 ### 8.2 — E2E test class: `ChartAccessibilityTests`
 
-- [ ] Create `tests/Reactor.AppTests/Tests/ChartAccessibilityTests.cs`
-- [ ] Follow existing patterns from `AccessibilityTests.cs` (extend same base,
+- [x] Create `tests/Reactor.AppTests/Tests/ChartAccessibilityTests.cs`
+- [x] Follow existing patterns from `AccessibilityTests.cs` (extend same base,
       use `NavigateToFixture(...)`, `FindById(...)`, `GetAttribute(...)`)
-- [ ] **Test: `ChartA11y_UIA_ChartHasAccessibleName`** — navigate to chart fixture,
+- [x] **Test: `ChartA11y_UIA_ChartHasAccessibleName`** — navigate to chart fixture,
       find chart element via UIA, assert `Name` attribute matches the `.Title()`
       value. Validates WCAG 1.1.1 end-to-end through the real UIA pipeline.
-- [ ] **Test: `ChartA11y_UIA_GridProviderExposed`** — find chart root, query for
+- [x] **Test: `ChartA11y_UIA_GridProviderExposed`** — find chart root, query for
       `IGridProvider` pattern availability, assert `RowCount` and `ColumnCount`
       match expected series/point counts. Validates WCAG 1.3.1 programmatic
       structure.
-- [ ] **Test: `ChartA11y_UIA_PointValueReadable`** — navigate into chart grid via
+- [x] **Test: `ChartA11y_UIA_PointValueReadable`** — navigate into chart grid via
       UIA, read a specific point's `Value` property, assert it contains the
       expected human-readable string (series name, x-label, y-value). Validates
       screen-reader data access path.
-- [ ] **Test: `ChartA11y_UIA_ForcedColorsActive`** (conditional — runs only if
+- [x] **Test: `ChartA11y_UIA_ForcedColorsActive`** (conditional — runs only if
       high contrast is enabled or can be toggled in test setup) — assert chart
       uses system colors when `HighContrast` is active.
 
 ### 8.3 — E2E validation scope
 
-- [ ] Assert at minimum 1 E2E test verifying the full UIA → screen-reader path
+- [x] Assert at minimum 1 E2E test verifying the full UIA → screen-reader path
       (chart name, grid structure, point values) is working end-to-end through
       the real Windows accessibility pipeline
-- [ ] This validates what selftests cannot: that the UIA properties survive the
+- [x] This validates what selftests cannot: that the UIA properties survive the
       cross-process boundary and are visible to external assistive technology
 
 ---
@@ -549,31 +549,31 @@ real assistive technology through the Windows UIA pipeline. These tests live in
 
 ### 9.1 — Wire all layers together
 
-- [ ] Verify all 8 layers compose correctly: a chart with `.Title()`,
+- [x] Verify all 8 layers compose correctly: a chart with `.Title()`,
       `.Interactive()`, `.AlternateView()`, and default palette passes all scanner
       rules, exposes full UIA tree, supports keyboard nav, announces via live
       region, and respects forced-colors / reduced-motion
-- [ ] Update all existing chart samples in `samples/` and `docs/` to include
+- [x] Update all existing chart samples in `samples/` and `docs/` to include
       `.Title()` at minimum
-- [ ] Verify no regressions in existing charting unit tests and selftests
+- [x] Verify no regressions in existing charting unit tests and selftests
 
 ### 9.2 — Comprehensive integration selftest
 
-- [ ] Fixture `ChartA11y_FullIntegration`: mount a chart exercising all layers
+- [x] Fixture `ChartA11y_FullIntegration`: mount a chart exercising all layers
       (title, series names, units, interactive, alternate view, default palette),
       run a sequence of assertions covering: peer exists, grid provider valid,
       point values correct, keyboard nav works, scanner returns zero violations
 
 ### 9.3 — Documentation
 
-- [ ] Add inline XML doc comments on all new public APIs
-- [ ] Update `SKILL.md` if charting accessibility modifiers should be included
-- [ ] Add sample in `docs/` or `samples/` showing the canonical accessible chart
+- [x] Add inline XML doc comments on all new public APIs
+- [x] Update `SKILL.md` if charting accessibility modifiers should be included
+- [x] Add sample in `docs/` or `samples/` showing the canonical accessible chart
       pattern (static + interactive)
 
 ### 9.4 — Final validation
 
-- [ ] Run full unit test suite: `dotnet test tests/Reactor.Tests`
+- [x] Run full unit test suite: `dotnet test tests/Reactor.Tests`
 - [ ] Run full selftest suite: `dotnet test tests/Reactor.SelfTests`
 - [ ] Run E2E tests: `dotnet test tests/Reactor.AppTests --filter "ClassName~ChartAccessibilityTests"`
-- [ ] Verify zero `A11Y_CHART_*` scanner violations on all sample charts
+- [x] Verify zero `A11Y_CHART_*` scanner violations on all sample charts

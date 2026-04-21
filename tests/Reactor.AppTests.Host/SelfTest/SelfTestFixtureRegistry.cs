@@ -130,6 +130,7 @@ internal static class SelfTestFixtureRegistry
         "ChartA11y_DecorationPruning",
         "ChartA11y_LiveRegionAnnounce",
         "ChartA11y_OnDemandAnnounce",
+        "ChartA11y_FullIntegration",
 
         "MdHtml_HtmlGeneration",
         "MdHtml_HtmlInWebView2",
@@ -661,6 +662,7 @@ internal static class SelfTestFixtureRegistry
         "ChartA11y_DecorationPruning" => new ChartAccessibilityFixtures.DecorationPruning(harness),
         "ChartA11y_LiveRegionAnnounce" => new ChartAccessibilityFixtures.LiveRegionAnnounce(harness),
         "ChartA11y_OnDemandAnnounce" => new ChartAccessibilityFixtures.OnDemandAnnounce(harness),
+        "ChartA11y_FullIntegration" => new ChartAccessibilityFixtures.FullIntegration(harness),
 
         "MdHtml_HtmlGeneration" => new MarkdownHtmlFixtures.HtmlGeneration(harness),
         "MdHtml_HtmlInWebView2" => new MarkdownHtmlFixtures.HtmlInWebView2(harness),

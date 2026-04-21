@@ -9,9 +9,16 @@ namespace Microsoft.UI.Reactor.Charting.Accessibility;
 /// Root UIA peer for all Reactor chart types. Exposes the chart as a navigable
 /// grid/table so screen readers see data points with series headers and axis labels.
 /// </summary>
-internal sealed class ChartAutomationPeer : FrameworkElementAutomationPeer, IGridProvider, ITableProvider
+internal sealed class ChartAutomationPeer : FrameworkElementAutomationPeer, IGridProvider, ITableProvider, IScrollProvider
 {
     private readonly IChartAccessibilityData _data;
+
+    // Scroll/viewport state — updated when pan/zoom changes
+    private double _horizontalScrollPercent = ScrollPatternIdentifiers.NoScroll;
+    private double _verticalScrollPercent = ScrollPatternIdentifiers.NoScroll;
+    private double _horizontalViewSize = 100;
+    private double _verticalViewSize = 100;
+    private bool _panEnabled;
 
     internal ChartAutomationPeer(FrameworkElement owner, IChartAccessibilityData data)
         : base(owner)
@@ -56,6 +63,14 @@ internal sealed class ChartAutomationPeer : FrameworkElementAutomationPeer, IGri
     {
         var children = new List<AutomationPeer>();
 
+        // Tab order: axes (structural) first, then data points
+        // This follows the spec's Title/toolbar → Legend → Plot area ordering
+        // within the UIA child tree.
+        for (int ai = 0; ai < _data.Axes.Count; ai++)
+        {
+            children.Add(new ChartAxisProvider(this, _data.Axes[ai]));
+        }
+
         for (int si = 0; si < _data.Series.Count; si++)
         {
             var series = _data.Series[si];
@@ -63,11 +78,6 @@ internal sealed class ChartAutomationPeer : FrameworkElementAutomationPeer, IGri
             {
                 children.Add(new ChartPointProvider(this, _data, si, pi));
             }
-        }
-
-        for (int ai = 0; ai < _data.Axes.Count; ai++)
-        {
-            children.Add(new ChartAxisProvider(this, _data.Axes[ai]));
         }
 
         return children;
@@ -79,6 +89,7 @@ internal sealed class ChartAutomationPeer : FrameworkElementAutomationPeer, IGri
         {
             PatternInterface.Grid => this,
             PatternInterface.Table => this,
+            PatternInterface.Scroll when _panEnabled => this,
             _ => base.GetPatternCore(patternInterface),
         };
     }
@@ -145,6 +156,50 @@ internal sealed class ChartAutomationPeer : FrameworkElementAutomationPeer, IGri
     internal void NotifyDataChanged()
     {
         RaiseAutomationEvent(AutomationEvents.StructureChanged);
+    }
+
+    // ── Scroll / viewport integration ────────────────────────────────
+
+    /// <summary>
+    /// Enables the IScrollProvider pattern on this peer. Called when the chart
+    /// is interactive with pan/zoom support.
+    /// </summary>
+    internal void EnablePan()
+    {
+        _panEnabled = true;
+    }
+
+    /// <summary>
+    /// Updates viewport scroll state. Called by the keyboard navigator or
+    /// interaction handler when pan/zoom changes.
+    /// </summary>
+    internal void UpdateViewport(double hPercent, double vPercent, double hViewSize, double vViewSize)
+    {
+        _horizontalScrollPercent = hPercent;
+        _verticalScrollPercent = vPercent;
+        _horizontalViewSize = Math.Clamp(hViewSize, 0, 100);
+        _verticalViewSize = Math.Clamp(vViewSize, 0, 100);
+        RaisePropertyChangedEvent(ScrollPatternIdentifiers.HorizontalScrollPercentProperty,
+            _horizontalScrollPercent, hPercent);
+    }
+
+    // ── IScrollProvider ──────────────────────────────────────────────
+
+    public double HorizontalScrollPercent => _horizontalScrollPercent;
+    public double VerticalScrollPercent => _verticalScrollPercent;
+    public double HorizontalViewSize => _horizontalViewSize;
+    public double VerticalViewSize => _verticalViewSize;
+    public bool HorizontallyScrollable => _panEnabled;
+    public bool VerticallyScrollable => _panEnabled;
+
+    public void SetScrollPercent(double horizontalPercent, double verticalPercent)
+    {
+        // Charts are read-only for scroll — pan is done via keyboard/mouse
+    }
+
+    public void Scroll(ScrollAmount horizontalAmount, ScrollAmount verticalAmount)
+    {
+        // Charts are read-only for scroll — pan is done via keyboard/mouse
     }
 }
 

@@ -81,3 +81,10 @@ public enum ChartAxisType
     X,
     Y,
 }
+
+/// <summary>
+/// Attached to wrapper elements (e.g., <see cref="Core.FuncElement"/> from
+/// keyboard-navigator wrapping) so the accessibility scanner can inspect the
+/// inner chart canvas without needing to evaluate the render function.
+/// </summary>
+internal record ChartScannerHint(Core.CanvasElement InnerCanvas);

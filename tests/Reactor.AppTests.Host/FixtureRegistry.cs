@@ -124,6 +124,9 @@ internal static class FixtureRegistry
         "Accessibility_LabeledBy",
         "Accessibility_TabNavigation",
 
+        // Chart Accessibility (E2E UIA validation)
+        "ChartAccessibility_Showcase",
+
         // DataGrid
         "DataGrid_EditableGrid",
     ];
@@ -240,6 +243,9 @@ internal static class FixtureRegistry
         "Accessibility_SemanticPanel" => AccessibilityInteractionFixtures.SemanticPanelTest(ctx),
         "Accessibility_LabeledBy" => AccessibilityInteractionFixtures.LabeledByTest(ctx),
         "Accessibility_TabNavigation" => AccessibilityInteractionFixtures.TabNavigationTest(ctx),
+
+        // Chart Accessibility (E2E)
+        "ChartAccessibility_Showcase" => AccessibilityFixtures.ChartAccessibilityShowcase(ctx),
 
         // DataGrid
         "DataGrid_EditableGrid" => DataGridFixtures.EditableGrid(ctx),
