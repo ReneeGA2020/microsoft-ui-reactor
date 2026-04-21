@@ -267,7 +267,6 @@ tests/
   stress_perf/              Performance benchmarks
 samples/
   apps/                     Sample apps (wordpuzzle, ductfiles, regedit, etc.)
-  FlexPanelGallery/         FlexPanel layout gallery
   TodoApp/                  Todo app sample
 ```
 
