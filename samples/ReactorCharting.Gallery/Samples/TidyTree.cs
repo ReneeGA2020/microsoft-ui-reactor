@@ -34,6 +34,8 @@ public sealed class TidyTreeSample : GallerySample
                 with { Fill = fill, Stroke = stroke }),
              ..labels]
         )
+            .AutomationName("Tidy Tree")
+            .FullDescription("Tidy tree layout of a file system hierarchy showing a project with 3 subdirectories across 4 levels and 21 nodes.")
         """;
 
     record FsNode(string Name, FsNode[]? Children = null);
@@ -102,7 +104,9 @@ public sealed class TidyTreeSample : GallerySample
                  };
              }),
             ]
-        );
+        )
+            .AutomationName("Tidy Tree")
+            .FullDescription("Tidy tree layout of a file system hierarchy showing a project with 3 subdirectories across 4 levels and 21 nodes.");
     }
 
 }

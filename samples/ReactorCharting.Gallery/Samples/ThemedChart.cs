@@ -31,6 +31,8 @@ public class ThemedChartSample : GallerySample
 
         D3LinePath(data, x: d => xs.Map(d.x), y: d => ys.Map(d.y),
             stroke: accent, strokeWidth: 2);
+        .AutomationName("Themed Chart")
+        .FullDescription("Multi-line chart with 4 series using WinUI theme resource brushes that adapt to Light and Dark themes.");
         """;
 
     public override Element Render()
@@ -92,6 +94,8 @@ public class ThemedChartSample : GallerySample
              .. dots,
              .. D3Legend(legendX, top + 10, series.Select(s => (s.Label, s.Brush))),
              D3Dsl.Text(2, top - 14, "count", 11, ChartMutedForeground)]
-        );
+        )
+            .AutomationName("Themed Chart")
+            .FullDescription("Multi-line chart with 4 series using WinUI theme resource brushes that adapt to Light and Dark themes.");
     }
 }

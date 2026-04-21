@@ -57,21 +57,108 @@ public static class D3Dsl
         set => _isDarkTheme = value;
     }
 
+    // ── Forced-colors (high-contrast) mode ───────────────────────────
+    //
+    // When the system is in High Contrast / forced-colors mode, charts must
+    // use system colors rather than their normal palette. The host sets this
+    // flag alongside IsDarkTheme so all chart helpers automatically adapt.
+    //
+    // NOTE: IsForcedColors and IsReducedMotion are [ThreadStatic] — consistent
+    // with the existing IsDarkTheme pattern. All chart rendering must occur on
+    // the thread that called DoRender(). If chart callbacks dispatch to thread
+    // pool threads, those threads will see default (false) values.
+
+    [ThreadStatic] private static bool _isForcedColors;
+
+    /// <summary>
+    /// When true, chart brushes use system high-contrast colors instead of
+    /// the normal palette. Set automatically by the host when
+    /// <c>AccessibilitySettings.HighContrast</c> is active.
+    /// </summary>
+    public static bool IsForcedColors
+    {
+        get => _isForcedColors;
+        set => _isForcedColors = value;
+    }
+
+    [ThreadStatic] private static bool _isReducedMotion;
+
+    /// <summary>
+    /// When true, chart entrance/exit animations snap to final state, pan inertia
+    /// is disabled, and force-graph simulation terminates immediately. Set
+    /// automatically by the host from <c>UISettings.AnimationsEnabled</c>.
+    /// </summary>
+    public static bool IsReducedMotion
+    {
+        get => _isReducedMotion;
+        set => _isReducedMotion = value;
+    }
+
+    // ── System high-contrast color mapping ───────────────────────────
+
+    [ThreadStatic] private static ForcedColorsTheme? _forcedColorsTheme;
+
+    /// <summary>
+    /// System high-contrast colors queried from <c>UISettings.GetColorValue</c>.
+    /// Set automatically by the host each render cycle. When null, falls back to
+    /// safe defaults (white foreground, black background).
+    /// </summary>
+    public static ForcedColorsTheme? ForcedColors
+    {
+        get => _forcedColorsTheme;
+        set => _forcedColorsTheme = value;
+    }
+
+    /// <summary>
+    /// Returns the brush for a chart series. In forced-colors mode, returns
+    /// system high-contrast colors; otherwise returns the normal palette color.
+    /// </summary>
+    public static SolidColorBrush ChartSeries(int seriesIndex)
+    {
+        if (_isForcedColors)
+        {
+            var fc = _forcedColorsTheme ?? ForcedColorsTheme.Default;
+            var color = fc.SeriesColors[((seriesIndex % fc.SeriesColors.Length) + fc.SeriesColors.Length) % fc.SeriesColors.Length];
+            return new SolidColorBrush(color);
+        }
+        return Brush(Palette[seriesIndex % Palette.Count]);
+    }
+
+    /// <summary>
+    /// Returns the dash pattern for a chart series from the default cycle.
+    /// </summary>
+    public static Accessibility.DashStyle ChartSeriesDash(int seriesIndex) =>
+        Accessibility.ChartPalette.DefaultDashCycle[
+            ((seriesIndex % Accessibility.ChartPalette.DefaultDashCycle.Length) + Accessibility.ChartPalette.DefaultDashCycle.Length)
+            % Accessibility.ChartPalette.DefaultDashCycle.Length];
+
+    /// <summary>
+    /// Returns the marker shape for a chart series from the default cycle.
+    /// </summary>
+    public static Accessibility.MarkerShape ChartSeriesMarker(int seriesIndex) =>
+        Accessibility.ChartPalette.DefaultMarkerCycle[
+            ((seriesIndex % Accessibility.ChartPalette.DefaultMarkerCycle.Length) + Accessibility.ChartPalette.DefaultMarkerCycle.Length)
+            % Accessibility.ChartPalette.DefaultMarkerCycle.Length];
+
     /// <summary>Primary text on a chart surface — titles, strong labels.</summary>
     public static SolidColorBrush ChartForeground =>
-        _isDarkTheme ? Gray(235) : Gray(40);
+        _isForcedColors ? new SolidColorBrush((_forcedColorsTheme ?? ForcedColorsTheme.Default).Foreground)
+        : _isDarkTheme ? Gray(235) : Gray(40);
 
     /// <summary>Secondary text — tick labels, subtle annotations, legend labels.</summary>
     public static SolidColorBrush ChartMutedForeground =>
-        _isDarkTheme ? Gray(190) : Gray(90);
+        _isForcedColors ? new SolidColorBrush((_forcedColorsTheme ?? ForcedColorsTheme.Default).Foreground)
+        : _isDarkTheme ? Gray(190) : Gray(90);
 
     /// <summary>Axis lines + their tick labels.</summary>
     public static SolidColorBrush ChartAxis =>
-        _isDarkTheme ? Gray(190, 200) : Gray(100, 180);
+        _isForcedColors ? new SolidColorBrush((_forcedColorsTheme ?? ForcedColorsTheme.Default).Foreground)
+        : _isDarkTheme ? Gray(190, 200) : Gray(100, 180);
 
     /// <summary>Subtle horizontal/vertical gridlines behind the plot.</summary>
     public static SolidColorBrush ChartGrid =>
-        _isDarkTheme ? Gray(200, 50) : Gray(128, 50);
+        _isForcedColors ? new SolidColorBrush((_forcedColorsTheme ?? ForcedColorsTheme.Default).Foreground)
+        : _isDarkTheme ? Gray(200, 50) : Gray(128, 50);
 
     /// <summary>Solid fill matching the chart's surrounding card — use for gap strokes between colored slices (pie / sunburst / icicle).</summary>
     public static SolidColorBrush ChartSurface =>
@@ -88,6 +175,21 @@ public static class D3Dsl
     /// <summary>Subtle neutral stroke — baselines, separators, non-accented borders.</summary>
     public static SolidColorBrush ChartSubtleStroke =>
         _isDarkTheme ? Gray(90) : Gray(185);
+
+    /// <summary>Selection highlight brush — Highlight in forced-colors, blue otherwise.</summary>
+    public static SolidColorBrush ChartSelection =>
+        _isForcedColors ? new SolidColorBrush((_forcedColorsTheme ?? ForcedColorsTheme.Default).Highlight)
+        : Brush("#4285f4");
+
+    /// <summary>Selection text — HighlightText in forced-colors, white otherwise.</summary>
+    public static SolidColorBrush ChartSelectionText =>
+        _isForcedColors ? new SolidColorBrush((_forcedColorsTheme ?? ForcedColorsTheme.Default).HighlightText)
+        : new SolidColorBrush(Microsoft.UI.Colors.White);
+
+    /// <summary>Disabled element brush — GrayText in forced-colors, gray otherwise.</summary>
+    public static SolidColorBrush ChartDisabled =>
+        _isForcedColors ? new SolidColorBrush((_forcedColorsTheme ?? ForcedColorsTheme.Default).GrayText)
+        : Gray(160);
 
     public static string Fmt(double v) =>
         Math.Abs(v) >= 1e6 ? (v / 1e6).ToString("0.#", global::System.Globalization.CultureInfo.InvariantCulture) + "M" :
@@ -253,25 +355,123 @@ public static class D3Dsl
         double bot = top + height;
         var elements = new List<Element>
         {
-            D3Line(left, bot, left + width, bot) with { Stroke = ab, StrokeThickness = 1 },
-            D3Line(left, top, left, bot) with { Stroke = ab, StrokeThickness = 1 },
+            (D3Line(left, bot, left + width, bot) with { Stroke = ab, StrokeThickness = 1 })
+                .AccessibilityView(Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw),
+            (D3Line(left, top, left, bot) with { Stroke = ab, StrokeThickness = 1 })
+                .AccessibilityView(Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw),
         };
 
         foreach (var t in xs.Ticks(xTicks))
-            elements.Add(Text(xs.Map(t) - 12, bot + 4, Fmt(t), 10, ab));
+            elements.Add(Text(xs.Map(t) - 12, bot + 4, Fmt(t), 10, ab)
+                .AccessibilityView(Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw));
 
         foreach (var t in ys.Ticks(yTicks))
-            elements.Add(TextRight(0, ys.Map(t) - 7, Fmt(t), left - 6, 10, ab));
+            elements.Add(TextRight(0, ys.Map(t) - 7, Fmt(t), left - 6, 10, ab)
+                .AccessibilityView(Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw));
 
         return elements.ToArray();
     }
 
-    /// <summary>Creates horizontal grid lines as a flat array of Elements.</summary>
+    /// <summary>Creates horizontal grid lines as a flat array of Elements. Auto-set to AccessibilityView.Raw.</summary>
     public static Element[] D3Grid(LinearScale ys, double left, double width, int ticks = 5)
     {
         var gb = ChartGrid;
         return ys.Ticks(ticks)
-            .Select(t => (Element)(D3Line(left, ys.Map(t), left + width, ys.Map(t)) with { Stroke = gb, StrokeThickness = 1 }))
+            .Select(t => (Element)(D3Line(left, ys.Map(t), left + width, ys.Map(t)) with { Stroke = gb, StrokeThickness = 1 })
+                .AccessibilityView(Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw))
             .ToArray();
+    }
+}
+
+/// <summary>
+/// Holds the actual system high-contrast colors queried from
+/// <see cref="global::Windows.UI.ViewManagement.UISettings.GetColorValue"/>.
+/// The host populates this each render cycle so chart brushes adapt to the
+/// user's chosen high-contrast theme (including custom themes).
+/// </summary>
+public sealed class ForcedColorsTheme
+{
+    /// <summary>System foreground (CanvasText / WindowText).</summary>
+    public global::Windows.UI.Color Foreground { get; init; }
+
+    /// <summary>System background (Canvas / Window).</summary>
+    public global::Windows.UI.Color Background { get; init; }
+
+    /// <summary>System highlight / accent.</summary>
+    public global::Windows.UI.Color Highlight { get; init; }
+
+    /// <summary>Text on highlighted background.</summary>
+    public global::Windows.UI.Color HighlightText { get; init; }
+
+    /// <summary>Disabled / secondary text (GrayText).</summary>
+    public global::Windows.UI.Color GrayText { get; init; }
+
+    /// <summary>Hyperlink text color.</summary>
+    public global::Windows.UI.Color Hotlight { get; init; }
+
+    /// <summary>
+    /// Distinct colors for chart series, derived from system HC colors.
+    /// Cycles through Foreground, Highlight, Hotlight, GrayText.
+    /// </summary>
+    public global::Windows.UI.Color[] SeriesColors { get; init; } = [];
+
+    /// <summary>
+    /// Safe fallback when system colors cannot be queried (headless / unit tests).
+    /// Uses standard HC Black theme colors.
+    /// </summary>
+    public static readonly ForcedColorsTheme Default = new()
+    {
+        Foreground = global::Windows.UI.Color.FromArgb(255, 255, 255, 255),
+        Background = global::Windows.UI.Color.FromArgb(255, 0, 0, 0),
+        Highlight = global::Windows.UI.Color.FromArgb(255, 0, 255, 255),
+        HighlightText = global::Windows.UI.Color.FromArgb(255, 0, 0, 0),
+        GrayText = global::Windows.UI.Color.FromArgb(255, 128, 128, 128),
+        Hotlight = global::Windows.UI.Color.FromArgb(255, 255, 255, 0),
+        // Series colors maximize visual distinction on black HC backgrounds.
+        // Green (not GrayText gray) is used for series[3] for better contrast.
+        SeriesColors =
+        [
+            global::Windows.UI.Color.FromArgb(255, 255, 255, 255), // White (Foreground)
+            global::Windows.UI.Color.FromArgb(255, 0, 255, 255),   // Cyan (Highlight)
+            global::Windows.UI.Color.FromArgb(255, 255, 255, 0),   // Yellow (Hotlight)
+            global::Windows.UI.Color.FromArgb(255, 0, 128, 0),     // Green (distinct from gray)
+        ],
+    };
+
+    /// <summary>
+    /// Queries the current system high-contrast colors from <see cref="global::Windows.UI.ViewManagement.UISettings"/>.
+    /// Returns <see cref="Default"/> if the query fails (headless environment).
+    /// </summary>
+    public static ForcedColorsTheme FromSystem()
+    {
+        try
+        {
+            var s = new global::Windows.UI.ViewManagement.UISettings();
+            var fg = s.GetColorValue(global::Windows.UI.ViewManagement.UIColorType.Foreground);
+            var bg = s.GetColorValue(global::Windows.UI.ViewManagement.UIColorType.Background);
+            var accent = s.GetColorValue(global::Windows.UI.ViewManagement.UIColorType.Accent);
+            var accentDark = s.GetColorValue(global::Windows.UI.ViewManagement.UIColorType.AccentDark1);
+            var accentLight = s.GetColorValue(global::Windows.UI.ViewManagement.UIColorType.AccentLight1);
+            // Complement is not always available; fall back to GrayText-like dim foreground
+            var grayText = global::Windows.UI.Color.FromArgb(255,
+                (byte)(fg.R / 2 + bg.R / 2),
+                (byte)(fg.G / 2 + bg.G / 2),
+                (byte)(fg.B / 2 + bg.B / 2));
+
+            return new ForcedColorsTheme
+            {
+                Foreground = fg,
+                Background = bg,
+                Highlight = accent,
+                HighlightText = bg, // text on accent is typically background color
+                GrayText = grayText,
+                Hotlight = accentLight,
+                SeriesColors = [fg, accent, accentLight, grayText],
+            };
+        }
+        catch
+        {
+            return Default;
+        }
     }
 }

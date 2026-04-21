@@ -124,4 +124,65 @@ internal static class AccessibilityFixtures
                 .AutomationId("A11y_ViewRaw")
         );
     }
+
+    /// <summary>
+    /// Chart accessibility fixture for E2E UIA validation via Appium/WinAppDriver.
+    /// Mounts several chart types with accessibility configured so cross-process
+    /// tests can validate the full UIA tree.
+    /// </summary>
+    internal static Element ChartAccessibilityShowcase(RenderContext ctx)
+    {
+        // Line chart — 2 series, 5 points each
+        var lineData1 = new[] { (0.0, 10.0), (1, 25), (2, 18), (3, 35), (4, 42) }
+            .Select(p => new { X = p.Item1, Y = p.Item2 }).ToArray();
+        var lineData2 = new[] { (0.0, 15.0), (1, 12), (2, 28), (3, 22), (4, 38) }
+            .Select(p => new { X = p.Item1, Y = p.Item2 }).ToArray();
+
+        // Bar chart — single series, 4 points
+        var barData = new[] { (0.0, 30.0), (1, 70), (2, 45), (3, 90) }
+            .Select(p => new { X = p.Item1, Y = p.Item2 }).ToArray();
+
+        // Pie chart — 4 slices
+        var pieData = new[] { ("Chrome", 60.0), ("Safari", 20), ("Firefox", 12), ("Edge", 8) }
+            .Select(p => new { Name = p.Item1, Value = p.Item2 }).ToArray();
+
+        return VStack(12,
+            TextBlock("Chart Accessibility Showcase")
+                .HeadingLevel(AutomationHeadingLevel.Level1)
+                .AutomationId("ChartA11y_E2E_Heading"),
+
+            // Line chart with title, series names, units
+            Charting.ChartDsl.LineChart(lineData1, d => d.X, d => d.Y)
+                .Title("Monthly Revenue")
+                .SeriesName("Region A")
+                .Units("months", "USD")
+                .Width(400).Height(250)
+                .ToElement()
+                .AutomationId("ChartA11y_E2E_LineChart"),
+
+            // Bar chart with title and default labels
+            Charting.ChartDsl.BarChart(barData, d => d.X, d => d.Y)
+                .Title("Quarterly Sales")
+                .SeriesName("Product A")
+                .Width(400).Height(250)
+                .ToElement()
+                .AutomationId("ChartA11y_E2E_BarChart"),
+
+            // Pie chart with title and slice labels
+            Charting.ChartDsl.PieChart(pieData, d => d.Value, d => d.Name)
+                .Title("Browser Market Share")
+                .Width(300).Height(250)
+                .ToElement()
+                .AutomationId("ChartA11y_E2E_PieChart"),
+
+            // Interactive chart with keyboard nav enabled
+            Charting.ChartDsl.LineChart(lineData1, d => d.X, d => d.Y)
+                .Title("Interactive Revenue Chart")
+                .SeriesName("Revenue")
+                .Interactive()
+                .Width(400).Height(250)
+                .ToElement()
+                .AutomationId("ChartA11y_E2E_InteractiveChart")
+        );
+    }
 }

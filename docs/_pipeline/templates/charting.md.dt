@@ -123,6 +123,37 @@ diffs the old and new element trees and patches only what changed:
 For high-frequency updates (60fps streaming), use `OnReady` to get a
 handle that exposes the underlying `Canvas` for direct manipulation.
 
+## Chart Accessibility
+
+Charts are fully accessible out of the box. Add `.Title()` and
+`.SeriesName()` for screen-reader identification, `.Units()` for axis
+annotations, and `.Interactive()` for keyboard navigation:
+
+```csharp snippet="charting/accessible-chart"
+```
+
+![Accessible chart](screenshot://charting/accessible-chart)
+
+### Accessibility Modifiers
+
+| Method | Purpose |
+|--------|---------|
+| `.Title(str)` | Visible title and accessible name |
+| `.Description(str)` | Override auto-generated summary |
+| `.SeriesName(str)` | Name the data series |
+| `.Units(x, y)` | Axis unit annotations (e.g., "months", "USD") |
+| `.AxisLabel(axis, str)` | Explicit axis label |
+| `.Interactive()` | Enable keyboard navigation and virtual focus |
+| `.OnPointInvoke(handler)` | Callback when Enter/Space pressed on a point |
+| `.AlternateView(element)` | Toggle between chart and data table (T key) |
+| `.Palette(palette)` | Curated colorblind-safe palette |
+| `.SeriesShapes(shapes)` | Marker shapes for double-encoding |
+| `.SeriesDashes(dashes)` | Dash patterns for double-encoding |
+
+Screen readers announce the chart type, series count, data range, and
+individual point values. Keyboard users navigate with arrow keys, invoke
+points with Enter, and toggle an alternate data-table view with T.
+
 ## Low-Level Drawing
 
 For custom visualizations, ReactorD3 provides shape generators and a Canvas

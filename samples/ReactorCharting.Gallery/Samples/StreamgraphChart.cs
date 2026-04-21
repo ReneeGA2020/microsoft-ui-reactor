@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -30,7 +31,9 @@ series.Select((s, si) => {
     return D3AreaPath(pts, x: d => xScale.Map(d.x),
         y0: d => yScale.Map(d.y0), y1: d => yScale.Map(d.y1),
         fill: Brush(Palette[si], opacity: 0.8));
-})";
+})
+    .AutomationName(""Streamgraph (Centered Stack)"")
+    .FullDescription(""Streamgraph with 4 layers (Alpha, Beta, Gamma, Delta) of smooth data centered around the horizontal midline."")";
 
     public override Element Render()
     {
@@ -90,6 +93,8 @@ series.Select((s, si) => {
              .. D3Legend(marginLeft + 10, marginTop + 4, keys.Select((key, k) => (key, Brush(Palette[k], opacity: 0.8)))),
              D3Dsl.Text(marginLeft + 100, 6, "Streamgraph (Centered Stack)", 14, ChartForeground),
             ]
-        );
+        )
+            .AutomationName("Streamgraph (Centered Stack)")
+            .FullDescription("Streamgraph with 4 layers (Alpha, Beta, Gamma, Delta) of smooth data centered around the horizontal midline.");
     }
 }

@@ -32,6 +32,8 @@ public sealed class SunburstSample : GallerySample
                 }),
              ..labels]
         )
+            .AutomationName("Disk Usage")
+            .FullDescription("Sunburst chart of disk usage showing nested angular slices across Users, Program Files, and Windows directories with sizes in megabytes.")
         """;
 
     record DiskNode(string Name, double Size = 0, DiskNode[]? Children = null);
@@ -110,7 +112,9 @@ public sealed class SunburstSample : GallerySample
                 }),
              TextCenter(cx - 20, cy - 7, "Disk", 40, 12, ChartForeground),
             ]
-        );
+        )
+            .AutomationName("Disk Usage")
+            .FullDescription("Sunburst chart of disk usage showing nested angular slices across Users, Program Files, and Windows directories with sizes in megabytes.");
     }
 
 }

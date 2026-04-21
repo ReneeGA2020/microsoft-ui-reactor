@@ -31,6 +31,11 @@ class LineChartDemo : Component
         return VStack(12,
             SubHeading("Line Chart"),
             LineChart(data, d => d.Month, d => d.Revenue)
+                .Title("Monthly Revenue — Line")
+                .SeriesName("Revenue")
+                .Units("months", "USD")
+                .AxisLabel(Charting.Accessibility.ChartAxisType.X, "Month")
+                .AxisLabel(Charting.Accessibility.ChartAxisType.Y, "Revenue (USD)")
                 .Width(600).Height(250)
                 .Stroke("#0078D4").StrokeWidth(2.5)
                 .ShowGrid(true).ShowAxes(true)
@@ -52,6 +57,11 @@ class BarChartDemo : Component
         return VStack(12,
             SubHeading("Bar Chart"),
             BarChart(data, d => d.Month, d => d.Revenue)
+                .Title("Quarterly Revenue — Bar")
+                .SeriesName("Revenue")
+                .Units("quarters", "USD")
+                .AxisLabel(Charting.Accessibility.ChartAxisType.X, "Quarter")
+                .AxisLabel(Charting.Accessibility.ChartAxisType.Y, "Revenue (USD)")
                 .Width(600).Height(250)
                 .Fill("#50C878")
                 .ShowGrid(true).ShowAxes(true)
@@ -76,6 +86,11 @@ class AreaChartDemo : Component
         return VStack(12,
             SubHeading("Area Chart"),
             AreaChart(data, d => d.Month, d => d.Revenue)
+                .Title("Monthly Revenue — Area")
+                .SeriesName("Revenue")
+                .Units("months", "USD")
+                .AxisLabel(Charting.Accessibility.ChartAxisType.X, "Month")
+                .AxisLabel(Charting.Accessibility.ChartAxisType.Y, "Revenue (USD)")
                 .Width(600).Height(250)
                 .Stroke("#9B59B6").Fill("#9B59B6")
                 .FillOpacity(0.2)
@@ -101,6 +116,8 @@ class PieChartDemo : Component
         return VStack(12,
             SubHeading("Pie Chart"),
             PieChart(data, d => d.Value, d => d.Name)
+                .Title("Team Distribution")
+                .Description("Pie chart showing team size across Engineering, Marketing, Sales, and Support.")
                 .Width(300).Height(300)
                 .InnerRadius(60)
                 .PadAngle(0.03)
@@ -134,6 +151,10 @@ class CombinedChartDemo : Component
             SubHeading("Interactive Chart"),
             ComboBox(years, year, setYear),
             AreaChart(data, d => d.Month, d => d.Revenue)
+                .Title("Revenue by Year")
+                .SeriesName("Revenue")
+                .Units("months", "USD")
+                .Interactive()
                 .Width(600).Height(250)
                 .Stroke("#0078D4").Fill("#0078D4")
                 .FillOpacity(0.15)
@@ -160,6 +181,9 @@ class DynamicDataDemo : Component
                     .Select(i => new SalesPoint(i, Random.Shared.Next(50, 500)))
                     .ToList())),
             BarChart<SalesPoint>(points, d => d.Month, d => d.Revenue)
+                .Title("Dynamic Revenue Data")
+                .SeriesName("Revenue")
+                .Units("months", "USD")
                 .Width(600).Height(250)
                 .Fill("#E74C3C")
                 .ShowGrid(true).ShowAxes(true)
@@ -167,6 +191,51 @@ class DynamicDataDemo : Component
     }
 }
 // </snippet:dynamic-data>
+
+// <snippet:accessible-chart>
+/// <summary>
+/// Canonical accessible chart pattern — demonstrates all recommended accessibility
+/// modifiers for both static and interactive charts. Follow this pattern to ensure
+/// charts are fully accessible to screen readers, keyboard users, and users who
+/// need forced-colors or reduced-motion.
+/// </summary>
+class AccessibleChartDemo : Component
+{
+    public override Element Render()
+    {
+        var data = new SalesPoint[]
+        {
+            new(1, 120), new(2, 180), new(3, 150),
+            new(4, 220), new(5, 310), new(6, 280)
+        };
+
+        return VStack(12,
+            SubHeading("Accessible Chart"),
+
+            // Static accessible chart: Title + SeriesName + Units
+            LineChart(data, d => d.Month, d => d.Revenue)
+                .Title("Monthly Revenue 2024")
+                .SeriesName("Revenue")
+                .Units("months", "USD")
+                .AxisLabel(Charting.Accessibility.ChartAxisType.X, "Month")
+                .AxisLabel(Charting.Accessibility.ChartAxisType.Y, "Revenue (USD)")
+                .Width(600).Height(250)
+                .Stroke("#0078D4").StrokeWidth(2.5)
+                .ShowGrid(true).ShowAxes(true),
+
+            // Interactive accessible chart: adds keyboard nav and point invocation
+            BarChart(data, d => d.Month, d => d.Revenue)
+                .Title("Monthly Revenue — Interactive")
+                .SeriesName("Revenue")
+                .Units("months", "USD")
+                .Interactive()
+                .Width(600).Height(250)
+                .Fill("#50C878")
+                .ShowGrid(true).ShowAxes(true)
+        ).Padding(24);
+    }
+}
+// </snippet:accessible-chart>
 
 class ChartingApp : Component
 {
@@ -180,7 +249,8 @@ class ChartingApp : Component
                 Component<AreaChartDemo>(),
                 Component<PieChartDemo>(),
                 Component<CombinedChartDemo>(),
-                Component<DynamicDataDemo>()
+                Component<DynamicDataDemo>(),
+                Component<AccessibleChartDemo>()
             ).Padding(24)
         );
     }

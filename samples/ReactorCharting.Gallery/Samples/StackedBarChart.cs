@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -27,6 +28,8 @@ public class StackedBarChartSample : GallerySample
                     with { Fill = fill };
             });
         })
+            .AutomationName("Fruit Sales by Month (Stacked)")
+            .FullDescription("Stacked bar chart showing Apples, Bananas, and Cherries sales across six months from January to June.")
         """;
 
     public override Element Render()
@@ -95,6 +98,8 @@ public class StackedBarChartSample : GallerySample
 
              D3Dsl.Text(left, 4, "Fruit Sales by Month (Stacked)", 13, ChartForeground),
             ]
-        );
+        )
+            .AutomationName("Fruit Sales by Month (Stacked)")
+            .FullDescription("Stacked bar chart showing Apples, Bananas, and Cherries sales across six months from January to June.");
     }
 }

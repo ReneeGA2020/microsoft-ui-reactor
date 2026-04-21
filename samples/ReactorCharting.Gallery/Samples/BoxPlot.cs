@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -23,6 +24,8 @@ public sealed class BoxPlotSample : GallerySample
              }),
             ]
         )
+            .AutomationName("Box Plot (four groups)")
+            .FullDescription("Box plot for 4 groups (A, B, C, D) showing min, Q1, median, Q3, and max for each distribution.")
         """;
 
     public override Element Render()
@@ -99,6 +102,8 @@ public sealed class BoxPlotSample : GallerySample
                  }
                  select el),
              D3Dsl.Text(left, 6, "Box Plot (four groups)", 14, ChartForeground)]
-        );
+        )
+            .AutomationName("Box Plot (four groups)")
+            .FullDescription("Box plot for 4 groups (A, B, C, D) showing min, Q1, median, Q3, and max for each distribution.");
     }
 }

@@ -735,6 +735,54 @@ public sealed class RenderContext
     }
 
     // ════════════════════════════════════════════════════════════════
+    //  Reduced-motion hook
+    // ════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Returns <c>true</c> when the user or system prefers reduced motion
+    /// (e.g., Windows "Show animations" is off, or <c>SPI_GETCLIENTAREAANIMATION</c>
+    /// returns false). Automatically re-renders the component when the preference changes.
+    /// <para>
+    /// Use this to skip entrance/exit animations, disable pan inertia, terminate
+    /// force-graph simulations immediately, and keep only ≤ 150 ms opacity fades
+    /// (WCAG 2.3.3).
+    /// </para>
+    /// </summary>
+    public bool UseReducedMotion() => UseReducedMotionState().IsReducedMotion;
+
+    private ReducedMotionState UseReducedMotionState()
+    {
+        var (state, _) = UseState(new ReducedMotionState());
+
+        UseEffect(() =>
+        {
+            state.Settings ??= new global::Windows.UI.ViewManagement.UISettings();
+            var rerender = _requestRerender;
+            void OnChanged(global::Windows.UI.ViewManagement.UISettings sender, object args)
+            {
+                state.IsReducedMotion = !sender.AnimationsEnabled;
+                rerender?.Invoke();
+            }
+            // UISettings.ColorValuesChanged also fires for AnimationsEnabled changes
+            state.Settings.ColorValuesChanged += OnChanged;
+            state.IsReducedMotion = !state.Settings.AnimationsEnabled;
+            return () =>
+            {
+                if (state.Settings is not null)
+                    state.Settings.ColorValuesChanged -= OnChanged;
+            };
+        });
+
+        return state;
+    }
+
+    private sealed class ReducedMotionState
+    {
+        public global::Windows.UI.ViewManagement.UISettings? Settings;
+        public bool IsReducedMotion;
+    }
+
+    // ════════════════════════════════════════════════════════════════
     //  Localization hooks
     // ════════════════════════════════════════════════════════════════
 

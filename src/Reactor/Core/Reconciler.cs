@@ -2048,8 +2048,8 @@ public sealed partial class Reconciler : IDisposable
         if (m.HeadingLevel.HasValue && m.HeadingLevel != oldM?.HeadingLevel)
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetHeadingLevel(fe, m.HeadingLevel.Value);
 
-        if (m.IsTabStop.HasValue && m.IsTabStop != oldM?.IsTabStop && fe is WinUI.Control tabCtrl)
-            tabCtrl.IsTabStop = m.IsTabStop.Value;
+        if (m.IsTabStop.HasValue && m.IsTabStop != oldM?.IsTabStop)
+            fe.IsTabStop = m.IsTabStop.Value;
 
         if (m.TabIndex.HasValue && m.TabIndex != oldM?.TabIndex && fe is WinUI.Control tabIdxCtrl)
             tabIdxCtrl.TabIndex = m.TabIndex.Value;

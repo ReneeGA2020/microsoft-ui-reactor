@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -37,6 +38,8 @@ public class DivergingBarChartSample : GallerySample
             D3Rect(barStart, y, barWidth, band.Bandwidth)
                 with { Fill = fill, RadiusX = 2, RadiusY = 2 };
         }
+            .AutomationName("Customer Sentiment Scores")
+            .FullDescription("Diverging bar chart showing customer sentiment scores for ten categories, ranging from -35 to +72, with bars extending from a central baseline.")
         """;
 
     public override Element Render()
@@ -106,6 +109,8 @@ public class DivergingBarChartSample : GallerySample
 
              D3Dsl.Text(left, 4, "Customer Sentiment Scores", 13, ChartForeground),
             ]
-        );
+        )
+            .AutomationName("Customer Sentiment Scores")
+            .FullDescription("Diverging bar chart showing customer sentiment scores for ten categories, ranging from -35 to +72, with bars extending from a central baseline.");
     }
 }

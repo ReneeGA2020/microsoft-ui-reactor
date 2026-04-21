@@ -1067,7 +1067,8 @@ public static class ElementExtensions
         Modify(el, new ElementModifiers { HeadingLevel = level });
 
     /// <summary>
-    /// Sets Control.IsTabStop — whether the element participates in Tab navigation.
+    /// Sets UIElement.IsTabStop — whether the element participates in Tab navigation.
+    /// Works on any element type (Panel, Control, etc.) in WinUI 3.
     /// </summary>
     /// <example>Border(content).IsTabStop(false)</example>
     public static T IsTabStop<T>(this T el, bool isTabStop) where T : Element =>

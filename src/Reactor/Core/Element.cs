@@ -1392,6 +1392,47 @@ public record CanvasElement(Element[] Children) : Element
     public double? Height { get; init; }
     public Brush? Background { get; init; }
     internal Action<WinUI.Canvas>[] Setters { get; init; } = [];
+
+    /// <summary>
+    /// When this Canvas was created by a chart element, carries the chart's
+    /// accessibility data so the scanner can inspect chart-specific properties.
+    /// Null for non-chart canvases.
+    /// </summary>
+    internal Charting.Accessibility.IChartAccessibilityData? ChartData { get; init; }
+
+    /// <summary>
+    /// When set, indicates this chart used <c>.ColorOnly()</c> — scanner flags as A11Y_CHART_004.
+    /// </summary>
+    internal bool IsColorOnly { get; init; }
+
+    /// <summary>
+    /// When set, indicates this chart used <c>.RawColors()</c> — scanner flags as A11Y_CHART_012.
+    /// </summary>
+    internal bool IsRawColors { get; init; }
+
+    /// <summary>Custom palette set on the chart, if any — scanner validates for contrast.</summary>
+    internal Charting.Accessibility.ChartPalette? CustomPalette { get; init; }
+
+    /// <summary>When true, chart is interactive with keyboard navigation enabled.</summary>
+    internal bool IsInteractive { get; init; }
+
+    /// <summary>When true, keyboard navigation is explicitly disabled. Scanner flags as A11Y_CHART_003.</summary>
+    internal bool IsKeyboardDisabled { get; init; }
+
+    /// <summary>When true, hit targets are not expanded to 24×24. Scanner flags as A11Y_CHART_005.</summary>
+    internal bool IsTightHitTest { get; init; }
+
+    /// <summary>
+    /// When set, a custom focus indicator color is used instead of the default double-ring.
+    /// Scanner validates it meets 3:1 contrast (A11Y_CHART_006).
+    /// </summary>
+    internal global::Windows.UI.Color? CustomFocusColor { get; init; }
+
+    /// <summary>
+    /// When true, the chart announces every animation frame via the live region,
+    /// which floods assistive technology. Scanner flags as A11Y_CHART_007.
+    /// </summary>
+    internal bool IsAnnounceEveryFrame { get; init; }
 }
 
 // ════════════════════════════════════════════════════════════════════════

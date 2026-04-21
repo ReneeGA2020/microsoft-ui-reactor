@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -25,7 +26,9 @@ public sealed class HistogramSample : GallerySample
 
         return D3Canvas(width, height,
             [..D3Grid(ys, left, pw), ..bars,
-             ..D3Axes(xs, ys, left, top, pw, ph)]);
+             ..D3Axes(xs, ys, left, top, pw, ph)])
+            .AutomationName("Histogram (normal distribution, 200 values)")
+            .FullDescription("Histogram of 200 normally-distributed values binned into 20 bins, centered around 50.");
         """;
 
     public override Element Render()
@@ -69,6 +72,8 @@ public sealed class HistogramSample : GallerySample
              }),
              .. D3Axes(xs, ys, left, top, pw, ph),
              D3Dsl.Text(left, 6, "Histogram (normal distribution, 200 values)", 14, ChartForeground)]
-        );
+        )
+            .AutomationName("Histogram (normal distribution, 200 values)")
+            .FullDescription("Histogram of 200 normally-distributed values binned into 20 bins, centered around 50.");
     }
 }

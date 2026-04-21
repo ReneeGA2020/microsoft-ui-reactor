@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -29,6 +30,8 @@ public sealed class IcicleSample : GallerySample
                 }),
             ]
         )
+            .AutomationName("Icicle Chart")
+            .FullDescription("Icicle partition chart of company budget allocation with horizontal rectangles stacked by hierarchy depth across Engineering, Sales, Operations, and R&D.")
         """;
 
     record BudgetNode(string Name, double Amount = 0, BudgetNode[]? Children = null);
@@ -114,7 +117,9 @@ public sealed class IcicleSample : GallerySample
                         .. (w > 50 && h > 30 ? [D3Dsl.Text(node.X0 + 4, node.Y0 + 16, valLabel, 8, ChartMutedForeground)] : (Element[])[]),
                     ];
                 }),
-        ]);
+        ])
+            .AutomationName("Icicle Chart")
+            .FullDescription("Icicle partition chart of company budget allocation with horizontal rectangles stacked by hierarchy depth across Engineering, Sales, Operations, and R&D.");
     }
 
 }

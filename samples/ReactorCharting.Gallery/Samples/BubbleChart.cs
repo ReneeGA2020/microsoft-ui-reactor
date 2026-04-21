@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -24,6 +25,8 @@ public sealed class BubbleChartSample : GallerySample
         D3Canvas(width, height,
             ..D3Grid(ys, left, pw), ..D3Axes(xs, ys, left, top, pw, ph),
             ..bubbles)
+            .AutomationName("Bubble Chart (size encodes third variable)")
+            .FullDescription("Bubble chart showing 30 data points where circle size encodes a third variable, with x and y axes ranging from 0 to 100.")
         """;
 
     public override Element Render()
@@ -55,6 +58,8 @@ public sealed class BubbleChartSample : GallerySample
              .. D3Axes(xs, ys, left, top, pw, ph),
              .. bubbles,
              D3Dsl.Text(left, 6, "Bubble Chart (size encodes third variable)", 14, ChartForeground)]
-        );
+        )
+            .AutomationName("Bubble Chart (size encodes third variable)")
+            .FullDescription("Bubble chart showing 30 data points where circle size encodes a third variable, with x and y axes ranging from 0 to 100.");
     }
 }

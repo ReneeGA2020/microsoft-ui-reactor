@@ -19,7 +19,10 @@ var line = LineGenerator.Create<(double x, double y)>(
         d => xs.Map(d.x), d => ys.Map(d.y))
     .SetDefined((d, _) => !double.IsNaN(d.y));
 var pathData = line.Generate(data);
-D3Path(pathData, stroke: Brush(Palette[0]), strokeWidth: 2)";
+D3Path(pathData, stroke: Brush(Palette[0]), strokeWidth: 2)
+    .AutomationName(""Sensor Temperature with Missing Data"")
+    .FullDescription(""Line chart showing 30 days of sensor temperature readings with gaps where data was unavailable, ranging from 22.1°C to 30.8°C."")
+";
 
     public override Element Render()
     {
@@ -83,6 +86,8 @@ D3Path(pathData, stroke: Brush(Palette[0]), strokeWidth: 2)";
              D3Dsl.Text(W / 2 - 20, H - 12, "Day", 11, ChartMutedForeground),
              D3Dsl.Text(2, top - 14, "\u00b0C", 11, ChartMutedForeground),
              D3Dsl.Text(left + 5, top + 5, "Shaded regions = missing sensor data", 10, Brush(Palette[3]))]
-        );
+        )
+            .AutomationName("Sensor Temperature with Missing Data")
+            .FullDescription("Line chart showing 30 days of sensor temperature readings with gaps where data was unavailable, ranging from 22.1\u00b0C to 30.8\u00b0C.");
     }
 }

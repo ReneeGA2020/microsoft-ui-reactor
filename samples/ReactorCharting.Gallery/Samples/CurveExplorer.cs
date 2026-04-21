@@ -34,6 +34,8 @@ public sealed class CurveExplorerSample : GallerySample
             ...
         };
         D3LinePath(data, x, y, stroke, strokeWidth, curve)
+        .AutomationName("Curve Explorer")
+        .FullDescription("Interactive line chart with 13 data points and controls to select curve interpolation type and tension.");
         """;
 
     static readonly string[] CurveNames =
@@ -114,7 +116,9 @@ public sealed class CurveExplorerSample : GallerySample
                     ).VAlign(VerticalAlignment.Center)
                 ).Padding(8, 0, 8, 0),
                 chart
-            ).Padding(12);
+            ).Padding(12)
+                .AutomationName("Curve Explorer")
+                .FullDescription("Interactive line chart with 13 data points and controls to select curve interpolation type and tension.");
         });
     }
 }

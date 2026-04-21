@@ -46,10 +46,12 @@ public sealed class BarChartRaceSample : GallerySample
             }),
             D3Dsl.Text(..., "GDP by Country"),
             D3Dsl.Text(..., Years[yearIdx]),  // watermark
-        ]);
+        ])
+            .AutomationName("GDP by Country")
+            .FullDescription("Animated bar chart race showing GDP of 8 countries from 2018 to 2023 with bars that grow, shrink, and re-sort over time.");
         """;
 
-    static readonly string[] Countries = ["USA", "China", "Japan", "Germany", "India", "UK", "France", "Brazil"];
+    static readonly string[] Countries= ["USA", "China", "Japan", "Germany", "India", "UK", "France", "Brazil"];
 
     static readonly double[][] YearData =
     [
@@ -151,7 +153,9 @@ public sealed class BarChartRaceSample : GallerySample
                 }),
                 D3Dsl.Text(12, 8, "GDP by Country (Trillions USD)", fontSize: 14, foreground: titleBrush),
                 D3Dsl.Text(W - 160, H - 80, Years[yearIdx], fontSize: 48, foreground: yearBrush),
-            ]);
+            ])
+                .AutomationName("GDP by Country")
+                .FullDescription("Animated bar chart race showing GDP of 8 countries from 2018 to 2023 with bars that grow, shrink, and re-sort over time.");
         });
     }
 

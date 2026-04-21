@@ -72,22 +72,27 @@ class ChartGallery : Component
                     {
                         0 => VStack(SubHeading("Line Chart — Live Sine Wave"),
                             LineChart(sineData, d => d.X, d => d.Y)
+                                .Title("Live Sine Wave")
                                 .Width(750).Height(350).Stroke("#4285f4")),
 
                         1 => VStack(SubHeading("Bar Chart — Streaming Revenue"),
                             BarChart(barData, d => d.X, d => d.Y)
+                                .Title("Streaming Revenue")
                                 .Width(750).Height(350).Fill("#34a853")),
 
                         2 => VStack(SubHeading("Area Chart — Live Signal"),
                             AreaChart(sineData, d => d.X, d => d.Y)
+                                .Title("Live Signal")
                                 .Width(750).Height(350).Stroke("#ea4335").Fill("#ea4335").FillOpacity(0.2)),
 
                         3 => VStack(SubHeading("Pie Chart — Shifting Market Share"),
                             PieChart(pieData, d => d.Y, d => ((string[])["Chrome","Safari","Firefox","Edge","Other"])[(int)d.X])
+                                .Title("Market Share")
                                 .Width(400).Height(400).InnerRadius(60).PadAngle(0.03)),
 
                         4 => VStack(SubHeading("Tree Layout — Growing Org Chart"),
                             TreeChart(orgTree, n => n.Reports, n => n.Name)
+                                .Title("Organization Chart")
                                 .Width(800).Height(450).NodeColor("#9467bd")),
 
                         5 => VStack(SubHeading("Force Graph — Drag any node!"),

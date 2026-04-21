@@ -55,7 +55,9 @@ public sealed class AnimatedDonutSample : GallerySample
                 TextCenter(cx - 50, cy - 10, DatasetNames[datasetIdx], 100, 14, ChartMutedForeground),
             ]),
             Button("Next Dataset ▶", OnNext)
-        );
+        )
+            .AutomationName("Animated Donut")
+            .FullDescription("Animated donut chart that transitions between 5 quarterly datasets with smooth arc interpolation.");
         """;
 
     static readonly string[] Labels = ["Q1", "Q2", "Q3", "Q4"];
@@ -142,7 +144,9 @@ public sealed class AnimatedDonutSample : GallerySample
                     TextCenter(cx - 50, cy - 10, DatasetNames[datasetIdx], 100, 14, ChartMutedForeground),
                 ]),
                 Button("Next Dataset \u25B6", OnNext).Center()
-            ).HAlign(HorizontalAlignment.Center).Padding(16);
+            ).HAlign(HorizontalAlignment.Center).Padding(16)
+                .AutomationName("Animated Donut")
+                .FullDescription("Animated donut chart that transitions between 5 quarterly datasets with smooth arc interpolation.");
         });
     }
 

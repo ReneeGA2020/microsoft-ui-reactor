@@ -26,6 +26,8 @@ public class ColorPageSample : GallerySample
 
         // Reference any WinUI resource by key:
         TextBlock("Custom").Foreground(Theme.Ref("SystemFillColorSuccessBrush"))
+        .AutomationName("Color & Theme Brushes")
+        .FullDescription("Reference page showing WinUI 3 theme resource brushes organized by Text, Fill, Stroke, Background, and Signal categories.");
         """;
 
     public override Element Render()
@@ -60,7 +62,9 @@ public class ColorPageSample : GallerySample
             SectionHeader("Signal"),
             SwatchGrid(SignalBrushes())
 
-        ).Margin(24, 16, 24, 24);
+        ).Margin(24, 16, 24, 24)
+            .AutomationName("Color & Theme Brushes")
+            .FullDescription("Reference page showing WinUI 3 theme resource brushes organized by Text, Fill, Stroke, Background, and Signal categories.");
     }
 
     // ── Section header ──────────────────────────────────────────────

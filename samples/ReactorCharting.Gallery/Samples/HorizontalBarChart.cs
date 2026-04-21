@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -31,6 +32,8 @@ public class HorizontalBarChartSample : GallerySample
             D3Rect(left, y, barW, band.Bandwidth)
                 with { Fill = fill, RadiusX = 2, RadiusY = 2 };
         }
+            .AutomationName("Population by Country (millions)")
+            .FullDescription("Horizontal bar chart comparing populations of the ten most populous countries, ranging from 128 million to 1,428 million.")
         """;
 
     public override Element Render()
@@ -85,6 +88,8 @@ public class HorizontalBarChartSample : GallerySample
 
              D3Dsl.Text(left, 4, "Population by Country (millions)", 13, ChartForeground),
             ]
-        );
+        )
+            .AutomationName("Population by Country (millions)")
+            .FullDescription("Horizontal bar chart comparing populations of the ten most populous countries, ranging from 128 million to 1,428 million.");
     }
 }

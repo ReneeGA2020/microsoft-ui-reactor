@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -35,6 +36,8 @@ public class GroupedBarChartSample : GallerySample
                     with { Fill = fill, RadiusX = 2, RadiusY = 2 };
             }
         }
+            .AutomationName("Quarterly Sales by Product Line")
+            .FullDescription("Grouped bar chart comparing quarterly sales for Electronics, Clothing, and Groceries across Q1 through FY.")
         """;
 
     public override Element Render()
@@ -97,6 +100,8 @@ public class GroupedBarChartSample : GallerySample
 
              D3Dsl.Text(left, 4, "Quarterly Sales by Product Line", 13, ChartForeground),
             ]
-        );
+        )
+            .AutomationName("Quarterly Sales by Product Line")
+            .FullDescription("Grouped bar chart comparing quarterly sales for Electronics, Clothing, and Groceries across Q1 through FY.");
     }
 }

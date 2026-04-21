@@ -38,6 +38,13 @@ public sealed class ReactorHost : IDisposable
     private volatile bool _disposed;
     private readonly global::Windows.Foundation.TypedEventHandler<object, WindowEventArgs> _closedHandler;
 
+    // Accessibility: forced-colors and reduced-motion auto-propagation
+    private global::Windows.UI.ViewManagement.AccessibilitySettings? _accessibilitySettings;
+    private global::Windows.UI.ViewManagement.UISettings? _uiSettings;
+    private volatile bool _isForcedColors;
+    private volatile bool _isReducedMotion;
+    private Charting.ForcedColorsTheme? _forcedColorsTheme;
+
     // Captured AnimationScope curve — when a state setter is called inside
     // WithAnimation, the scope is synchronous but the render is async.
     // We capture the curve here so the reconcile pass can restore it.
@@ -132,6 +139,26 @@ public sealed class ReactorHost : IDisposable
             catch { /* windowless / headless host — no activation hook */ }
         }
 
+        // ── Accessibility: auto-detect forced-colors and reduced-motion ──
+        // D3Dsl.IsForcedColors is set each render; listeners trigger re-render.
+        try
+        {
+            _accessibilitySettings = new global::Windows.UI.ViewManagement.AccessibilitySettings();
+            _isForcedColors = _accessibilitySettings.HighContrast;
+            if (_isForcedColors)
+                _forcedColorsTheme = Charting.ForcedColorsTheme.FromSystem();
+            _accessibilitySettings.HighContrastChanged += OnHighContrastChanged;
+        }
+        catch { /* headless / unit-test host — no accessibility settings */ }
+
+        try
+        {
+            _uiSettings = new global::Windows.UI.ViewManagement.UISettings();
+            _isReducedMotion = !_uiSettings.AnimationsEnabled;
+            _uiSettings.ColorValuesChanged += OnColorValuesChanged;
+        }
+        catch { /* headless / unit-test host — no UI settings */ }
+
         // Register built-in custom element types
         Controls.ResizeGripRegistration.Register(_reconciler);
 
@@ -220,6 +247,12 @@ public sealed class ReactorHost : IDisposable
             Element? newTree = null;
 
             _phaseSw.Restart();
+
+            // Propagate accessibility state to D3Dsl thread-statics so all chart
+            // rendering picks up forced-colors / reduced-motion automatically.
+            Charting.D3Dsl.IsForcedColors = _isForcedColors;
+            Charting.D3Dsl.IsReducedMotion = _isReducedMotion;
+            Charting.D3Dsl.ForcedColors = _forcedColorsTheme;
 
             if (_rootComponent is not null)
             {
@@ -393,6 +426,30 @@ public sealed class ReactorHost : IDisposable
         RequestRender();
     }
 
+    private void OnHighContrastChanged(
+        global::Windows.UI.ViewManagement.AccessibilitySettings sender, object args)
+    {
+        _isForcedColors = sender.HighContrast;
+        _forcedColorsTheme = _isForcedColors ? Charting.ForcedColorsTheme.FromSystem() : null;
+        _logger.LogDebug("High-contrast changed to {IsHighContrast} — re-rendering", _isForcedColors);
+        RequestRender();
+    }
+
+    private void OnColorValuesChanged(
+        global::Windows.UI.ViewManagement.UISettings sender, object args)
+    {
+        // UISettings.ColorValuesChanged fires for palette changes and also when
+        // AnimationsEnabled toggles. Re-read both signals.
+        _isReducedMotion = !sender.AnimationsEnabled;
+        // High-contrast palette may also change — re-read to be safe.
+        if (_accessibilitySettings is { } a11y)
+        {
+            _isForcedColors = a11y.HighContrast;
+            _forcedColorsTheme = _isForcedColors ? Charting.ForcedColorsTheme.FromSystem() : null;
+        }
+        RequestRender();
+    }
+
     /// <summary>
     /// Awaits until the render loop is idle (no pending or in-flight renders).
     /// Yields to the dispatcher at Low priority in a loop so that Normal-priority
@@ -437,6 +494,12 @@ public sealed class ReactorHost : IDisposable
                 _themeListenerElement.ActualThemeChanged -= OnActualThemeChanged;
             _themeListenerElement = null;
         });
+
+        // Accessibility listener cleanup
+        if (_accessibilitySettings is not null)
+            _accessibilitySettings.HighContrastChanged -= OnHighContrastChanged;
+        if (_uiSettings is not null)
+            _uiSettings.ColorValuesChanged -= OnColorValuesChanged;
 
         _rootComponent?.Context.RunCleanups();
         _funcContext?.RunCleanups();

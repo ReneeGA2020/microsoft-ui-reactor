@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -21,6 +22,8 @@ public class LineChart : GallerySample
                 stroke: lineBrush, strokeWidth: 2),
             ..dots
         )
+            .AutomationName("Daily Temperature (°C)")
+            .FullDescription("Line chart showing daily temperature readings over 30 days, ranging from 5.2°C to 22.0°C.")
         """;
 
     public override Element Render()
@@ -52,6 +55,8 @@ public class LineChart : GallerySample
              .. data.Select(d => (Element)(D3Circle(xs.Map(d.x), ys.Map(d.y), 3) with { Fill = lineBrush })),
              D3Dsl.Text(canvasW / 2 - 20, canvasH - 12, "Day", 11, ChartMutedForeground),
              D3Dsl.Text(2, top - 14, "\u00b0C", 11, ChartMutedForeground)]
-        );
+        )
+            .AutomationName("Daily Temperature (\u00b0C)")
+            .FullDescription("Line chart showing daily temperature readings over 30 days, ranging from 5.2\u00b0C to 22.0\u00b0C.");
     }
 }

@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -26,6 +27,8 @@ public class StackedAreaChart : GallerySample
             return D3AreaPath(pts, x: d => xs.Map(d.x), y0: d => ys.Map(d.y0), y1: d => ys.Map(d.y1),
                 fill: Brush(Palette[si], opacity: 0.75));
         })
+            .AutomationName("Stacked Area Chart")
+            .FullDescription("Stacked area chart showing 3 data series (Product, Service, Support) across 12 months.")
         """;
 
     public override Element Render()
@@ -83,6 +86,8 @@ public class StackedAreaChart : GallerySample
              .. D3Legend(marginLeft + plotW - 100, marginTop + 8, keys.Select((key, k) => (key, Brush(Palette[k], opacity: 0.75)))),
              D3Dsl.Text(marginLeft, 2, "Stacked Area Chart", 14, ChartForeground),
             ]
-        );
+        )
+            .AutomationName("Stacked Area Chart")
+            .FullDescription("Stacked area chart showing 3 data series (Product, Service, Support) across 12 months.");
     }
 }

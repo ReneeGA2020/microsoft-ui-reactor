@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -22,6 +23,8 @@ public sealed class ScatterplotSample : GallerySample
             ..points.Select(p => D3Circle(xs.Map(p.x), ys.Map(p.y), 4)
                 with { Fill = fill, Stroke = stroke })
         )
+            .AutomationName("Scatterplot (50 random points)")
+            .FullDescription("Scatterplot of 50 random points plotted on x and y axes ranging from 0 to 100.")
         """;
 
     public override Element Render()
@@ -47,6 +50,8 @@ public sealed class ScatterplotSample : GallerySample
              .. D3Axes(xs, ys, left, top, pw, ph),
              .. points.Select(p => (Element)(D3Circle(xs.Map(p.x), ys.Map(p.y), 4) with { Fill = fill, Stroke = stroke })),
              D3Dsl.Text(left, 6, "Scatterplot (50 random points)", 14, ChartForeground)]
-        );
+        )
+            .AutomationName("Scatterplot (50 random points)")
+            .FullDescription("Scatterplot of 50 random points plotted on x and y axes ranging from 0 to 100.");
     }
 }

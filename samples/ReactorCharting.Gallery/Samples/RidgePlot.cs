@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -32,6 +33,8 @@ public class RidgePlot : GallerySample
                     stroke: Brush(Palette[r]), strokeWidth: 1.5, curve: D3Curve.Natural),
             };
         })
+            .AutomationName("Ridgeline Plot")
+            .FullDescription("Ridgeline plot with 5 overlapping distribution curves (Groups A through E) stacked vertically.")
         """;
 
     public override Element Render()
@@ -98,6 +101,8 @@ public class RidgePlot : GallerySample
                 ];
             }),
             D3Dsl.Text(marginLeft, 4, "Ridgeline Plot", 14, ChartForeground),
-        ]);
+        ])
+            .AutomationName("Ridgeline Plot")
+            .FullDescription("Ridgeline plot with 5 overlapping distribution curves (Groups A through E) stacked vertically.");
     }
 }

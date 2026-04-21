@@ -39,6 +39,8 @@ public sealed class OrgChartSample : GallerySample
                 TextBlock(person.Name).SemiBold(),
                 TextBlock(person.Role),
             )) with { CornerRadius = 8, ... };
+        .AutomationName("Org Chart")
+        .FullDescription("Organizational chart showing a 12-person hierarchy across 4 levels with CEO at the root.");
         """;
 
     record Person(string Name, string Role, string Initials, Person[]? Reports = null);
@@ -92,7 +94,9 @@ public sealed class OrgChartSample : GallerySample
                 return PersonCard(n.Data, depth)
                     .Canvas(nx - CardW / 2, ny - CardH / 2);
             }),
-        ]);
+        ])
+            .AutomationName("Org Chart")
+            .FullDescription("Organizational chart showing a 12-person hierarchy across 4 levels with CEO at the root.");
     }
 
     static Element PersonCard(Person person, int depth)

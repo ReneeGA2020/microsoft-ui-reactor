@@ -42,6 +42,8 @@ public sealed class ComponentHierarchySample : GallerySample
             "CheckBox"     => CheckBox(false, label: node.Name),
             _              => HeaderBadge(node.Name),
         };
+        .AutomationName("Component Hierarchy")
+        .FullDescription("Tree layout of 11 WinUI controls organized in 3 groups, positioned by D3 Reingold-Tilford algorithm.");
         """;
 
     record CtrlNode(string Name, string Kind, CtrlNode[]? Children = null);
@@ -90,7 +92,9 @@ public sealed class ComponentHierarchySample : GallerySample
                 double offsetX = n.Children.Count == 0 ? 45 : 30;
                 return ControlForNode(n.Data).Canvas(nx - offsetX, ny - 14);
             }),
-        ]);
+        ])
+            .AutomationName("Component Hierarchy")
+            .FullDescription("Tree layout of 11 WinUI controls organized in 3 groups, positioned by D3 Reingold-Tilford algorithm.");
     }
 
     static Element ControlForNode(CtrlNode node) => node.Kind switch

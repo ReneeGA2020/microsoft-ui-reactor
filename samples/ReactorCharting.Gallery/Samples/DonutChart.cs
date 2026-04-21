@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -21,7 +22,9 @@ public sealed class DonutChartSample : GallerySample
                 fill: Brush(Palette[i % Palette.Count])),
             D3Dsl.Text(cx + lx, cy + ly, a.Data.Name, 10, brush),
         });
-        D3Canvas(width, height, [..slices, ..centerText, title]);
+        D3Canvas(width, height, [..slices, ..centerText, title])
+            .AutomationName("Monthly Expenses")
+            .FullDescription("Donut chart showing monthly expenses: Housing $1,800, Food $650, Transport $400, Health $300, Utilities $250, Savings $600.");
         """;
 
     public override Element Render()
@@ -55,6 +58,8 @@ public sealed class DonutChartSample : GallerySample
             D3Dsl.Text(cx - 24, cy - 12, $"${total:N0}", 14, ChartForeground),
             D3Dsl.Text(cx - 16, cy + 6, "/ month", 10, ChartMutedForeground),
             D3Dsl.Text(cx - 80, 10, "Monthly Expenses", 16, ChartForeground),
-        ]);
+        ])
+            .AutomationName("Monthly Expenses")
+            .FullDescription("Donut chart showing monthly expenses: Housing $1,800, Food $650, Transport $400, Health $300, Utilities $250, Savings $600.");
     }
 }

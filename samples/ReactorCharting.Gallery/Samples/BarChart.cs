@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -22,6 +23,8 @@ public class BarChartSample : GallerySample
             ..bars,
             ..xLabels
         )
+            .AutomationName("Monthly Revenue ($k)")
+            .FullDescription("Bar chart showing monthly revenue from January to December, ranging from $42k to $103k.")
         """;
 
     public override Element Render()
@@ -64,6 +67,8 @@ public class BarChartSample : GallerySample
                  TextRight(0, ys.Map(t) - 7, Fmt(t) + "k", left - 6, 10, axisBrush)),
              .. xLabels,
              D3Dsl.Text(left, 4, "Monthly Revenue ($k)", 13, ChartForeground)]
-        );
+        )
+            .AutomationName("Monthly Revenue ($k)")
+            .FullDescription("Bar chart showing monthly revenue from January to December, ranging from $42k to $103k.");
     }
 }

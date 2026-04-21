@@ -1,3 +1,4 @@
+using Microsoft.UI.Reactor;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Charting.D3;
 using Microsoft.UI.Reactor.Charting;
@@ -29,6 +30,8 @@ public sealed class SankeyDiagramSample : GallerySample
             D3Rect(pad + node.X0, pad + node.Y0, nw, nh)
                 with { Fill = fill, RadiusX = 2, RadiusY = 2 }
         }
+        .AutomationName("Sankey Diagram — Energy Flow")
+        .FullDescription("Sankey diagram showing energy flow from 5 sources through 3 intermediate stages to 2 outputs.");
         """;
 
     public override Element Render()
@@ -118,6 +121,8 @@ public sealed class SankeyDiagramSample : GallerySample
              }),
              D3Dsl.Text(12, 6, "Sankey Diagram \u2014 Energy Flow", 14, ChartForeground),
             ]
-        );
+        )
+            .AutomationName("Sankey Diagram \u2014 Energy Flow")
+            .FullDescription("Sankey diagram showing energy flow from 5 sources through 3 intermediate stages to 2 outputs.");
     }
 }

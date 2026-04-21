@@ -24,6 +24,8 @@ public class SlopeChart : GallerySample
                 D3Circle(xRight, ys.Map(item.After), 5) with { Fill = brush },
             };
         })
+            .AutomationName("Department Performance: Before vs After")
+            .FullDescription("Slope chart comparing before and after performance scores for six departments, with lines colored green for improvement and red for decline.")
         """;
 
     public override Element Render()
@@ -89,6 +91,8 @@ public class SlopeChart : GallerySample
              // Legend
              .. D3Legend(canvasW / 2 - 80, canvasH - 22, [("Improved", Brush(Palette[2])), ("Declined", Brush(Palette[3]))]),
             ]
-        );
+        )
+            .AutomationName("Department Performance: Before vs After")
+            .FullDescription("Slope chart comparing before and after performance scores for six departments, with lines colored green for improvement and red for decline.");
     }
 }
