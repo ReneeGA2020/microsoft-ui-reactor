@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -283,6 +284,8 @@ public sealed class IntlAccessor
         return null;
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "ToArgsDictionary uses reflection on anonymous types for localization args.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "ToArgsDictionary uses reflection on anonymous types for localization args.")]
     private static IDictionary<string, object> ToArgsDictionary(object args)
     {
         if (args is IDictionary<string, object> dict)

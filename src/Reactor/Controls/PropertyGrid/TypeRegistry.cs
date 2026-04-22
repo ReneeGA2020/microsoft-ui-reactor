@@ -51,6 +51,7 @@ public class TypeRegistry
     /// 4. Array/IList&lt;T&gt; — array editor
     /// 5. Record/class/struct — reflection-based decomposition
     /// </summary>
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Resolve may use Activator.CreateInstance on runtime-determined types.")]
     public TypeMetadata Resolve(Type type)
     {
         // 1. Exact match
@@ -79,6 +80,7 @@ public class TypeRegistry
     /// For standard (PropertyGrid/FormField): Editor ?? built-in
     /// For full (expand): FullEditor (null when not registered)
     /// </summary>
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "ResolveEditor calls Resolve; acceptable for non-AOT builds.")]
     public Func<object, Action<object>, Element>? ResolveEditor(Type type, EditorTier tier)
     {
         var meta = Resolve(type);
@@ -201,6 +203,11 @@ public class TypeRegistry
         return false;
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "TryResolveArray uses Activator.CreateInstance; acceptable for non-AOT builds.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "TryResolveArray uses reflection to check constructors on element types.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2065", Justification = "TryResolveArray uses reflection to check constructors on element types.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2062", Justification = "TryResolveArray creates instances of element types via Activator.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = "TryResolveArray creates instances of element types via Activator.")]
     private static bool TryResolveArray(Type type, [NotNullWhen(true)] out TypeMetadata? metadata)
     {
         metadata = null;

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
@@ -364,6 +365,8 @@ internal static class DevtoolsPropertyTools
 
     /// <summary>Find a static DependencyProperty field on the element's type hierarchy,
     /// or on an owner type for attached properties (e.g. "Grid.Row").</summary>
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Devtools uses reflection to discover DependencyProperty fields.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Devtools reflection for property discovery.")]
     private static (DependencyProperty dp, FieldInfo field) FindDependencyProperty(UIElement el, string name)
     {
         // Support attached property syntax: "Grid.Row" → look on Grid type.
@@ -406,6 +409,7 @@ internal static class DevtoolsPropertyTools
     }
 
     /// <summary>Resolve a short type name to a WinUI type (Grid, Canvas, ToolTipService, etc.).</summary>
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Devtools uses Assembly.GetType to resolve WinUI type names at runtime.")]
     private static Type? FindTypeByName(string name)
     {
         // Search the Microsoft.UI.Xaml assemblies.
@@ -426,6 +430,8 @@ internal static class DevtoolsPropertyTools
     }
 
     /// <summary>Enumerate all public static DependencyProperty fields on the element's type chain.</summary>
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Devtools uses reflection to enumerate DependencyProperty fields.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Devtools reflection for property enumeration.")]
     private static List<object> EnumerateDependencyProperties(UIElement el)
     {
         var seen = new HashSet<string>();

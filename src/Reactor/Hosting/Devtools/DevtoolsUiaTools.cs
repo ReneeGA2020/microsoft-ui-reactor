@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.UI.Xaml;
@@ -879,10 +880,12 @@ internal sealed record WaitForPredicate(
         }
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "JSON serialization to inspect MCP tool exception payload.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "JSON serialization to inspect MCP tool exception payload.")]
     private static bool IsUnknownSelector(McpToolException ex)
     {
         if (ex.Payload is null) return false;
-        var json = JsonSerializer.Serialize(ex.Payload);
+        var json = JsonSerializer.Serialize(ex.Payload, DevtoolsMcpServer.JsonOpts);
         return json.Contains("unknown-selector");
     }
 

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.UI.Reactor.Data;
 
@@ -18,7 +19,9 @@ public static class ReflectionTypeMetadataProvider
     /// public instance properties and reading attributes.
     /// </summary>
     public static TypeMetadata CreateMetadata(Type type)
+#pragma warning disable IL2111 // Method with DynamicallyAccessedMembers parameter accessed via reflection
         => _cache.GetOrAdd(type, BuildMetadata);
+#pragma warning restore IL2111
 
     /// <summary>
     /// Generates a FieldDescriptor for a single PropertyInfo (unbound — for registry use).
@@ -62,7 +65,7 @@ public static class ReflectionTypeMetadataProvider
         };
     }
 
-    private static TypeMetadata BuildMetadata(Type type)
+    private static TypeMetadata BuildMetadata([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
     {
         var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(p => p.CanRead)
@@ -112,7 +115,8 @@ public static class ReflectionTypeMetadataProvider
     ///   - Read-only: null
     /// </summary>
     private static FieldDescriptor CreateDescriptorBound(
-        PropertyInfo property, PropertyAttributeData attrs, object owner, Type ownerType)
+        PropertyInfo property, PropertyAttributeData attrs, object owner,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicConstructors)] Type ownerType)
     {
         Func<object, object?, object>? setter = null;
 
@@ -234,6 +238,8 @@ public static class ReflectionTypeMetadataProvider
         bool Filterable,
         PinPosition Pin);
 
+    [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = "BuildInitOnlySetter uses reflection to compose init-only properties.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "BuildInitOnlySetter uses reflection to compose init-only properties.")]
     internal static Func<object, object?, object>? BuildInitOnlySetter(PropertyInfo property)
     {
         var type = property.DeclaringType!;
@@ -248,7 +254,7 @@ public static class ReflectionTypeMetadataProvider
     }
 
     internal static Func<object, IReadOnlyDictionary<string, object>, object>? BuildCompose(
-        Type type, PropertyInfo[] properties)
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type, PropertyInfo[] properties)
     {
         // Try to find a constructor whose parameters match property names (case-insensitive)
         var ctors = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance);

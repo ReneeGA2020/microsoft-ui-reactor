@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json;
 using Microsoft.UI.Reactor.Core;
@@ -80,6 +81,7 @@ internal static class DevtoolsFireTool
     /// structured errors the live tool path emits. Extracted so unit tests
     /// can exercise the error shapes without a live MCP server.
     /// </summary>
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Devtools fire tool uses reflection to discover and invoke component methods.")]
     internal static (Component instance, MethodInfo handler) ResolveTarget(
         Component? root, string componentName, string eventName)
     {
@@ -120,6 +122,8 @@ internal static class DevtoolsFireTool
         return (instance, handler);
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Devtools fire tool uses reflection to discover component methods.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Devtools fire tool uses reflection to discover component methods.")]
     internal static string[] ListReachableHandlers(Component instance)
     {
         const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
@@ -140,6 +144,8 @@ internal static class DevtoolsFireTool
             : null;
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Devtools fire tool uses reflection to find handler methods.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Devtools fire tool uses reflection to find handler methods.")]
     internal static MethodInfo? FindHandler(Component instance, string eventName)
     {
         // Reactor lifecycle / render / hook machinery: firing these from outside
