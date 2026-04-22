@@ -1503,11 +1503,9 @@ public sealed partial class Reconciler
             // re-realize all items (modifying Children during layout →
             // "Cannot run layout in the middle of a collection change").
             // The factory keeps its identity; existing realized items
-            // stay mounted. On next scroll or layout, GetElementCore
+            // stay mounted. On next scroll or layout, IElementFactory.GetElement
             // uses the updated viewBuilder to produce new content.
-#pragma warning disable CS8305 // ElementFactory is evaluation-only; we control WinUI versions and rely on this API.
-            if (repeater.ItemTemplate is ElementFactory existingFactory && n.TryUpdateFactory(existingFactory))
-#pragma warning restore CS8305
+            if (repeater.ItemTemplate is IElementFactory existingFactory && n.TryUpdateFactory(existingFactory))
             {
                 // Item count may have changed — update the source
                 var newSource = n.GetItemsSource();
