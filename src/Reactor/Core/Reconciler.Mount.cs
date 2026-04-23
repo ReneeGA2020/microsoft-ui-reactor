@@ -340,8 +340,14 @@ public sealed partial class Reconciler
     {
         var tb = new WinPrim.ToggleButton { Content = togBtn.Label, IsChecked = togBtn.IsChecked };
         SetElementTag(tb, togBtn);
-        tb.Checked += (s, _) => (GetElementTag((UIElement)s!) as ToggleButtonElement)?.OnToggled?.Invoke(true);
-        tb.Unchecked += (s, _) => (GetElementTag((UIElement)s!) as ToggleButtonElement)?.OnToggled?.Invoke(false);
+        // Bind to Click — fires only for real user toggles. Checked/Unchecked
+        // would also fire when UpdateToggleButton rewrites IsChecked during a
+        // state-driven rerender, which would re-enter the callback and loop.
+        tb.Click += (s, _) =>
+        {
+            var t = (WinPrim.ToggleButton)s!;
+            (GetElementTag(t) as ToggleButtonElement)?.OnToggled?.Invoke(t.IsChecked ?? false);
+        };
         ApplySetters(togBtn.Setters, tb);
         return tb;
     }
@@ -1101,7 +1107,7 @@ public sealed partial class Reconciler
                 Header = tabItem.Header, IsClosable = tabItem.IsClosable,
                 Content = Mount(tabItem.Content, requestRerender),
             };
-            if (tabItem.Icon is not null) tvi.IconSource = new WinUI.SymbolIconSource { Symbol = ParseSymbol(tabItem.Icon) };
+            if (tabItem.Icon is not null) tvi.IconSource = ResolveIconSource(tabItem.Icon);
             tv.TabItems.Add(tvi);
         }
         SetElementTag(tv, tab);
@@ -1815,7 +1821,7 @@ public sealed partial class Reconciler
         {
             return iconData switch
             {
-                SymbolIconData sym => new WinUI.SymbolIcon(ParseSymbol(sym.Symbol)),
+                SymbolIconData sym => ResolveIconString(sym.Symbol) ?? new WinUI.SymbolIcon(Symbol.Placeholder),
                 FontIconData fi => CreateFontIcon(fi),
                 BitmapIconData bi => new WinUI.BitmapIcon { UriSource = bi.Source, ShowAsMonochrome = bi.ShowAsMonochrome },
                 PathIconData pi => CreatePathIcon(pi),
@@ -1823,8 +1829,42 @@ public sealed partial class Reconciler
                 _ => null,
             };
         }
-        if (iconSymbol is not null) return new WinUI.SymbolIcon(ParseSymbol(iconSymbol));
+        if (iconSymbol is not null) return ResolveIconString(iconSymbol);
         return null;
+    }
+
+    // Handles both Symbol enum names ("Home", "Edit") and raw Segoe Fluent
+    // glyphs (""). A Symbol enum mismatch used to collapse to
+    // Symbol.Placeholder, which rendered as a diamond — fall through to a
+    // FontIcon with SymbolThemeFontFamily so glyph strings render correctly.
+    private static WinUI.IconElement? ResolveIconString(string iconSymbol)
+    {
+        if (string.IsNullOrEmpty(iconSymbol)) return null;
+        if (Enum.TryParse<Symbol>(iconSymbol, ignoreCase: true, out var symbol))
+            return new WinUI.SymbolIcon(symbol);
+        // Treat as a Segoe Fluent / MDL2 glyph codepoint.
+        return new WinUI.FontIcon
+        {
+            Glyph = iconSymbol,
+            FontFamily = Microsoft.UI.Xaml.Application.Current?.Resources["SymbolThemeFontFamily"] as Microsoft.UI.Xaml.Media.FontFamily
+                         ?? new Microsoft.UI.Xaml.Media.FontFamily("Segoe Fluent Icons"),
+        };
+    }
+
+    // IconSource counterpart for controls (TabView, etc.) that take an
+    // IconSource instead of IconElement. Same glyph-fallback semantics as
+    // ResolveIconString.
+    internal static WinUI.IconSource? ResolveIconSource(string? iconSymbol)
+    {
+        if (string.IsNullOrEmpty(iconSymbol)) return null;
+        if (Enum.TryParse<Symbol>(iconSymbol, ignoreCase: true, out var symbol))
+            return new WinUI.SymbolIconSource { Symbol = symbol };
+        return new WinUI.FontIconSource
+        {
+            Glyph = iconSymbol,
+            FontFamily = Microsoft.UI.Xaml.Application.Current?.Resources["SymbolThemeFontFamily"] as Microsoft.UI.Xaml.Media.FontFamily
+                         ?? new Microsoft.UI.Xaml.Media.FontFamily("Segoe Fluent Icons"),
+        };
     }
 
     private static WinUI.FontIcon CreateFontIcon(FontIconData fi)
