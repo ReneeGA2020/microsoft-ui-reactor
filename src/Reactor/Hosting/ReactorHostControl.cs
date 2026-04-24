@@ -61,6 +61,9 @@ public sealed partial class ReactorHostControl : ContentControl, IDisposable
     private volatile bool _disposed;
     private Curve? _pendingAnimationCurve;
 
+    // ── Reconcile highlight overlay (gated by ReactorFeatureFlags.HighlightReconcileChanges) ──
+    private HighlightOverlayWiring? _highlightWiring;
+
     // Render phase timing instrumentation
     private readonly Stopwatch _phaseSw = new();
     private double _treeBuildSum;
@@ -289,8 +292,31 @@ public sealed partial class ReactorHostControl : ContentControl, IDisposable
 
             if (newControl != _currentControl)
             {
-                Content = newControl;
+                if (ReactorFeatureFlags.HighlightReconcileChanges)
+                {
+                    _highlightWiring ??= new HighlightOverlayWiring(_dispatcherQueue);
+                    Content = _highlightWiring.SetContentViaWrapper(newControl);
+                }
+                else
+                {
+                    Content = newControl;
+                }
                 AttachThemeListener(newControl);
+            }
+            else if (ReactorFeatureFlags.HighlightReconcileChanges && _highlightWiring?.WrapperRoot is null)
+            {
+                // Flag was toggled on after initial render — install wrapper now
+                _highlightWiring ??= new HighlightOverlayWiring(_dispatcherQueue);
+                Content = _highlightWiring.SetContentViaWrapper(newControl);
+            }
+            else if (!ReactorFeatureFlags.HighlightReconcileChanges && _highlightWiring?.WrapperRoot is not null)
+            {
+                // Flag was toggled off while preserving the same root control — tear down
+                // the wrapper and reinstate the raw control so we don't pay for an extra
+                // layout layer when the feature is disabled.
+                Content = newControl;
+                _highlightWiring.Dispose();
+                _highlightWiring = null;
             }
 
             _currentControl = newControl;
@@ -298,6 +324,9 @@ public sealed partial class ReactorHostControl : ContentControl, IDisposable
 
             // Start any connected animations now that the new tree is in the visual tree
             _reconciler.FlushConnectedAnimations();
+
+            // Schedule highlight overlay after layout so elements have final bounds.
+            _highlightWiring?.ScheduleHighlightFlush(_reconciler);
 
             double reconcileMs = _phaseSw.Elapsed.TotalMilliseconds;
 
@@ -404,7 +433,14 @@ public sealed partial class ReactorHostControl : ContentControl, IDisposable
                 IsTextSelectionEnabled = true,
             }
         };
-        Content = errorPanel;
+        if (_highlightWiring is not null)
+        {
+            _highlightWiring.TryShowErrorInWrapper(errorPanel);
+        }
+        else
+        {
+            Content = errorPanel;
+        }
         _currentControl = errorPanel;
         _currentTree = null;
     }
@@ -425,6 +461,8 @@ public sealed partial class ReactorHostControl : ContentControl, IDisposable
         _funcContext = null;
         _currentTree = null;
         _currentControl = null;
+        _highlightWiring?.Dispose();
+        _highlightWiring = null;
         Content = null;
     }
 }

@@ -675,6 +675,14 @@ internal static class SelfTestFixtureRegistry
         "Editors_ColorCompactMounts",
         "Renderers_HyperlinkMounts",
         "Renderers_ColorSwatchMounts",
+
+        // Reconcile-highlight overlay
+        "ReconcileHighlight_MountCapturesElements",
+        "ReconcileHighlight_UpdateCapturesModified",
+        "ReconcileHighlight_NoCaptureWhenFlagOff",
+        "ReconcileHighlight_ContainerNotModifiedWhenOnlyChildrenChange",
+        "ReconcileHighlight_UpdatePathNotRemount",
+        "ReconcileHighlight_MenuFlyoutUpdatesInPlace",
     ];
 
     public static SelfTestFixtureBase? Create(string name, Harness harness) => name switch
@@ -1344,6 +1352,14 @@ internal static class SelfTestFixtureRegistry
         "Editors_ColorCompactMounts" => new SpecializedEditorsTests.ColorCompactEditorMounts(harness),
         "Renderers_HyperlinkMounts" => new SpecializedEditorsTests.HyperlinkRendererMounts(harness),
         "Renderers_ColorSwatchMounts" => new SpecializedEditorsTests.ColorSwatchRendererMounts(harness),
+
+        // Reconcile-highlight overlay
+        "ReconcileHighlight_MountCapturesElements" => new ReconcileHighlightTests.MountCapturesElements(harness),
+        "ReconcileHighlight_UpdateCapturesModified" => new ReconcileHighlightTests.UpdateCapturesModified(harness),
+        "ReconcileHighlight_NoCaptureWhenFlagOff" => new ReconcileHighlightTests.NoCaptureWhenFlagOff(harness),
+        "ReconcileHighlight_ContainerNotModifiedWhenOnlyChildrenChange" => new ReconcileHighlightTests.ContainerNotModifiedWhenOnlyChildrenChange(harness),
+        "ReconcileHighlight_UpdatePathNotRemount" => new ReconcileHighlightTests.UpdatePathNotRemount(harness),
+        "ReconcileHighlight_MenuFlyoutUpdatesInPlace" => new ReconcileHighlightTests.MenuFlyoutUpdatesInPlace(harness),
 
         _ => null,
     };

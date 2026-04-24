@@ -17,6 +17,10 @@ public static partial class Factories
     /// invoked — so any element construction inside the lambda is skipped
     /// at retail cost of one bool check.
     ///
+    /// A built-in "Highlight reconcile changes" toggle is always appended
+    /// (separated from user items) to flip
+    /// <see cref="ReactorFeatureFlags.HighlightReconcileChanges"/>.
+    ///
     /// Typical placement is a titlebar:
     /// <code>
     /// HStack(
@@ -45,7 +49,18 @@ public static partial class Factories
     {
         if (!ReactorApp.DevtoolsEnabled) return Empty();
 
-        var materialized = items?.Invoke()?.ToArray() ?? Array.Empty<MenuFlyoutItemBase>();
+        var userItems = items?.Invoke()?.ToArray() ?? Array.Empty<MenuFlyoutItemBase>();
+
+        var builtInToggle = ToggleMenuItem("Highlight reconcile changes",
+            ReactorFeatureFlags.HighlightReconcileChanges,
+            v => ReactorFeatureFlags.HighlightReconcileChanges = v);
+
+        // Separator only makes sense when there are user items to separate from.
+        var builtInItems = userItems.Length > 0
+            ? new MenuFlyoutItemBase[] { MenuSeparator(), builtInToggle }
+            : new MenuFlyoutItemBase[] { builtInToggle };
+
+        var materialized = userItems.Concat(builtInItems).ToArray();
 
         var trigger = Button(glyph)
             .Foreground("#F59E0B")
