@@ -56,22 +56,78 @@ Hardcoded colors are acceptable only for:
 - One-off decorative elements that intentionally ignore theming (e.g., brand logos)
 - Explicit hit-test targets (`Background("#00000000")` for transparent hit areas)
 
-#### Common Theme Tokens
+#### Theme Token Reference
+
+**Text:**
 
 | Token | WinUI Resource | Purpose |
 |-------|---------------|---------|
-| `Theme.PrimaryText` | `TextFillColorPrimaryBrush` | Primary text |
-| `Theme.SecondaryText` | `TextFillColorSecondaryBrush` | Secondary text |
-| `Theme.TertiaryText` | `TextFillColorTertiaryBrush` | Placeholder text |
-| `Theme.DisabledText` | `TextFillColorDisabledBrush` | Disabled text |
-| `Theme.Accent` | `AccentFillColorDefaultBrush` | Accent fills |
-| `Theme.AccentSecondary` | `AccentFillColorSecondaryBrush` | Accent hover |
-| `Theme.AccentTertiary` | `AccentFillColorTertiaryBrush` | Accent pressed |
-| `Theme.ControlFill` | `ControlFillColorDefaultBrush` | Control backgrounds |
-| `Theme.CardBackground` | `CardBackgroundFillColorDefaultBrush` | Card backgrounds |
-| `Theme.LayerFill` | `LayerFillColorDefaultBrush` | Layer backgrounds |
-| `Theme.SolidBackground` | `SolidBackgroundFillColorBaseBrush` | Solid backgrounds |
-| `Theme.SubtleFill` | `SubtleFillColorTransparentBrush` | Subtle/transparent fills |
+| `Theme.PrimaryText` | `TextFillColorPrimaryBrush` | Primary body text, titles, and labels |
+| `Theme.SecondaryText` | `TextFillColorSecondaryBrush` | Captions, subtitles, and supplementary info |
+| `Theme.TertiaryText` | `TextFillColorTertiaryBrush` | Placeholder text and disabled secondary content |
+| `Theme.DisabledText` | `TextFillColorDisabledBrush` | Text in disabled controls or inactive states |
+| `Theme.AccentText` | `AccentTextFillColorPrimaryBrush` | Hyperlinks, accent-colored labels, and interactive text |
+
+**Accent fill:**
+
+| Token | WinUI Resource | Purpose |
+|-------|---------------|---------|
+| `Theme.Accent` | `AccentFillColorDefaultBrush` | Primary accent buttons and controls at rest |
+| `Theme.AccentSecondary` | `AccentFillColorSecondaryBrush` | Accent button hover state |
+| `Theme.AccentTertiary` | `AccentFillColorTertiaryBrush` | Accent button pressed state |
+| `Theme.AccentDisabled` | `AccentFillColorDisabledBrush` | Disabled accent controls |
+
+**Control fill:**
+
+| Token | WinUI Resource | Purpose |
+|-------|---------------|---------|
+| `Theme.ControlFill` | `ControlFillColorDefaultBrush` | Default rest state for standard controls |
+| `Theme.ControlFillSecondary` | `ControlFillColorSecondaryBrush` | Hover state of standard controls |
+| `Theme.ControlFillTertiary` | `ControlFillColorTertiaryBrush` | Pressed state of standard controls |
+| `Theme.ControlFillDisabled` | `ControlFillColorDisabledBrush` | Disabled state of standard controls |
+| `Theme.ControlFillInputActive` | `ControlFillColorInputActiveBrush` | Active/focused text input field backgrounds |
+
+**Surfaces & backgrounds:**
+
+| Token | WinUI Resource | Purpose |
+|-------|---------------|---------|
+| `Theme.SolidBackground` | `SolidBackgroundFillColorBaseBrush` | App and page-level background (base layer) |
+| `Theme.CardBackground` | `CardBackgroundFillColorDefaultBrush` | Card and elevated surface backgrounds |
+| `Theme.LayerFill` | `LayerFillColorDefaultBrush` | Flyout, dialog, and pane backgrounds |
+| `Theme.SubtleFill` | `SubtleFillColorSecondaryBrush` | Subtle control highlights and section backgrounds |
+| `Theme.SmokeFill` | `SmokeFillColorDefaultBrush` | Semi-transparent overlay behind modal dialogs |
+
+**Stroke & border:**
+
+| Token | WinUI Resource | Purpose |
+|-------|---------------|---------|
+| `Theme.CardStroke` | `CardStrokeColorDefaultBrush` | Borders on cards and elevated containers |
+| `Theme.SurfaceStroke` | `SurfaceStrokeColorDefaultBrush` | Borders on flyouts, dialogs, and pane surfaces |
+| `Theme.DividerStroke` | `DividerStrokeColorDefaultBrush` | Horizontal or vertical dividers between content |
+| `Theme.ControlStroke` | `ControlStrokeColorDefaultBrush` | Borders on interactive controls at rest |
+| `Theme.ControlStrokeSecondary` | `ControlStrokeColorSecondaryBrush` | Bottom edge of controls for depth effect |
+
+**System signal:**
+
+| Token | WinUI Resource | Purpose |
+|-------|---------------|---------|
+| `Theme.SystemAttention` | `SystemFillColorAttentionBrush` | Informational indicators and badges |
+| `Theme.SystemSuccess` | `SystemFillColorSuccessBrush` | Success states and confirmations |
+| `Theme.SystemCaution` | `SystemFillColorCautionBrush` | Warning states and cautionary indicators |
+| `Theme.SystemCritical` | `SystemFillColorCriticalBrush` | Error states and critical alerts |
+| `Theme.SystemNeutral` | `SystemFillColorNeutralBrush` | Neutral status indicators |
+| `Theme.SystemSolidNeutral` | `SystemFillColorSolidNeutralBrush` | Solid neutral fill for icons and non-text indicators |
+
+**System signal backgrounds:**
+
+| Token | WinUI Resource | Purpose |
+|-------|---------------|---------|
+| `Theme.SystemAttentionBackground` | `SystemFillColorAttentionBackgroundBrush` | Background for attention/info banners |
+| `Theme.SystemSuccessBackground` | `SystemFillColorSuccessBackgroundBrush` | Background for success banners and info bars |
+| `Theme.SystemCautionBackground` | `SystemFillColorCautionBackgroundBrush` | Background for warning banners and info bars |
+| `Theme.SystemCriticalBackground` | `SystemFillColorCriticalBackgroundBrush` | Background for error banners and info bars |
+| `Theme.SystemNeutralBackground` | `SystemFillColorNeutralBackgroundBrush` | Background for neutral status banners |
+| `Theme.SystemSolidAttention` | `SystemFillColorSolidAttentionBackgroundBrush` | Solid background for high-contrast attention surfaces |
 
 For any WinUI resource not exposed as a named token, use `Theme.Ref("ResourceKeyBrush")`.
 
@@ -178,30 +234,48 @@ Use the predefined text factories or WinUI style tokens. Never set `FontSize` an
 | `SubHeading("text")` | 20px | 600 | Section headers, card titles |
 | `Heading("text")` | 28px | 700 | Page titles |
 
-**WinUI type ramp (via `.Set()`):**
+**Font weight helpers:**
 
-| Style | Size | Weight |
-|-------|------|--------|
-| `CaptionTextBlockStyle` | 12px | Regular |
-| `BodyTextBlockStyle` | 14px | Regular |
-| `BodyStrongTextBlockStyle` | 14px | Semibold |
-| `BodyLargeTextBlockStyle` | 18px | Regular |
-| `SubtitleTextBlockStyle` | 20px | Semibold |
-| `TitleTextBlockStyle` | 28px | Semibold |
-| `TitleLargeTextBlockStyle` | 40px | Semibold |
-| `DisplayTextBlockStyle` | 68px | Semibold |
-
-For sizes not covered by the factories, apply a WinUI style:
+| Helper | Weight | Use Case |
+|--------|--------|----------|
+| `.SemiBold()` | 600 | Emphasized body text, inline labels, field headers |
+| `.Bold()` | 700 | Reserved for `Heading()` page titles — avoid elsewhere |
 
 ```csharp
-// Correct: apply WinUI style for BodyLarge
-TextBlock("Prominent text").Set(tb => tb.Style =
-    (Style)Application.Current.Resources["BodyLargeTextBlockStyle"])
+TextBlock("Important label").SemiBold()
+TextBlock("Page Title").Bold()
+```
+
+**WinUI type ramp (via `.ApplyStyle()`):**
+
+| Style | Size | Weight | Recommendation |
+|-------|------|--------|----------------|
+| `CaptionTextBlockStyle` | 12px | Regular | Secondary labels, timestamps, footnotes |
+| `BodyTextBlockStyle` | 14px | Regular | Default body text, paragraphs, descriptions |
+| `BodyStrongTextBlockStyle` | 14px | Semibold | Emphasized body text, inline labels |
+| `BodyLargeTextBlockStyle` | 18px | Regular | Prominent body text |
+| `SubtitleTextBlockStyle` | 20px | Semibold | Section headings, card group labels |
+| `TitleTextBlockStyle` | 28px | Semibold | Page titles, dialog headings |
+| `TitleLargeTextBlockStyle` | 40px | Semibold | Primary page titles on feature pages |
+| `DisplayTextBlockStyle` | 68px | Semibold | Hero banners — one per page at most |
+
+For sizes not covered by the factories, use `.ApplyStyle()` to apply WinUI text block styles. This sets size, weight, line height, and optical sizing in one call:
+
+```csharp
+// Preferred: .ApplyStyle() for WinUI styles
+TextBlock("Title").ApplyStyle("TitleTextBlockStyle")
+TextBlock("Subtitle").ApplyStyle("SubtitleTextBlockStyle")
+TextBlock("Body Strong").ApplyStyle("BodyStrongTextBlockStyle")
+TextBlock("Caption").ApplyStyle("CaptionTextBlockStyle")
 
 // Also correct: use the Reactor factories for common sizes
 Heading("Page Title")
 SubHeading("Section")
 Caption("Fine print")
+
+// Escape hatch: .Set() for styles not exposed via .ApplyStyle()
+TextBlock("Prominent text").Set(tb => tb.Style =
+    (Style)Application.Current.Resources["BodyLargeTextBlockStyle"])
 
 // Wrong: raw font properties for standard UI text
 TextBlock("Title").FontSize(28).FontWeight(new FontWeight(700))
@@ -230,7 +304,19 @@ See [typography-and-colors.md](design-docs/typography-and-colors.md) for the ful
 
 #### 4px Grid
 
-Use multiples of 4 for all margins, padding, and sizing values.
+Use multiples of 4 for all margins, padding, and sizing values. The spacing scale is built on a 4px base unit:
+
+| Value | Name | Usage |
+|-------|------|-------|
+| 0px | Flush | No gap between elements |
+| 2px | Hairline | Tight spacing between related inline items |
+| 4px | Compact | Icon-to-label gaps and small control internals |
+| 8px | Standard | Default gap between sibling controls |
+| 12px | Relaxed | Padding inside cards and grouped sections |
+| 16px | Spacious | Between distinct content sections |
+| 24px | Section | Major section boundaries and card padding |
+| 36px | Page | Page-level margins around content |
+| 48px | Hero | Large spacing for hero areas and visual breaks |
 
 ```csharp
 // Correct: multiples of 4
@@ -243,12 +329,68 @@ VStack(5, children).Padding(15)
 Border(child).Margin(3)
 ```
 
-#### Corner Radius
+#### Margin vs Padding
 
-Use system values — `ControlCornerRadius` (4px) for controls and `OverlayCornerRadius` (8px) for overlays:
+**Margin** pushes an element away from its neighbors. It works on every Reactor element.
+
+**Padding** adds space between a container's edge and its content. It only works on `Border` and `Control`-based elements (`Button`, `TextField`, etc.). Layout panels like `VStack`, `HStack`, and `Grid` do not support `.Padding()` — wrap content in a `Border` if you need inner padding on a stack.
+
+| Element | `.Margin()` | `.Padding()` |
+|---------|-------------|-------------|
+| `Border` | ✓ | ✓ |
+| `Button` | ✓ | ✓ |
+| `TextField` | ✓ | ✓ |
+| `TextBlock` | ✓ | — |
+| `VStack` | ✓ | — |
+| `HStack` | ✓ | — |
+| `Grid` | ✓ | — |
+| `Image` | ✓ | — |
 
 ```csharp
-// Correct: system corner radius values
+// Margin — works on ALL elements
+TextBlock("Hello").Margin(8)
+VStack(children).Margin(16)
+Border(child).Margin(12)
+
+// Padding — only on Border and Control (Button, TextField, etc.)
+Border(child).Padding(16)    // ✓ works
+Button("Go").Padding(12)     // ✓ works
+
+// VStack/HStack don't support Padding — wrap in Border instead:
+Border(
+    VStack(8, items)
+).Padding(16)  // ✓ padding applied to the Border
+```
+
+Both `.Margin()` and `.Padding()` accept three overloads:
+
+```csharp
+// Uniform — same on all sides
+element.Margin(16)
+
+// Horizontal, Vertical
+element.Margin(24, 8)
+
+// Per-side: left, top, right, bottom
+element.Margin(4, 8, 16, 24)
+```
+
+#### Corner Radius
+
+Use system values — `ControlCornerRadius` (4px) for controls and `OverlayCornerRadius` (8px) for overlays.
+
+WinUI provides two corner radius theme resources. Use `ThemeResource.CornerRadius()` to resolve the system values at render time, ensuring your UI adapts if these values are customized:
+
+```csharp
+// Preferred: resolve system values at render time
+var controlRadius = ThemeResource.CornerRadius("ControlCornerRadius");
+var overlayRadius = ThemeResource.CornerRadius("OverlayCornerRadius");
+
+// Apply to elements
+Border(child).CornerRadius(controlRadius.TopLeft)   // controls, buttons, cards
+Border(dialog).CornerRadius(overlayRadius.TopLeft)   // dialogs, flyouts, menus
+
+// Also acceptable: hardcoded system values
 Border(child).CornerRadius(4)   // ControlCornerRadius equivalent
 Border(child).CornerRadius(8)   // OverlayCornerRadius equivalent
 
@@ -258,6 +400,26 @@ Border(child).CornerRadius(8, 8, 0, 0)
 // Wrong: non-standard radii (even if from Figma)
 Border(child).CornerRadius(3)
 Border(child).CornerRadius(6)
+```
+
+**Mixed radii for nested surfaces:** When nesting controls inside overlay containers, the outer container uses `OverlayCornerRadius` while inner controls use `ControlCornerRadius`:
+
+```csharp
+var cr = ThemeResource.CornerRadius("ControlCornerRadius");
+var or = ThemeResource.CornerRadius("OverlayCornerRadius");
+
+// Dialog with control-radius inner elements
+Border(
+    VStack(12,
+        TextField("", placeholder: "Username").CornerRadius(cr.TopLeft),
+        Button("Sign In", onClick)
+            .Background(Theme.Accent)
+            .CornerRadius(cr.TopLeft)
+    ).Margin(24)
+)
+.Background(Theme.LayerFill)
+.WithBorder(Theme.SurfaceStroke)
+.CornerRadius(or.TopLeft)  // outer overlay radius
 ```
 
 #### Sizing
