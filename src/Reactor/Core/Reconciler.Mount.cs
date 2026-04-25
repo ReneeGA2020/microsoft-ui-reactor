@@ -164,7 +164,12 @@ public sealed partial class Reconciler
         if (control is not null)
         {
             DebugUIElementsCreated++;
-            if (_highlightMounted is not null)
+            // Highlight capture is gated by the flag, not just by list
+            // existence: the list is allocated lazily on first flag-on and
+            // never freed afterward, so a non-null check would keep
+            // appending forever once the user toggles the flag off.
+            if (ReactorFeatureFlags.HighlightReconcileChanges
+                && _highlightMounted is not null)
                 _highlightMounted.Add(control);
         }
 
@@ -2277,6 +2282,18 @@ public sealed partial class Reconciler
         };
         _componentNodes[wrapper] = node;
 
+        // Layout-cost bookkeeping: gated by the flag so the GetType().Name
+        // call, the event raise, and the depth-counter increments are all
+        // skipped entirely when the overlay is off. Cache `trackLC` once so
+        // the matching decrement in `finally` agrees even if the flag flips
+        // mid-mount.
+        bool trackLC = ReactorFeatureFlags.ShowLayoutCost;
+        if (trackLC)
+        {
+            RaiseLayoutCostComponentMounted(wrapper, component.GetType().Name);
+            _layoutCostComponentDepth++;
+        }
+
         // Pass the component's own wrapped rerender to children so that child state
         // changes propagate SelfTriggered up through all component ancestors.
         var componentRerender = CreateComponentRerender(node, requestRerender);
@@ -2293,7 +2310,12 @@ public sealed partial class Reconciler
             _logger.LogError(ex, "Component Render() threw during mount: {ComponentName}", compElement.GetType().Name);
             childElement = new TextBlockElement($"⚠ Render error: {ex.Message}");
         }
-        var childControl = Mount(childElement, componentRerender);
+        UIElement? childControl;
+        try
+        {
+            childControl = Mount(childElement, componentRerender);
+        }
+        finally { if (trackLC) _layoutCostComponentDepth--; }
 
         wrapper.Child = childControl;
         node.RenderedElement = childElement;
@@ -2309,6 +2331,13 @@ public sealed partial class Reconciler
             Context = ctx, RenderedElement = null, Element = funcElement,
         };
         _componentNodes[wrapper] = node;
+
+        bool trackLC = ReactorFeatureFlags.ShowLayoutCost;
+        if (trackLC)
+        {
+            RaiseLayoutCostComponentMounted(wrapper, funcElement.GetType().Name);
+            _layoutCostComponentDepth++;
+        }
 
         // Pass the component's own wrapped rerender to children so that child state
         // changes propagate SelfTriggered up through all component ancestors.
@@ -2326,7 +2355,12 @@ public sealed partial class Reconciler
             _logger.LogError(ex, "FuncComponent Render() threw during mount");
             childElement = new TextBlockElement($"⚠ Render error: {ex.Message}");
         }
-        var childControl = Mount(childElement, componentRerender);
+        UIElement? childControl;
+        try
+        {
+            childControl = Mount(childElement, componentRerender);
+        }
+        finally { if (trackLC) _layoutCostComponentDepth--; }
 
         wrapper.Child = childControl;
         node.RenderedElement = childElement;
@@ -2344,6 +2378,13 @@ public sealed partial class Reconciler
         };
         _componentNodes[wrapper] = node;
 
+        bool trackLC = ReactorFeatureFlags.ShowLayoutCost;
+        if (trackLC)
+        {
+            RaiseLayoutCostComponentMounted(wrapper, memoElement.GetType().Name);
+            _layoutCostComponentDepth++;
+        }
+
         // Pass the component's own wrapped rerender to children so that child state
         // changes propagate SelfTriggered up through all component ancestors.
         var componentRerender = CreateComponentRerender(node, requestRerender);
@@ -2360,7 +2401,12 @@ public sealed partial class Reconciler
             _logger.LogError(ex, "MemoComponent Render() threw during mount");
             childElement = new TextBlockElement($"⚠ Render error: {ex.Message}");
         }
-        var childControl = Mount(childElement, componentRerender);
+        UIElement? childControl;
+        try
+        {
+            childControl = Mount(childElement, componentRerender);
+        }
+        finally { if (trackLC) _layoutCostComponentDepth--; }
 
         wrapper.Child = childControl;
         node.RenderedElement = childElement;
