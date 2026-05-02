@@ -270,28 +270,38 @@ public class UseResourceTests
     {
         var cache = NewCache();
         var dispatcher = new InlineDispatcher();
+        // The fetcher runs on Timer/threadpool callbacks, so all access to `calls`
+        // must be synchronized — Interlocked on the increment, Volatile on reads.
         int calls = 0;
         Func<CancellationToken, Task<int>> fetcher = _ =>
         {
-            calls++;
-            return calls < 3 ? Task.FromException<int>(new InvalidOperationException("transient")) : Task.FromResult(42);
+            int n = Interlocked.Increment(ref calls);
+            return n < 3 ? Task.FromException<int>(new InvalidOperationException("transient")) : Task.FromResult(42);
         };
 
         var ctx = new RenderContext();
         ctx.BeginRender(() => { });
-        var v = ctx.UseResource(fetcher, cache, Array.Empty<object>(),
+        ctx.UseResource(fetcher, cache, Array.Empty<object>(),
             new ResourceOptions(RetryCount: 3), dispatcher);
         ctx.FlushEffects();
 
-        // First fetch is sync-faulted. Without retry logic we'd see Error immediately.
-        // Retry schedules on a Timer with ~100ms backoff; wait generously.
-        for (int i = 0; i < 40 && calls < 3; i++) await Task.Delay(50);
+        // `calls` increments ahead of the dispatcher.Post that publishes state, so
+        // polling on `calls` alone races the state transition. Poll the rendered
+        // AsyncValue instead — re-rendering with identical deps just reads the
+        // current hook state and does not re-invoke the fetcher.
+        AsyncValue<int>? probe = null;
+        var sw = global::System.Diagnostics.Stopwatch.StartNew();
+        while (sw.Elapsed < TimeSpan.FromSeconds(5))
+        {
+            ctx.BeginRender(() => { });
+            probe = ctx.UseResource(fetcher, cache, Array.Empty<object>(),
+                new ResourceOptions(RetryCount: 3), dispatcher);
+            if (probe is AsyncValue<int>.Data) break;
+            await Task.Delay(25);
+        }
 
-        Assert.Equal(3, calls);
-        ctx.BeginRender(() => { });
-        var v2 = ctx.UseResource(fetcher, cache, Array.Empty<object>(),
-            new ResourceOptions(RetryCount: 3), dispatcher);
-        Assert.Equal(new AsyncValue<int>.Data(42), v2);
+        Assert.Equal(3, Volatile.Read(ref calls));
+        Assert.Equal(new AsyncValue<int>.Data(42), probe);
     }
 
     [Fact]
@@ -299,11 +309,13 @@ public class UseResourceTests
     {
         var cache = NewCache();
         var dispatcher = new InlineDispatcher();
+        // See sibling test: synchronized access required because the fetcher runs
+        // on Timer/threadpool callbacks during retry.
         int calls = 0;
         Func<CancellationToken, Task<int>> fetcher = _ =>
         {
-            calls++;
-            return Task.FromException<int>(new InvalidOperationException($"attempt{calls}"));
+            int n = Interlocked.Increment(ref calls);
+            return Task.FromException<int>(new InvalidOperationException($"attempt{n}"));
         };
 
         var ctx = new RenderContext();
@@ -312,14 +324,20 @@ public class UseResourceTests
             new ResourceOptions(RetryCount: 2), dispatcher);
         ctx.FlushEffects();
 
-        // With 2 retries we expect up to 3 calls total.
-        for (int i = 0; i < 40 && calls < 3; i++) await Task.Delay(50);
-        Assert.Equal(3, calls);
+        // Poll the rendered state, not the call counter.
+        AsyncValue<int>? probe = null;
+        var sw = global::System.Diagnostics.Stopwatch.StartNew();
+        while (sw.Elapsed < TimeSpan.FromSeconds(5))
+        {
+            ctx.BeginRender(() => { });
+            probe = ctx.UseResource(fetcher, cache, Array.Empty<object>(),
+                new ResourceOptions(RetryCount: 2), dispatcher);
+            if (probe is AsyncValue<int>.Error) break;
+            await Task.Delay(25);
+        }
 
-        ctx.BeginRender(() => { });
-        var v = ctx.UseResource(fetcher, cache, Array.Empty<object>(),
-            new ResourceOptions(RetryCount: 2), dispatcher);
-        var err = Assert.IsType<AsyncValue<int>.Error>(v);
+        Assert.Equal(3, Volatile.Read(ref calls));
+        var err = Assert.IsType<AsyncValue<int>.Error>(probe);
         Assert.Contains("attempt", err.Exception.Message);
     }
 
@@ -375,24 +393,24 @@ public class UseResourceTests
     {
         var cache = NewCache();
         var tcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
-        // The continuation runs on the threadpool, so the polling loop on the test
-        // thread needs an explicit memory barrier to observe the write — Volatile.Write
-        // on the producer side, Volatile.Read on the consumer side.
-        var rerendered = 0;
+        // The rerender callback runs on the threadpool when the fetch task completes.
+        // Under heavy parallel test load the threadpool can be starved long enough that
+        // a fixed-budget poll loop misses it, so signal a TCS from the callback and
+        // await that instead. The Volatile read after the await observes the final count.
+        int rerendered = 0;
+        var rerenderedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         var ctx = new RenderContext();
-        ctx.BeginRender(() => Volatile.Write(ref rerendered, 1));
+        ctx.BeginRender(() =>
+        {
+            Volatile.Write(ref rerendered, 1);
+            rerenderedTcs.TrySetResult();
+        });
         ctx.UseResource(_ => tcs.Task, cache, Array.Empty<object>(), null, dispatcher: null);
 
         tcs.SetResult(7);
 
-        // Continuation hops to the threadpool (RunContinuationsAsynchronously). Under
-        // heavy parallel test load the threadpool can take longer than a single 10ms
-        // tick, causing this assertion to flake. Poll up to 1s for the rerender flag.
-        var sw = global::System.Diagnostics.Stopwatch.StartNew();
-        while (Volatile.Read(ref rerendered) == 0 && sw.Elapsed < TimeSpan.FromSeconds(1))
-            await Task.Delay(10);
-
+        await rerenderedTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.Equal(1, Volatile.Read(ref rerendered));
     }
 
