@@ -32,6 +32,20 @@ internal static class CommandBindings
             ToolTipService.SetToolTip(btn, cmd.Description);
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetHelpText(btn, cmd.Description);
         }
+        else if (cmd.Accelerator is not null && !string.IsNullOrEmpty(cmd.Label))
+        {
+            // No description, but the button is bound to a chord. Setting an
+            // explicit tooltip (using the command Label as the fallback)
+            // suppresses WinUI's auto-generated bare-chord tooltip ("Ctrl+O")
+            // which is uninformative on its own and has been observed to
+            // stick on screen when the UI thread is busy. Auto-tooltip
+            // generation only kicks in when ToolTipService.ToolTip is
+            // genuinely unset, so any non-null value here defeats it. We
+            // intentionally don't set HelpText: the visible Label is already
+            // exposed to assistive tech, no need to duplicate.
+            ToolTipService.SetToolTip(btn, cmd.Label);
+            btn.ClearValue(Microsoft.UI.Xaml.Automation.AutomationProperties.HelpTextProperty);
+        }
         else
         {
             // SECURITY (TASK-072): when a Command transitions Description from
@@ -60,6 +74,23 @@ internal static class CommandBindings
             };
             btn.KeyboardAccelerators.Add(accel);
             _commandAccelerators.Add(btn, accel);
+
+            // Suppress WinUI's auto-generated bare-chord tooltip ("Ctrl+O") when
+            // the command has no Description to anchor it. Without a label, the
+            // floating "Ctrl+O" tooltip is uninformative on its own, and has been
+            // observed to stick on screen when the UI thread is briefly busy
+            // (the dismiss animation can't run). Callers that want the chord
+            // visible should set cmd.Description ("Open Folder", say) — WinUI
+            // shows that as the explicit tooltip and the chord remains
+            // discoverable via the keyboard hint overlay.
+            if (cmd.Description is null)
+                btn.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
+            else
+                btn.ClearValue(UIElement.KeyboardAcceleratorPlacementModeProperty);
+        }
+        else
+        {
+            btn.ClearValue(UIElement.KeyboardAcceleratorPlacementModeProperty);
         }
     }
 
