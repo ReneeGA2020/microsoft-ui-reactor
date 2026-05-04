@@ -62,6 +62,17 @@ public sealed class DemoScriptShell : Component
         var watcherRef = UseRef<DemoScriptWatcher?>(null);
         var generationCtsRef = UseRef<CancellationTokenSource?>(null);
         var saveDebounceRef = UseRef<CancellationTokenSource?>(null);
+        // Last-click-fired timestamp guards against Generate / Re-gen / etc.
+        // entry handlers running multiple times per user click. We've observed
+        // (logged at SessionLog) the OnGenerateAll handler firing 3+ times
+        // within 1 ms of a single click — which previously kicked off a run
+        // and then immediately cancelled it. Until the framework-level cause
+        // is found (suspected leaky button click subscription across
+        // re-renders, see PoolableWireFlags + EnsureButtonWiring) a cheap
+        // 200 ms debounce stops the immediate-cancel symptom without changing
+        // the user's perceived behavior on legitimate clicks.
+        var lastGenerateClickRef = UseRef<long>(0);
+        var lastRegenClickRef = UseRef<long>(0);
         // SHA-256 of the bytes of our most recent save (or load). When the
         // file watcher fires for a write WE just made, the disk hash equals
         // this value and we suppress the reload — otherwise our own debounced
@@ -84,18 +95,9 @@ public sealed class DemoScriptShell : Component
             }
             void OnGenerating(string? msg)
             {
+                SessionLog.Write($"[Shell] OnGenerating '{msg ?? "(null)"}'");
                 setGenerationStatus(msg);
-                if (msg is not null)
-                {
-                    // announce.Announce hits WinUI's automation peer which is
-                    // UI-thread-only — marshal explicitly since the pipeline
-                    // raises this event from Task.Run.
-                    var dq = ReactorApp.ActiveHost?.Window?.DispatcherQueue;
-                    if (dq is null || dq.HasThreadAccess)
-                        announce.Announce(msg, assertive: false);
-                    else
-                        dq.TryEnqueue(() => announce.Announce(msg, assertive: false));
-                }
+                if (msg is not null) SafeAnnounce(msg);
             }
             void OnBanner(string? msg) => setBanner(msg);
 
@@ -105,7 +107,7 @@ public sealed class DemoScriptShell : Component
 
             if (InitialFolder is not null && projectRoot is null)
             {
-                System.Diagnostics.Debug.WriteLine($"[demo-script] auto-loading CLI folder: {InitialFolder}");
+                SessionLog.Write($"[demo-script] auto-loading CLI folder: {InitialFolder}");
                 _ = LoadFolderAsync(InitialFolder);
             }
 
@@ -277,37 +279,110 @@ public sealed class DemoScriptShell : Component
             }
         }
 
-        void OnGenerateAll()
+        // Wraps a click handler so any exception (e.g. UseAnnounce hitting an
+        // unattached automation peer, a stale UseRef, an SDK call surfacing
+        // mid-handler) is logged and surfaced as a banner instead of being
+        // swallowed by the WinUI Click event chain. The repro that motivated
+        // this: OnRegenFromStep entered (entry log fired), exited the click
+        // event with no further log, no Task.Run, no toast — a silent throw
+        // somewhere between the entry log and the kickoff log was the most
+        // likely cause but invisible without this scaffolding.
+        void SafeClickHandler(string name, Action body)
         {
+            try { body(); }
+            catch (Exception ex)
+            {
+                SessionLog.Write($"[Shell] {name} threw: {ex}");
+                _status.SetBanner($"{name} crashed: {ex.GetType().Name} — {ex.Message}");
+            }
+        }
+
+        // SafeAnnounce — never throws. UseAnnounce.Announce ultimately calls
+        // FrameworkElementAutomationPeer.FromElement, which is UI-thread-only
+        // and surfaces RPC_E_WRONG_THREAD (COMException 0x8001010E) when
+        // invoked from a threadpool thread (we hit this from
+        // UseCommand-wrapped click handlers — see framework #130). Marshals
+        // to the UI dispatcher when needed and swallows any other automation
+        // peer flake — losing one screen-reader announcement is fine, leaving
+        // the caller mid-state-setup is not.
+        void SafeAnnounce(string message, bool assertive = false)
+        {
+            try
+            {
+                var dq = ReactorApp.ActiveHost?.Window?.DispatcherQueue;
+                if (dq is null || dq.HasThreadAccess)
+                    announce.Announce(message, assertive);
+                else
+                    dq.TryEnqueue(() =>
+                    {
+                        try { announce.Announce(message, assertive); }
+                        catch (Exception ex) { SessionLog.Write($"[Shell] SafeAnnounce (dispatched) swallowed: {ex.Message}"); }
+                    });
+            }
+            catch (Exception ex)
+            {
+                SessionLog.Write($"[Shell] SafeAnnounce swallowed: {ex.Message}");
+            }
+        }
+
+        void OnGenerateAll() => SafeClickHandler("OnGenerateAll", OnGenerateAllCore);
+        void OnGenerateAllCore()
+        {
+            var now = Environment.TickCount64;
+            var delta = now - lastGenerateClickRef.Current;
+            SessionLog.Write($"[Shell] OnGenerateAll projectRoot='{projectRoot ?? "(null)"}' ctsCurrent={(generationCtsRef.Current is null ? "null" : "non-null")} isGenerating={isGenerating} steps={model.Steps.Count} sinceLastClick={delta}ms");
+            if (lastGenerateClickRef.Current != 0 && delta < 200)
+            {
+                SessionLog.Write($"[Shell] OnGenerateAll → debounce drop ({delta}ms since last invocation)");
+                return;
+            }
+            lastGenerateClickRef.Current = now;
             if (projectRoot is null)
             {
                 _status.ShowToast("Open a folder first (Ctrl+O).", StatusSeverity.Warning);
                 return;
             }
-            if (isGenerating)
+
+            // The CTS ref is the source of truth for "actually in flight" — it's
+            // mutated synchronously and never lags behind a UseState dispatch.
+            // We previously gated on the isGenerating UseState, which ended up
+            // stuck true on at least one repro after a normal completion (the
+            // Cancel button never reverted to Generate All), blocking subsequent
+            // runs. Falling back to the ref means the user can always start /
+            // cancel a run regardless of any UseState-vs-render drift.
+            if (generationCtsRef.Current is not null)
             {
-                generationCtsRef.Current?.Cancel();
+                SessionLog.Write("[Shell] OnGenerateAll → cancelling in-flight gen");
+                generationCtsRef.Current.Cancel();
                 return;
             }
+
+            // Defensively reset the UI flag in case it's stuck out of sync with
+            // the ref. setIsGenerating(true) below schedules a render either way.
+            if (isGenerating) setIsGenerating(false);
 
             var cts = new CancellationTokenSource();
             generationCtsRef.Current = cts;
             setIsGenerating(true);
-            announce.Announce($"Generating {model.Steps.Count} steps…", assertive: false);
+            SafeAnnounce($"Generating {model.Steps.Count} steps…");
+            SessionLog.Write("[Shell] Generate-All kicking off Task.Run");
 
             _ = Task.Run(async () =>
             {
+                SessionLog.Write("[Shell] Generate-All Task.Run entered");
                 try
                 {
                     await _pipeline.GenerateAllAsync(model, projectRoot, cts.Token).ConfigureAwait(false);
+                    SessionLog.Write("[Shell] Generate-All Task.Run pipeline returned normally");
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[Shell] Generate task crashed: {ex}");
+                    SessionLog.Write($"[Shell] Generate task crashed: {ex}");
                     _status.SetBanner($"Generation crashed: {ex.GetType().Name} — {ex.Message}");
                 }
                 finally
                 {
+                    SessionLog.Write("[Shell] Generate finally — clearing isGenerating + cts");
                     setIsGenerating(false);
                     generationCtsRef.Current?.Dispose();
                     generationCtsRef.Current = null;
@@ -344,18 +419,32 @@ public sealed class DemoScriptShell : Component
             });
         }
 
-        void OnRerunFromStep(StepModel step)
+        void OnRegenFromStep(StepModel step) => SafeClickHandler($"OnRegenFromStep(step={step.Number})", () => OnRegenFromStepCore(step));
+        void OnRegenFromStepCore(StepModel step)
         {
+            var now = Environment.TickCount64;
+            var delta = now - lastRegenClickRef.Current;
+            SessionLog.Write($"[Shell] OnRegenFromStep step={step.Number} '{step.Title}' projectRoot='{projectRoot ?? "(null)"}' ctsCurrent={(generationCtsRef.Current is null ? "null" : "non-null")} isGenerating={isGenerating} sinceLastClick={delta}ms");
+            if (lastRegenClickRef.Current != 0 && delta < 200)
+            {
+                SessionLog.Write($"[Shell] OnRegenFromStep → debounce drop ({delta}ms since last invocation)");
+                return;
+            }
+            lastRegenClickRef.Current = now;
             if (projectRoot is null)
             {
                 _status.ShowToast("Open a folder first.", StatusSeverity.Warning);
                 return;
             }
-            if (isGenerating)
+            // CTS-ref-as-truth (see OnGenerateAll). Gating on UseState's
+            // isGenerating directly used to leave Re-gen permanently disabled
+            // when the flag got stuck after a normal completion.
+            if (generationCtsRef.Current is not null)
             {
                 _status.ShowToast("Generation already running — cancel it first.", StatusSeverity.Warning);
                 return;
             }
+            if (isGenerating) setIsGenerating(false);
 
             // Locate this step's index in the live steps list. Comparing by
             // reference is robust to renumbering after Add/Delete.
@@ -369,21 +458,25 @@ public sealed class DemoScriptShell : Component
             var cts = new CancellationTokenSource();
             generationCtsRef.Current = cts;
             setIsGenerating(true);
-            announce.Announce($"Re-running from step {step.Number}…", assertive: false);
+            SafeAnnounce($"Re-generating from step {step.Number}…");
+            SessionLog.Write($"[Shell] Re-gen kicking off Task.Run startIndex={idx}");
 
             _ = Task.Run(async () =>
             {
+                SessionLog.Write($"[Shell] Re-gen Task.Run entered startIndex={idx}");
                 try
                 {
                     await _pipeline.GenerateFromAsync(model, projectRoot, idx, cts.Token).ConfigureAwait(false);
+                    SessionLog.Write("[Shell] Re-gen Task.Run pipeline returned normally");
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[Shell] Re-run task crashed: {ex}");
-                    _status.SetBanner($"Re-run crashed: {ex.GetType().Name} — {ex.Message}");
+                    SessionLog.Write($"[Shell] Re-gen task crashed: {ex}");
+                    _status.SetBanner($"Re-gen crashed: {ex.GetType().Name} — {ex.Message}");
                 }
                 finally
                 {
+                    SessionLog.Write("[Shell] Re-gen finally — clearing isGenerating + cts");
                     setIsGenerating(false);
                     generationCtsRef.Current?.Dispose();
                     generationCtsRef.Current = null;
@@ -400,7 +493,7 @@ public sealed class DemoScriptShell : Component
                 dp.SetText(step.Delta);
                 global::Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dp);
                 _status.ShowToast($"Step {step.Number} delta copied to clipboard.", StatusSeverity.Success);
-                announce.Announce($"Step {step.Number} delta copied.", assertive: false);
+                SafeAnnounce($"Step {step.Number} delta copied.");
             }
             catch (Exception ex)
             {
@@ -429,7 +522,7 @@ public sealed class DemoScriptShell : Component
         {
             var added = model.AddStep(title: "", prompt: "");
             ScheduleSave();
-            announce.Announce($"Added step {added.Number}.", assertive: false);
+            SafeAnnounce($"Added step {added.Number}.");
         }
 
         void OnDeleteStep(StepModel step)
@@ -492,13 +585,28 @@ public sealed class DemoScriptShell : Component
                     }
                     catch (Exception ex) { _status.ShowToast($"Reveal failed: {ex.Message}", StatusSeverity.Error); }
                 }),
+            MenuItem("Reveal log folder…",
+                () =>
+                {
+                    try
+                    {
+                        // Prefer selecting the current session's file (highlights it
+                        // in Explorer); fall back to opening the folder if Init
+                        // hasn't run or the file is gone.
+                        var arg = SessionLog.CurrentPath is { } p && System.IO.File.Exists(p)
+                            ? $"/select,\"{p}\""
+                            : $"\"{SessionLog.LogDirectory}\"";
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", arg) { UseShellExecute = true });
+                    }
+                    catch (Exception ex) { _status.ShowToast($"Reveal log failed: {ex.Message}", StatusSeverity.Error); }
+                }),
             MenuItem("Log model snapshot",
-                () => System.Diagnostics.Debug.WriteLine($"[demo-script] title='{model.Title}' steps={model.Steps.Count} multiFile={model.IsMultiFile}")),
+                () => SessionLog.Write($"[demo-script] title='{model.Title}' steps={model.Steps.Count} multiFile={model.IsMultiFile}")),
             MenuItem("Log available Copilot models…",
                 () => _ = Task.Run(async () =>
                 {
                     var s = await _client.DescribeAvailableModelsAsync(CancellationToken.None);
-                    System.Diagnostics.Debug.WriteLine("[demo-script] available models:\n" + s);
+                    SessionLog.Write("[demo-script] available models:\n" + s);
                     _status.ShowToast("Available Copilot models written to debug log.", StatusSeverity.Info);
                 })),
             MenuItem("Force banner: dummy auth error",
@@ -546,7 +654,7 @@ public sealed class DemoScriptShell : Component
                 .Margin(0, banner is null && parseError is null ? 0 : 12, 0, 0),
             (parseError is null
                 ? (Element)Component<StepsPanel, StepsPanelProps>(
-                    new StepsPanelProps(model, isGenerating, OnPromptChanged, OnTitleChanged, OnRunStep, OnCopyDelta, OnAddStep, OnDeleteStep, OnRerunFromStep))
+                    new StepsPanelProps(model, isGenerating, OnPromptChanged, OnTitleChanged, OnRunStep, OnCopyDelta, OnAddStep, OnDeleteStep, OnRegenFromStep))
                     .Flex(grow: 1, basis: 0)
                 : Empty()))
             with { RowGap = 0 })

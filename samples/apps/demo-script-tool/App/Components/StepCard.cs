@@ -16,7 +16,7 @@ public sealed record StepCardProps(
     Action<StepModel> OnRun,
     Action<StepModel> OnCopyDelta,
     Action<StepModel> OnDelete,
-    Action<StepModel> OnRerunFromHere);
+    Action<StepModel> OnRegenFromHere);
 
 /// <summary>
 /// One step rendered as a three-column card: prompt | code | actions
@@ -205,16 +205,20 @@ public sealed class StepCard : Component<StepCardProps>
             },
         });
 
-        var rerunCmd = UseCommand(new Command
+        // Plain sync Command (no UseCommand). UseCommand's Task.Run wrapper
+        // would put OnRegenFromHere on a threadpool thread, which made the
+        // shell's announce.Announce throw RPC_E_WRONG_THREAD on the
+        // FrameworkElementAutomationPeer call (the exact issue tracked by
+        // framework #130). The 250 ms IsExecuting bridge is no longer needed
+        // either — the shell's lastRegenClickRef debounce (200 ms) covers
+        // the same multi-fire window without crossing threads, and
+        // Props.IsGenerating disables the button on the next render.
+        var regenCmd = new Command
         {
             Label = "Re-gen",
             CanExecute = !Props.IsGenerating,
-            ExecuteAsync = async () =>
-            {
-                Props.OnRerunFromHere(step);
-                await Task.Delay(250).ConfigureAwait(false);
-            },
-        });
+            Execute = () => Props.OnRegenFromHere(step),
+        };
 
         var toggleCmd = new Command
         {
@@ -240,8 +244,8 @@ public sealed class StepCard : Component<StepCardProps>
             ActionButton(IconAsset("run"), runCmd, $"Run step {step.Number}"),
             ActionButton(IconAsset(showCode ? "notes" : "code"), toggleCmd, $"Toggle code/notes view for step {step.Number}"),
             ActionButton(IconAsset("copy"), copyCmd, $"Copy speaker notes for step {step.Number}"),
-            // Re-run-from-here regenerates this step + every step that follows.
-            ActionButton(IconAsset("rerun"), rerunCmd, $"Re-run step {step.Number} and every following step"),
+            // Re-gen regenerates this step + every step that follows.
+            ActionButton(IconAsset("rerun"), regenCmd, $"Re-gen step {step.Number} and every following step"),
             ActionButton(IconAsset("delete"), deleteCmd, $"Delete step {step.Number}"));
 
         var failureOutput = (step.BuildState == BuildState.Failed && !string.IsNullOrEmpty(step.BuildOutput))
