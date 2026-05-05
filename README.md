@@ -158,7 +158,7 @@ Or create a `.csproj` manually:
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.0.1" />
-    <ProjectReference Include="..\Reactor\Reactor.csproj" />
+    <ProjectReference Include="..\src\Reactor\Reactor.csproj" />
   </ItemGroup>
 </Project>
 ```

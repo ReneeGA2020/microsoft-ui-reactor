@@ -137,7 +137,7 @@ int CreateProject(string name)
     Console.WriteLine();
     Console.WriteLine("NOTE: The generated .sln assumes this project is a sibling of the Reactor directory:");
     Console.WriteLine($"    parent/");
-    Console.WriteLine($"      Reactor/Reactor.csproj");
+    Console.WriteLine($"      src/Reactor/Reactor.csproj");
     Console.WriteLine($"      {name}/{name}.csproj");
     Console.WriteLine();
     Console.WriteLine("To build and run:");
@@ -193,13 +193,12 @@ string GenerateCsproj() =>
         <Nullable>enable</Nullable>
         <UseWinUI>true</UseWinUI>
         <WindowsPackageType>None</WindowsPackageType>
-        <WindowsSdkPackageVersion>10.0.22621.52</WindowsSdkPackageVersion>
       </PropertyGroup>
       <ItemGroup>
         <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.0.1" />
       </ItemGroup>
       <ItemGroup>
-        <ProjectReference Include="..\Reactor\Reactor.csproj" />
+        <ProjectReference Include="..\src\Reactor\Reactor.csproj" />
       </ItemGroup>
     </Project>
     """;
@@ -225,7 +224,7 @@ string GenerateSln(string name, string appGuid, string patchGuid)
         "MinimumVisualStudioVersion = 10.0.40219.1",
         $"Project(\"{csharpGuid}\") = \"{name}\", \"{name}.csproj\", \"{ag}\"",
         "EndProject",
-        $"Project(\"{csharpGuid}\") = \"Reactor\", \"..\\Reactor\\Reactor.csproj\", \"{pg}\"",
+        $"Project(\"{csharpGuid}\") = \"Reactor\", \"..\\src\\Reactor\\Reactor.csproj\", \"{pg}\"",
         "EndProject",
         "Global",
         $"{t1}GlobalSection(SolutionConfigurationPlatforms) = preSolution",
