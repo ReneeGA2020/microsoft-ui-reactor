@@ -982,4 +982,228 @@ internal static class FlexLayoutFixtures
                 mutatedRedH > 10 && mutatedBlueH > 10);
         }
     }
+
+    // ----------------------------------------------------------------
+    // Header / body(flex:1) / footer fills parent's allocated slot
+    // without an explicit .Height(N) on the FlexColumn.
+    //
+    // Canonical web flex pattern:
+    //
+    //   <body style="height:100vh; display:flex; flex-direction:column">
+    //     <header>auto</header>
+    //     <main style="flex:1">grows</main>
+    //     <footer>auto</footer>
+    //   </body>
+    //
+    // The CSS-faithful semantics in MeasureOverride keep DesiredSize
+    // content-sized (no parent-height influence — preserves the resize
+    // wobble fix), and ArrangeOverride re-runs Yoga at finalSize.Height
+    // when the parent has stretched our slot beyond content. That gives
+    // grow:1 a definite main-axis pool to expand into without forcing the
+    // user to hand-set a height on the column.
+    // ----------------------------------------------------------------
+
+    internal class FlexHeaderBodyFooterFillsParentSlot(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            // FlexColumn with NO explicit .Height(N). Relies on the default
+            // VerticalAlignment.Stretch + a definite parent offer from the
+            // Reactor host's ContentControl to fill its slot. Body
+            // (ScrollView with flex:1, basis:0) should resolve to
+            // slot − header − footer.
+            var host = H.CreateHost();
+            host.Mount(ctx =>
+                FlexColumn(
+                    TextBlock("Header").Height(50).Background("LightCoral")
+                        .AutomationId("HBF_Header"),
+                    ScrollView(
+                        VStack(0,
+                            TextBlock("Item 1").Height(80),
+                            TextBlock("Item 2").Height(80),
+                            TextBlock("Item 3").Height(80),
+                            TextBlock("Item 4").Height(80),
+                            TextBlock("Item 5").Height(80),
+                            TextBlock("Item 6").Height(80),
+                            TextBlock("Item 7").Height(80),
+                            TextBlock("Item 8").Height(80)))
+                        .Flex(grow: 1, basis: 0)
+                        .Background("LightGreen")
+                        .AutomationId("HBF_Body"),
+                    TextBlock("Footer").Height(60).Background("LightBlue")
+                        .AutomationId("HBF_Footer"))
+                    .AutomationId("HBF_Column"));
+
+            await Harness.Render();
+
+            H.Check("HBF_AllPresent",
+                H.FindText("Header") is not null &&
+                H.FindText("Footer") is not null);
+
+            var col = H.FindControl<FlexPanel>(p =>
+                p.Direction == FlexDirection.Column && p.Children.Count == 3);
+            var scrollViewer = H.FindControl<WinUI.ScrollViewer>(_ => true);
+            H.Check("HBF_ColumnExists", col is not null);
+            H.Check("HBF_ScrollViewerExists", scrollViewer is not null);
+
+            if (col is not null && scrollViewer is not null)
+            {
+                // Body should resolve to whatever's left of the column slot
+                // after taking out the 50px header and 60px footer.
+                double expectedBodyH = col.ActualHeight - 50 - 60;
+                H.Check("HBF_BodyFilledRemainder",
+                    expectedBodyH > 50 &&
+                    Near(scrollViewer.RenderSize.Height, expectedBodyH, 5));
+
+                // 8 × 80 = 640 of content inside a constrained slot ⇒
+                // scrollable rather than overflowing.
+                H.Check("HBF_BodyContentScrollable",
+                    scrollViewer.ScrollableHeight > 100);
+            }
+        }
+    }
+
+    // ----------------------------------------------------------------
+    // Documents the known trade-off of measure-time fillBlockAxis:
+    // a Border with auto-height (no explicit .Height) wrapping a
+    // FlexColumn with default VerticalAlignment.Stretch will inflate
+    // to the parent's offer rather than shrink-wrap to content.
+    //
+    // This is the price of mapping "WinUI Stretch + finite parent"
+    // to CSS web-flex `height: 100%`: an intermediate auto-height
+    // container can no longer infer "shrink to content" from a
+    // Stretch-aligned child. Users who want a content-sized
+    // FlexColumn inside an auto-height container must opt out by
+    // setting `VerticalAlignment.Top` on the column (or any
+    // non-Stretch alignment).
+    //
+    // The fixture asserts BOTH halves of the trade-off:
+    //  - Default Stretch column inflates to the parent slot.
+    //  - Explicit `.VerticalAlignment(Top)` column shrink-wraps
+    //    correctly.
+    //
+    // If a future refactor finds a way to keep web-flex semantics
+    // without inflating auto-height intermediates, the inflate
+    // assertion below should be flipped — that's the goal.
+    // ----------------------------------------------------------------
+
+    internal class FlexBorderAutoHeightInflatesWithStretch(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            // Outer host is itself constrained (so finite slot exists).
+            // Inside, two side-by-side cells:
+            //   left:  Border (no Height) > FlexColumn (default Stretch) > 3 × 40px text
+            //   right: Border (no Height) > FlexColumn(.VerticalAlignment(Top)) > 3 × 40px
+            // Content total = 120px in both. With the trade-off, the
+            // left FlexColumn fills the parent's offer (>>120) while
+            // the right one shrink-wraps to 120.
+            var host = H.CreateHost();
+            host.Mount(ctx =>
+                FlexRow(
+                    Border(
+                        FlexColumn(
+                            TextBlock("L1").Height(40),
+                            TextBlock("L2").Height(40),
+                            TextBlock("L3").Height(40))
+                            .AutomationId("Auto_StretchCol"))
+                        .Background("LightCoral")
+                        .Flex(grow: 1, basis: 0),
+                    Border(
+                        FlexColumn(
+                            TextBlock("R1").Height(40),
+                            TextBlock("R2").Height(40),
+                            TextBlock("R3").Height(40))
+                            .VAlign(VerticalAlignment.Top)
+                            .AutomationId("Auto_TopCol"))
+                        .Background("LightBlue")
+                        .Flex(grow: 1, basis: 0)));
+
+            await Harness.Render();
+
+            var stretchCol = H.FindControl<FlexPanel>(p =>
+                p.Direction == FlexDirection.Column &&
+                p.VerticalAlignment == VerticalAlignment.Stretch &&
+                p.Children.Count == 3);
+            var topCol = H.FindControl<FlexPanel>(p =>
+                p.Direction == FlexDirection.Column &&
+                p.VerticalAlignment == VerticalAlignment.Top &&
+                p.Children.Count == 3);
+
+            H.Check("Auto_StretchColExists", stretchCol is not null);
+            H.Check("Auto_TopColExists", topCol is not null);
+
+            if (stretchCol is not null && topCol is not null)
+            {
+                // The trade-off: default Stretch inflates beyond the
+                // 120px content height. A pure CSS `height: auto`
+                // semantic would shrink-wrap; we inflate because we
+                // chose to honor "Stretch + finite parent = fill" at
+                // measure time so flex-grow children get a definite
+                // pool.
+                H.Check("Auto_StretchInflatesAboveContent",
+                    stretchCol.ActualHeight > 120 + 5);
+
+                // Opt-out path stays correct.
+                H.Check("Auto_TopShrinkWraps",
+                    Near(topCol.ActualHeight, 120, 2));
+            }
+        }
+    }
+
+    // ----------------------------------------------------------------
+    // Verifies the MeasureFunction wrapper preserves WinUI's standard
+    // AtMost contract for cross-axis content measurement (text
+    // wrapping). Yoga calls measureFunc with hMode=AtMost during its
+    // basis/FitContent phase; the wrapper must pass a finite
+    // constraint to children (not infinity), or TextBlock's wrap
+    // height collapses to a single line and the row clips.
+    //
+    // Configuration: a Row container with limited cross-axis (height)
+    // around a FlexColumn whose only child is a wrapping TextBlock at
+    // a constrained width. The expected wrapped height is several
+    // lines tall; under a broken (AtMost → infinity) wrapper it would
+    // collapse to ~1 line.
+    // ----------------------------------------------------------------
+
+    internal class FlexAtMostPreservesTextWrapping(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            // Long single-line string forced into a 200px wide column
+            // by Width(200) on the TextBlock. With AtMost preserved as
+            // finite, TextBlock wraps to multiple lines (≥3 at 14pt);
+            // with broken AtMost, single line ≈ 18px.
+            const string LongText =
+                "The quick brown fox jumps over the lazy dog. " +
+                "The quick brown fox jumps over the lazy dog. " +
+                "The quick brown fox jumps over the lazy dog.";
+
+            var host = H.CreateHost();
+            host.Mount(ctx =>
+                FlexColumn(
+                    TextBlock(LongText)
+                        .TextWrapping()
+                        .Width(200)
+                        .FontSize(14)
+                        .AutomationId("WrapText"))
+                    .Width(200)
+                    .AutomationId("WrapCol"));
+
+            await Harness.Render();
+
+            var wrapText = H.FindControl<WinUI.TextBlock>(t =>
+                t.Text != null && t.Text.StartsWith("The quick brown fox"));
+            H.Check("Wrap_TextExists", wrapText is not null);
+
+            if (wrapText is not null)
+            {
+                // ~3+ lines × ~18px line height ⇒ ≥ 50px tall. A single
+                // line at 14pt is ~18px, so a threshold of 40 cleanly
+                // separates the two outcomes.
+                H.Check("Wrap_TextWrapsToMultipleLines",
+                    wrapText.ActualHeight >= 40);
+            }
+        }
+    }
 }
