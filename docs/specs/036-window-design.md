@@ -165,7 +165,7 @@ ReactorApp                  process-scoped singleton
   ├── UIDispatcher          captured once at Application.Start
   ├── Windows               ReadOnlyList<ReactorWindow>
   ├── PrimaryWindow         the one passed to the startup callback (or null)
-  ├── ShutdownPolicy        OnPrimaryWindowClosed | OnLastWindowClosed | Explicit
+  ├── ShutdownPolicy        OnPrimaryWindowClosed | OnLastSurfaceClosed | Explicit
   └── WindowOpened/Closed   process-level events
 
 ReactorWindow               owns one OS Window + one ReactorHost
@@ -331,13 +331,27 @@ public static partial class ReactorApp
     public static void Run(Action<ReactorAppContext> startup);
 
     public static IReadOnlyList<ReactorWindow> Windows { get; }
-    public static ReactorWindow? PrimaryWindow { get; }
+    public static ReactorWindow? PrimaryWindow { get; }   // null in tray-only apps
     public static DispatcherQueue UIDispatcher { get; }
     public static ShutdownPolicy ShutdownPolicy { get; set; }
         = ShutdownPolicy.OnPrimaryWindowClosed;
 
+    // Top-level surface operations — usable from anywhere on the UI thread
+    // once Run has entered the startup callback. Tray click handlers, menu
+    // commands, MCP tools, etc. all call into the same surface. Windows
+    // and tray icons are peers; both can be the app's entry point.
+    public static ReactorWindow OpenWindow(WindowSpec spec, Func<Component> root);
+    public static ReactorWindow OpenWindow(WindowSpec spec, Func<RenderContext, Element> render);
+    public static ReactorWindow? FindWindow(WindowKey key);
+
+    public static ReactorTrayIcon OpenTrayIcon(TrayIconSpec spec);
+    public static IReadOnlyList<ReactorTrayIcon> TrayIcons { get; }
+    public static ReactorTrayIcon? FindTrayIcon(WindowKey key);
+
     public static event EventHandler<ReactorWindow>? WindowOpened;
     public static event EventHandler<ReactorWindow>? WindowClosed;
+    public static event EventHandler<ReactorTrayIcon>? TrayIconOpened;
+    public static event EventHandler<ReactorTrayIcon>? TrayIconClosed;
 
     public static void Exit(int exitCode = 0);
 
@@ -345,17 +359,23 @@ public static partial class ReactorApp
     public static ReactorHost? ActiveHost { get; }
 }
 
+// The startup-callback context is a thin facade over ReactorApp giving access
+// to the launch activation. It does not hold per-startup state; calls forward
+// to the static ReactorApp surface and remain valid after Run returns control.
 public sealed class ReactorAppContext
 {
+    public LaunchActivation LaunchActivation { get; }
     public ReactorWindow OpenWindow(WindowSpec spec, Func<Component> root);
     public ReactorWindow OpenWindow(WindowSpec spec, Func<RenderContext, Element> render);
     public ReactorWindow? FindWindow(WindowKey key);
+    public ReactorTrayIcon OpenTrayIcon(TrayIconSpec spec);
+    public ReactorTrayIcon? FindTrayIcon(WindowKey key);
 }
 
 public enum ShutdownPolicy
 {
     OnPrimaryWindowClosed,
-    OnLastWindowClosed,
+    OnLastSurfaceClosed,
     Explicit,
 }
 ```
@@ -444,14 +464,27 @@ Process start
 
 ### 6.2 Shutdown policies
 
+"Top-level surfaces" means **windows and tray icons** — both count
+toward shutdown decisions.
+
 - **OnPrimaryWindowClosed** *(default)* — closing the primary window
-  exits the process, regardless of secondary windows still open. This
-  matches today's `Run<TRoot>` semantics.
-- **OnLastWindowClosed** — close the last window to exit. Secondary
-  windows can outlive the primary.
-- **Explicit** — windows close, but the process keeps running until
-  `ReactorApp.Exit()` is called. Useful for tray-resident apps (when
-  tray support arrives) and for headless windows that re-spawn.
+  exits the process, regardless of other windows or tray icons still
+  open. Matches today's `Run<TRoot>` semantics. Picking this policy
+  with zero initial windows would exit immediately.
+- **OnLastSurfaceClosed** — exit when the last window **and** the
+  last tray icon have closed. The right default for apps where
+  closing all visible surfaces should mean "I'm done with the app."
+  Replaces what the previous draft called `OnLastWindowClosed` —
+  treating tray as a peer means it has to count.
+- **Explicit** — surfaces close, but the process keeps running until
+  `ReactorApp.Exit()` is called. The supported policy for
+  **tray-only startup** (§13.6), background sync agents, headless
+  window respawn, and any other shape where "no surfaces open" is a
+  valid running state.
+
+The startup callback is allowed to open zero surfaces. `ReactorApp.Run`
+does not require at least one `OpenWindow` or `OpenTrayIcon` call —
+only that the selected `ShutdownPolicy` permits the resulting state.
 
 ### 6.3 Per-window teardown
 
@@ -467,22 +500,29 @@ Process start
 ## §7 Hooks
 
 ```csharp
-// Returns the ReactorWindow hosting the current component.
-ReactorWindow RenderContext.UseWindow();
+// Returns the ReactorWindow hosting the current component, or null
+// when the component renders outside a window (e.g. tray-icon flyout
+// content — see §7.1).
+ReactorWindow? RenderContext.UseWindow();
 
 // DIP size of the host window; re-renders on resize.
+// Returns (0, 0) when called outside a window (e.g. tray-flyout content).
 (double Width, double Height) RenderContext.UseWindowSize();
 
 // Per-monitor DPI; re-renders on DPI change.
+// Returns the system primary-monitor DPI when called outside a window.
 uint RenderContext.UseDpi();
 
 // Window state; re-renders on minimize/maximize/restore/etc.
+// Returns Normal when called outside a window.
 WindowState RenderContext.UseWindowState();
 
 // Activation; re-renders on activated/deactivated.
+// Returns true when called outside a window (the flyout is "active" while shown).
 bool RenderContext.UseIsActive();
 
 // Confirmation gate for Closing — return false to cancel close.
+// No-op when called outside a window (no Closing event source).
 // The function runs synchronously on the UI thread; for async confirms,
 // cancel the close and re-issue programmatically when the user decides.
 void RenderContext.UseClosingGuard(Func<bool> canClose);
@@ -499,6 +539,38 @@ The mirror methods on `Component` (currently `UseWindowSize(Window)` /
 `UseBreakpoint(Window)` — `Component.cs:57-60`) get parameterless
 overloads. The explicit `Window`-typed overloads stay for back compat
 and for consumers that hold a reference to a non-Reactor `Window`.
+
+### 7.1 Reaching the host window from a render
+
+`UseWindow()` is the canonical answer to "which window is rendering
+me?". It does an O(1) field read on the current `ReactorHost` — no
+subscription, no re-render trigger. Use it whenever you need the
+window handle (open another window with this one as `Owner`, set
+taskbar progress, dispatch a window-level command, etc.). For
+behavior that should re-render on changes, use the targeted hooks:
+`UseWindowSize`, `UseDpi`, `UseWindowState`, `UseIsActive`.
+
+**Returns `null` for tray-icon flyout content.** A tray icon's
+flyout (§11.4) is reconciled into a hidden internal popup window,
+not a `ReactorWindow`. Components that may render in either context
+should null-check:
+
+```csharp
+class StatusBadge : Component
+{
+    protected override Element Render()
+    {
+        var window = UseWindow();
+        // Same component used inside the main window AND in the tray
+        // flyout. The tray-flyout case has no window handle.
+        var dpiHint = window is null ? "" : $" @ {window.Dpi}dpi";
+        return Text($"Status: connected{dpiHint}");
+    }
+}
+```
+
+For components that only ever render inside a window (the common
+case), `UseWindow()!` is fine.
 
 ## §8 Persistence
 
@@ -683,14 +755,41 @@ process-arg parser the app can reuse.
 
 ### 11.4 System tray icon
 
+A tray icon is a **peer of `ReactorWindow`**, not a feature attached
+to one. Both are top-level OS surfaces with their own lifetime,
+their own user-input events, their own reconciled Reactor content
+(the window's content tree, the tray's flyout), and either can be
+the app's user-facing entry point. The API mirrors `OpenWindow` /
+`ReactorWindow` to make that peerage obvious in code:
+
+| Window                                  | Tray icon                                     |
+|-----------------------------------------|-----------------------------------------------|
+| `WindowSpec`                            | `TrayIconSpec`                                |
+| `ReactorApp.OpenWindow(spec, factory)`  | `ReactorApp.OpenTrayIcon(spec)`               |
+| `ReactorWindow` handle                  | `ReactorTrayIcon` handle                      |
+| `ReactorApp.Windows`                    | `ReactorApp.TrayIcons`                        |
+| `ReactorApp.FindWindow(key)`            | `ReactorApp.FindTrayIcon(key)`                |
+| `WindowOpened` / `WindowClosed` events  | `TrayIconOpened` / `TrayIconClosed` events    |
+| `Update(spec)` / `Close()`              | `Update(spec)` / `Close()`                    |
+| Reconciles a content tree continuously  | Reconciles flyout content on demand           |
+
+A tray icon does not have size, position, presenter, DPI awareness,
+persistence, owner, or modality — those are window-shaped concepts.
+Everything else is the same shape.
+
 ```csharp
 public sealed record TrayIconSpec(
     WindowIcon Icon,
     string Tooltip,
-    bool ShowOnStart = true);
+    WindowKey? Key = null,
+    bool IsVisible = true);
 
-public sealed class TrayIcon : IDisposable
+public sealed class ReactorTrayIcon : IDisposable
 {
+    public string Id { get; }
+    public WindowKey? Key { get; }
+    public TrayIconSpec Spec { get; }   // last applied snapshot
+
     public WindowIcon Icon { get; set; }
     public string Tooltip { get; set; }
     public bool IsVisible { get; set; }
@@ -701,17 +800,23 @@ public sealed class TrayIcon : IDisposable
 
     public void ShowFlyout(Element flyoutContent);
     public void HideFlyout();
+    public void Update(TrayIconSpec spec);
+    public void Close();   // == Dispose; removes the icon from the tray
 }
 
-// On ReactorWindow:
-public TrayIcon RegisterTrayIcon(TrayIconSpec spec);
+// On ReactorApp / ReactorAppContext:
+public static ReactorTrayIcon OpenTrayIcon(TrayIconSpec spec);
+public static IReadOnlyList<ReactorTrayIcon> TrayIcons { get; }
+public static ReactorTrayIcon? FindTrayIcon(WindowKey key);
+public static event EventHandler<ReactorTrayIcon>? TrayIconOpened;
+public static event EventHandler<ReactorTrayIcon>? TrayIconClosed;
 ```
 
-The tray icon's flyout content goes through the reconciler exactly
-like the rest of Reactor — the API takes an `Element`, not a
-WinUI control. Implementation borrows from `WinUIEx.TrayIcon`
-(`Shell_NotifyIcon` + a hidden popup window for the flyout
-`XamlRoot`).
+The flyout content goes through the reconciler exactly like the rest
+of Reactor — the API takes an `Element`, not a WinUI control.
+Implementation borrows from `WinUIEx.TrayIcon` (`Shell_NotifyIcon` +
+a hidden popup window for the flyout `XamlRoot`); the hidden window
+is internal and never exposed to app code.
 
 A common UX pattern is "minimize to tray". This is built on the
 public surface, not baked in:
@@ -741,8 +846,11 @@ class App : Component
 }
 ```
 
-`UseTrayIcon` is a thin hook over `RegisterTrayIcon` that disposes
-the icon on cleanup.
+`UseTrayIcon` is a thin hook over `ReactorApp.OpenTrayIcon` that
+calls `Close()` on the icon during the calling component's cleanup.
+For tray-only apps that have no component tree at startup (§13.6),
+call `ReactorApp.OpenTrayIcon` directly from the startup callback —
+the same way you'd call `OpenWindow`.
 
 ### 11.5 Thumbnail toolbar
 
@@ -944,7 +1052,7 @@ class Editor : Component
 ### 13.5 Multi-window startup
 
 ```csharp
-ReactorApp.ShutdownPolicy = ShutdownPolicy.OnLastWindowClosed;
+ReactorApp.ShutdownPolicy = ShutdownPolicy.OnLastSurfaceClosed;
 
 ReactorApp.Run(ctx =>
 {
@@ -958,6 +1066,96 @@ ReactorApp.Run(ctx =>
                        PersistenceId: "inspector",
                        StartPosition: WindowStartPosition.RestoreFromPersistence),
         () => new InspectorShell());
+});
+```
+
+### 13.6 Tray-only startup — no initial window
+
+A class of apps (chat clients, sync agents, clipboard managers,
+quick-launchers) wants to live in the system tray with no visible
+window at startup. The user opens a window on demand via the tray
+icon; closing it returns the app to its tray-only state. The app
+exits only via an explicit "Quit" command.
+
+The tray icon **is** the entry point — it's the app's primary
+top-level surface. The API treats it as a peer of `OpenWindow`:
+
+```csharp
+ReactorApp.ShutdownPolicy = ShutdownPolicy.Explicit;
+
+ReactorApp.Run(ctx =>
+{
+    var tray = ctx.OpenTrayIcon(new TrayIconSpec(
+        Key: "main",
+        Icon: WindowIcon.FromResource("Assets/tray.ico"),
+        Tooltip: "Sync Agent — idle"));
+
+    // Single-instance window keyed by "main". Opening it twice from
+    // a double-click reuses the existing window. Closing it removes
+    // the entry from ReactorApp.Windows; the next click reopens.
+    void ToggleMainWindow()
+    {
+        if (ReactorApp.FindWindow("main") is { } existing)
+        {
+            existing.Activate();
+            return;
+        }
+
+        ReactorApp.OpenWindow(
+            new WindowSpec(
+                Key: "main",
+                Title: "Sync Agent",
+                Width: 720, Height: 520,
+                StartPosition: WindowStartPosition.RestoreFromPersistence,
+                PersistenceId: "main"),
+            () => new SyncAgentShell());
+    }
+
+    tray.Click += (_, _) => ToggleMainWindow();
+    tray.RightClick += (_, _) => tray.ShowFlyout(BuildContextMenu());
+
+    Element BuildContextMenu() =>
+        VStack(
+            Button("Open", () => { ToggleMainWindow(); tray.HideFlyout(); }),
+            Button("Pause sync", () => SyncService.Pause()),
+            Separator(),
+            Button("Quit", () => ReactorApp.Exit()));
+});
+```
+
+Key behaviors this exercises:
+
+- The startup callback opens **only a tray icon, no window** — the
+  message loop runs because `ShutdownPolicy.Explicit` doesn't gate
+  on surfaces.
+- `OpenTrayIcon` and `OpenWindow` share the same shape. A reader
+  who knows one knows the other.
+- The tray icon's right-click flyout content is a Reactor `Element`
+  reconciled into the hidden flyout window.
+- Closing the main window does **not** exit the app — the tray icon
+  is still open. `ReactorApp.Exit()` is the only path that ends the
+  process under this policy.
+- A second click of the tray icon while the window is already open
+  calls `Activate()` on the existing window rather than spawning a
+  new one — `WindowKey` semantics fall out naturally because we
+  used `FindWindow("main")` before `OpenWindow`.
+
+The complementary pattern — start with a window visible, fall back
+to tray-only when the user closes it — uses
+`ShutdownPolicy.Explicit` plus a tray icon as the persistent
+surface:
+
+```csharp
+ReactorApp.Run(ctx =>
+{
+    ReactorApp.ShutdownPolicy = ShutdownPolicy.Explicit;
+
+    var tray = ctx.OpenTrayIcon(new TrayIconSpec(/* … */));
+    tray.Click += (_, _) => /* show / hide window */;
+
+    ctx.OpenWindow(
+        new WindowSpec(Key: "main", Title: "Chat", Width: 480, Height: 720),
+        () => new ChatShell());
 });
 ```
 
@@ -975,7 +1173,7 @@ seam.
 | **5. Persistence + chrome** | `PersistenceId`, `IWindowPersistenceStore`, `Icon`, `Presenter`, `IsResizable` / `IsMinimizable` / `IsMaximizable`, min/max via `WM_GETMINMAXINFO` hook. | Unit test for persistence round-trip with monitor-fingerprint mismatch. |
 | **6. Devtools / MCP** | `WindowRegistry` integration (open/close events), MCP tools `windows.list` / `windows.activate` / `windows.close` / `windows.open`. | MCP tool tests; `mur devtools` golden flow with two windows. |
 | **7. Shell integration — progress + overlay + thumbnail toolbar** | `ITaskbarList3` wrapper (lazy COM init); `ReactorWindow.Progress`, `ReactorWindow.Overlay`, `SetThumbnailToolbar`. | Selftest fixtures verifying property writes don't throw on Windows 10 / Windows 11; AppTest E2E for progress visibility via UIA. |
-| **8. Shell integration — jump list + tray + activation** | `JumpList` static, packaged + unpackaged paths, `ReactorWindow.RegisterTrayIcon`, `UseTrayIcon` hook, `LaunchActivation` plumbing. | Selftest for tray flyout reconciliation; E2E for jump list registration round-trip via `Reactor.Cli`. |
+| **8. Shell integration — jump list + tray + activation** | `JumpList` static, packaged + unpackaged paths, `ReactorTrayIcon` + `ReactorApp.OpenTrayIcon` (peer of `ReactorWindow`), `UseTrayIcon` hook, `LaunchActivation` plumbing. | Selftest for tray flyout reconciliation, tray-only startup with `ShutdownPolicy.Explicit`; E2E for jump list registration round-trip via `Reactor.Cli`. |
 
 Each phase ships independently. Phases 4–6 are gated by 1–3. Phases 7–8
 are gated by 1 (they need `ReactorWindow`) but otherwise stand alone
@@ -994,13 +1192,15 @@ stays with the spec.
    follow-up. `ContentDialog` covers the common in-window modal case
    in the meantime.
 
-2. **Tray icons.** *In scope.* Tray support is one of the top
-   requested features; it ships as part of phase 8 (§14) and lives in
-   core Reactor under `ReactorWindow.RegisterTrayIcon` /
-   `UseTrayIcon`. No separate `Reactor.Tray` package — keeping it in
-   core matches developer expectations and avoids splitting the
-   shell-integration surface across two assemblies. See §11.4 for the
-   full API.
+2. **Tray icons.** *In scope, modeled as a peer of `ReactorWindow`.*
+   `ReactorApp.OpenTrayIcon` is shaped exactly like
+   `ReactorApp.OpenWindow`, the returned `ReactorTrayIcon` mirrors
+   `ReactorWindow`'s handle shape, and `ReactorApp.TrayIcons` parallels
+   `Windows`. A tray icon and a window can both be the app's user-
+   facing entry point (see §13.6 for tray-only startup), so they
+   share lifecycle and naming conventions. Ships in phase 8 (§14)
+   and lives in core Reactor — no separate `Reactor.Tray` package.
+   See §11.4 for the full API.
 
 3. **Multi-instance / single-instance app pattern.** *Deferred.*
    Reactor v1 stays neutral on AppInstance redirection. `WindowKey`'s
