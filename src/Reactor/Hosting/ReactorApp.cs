@@ -42,6 +42,23 @@ public static class ReactorApp
         internal set => Volatile.Write(ref _activeHost, value);
     }
 
+    // Process-wide ILogger picked up by ReactorHost / ReactorHostControl when
+    // the caller doesn't pass one explicitly. Null by default. Apps that want
+    // a unified fallback should set this BEFORE creating the first host —
+    // hosts snapshot the value at construction, so a later set won't retro-
+    // actively wire up already-running hosts. Also routes ReactorApplication's
+    // unhandled-exception handler when devtools is off.
+    //
+    // Cold-path note: leaving this null keeps Microsoft.Extensions.Logging
+    // resolution off the JIT critical path entirely — none of the LoggerExtensions
+    // call sites get walked when the field is null.
+    private static ILogger? _appLogger;
+    public static ILogger? AppLogger
+    {
+        get => Volatile.Read(ref _appLogger);
+        set => Volatile.Write(ref _appLogger, value);
+    }
+
     private static int _previewParamDeprecationWarned;
 
     // ── XAML control-assembly registration ─────────────────────────────────
@@ -812,8 +829,6 @@ public partial class ReactorApplication : Application, IXamlMetadataProvider
     /// </summary>
     public static Func<Exception, bool>? OnUnhandledException { get; set; }
 
-    private readonly ILogger _logger = NullLogger.Instance;
-
     public ReactorApplication()
     {
         // Loads ReactorApplication.xaml (which references XamlControlsResources) via the
@@ -825,7 +840,7 @@ public partial class ReactorApplication : Application, IXamlMetadataProvider
 
         UnhandledException += (_, e) =>
         {
-            _logger.LogError(e.Exception, "UnhandledException: {ExceptionType}: {ExceptionMessage}", e.Exception.GetType().Name, e.Exception.Message);
+            ReactorApp.AppLogger?.LogError(e.Exception, "UnhandledException: {ExceptionType}: {ExceptionMessage}", e.Exception.GetType().Name, e.Exception.Message);
             if (OnUnhandledException is not null)
                 e.Handled = OnUnhandledException(e.Exception);
             // Don't set e.Handled = true for unknown exceptions — let the app crash
