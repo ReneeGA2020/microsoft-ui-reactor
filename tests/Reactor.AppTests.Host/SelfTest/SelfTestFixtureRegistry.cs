@@ -682,6 +682,12 @@ internal static class SelfTestFixtureRegistry
         "ValueEvt_PasswordBox",
         "ValueEvt_ColorPicker",
 
+        // Validation pit-of-success: NumberBox.Immediate() + Button.DisabledFocusable()
+        // Keystroke-level coverage lives in Reactor.AppTests (Appium tier).
+        "Immediate_NumberBoxFiresOnTextChange",
+        "DisabledFocusable_ButtonState",
+        "DisabledFocusable_ButtonToggleRestoresState",
+
         // Specialized editors — HitTable-style typed editors
         "Editors_CheckBoxMounts",
         "Editors_ToggleMounts",
@@ -1461,6 +1467,11 @@ internal static class SelfTestFixtureRegistry
         "ValueEvt_RatingControl" => new ValueChangeEventFixtures.RatingControlValueFires(harness),
         "ValueEvt_PasswordBox" => new ValueChangeEventFixtures.PasswordBoxChangeFires(harness),
         "ValueEvt_ColorPicker" => new ValueChangeEventFixtures.ColorPickerChangeFires(harness),
+
+        // Validation pit-of-success
+        "Immediate_NumberBoxFiresOnTextChange" => new ImmediateAndDisabledFocusableFixtures.NumberBoxImmediateFiresOnTextChange(harness),
+        "DisabledFocusable_ButtonState" => new ImmediateAndDisabledFocusableFixtures.ButtonDisabledFocusableState(harness),
+        "DisabledFocusable_ButtonToggleRestoresState" => new ImmediateAndDisabledFocusableFixtures.ButtonDisabledFocusableToggleRestoresState(harness),
 
         // Specialized editors — mount each editor standalone under real WinUI.
         "Editors_CheckBoxMounts" => new SpecializedEditorsTests.CheckBoxEditorMounts(harness),

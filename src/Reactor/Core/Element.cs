@@ -1728,6 +1728,18 @@ public record RichTextLineBreak() : RichTextInline;
 public record ButtonElement(string Label, Action? OnClick = null) : Element
 {
     public bool IsEnabled { get; init; } = true;
+    /// <summary>
+    /// When true, the button is visually dimmed and its <c>OnClick</c> handler
+    /// is suppressed, but it stays keyboard-focusable and reachable via Tab.
+    /// Use for submit buttons gated on validation so users can discover them
+    /// and the disable state doesn't trap keyboard navigation through commit-
+    /// on-blur inputs. Conceptually equivalent to Fluent UI React's
+    /// <c>disabledFocusable</c> / ARIA's <c>aria-disabled</c>. UIA still
+    /// reports the button as enabled — full assistive-tech "unavailable"
+    /// reporting requires a custom <c>ButtonAutomationPeer</c> and is tracked
+    /// as a follow-up.
+    /// </summary>
+    public bool IsDisabledFocusable { get; init; }
     public Element? ContentElement { get; init; }
     internal Action<WinUI.Button>[] Setters { get; init; } = [];
     internal override bool HasCallbacks => OnClick is not null;

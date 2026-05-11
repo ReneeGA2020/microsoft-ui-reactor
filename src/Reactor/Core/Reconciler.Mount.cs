@@ -314,7 +314,7 @@ public sealed partial class Reconciler
     {
         var rented = _pool.TryRent(typeof(WinUI.Button));
         var button = rented as WinUI.Button ?? new WinUI.Button();
-        button.IsEnabled = btn.IsEnabled;
+        ApplyButtonEnabledState(button, btn);
         if (btn.ContentElement is not null)
             button.Content = Mount(btn.ContentElement, requestRerender);
         else
@@ -323,6 +323,38 @@ public sealed partial class Reconciler
         EnsureButtonWiring(button, btn);
         ApplySetters(btn.Setters, button);
         return button;
+    }
+
+    /// <summary>
+    /// Applies the (Disabled, DisabledFocusable) state to a WinUI Button.
+    /// True disable: IsEnabled=false (removes from tab order). Disabled-
+    /// focusable: IsEnabled=true plus visual dim; UIA still reports the
+    /// button as enabled (full AT "unavailable" reporting is a follow-up
+    /// requiring a custom AutomationPeer override). The Click trampoline
+    /// (see EnsureButtonWiring) drops invokes when the element is in
+    /// disabled-focusable mode.
+    /// </summary>
+    internal static void ApplyButtonEnabledState(WinUI.Button button, ButtonElement btn)
+    {
+        // Visual dim + Click trampoline drop. UIA still reports the button as
+        // enabled — a future fix would attach a custom ButtonAutomationPeer
+        // overriding IsEnabledCore() to fully mirror the WinUI Win32 / ARIA
+        // aria-disabled pattern. Tracked as a TODO; not required for the
+        // keyboard-reachability win this method delivers.
+        if (btn.IsDisabledFocusable)
+        {
+            button.IsEnabled = true;
+            button.Opacity = 0.4;
+        }
+        else
+        {
+            button.IsEnabled = btn.IsEnabled;
+            // ClearValue (not Opacity=1.0) so any opacity coming from a XAML
+            // style, template, or external code path survives. Forcing 1.0
+            // here would silently override a Setters/Resources Opacity binding
+            // every time the button rerenders out of disabled-focusable mode.
+            button.ClearValue(UIElement.OpacityProperty);
+        }
     }
 
     /// <summary>
@@ -337,7 +369,14 @@ public sealed partial class Reconciler
         var flags = GetPoolableWireFlags(button);
         if (flags.ButtonClick) return;
         flags.ButtonClick = true;
-        button.Click += (s, _) => (GetElementTag((UIElement)s!) as ButtonElement)?.OnClick?.Invoke();
+        button.Click += (s, _) =>
+        {
+            if (GetElementTag((UIElement)s!) is ButtonElement live)
+            {
+                if (live.IsDisabledFocusable) return;
+                live.OnClick?.Invoke();
+            }
+        };
     }
 
     private WinUI.HyperlinkButton MountHyperlinkButton(HyperlinkButtonElement hlBtn)
@@ -512,9 +551,33 @@ public sealed partial class Reconciler
                 if (ChangeEchoSuppressor.ShouldSuppress(box)) return;
                 (GetElementTag(box) as NumberBoxElement)?.OnValueChanged?.Invoke(box.Value);
             };
+        // Per-keystroke value fire for Immediate-mode controls. Registered
+        // unconditionally so that toggling .Immediate() between renders works
+        // without re-mounting — the handler re-checks the marker each fire.
+        numBox.RegisterPropertyChangedCallback(WinUI.NumberBox.TextProperty,
+            NumberBoxImmediateTextChanged);
         ApplySetters(nb.Setters, numBox);
         return numBox;
     }
+
+    private static readonly Microsoft.UI.Xaml.DependencyPropertyChangedCallback NumberBoxImmediateTextChanged =
+        (sender, _) =>
+        {
+            if (sender is not WinUI.NumberBox box) return;
+            if (GetElementTag(box) is not NumberBoxElement el) return;
+            if (el.OnValueChanged is null) return;
+            if (el.GetAttached<Microsoft.UI.Reactor.Controls.Validation.ImmediateValueAttached>() is null) return;
+            if (!double.TryParse(box.Text,
+                global::System.Globalization.NumberStyles.Float,
+                global::System.Globalization.CultureInfo.CurrentCulture, out var parsed)) return;
+            // Reject NaN/±Infinity — double.TryParse accepts the literal strings
+            // "NaN"/"Infinity" by default, and NaN comparisons are never equal,
+            // so the sync-guard below would let them through.
+            if (!double.IsFinite(parsed)) return;
+            if (parsed < el.Minimum || parsed > el.Maximum) return;
+            if (parsed == el.Value) return; // already in sync; suppresses post-programmatic-write callback
+            el.OnValueChanged.Invoke(parsed);
+        };
 
     private WinUI.AutoSuggestBox MountAutoSuggestBox(AutoSuggestBoxElement asb)
     {
