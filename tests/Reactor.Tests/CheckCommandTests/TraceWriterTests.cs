@@ -124,6 +124,25 @@ public class TraceWriterTests
     }
 
     [Fact]
+    public void Diag_row_mode_matches_writer_invocation_mode()
+    {
+        // Regression test: TraceWriter used to hardcode mode="iteration" on
+        // every diag row, even when opened with --final. The Phase-2 fix
+        // pipes the mode through Open(...). Without this test, a future edit
+        // could reintroduce the bug undetected because the unit pipeline
+        // tests don't go through the CLI's mode-resolution path.
+        var d = new CheckCommand.Diag("a.cs", 1, 1, "error", "CS1061", "x");
+
+        using var tmp = TempFile.Create();
+        using (var w = TraceWriter.Open(tmp.Path, Path.GetFullPath("."), mode: "final"))
+            w.Write(d);
+
+        var line = File.ReadAllLines(tmp.Path).Single();
+        using var doc = JsonDocument.Parse(line);
+        Assert.Equal("final", doc.RootElement.GetProperty("mode").GetString());
+    }
+
+    [Fact]
     public void Trace_writes_one_jsonl_row_per_call_appendable()
     {
         var root = Path.GetFullPath(".");
@@ -142,6 +161,29 @@ public class TraceWriterTests
             Assert.Equal("CS1061", doc.RootElement.GetProperty("code").GetString());
             Assert.Equal("iteration", doc.RootElement.GetProperty("mode").GetString());
         }
+    }
+
+    [Fact]
+    public void Rule_self_disabled_row_has_expected_schema()
+    {
+        // Spec 038 §3.1a residual: when the registry self-disables a rule
+        // because its declared target stopped resolving, the trace must
+        // capture {rule, unresolved_target} so a maintainer notices the
+        // moment a Reactor minor release breaks something. Stdout stays
+        // clean — agents never read traces, and silent rule disablement is
+        // the only behavioral effect they see.
+        using var tmp = TempFile.Create();
+        using (var w = TraceWriter.Open(tmp.Path, Path.GetFullPath("."), mode: "iteration"))
+            w.WriteRuleSelfDisabled("AlignmentShortcutRule", "Microsoft.UI.Reactor.ElementExtensions");
+
+        var line = File.ReadAllLines(tmp.Path).Single();
+        using var doc = JsonDocument.Parse(line);
+        Assert.Equal("rule_self_disabled", doc.RootElement.GetProperty("kind").GetString());
+        Assert.Equal("AlignmentShortcutRule", doc.RootElement.GetProperty("rule").GetString());
+        Assert.Equal("Microsoft.UI.Reactor.ElementExtensions",
+            doc.RootElement.GetProperty("unresolved_target").GetString());
+        Assert.Equal("iteration", doc.RootElement.GetProperty("mode").GetString());
+        Assert.True(line.Length <= 2048, $"trace row was {line.Length} bytes — exceeds 2 KB cap.");
     }
 
     sealed class TempFile : IDisposable
