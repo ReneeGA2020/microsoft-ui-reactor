@@ -121,20 +121,27 @@ public sealed class MinesweeperApp : Component
             ),
         ]);
 
-        // Wrap the status row + board in a Viewbox so the whole thing
-        // scales uniformly to fit the window. Replaces the previous
-        // ScrollView, which let huge Expert boards spill off-screen and
-        // didn't help when the user shrank the window. Stretching is
-        // uniform so the cells stay square.
-        var board = Viewbox(
-            VStack(12,
-                statusPanel,
-                Component<BoardView, BoardViewProps>(boardProps)
-            ).Padding(16).HAlign(HorizontalAlignment.Center)
-        ).Set(vb =>
+        // Natural board size at the configured cell size — used to cap the
+        // Viewbox so the tiles can shrink to fit a tiny window but never
+        // zoom up past their normal pixel size.
+        var naturalBoardWidth = cellSize * state.Board.Columns;
+        var naturalBoardHeight = cellSize * state.Board.Rows;
+
+        // Wrap just the board grid in a Viewbox: scales DOWN to fit small
+        // windows, but never UP — no giant tiles when the window is huge.
+        // The status panel is intentionally outside the Viewbox so the LEDs
+        // and smiley stay at their natural readable size.
+        var boardScaled = Viewbox(
+            Component<BoardView, BoardViewProps>(boardProps)
+        )
+        .HAlign(HorizontalAlignment.Center)
+        .VAlign(VerticalAlignment.Center)
+        .Set(vb =>
         {
             vb.Stretch = Microsoft.UI.Xaml.Media.Stretch.Uniform;
-            vb.StretchDirection = Microsoft.UI.Xaml.Controls.StretchDirection.Both;
+            vb.StretchDirection = Microsoft.UI.Xaml.Controls.StretchDirection.DownOnly;
+            vb.MaxWidth = naturalBoardWidth;
+            vb.MaxHeight = naturalBoardHeight;
         });
 
         var titleSubtitle = state.Board.Phase switch
@@ -195,12 +202,25 @@ public sealed class MinesweeperApp : Component
                 ("Close", () => dispatch(new CloseNewBestAction()), true),
             ]);
 
+        // Main play area: menu bar + status panel sit at their natural size
+        // (Auto rows); the board takes whatever vertical space is left
+        // (Star row) and the Viewbox scales it to fit. Bounded rows mean
+        // the board never overflows the window the way an unbounded VStack
+        // could.
+        var playArea = Grid(
+            columns: [GridSize.Star()],
+            rows: [GridSize.Auto, GridSize.Auto, GridSize.Star()],
+            menuBar.Grid(row: 0, column: 0),
+            statusPanel.HAlign(HorizontalAlignment.Center).Padding(16, 12, 16, 0).Grid(row: 1, column: 0),
+            boardScaled.Padding(16).Grid(row: 2, column: 0)
+        );
+
         // The main content + overlays stack via a Grid so dialogs sit above
         // the board without being affected by VStack's vertical flow.
         var mainPlusOverlays = Grid(
             columns: [GridSize.Star()],
             rows: [GridSize.Star()],
-            VStack(0, menuBar, board).Grid(row: 0, column: 0),
+            playArea.Grid(row: 0, column: 0),
             highScoresOverlay.Grid(row: 0, column: 0),
             customOverlay.Grid(row: 0, column: 0),
             newBestOverlay.Grid(row: 0, column: 0)
