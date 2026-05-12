@@ -46,9 +46,10 @@ public sealed record CellProps(
 /// One cell of the Minesweeper grid. Renders a raised "covered" bevel until
 /// revealed, then switches to a sunken bevel showing the adjacent count, a
 /// mine, or a flag/question mark. Theme-aware colors.
-/// Pointer handling supports left-click reveal, right-click flag, long-press
-/// flag (touch), and the classic L+R simultaneous "chord" with a live
-/// preview that highlights the affected box while both buttons are held.
+/// Pointer handling: left-tap reveals, right-tap on a covered cell flags,
+/// long-press flags (touch). Right-press-and-hold on a revealed numbered
+/// cell shows a "chord preview" highlighting the 8 neighbors; releasing
+/// the right button commits the chord.
 /// </summary>
 public sealed class CellComponent : Component<CellProps>
 {
@@ -81,13 +82,12 @@ public sealed class CellComponent : Component<CellProps>
         var bevel = BuildBevel(skin, p.Size, glyphContent, bg, p.IsDarkTheme)
             .Width(p.Size).Height(p.Size);
 
-        // Wire the input — pointer-driven so we can detect L+R simultaneous press.
-        // Notes:
-        //   - PointerPressed fires once per button transition (LMB then RMB → 2 events).
-        //   - We treat "both buttons down on a revealed numbered cell" as the start
-        //     of a chord gesture, then commit the chord when either button releases.
-        //   - PointerExited cancels an in-flight preview so dragging off the cell
-        //     aborts the chord (matches classic feel).
+        // Wire the input — right-press on a revealed numbered cell shows a
+        // chord preview (highlights the 8 neighbors); commit happens on
+        // right-release. Right-press on a covered cell flags as usual on
+        // RightTapped. Left tap reveals (or chords if double-clicked on
+        // a number — see OnTapped). PointerExited cancels an in-flight
+        // preview so dragging off the cell aborts the chord.
         var chordableHere = p.Cell.IsRevealed && p.Cell.AdjacentMines > 0;
         bevel = bevel
             .OnPointerPressed((sender, e) =>
@@ -96,8 +96,7 @@ public sealed class CellComponent : Component<CellProps>
                 var fe = sender as FrameworkElement;
                 var pp = fe is null ? null : e.GetCurrentPoint(fe);
                 if (pp is null) return;
-                var both = pp.Properties.IsLeftButtonPressed && pp.Properties.IsRightButtonPressed;
-                if (both && chordableHere)
+                if (pp.Properties.IsRightButtonPressed && chordableHere)
                 {
                     p.OnBeginChordPreview(p.Row, p.Column);
                     e.Handled = true;
@@ -108,8 +107,6 @@ public sealed class CellComponent : Component<CellProps>
                 if (p.IsLost || p.IsWon) return;
                 if (p.IsChordPreview)
                 {
-                    // Commit the chord on the FIRST release — even if the other
-                    // button is still down. Matches the classic behavior.
                     p.OnEndChordPreview(true);
                     e.Handled = true;
                 }
@@ -121,8 +118,19 @@ public sealed class CellComponent : Component<CellProps>
             .OnTapped((_, e) =>
             {
                 if (p.IsLost || p.IsWon) return;
-                // Suppress single-tap reveal if a chord just resolved on this cell.
-                if (p.IsChordPreview) { e.Handled = true; return; }
+                // Shift/Ctrl + left-tap on a covered cell behaves like a
+                // right-click (toggles flag → question → clear). Helpful on
+                // trackpads/laptops where right-click is awkward.
+                var shift = (Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Shift)
+                             & Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
+                var ctrl = (Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Control)
+                            & Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
+                if ((shift || ctrl) && !p.Cell.IsRevealed)
+                {
+                    p.OnFlag(p.Row, p.Column);
+                    e.Handled = true;
+                    return;
+                }
                 if (chordableHere)
                     p.OnChord(p.Row, p.Column);                // double-click chord shortcut
                 else
@@ -132,7 +140,10 @@ public sealed class CellComponent : Component<CellProps>
             .OnRightTapped((_, e) =>
             {
                 if (p.IsLost || p.IsWon) return;
-                if (p.IsChordPreview) { e.Handled = true; return; }
+                // RightTapped fires after PointerReleased. If we just resolved
+                // a chord on a revealed numbered cell, swallow it; otherwise
+                // toggle a flag on a covered cell.
+                if (chordableHere) { e.Handled = true; return; }
                 if (!p.Cell.IsRevealed) p.OnFlag(p.Row, p.Column);
                 e.Handled = true;
             })

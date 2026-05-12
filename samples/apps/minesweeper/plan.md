@@ -55,10 +55,11 @@ tests/Reactor.Tests/Minesweeper/
   not in the visual tree yet); `ContentDialog.ShowAsync` then throws and the
   framework swallows the exception. The overlay is a `Border` stacked above
   the board in a Grid cell — works reliably.
-- **L+R chord with preview**: pointer-driven, not gesture-driven. Both
-  buttons down on a revealed numbered cell → reducer flips on a
-  `ChordPreview` flag → adjacent cells flatten visually → first button
-  release commits the chord.
+- **Right-press chord preview**: pointer-driven. Right-button press on a
+  revealed numbered cell → reducer flips on a `ChordPreview` flag →
+  adjacent cells flatten visually → right-button release commits the chord.
+  (The original L+R simultaneous-press gesture proved finicky; switched to
+  right-press-on-number which is unambiguous and easier to discover.)
 - **Theme-aware**: every color goes through `Theme.*` tokens. Number
   palette has separate light/dark variants tuned for WCAG-AA against
   `Theme.LayerFill`.
@@ -95,7 +96,7 @@ confirmed** them in a running app. Source-level verification only:
 |---|---|---|
 | Timer ticks reliably after reset | `App.cs:31-67` (UseRef pattern) | indirectly via `AppReducerTests.Tick_*` |
 | Bomb glyph not clipped | `CellComponent.cs:63` (font factor 0.42) + `LineHeight` pin | no — pure visual |
-| L+R chord preview + commit | `CellComponent.cs:90-125` + `AppReducer.cs:88-108` | yes (`AppReducerTests.BeginChordPreview_*`, `EndChordPreview_*`) |
+| L+R chord preview + commit | `CellComponent.cs:90-125` + `AppReducer.cs:88-108` | yes (`AppReducerTests.BeginChordPreview_*`, `EndChordPreview_*`) — gesture changed to right-press-and-hold on a number; reducer/action shape unchanged |
 | Reset doesn't visually leave revealed tiles | removed `Transition()` from CellComponent + `AppReducerTests.Reset_ClearsElapsedAndChordPreviewAndStartsFreshBoard` | reducer-level only |
 | High Scores dialog opens | rewrite to `ModalOverlay` (custom Border) | reducer covers `OpenHighScoresAction` |
 
@@ -141,7 +142,7 @@ confirmed** them in a running app. Source-level verification only:
 
 All five from the playtest session are addressed in source:
 
-- ✅ L+R chord with preview box highlight
+- ✅ Chord with preview-box highlight (gesture: **right-press-and-hold** on a revealed number; release to commit)
 - ✅ Bomb glyph clipping (font sized + LineHeight pinned)
 - ✅ Timer stuck at 000 after reset (switched to UseRef pattern)
 - ✅ Reset shows old revealed tiles (removed Transition modifiers)
