@@ -227,6 +227,12 @@
       <Platform Solution="*|x64" Project="x64" />
     </Project>
   </Folder>
+  <Folder Name="/samples/apps/minesweeper/">
+    <Project Path="samples/apps/minesweeper/Minesweeper.csproj">
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+  </Folder>
   <Folder Name="/samples/apps/netpulse/">
     <Project Path="samples/apps/netpulse/NetPulse.csproj">
       <Platform Solution="*|ARM64" Project="ARM64" />
