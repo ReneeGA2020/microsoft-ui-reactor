@@ -213,8 +213,8 @@ public sealed class MinesweeperApp : Component
             columns: [GridSize.Star()],
             rows: [GridSize.Auto, GridSize.Auto, GridSize.Star()],
             menuBar.Grid(row: 0, column: 0),
-            statusPanel.HAlign(HorizontalAlignment.Center).Padding(16, 12, 16, 0).Grid(row: 1, column: 0),
-            boardScaled.Padding(16).Grid(row: 2, column: 0)
+            statusPanel.HAlign(HorizontalAlignment.Center).Padding(24, 16, 24, 8).Grid(row: 1, column: 0),
+            boardScaled.Padding(24, 8, 24, 24).Grid(row: 2, column: 0)
         );
 
         // The main content + overlays stack via a Grid so dialogs sit above
