@@ -275,6 +275,11 @@ public sealed partial class Reconciler : IDisposable
     {
         public Element? Element;
         public EventHandlerState? Events;
+        // Per-native-element echo-suppress counter consumed by ChangeEchoSuppressor.
+        // Lives here (not in a CWT-by-RCW) so that BeginSuppress on one managed
+        // wrapper and ShouldSuppress on a different wrapper for the same native
+        // DependencyObject see the same counter. See ChangeEchoSuppressor.cs.
+        public int EchoSuppressCount;
     }
 
     internal static class ReactorAttached
@@ -337,11 +342,17 @@ public sealed partial class Reconciler : IDisposable
     /// underlying control. Call from <see cref="ElementPool.CleanElement"/>
     /// so the next rent doesn't fire the previous component's captured
     /// rerender closure. TASK-060.
+    /// Also resets the echo-suppress counter so a stranded BeginSuppress
+    /// (e.g. a write whose change-event got swallowed) can't suppress a
+    /// real user event after the element is rented to a new owner.
     /// </summary>
     internal static void ClearCurrentEventHandlers(FrameworkElement fe)
     {
         if (fe.GetValue(ReactorAttached.StateProperty) is ReactorState state)
+        {
             state.Events?.ClearCurrentHandlers();
+            state.EchoSuppressCount = 0;
+        }
     }
 
     /// <summary>
@@ -360,6 +371,7 @@ public sealed partial class Reconciler : IDisposable
         state.Element = null;
         state.Events?.ClearCurrentHandlers();
         state.Events = null;
+        state.EchoSuppressCount = 0;
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -844,7 +856,7 @@ public sealed partial class Reconciler : IDisposable
             // reconciler and ElementPool from a background thread.
             // A non-null GetForCurrentThread() doesn't imply UI affinity —
             // the only authoritative check is HasThreadAccess on the UI DQ.
-            var uiDq = ReactorHost.MainDispatcherQueue;
+            var uiDq = Microsoft.UI.Reactor.ReactorApp.UIDispatcher;
             bool onUiThread = false;
             if (uiDq is not null)
             {
@@ -1377,7 +1389,7 @@ public sealed partial class Reconciler : IDisposable
             }
         }
 
-        if (themeT?.Children is { Length: > 0 } children)
+        if (themeT?.Children is { } children)
         {
             var tc = new Microsoft.UI.Xaml.Media.Animation.TransitionCollection();
             foreach (var t in children) tc.Add(t);
@@ -1392,7 +1404,7 @@ public sealed partial class Reconciler : IDisposable
             }
         }
 
-        if (themeT?.ItemContainer is { Length: > 0 } itemTransitions)
+        if (themeT?.ItemContainer is { } itemTransitions)
         {
             var tc = new Microsoft.UI.Xaml.Media.Animation.TransitionCollection();
             foreach (var t in itemTransitions) tc.Add(t);

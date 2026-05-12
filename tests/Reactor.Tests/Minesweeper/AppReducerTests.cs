@@ -223,7 +223,7 @@ public class AppReducerTests
     public void ResetHighScores_ClearsScoresAndInvokesCallback()
     {
         var s = AppReducer.Initial(Difficulty.Beginner,
-            new HighScores(Beginner: new HighScoreEntry("A", 10, "x")));
+            new HighScores(Beginner: new HighScoreEntry(10, "x")));
         HighScores? saved = null;
         var after = AppReducer.Reduce(s, new ResetHighScoresAction(), Seeded(), s2 => saved = s2);
         Assert.Equal(HighScores.Empty, after.Scores);
@@ -232,18 +232,26 @@ public class AppReducerTests
     }
 
     [Fact]
-    public void SaveNewBest_PersistsAndClosesDialog()
+    public void ShowNewBest_AutoPersistsAndOpensDialog()
     {
         var s = AppReducer.Initial(Difficulty.Beginner, HighScores.Empty)
-            with { ShowNewBest = true, ElapsedSeconds = 12, PendingPlayerName = "Alice" };
+            with { ElapsedSeconds = 12 };
         HighScores? saved = null;
-        var after = AppReducer.Reduce(s, new SaveNewBestAction("Alice"), Seeded(), s2 => saved = s2);
+        var after = AppReducer.Reduce(s, new ShowNewBestAction(), Seeded(), s2 => saved = s2);
 
-        Assert.False(after.ShowNewBest);
-        Assert.Equal("", after.PendingPlayerName);
+        Assert.True(after.ShowNewBest);
         Assert.NotNull(saved);
-        Assert.Equal("Alice", saved!.Beginner!.Name);
-        Assert.Equal(12, saved.Beginner.Seconds);
+        Assert.Equal(12, saved!.Beginner!.Seconds);
+        Assert.Equal(12, after.Scores.Beginner!.Seconds);
+    }
+
+    [Fact]
+    public void CloseNewBest_DismissesDialog()
+    {
+        var s = AppReducer.Initial(Difficulty.Beginner, HighScores.Empty)
+            with { ShowNewBest = true };
+        var after = AppReducer.Reduce(s, new CloseNewBestAction(), Seeded());
+        Assert.False(after.ShowNewBest);
     }
 
     [Fact]

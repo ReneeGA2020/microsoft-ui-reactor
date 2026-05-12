@@ -20,7 +20,7 @@ internal static partial class CompileCommand
         var repoRoot = FindRepoRoot();
         if (repoRoot == null)
         {
-            Console.Error.WriteLine("Error: Could not find repository root (looking for Reactor.sln or .git).");
+            Console.Error.WriteLine("Error: Could not find repository root (looking for Reactor.slnx or .git).");
             return 1;
         }
 
@@ -237,10 +237,19 @@ internal static partial class CompileCommand
         var csproj = Directory.GetFiles(appDir, "*.csproj").FirstOrDefault();
         if (csproj == null) return 1;
 
+        // WindowsAppSDK self-contained builds reject the AnyCPU default and
+        // require an explicit architecture. Match the host so x64 boxes get
+        // x64 binaries and ARM64 boxes get ARM64 binaries.
+        var platform = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture switch
+        {
+            System.Runtime.InteropServices.Architecture.Arm64 => "ARM64",
+            _ => "x64",
+        };
+
         var psi = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = $"build \"{csproj}\" -v q --nologo -nowarn:MSB3277",
+            Arguments = $"build \"{csproj}\" -v q --nologo -nowarn:MSB3277 -p:Platform={platform}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -284,7 +293,7 @@ internal static partial class CompileCommand
         var dir = Directory.GetCurrentDirectory();
         while (dir != null)
         {
-            if (File.Exists(Path.Combine(dir, "Reactor.sln")) || Directory.Exists(Path.Combine(dir, ".git")))
+            if (File.Exists(Path.Combine(dir, "Reactor.slnx")) || Directory.Exists(Path.Combine(dir, ".git")))
                 return dir;
             dir = Path.GetDirectoryName(dir);
         }

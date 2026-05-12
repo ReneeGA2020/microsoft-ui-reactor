@@ -82,6 +82,7 @@ internal static class SelfTestFixtureRegistry
         "D3_ForceGraph",
         "D3_ChartCustomization",
         "D3_PieChartLabels",
+        "D3_PieChartLabelRadiusOffset",
         "D3Cov_Scatterplot",
         "D3Cov_Histogram",
         "D3Cov_DonutChart",
@@ -273,6 +274,7 @@ internal static class SelfTestFixtureRegistry
         "ThreadSafe_HighFrequencyLargeTree",
         "ThreadSafe_RenderCoalescing",
         "ThreadSafe_RenderCoalescingDispatcherBatch",
+        "ThreadSafe_NonThreadSafeAutoMarshal",
         // Animation system — Curve & Easing
         "Curve_RecordEquality",
         "Curve_PresetValues",
@@ -347,6 +349,8 @@ internal static class SelfTestFixtureRegistry
         "CoreCov_TemplatedFlipViewMountUpdate",
         "CoreCov_LazyVStackMountUpdate",
         "CoreCov_ContentDialogMount",
+        "CoreCov_ContentDialogOpensAtMount",
+        "CoreCov_ContentDialogOpensOnStateFlip",
         "CoreCov_CommandBarMountUpdate",
         "CoreCov_CommandHostMountUpdate",
         "CoreCov_MenuBarMountUpdate",
@@ -470,6 +474,10 @@ internal static class SelfTestFixtureRegistry
         "EchoSuppress_PasswordBox",
         "EchoSuppress_TextField",
         "EchoSuppress_ToggleSplitButton",
+        // TextField mount property-ordering: AcceptsReturn must precede Text.
+        "TF_Mount_MultiLinePreserved",
+        "TF_Mount_SingleLineCorrect",
+        "TF_Mount_MultiLineUpdatePreserved",
         // Control identity preservation under unrelated sibling re-render.
         // Regression coverage for the "Update falls through to Mount" bug
         // fixed in #76 — verifies the 14 controls' WinUI instances survive.
@@ -676,6 +684,12 @@ internal static class SelfTestFixtureRegistry
         "ValueEvt_PasswordBox",
         "ValueEvt_ColorPicker",
 
+        // Validation pit-of-success: NumberBox.Immediate() + Button.DisabledFocusable()
+        // Keystroke-level coverage lives in Reactor.AppTests (Appium tier).
+        "Immediate_NumberBoxFiresOnTextChange",
+        "DisabledFocusable_ButtonState",
+        "DisabledFocusable_ButtonToggleRestoresState",
+
         // Specialized editors — HitTable-style typed editors
         "Editors_CheckBoxMounts",
         "Editors_ToggleMounts",
@@ -772,6 +786,15 @@ internal static class SelfTestFixtureRegistry
         // Issue #142 — controls with private static readonly DPs
         "Issue142_CustomControlPrivateDp_Renders",
         "Issue142_ThirdPartyControlPrivateDp_Renders",
+
+        // Spec 036 — Window model live-shell coverage
+        "WindowModel_LifecycleEvents",
+        "WindowModel_ClosingEventCancels",
+        "WindowModel_TaskbarProgressLiveCom",
+        "WindowModel_ThumbnailToolbarLiveCom",
+        "WindowModel_PersistedScopeIsolated",
+        "WindowModel_TrayIconRoundTrip",
+        "WindowModel_UseOpenWindowReusesByKey",
     ];
 
     public static SelfTestFixtureBase? Create(string name, Harness harness) => name switch
@@ -849,6 +872,7 @@ internal static class SelfTestFixtureRegistry
         "D3_ForceGraph" => new D3Fixtures.ForceGraph(harness),
         "D3_ChartCustomization" => new D3Fixtures.ChartCustomization(harness),
         "D3_PieChartLabels" => new D3Fixtures.PieChartLabels(harness),
+        "D3_PieChartLabelRadiusOffset" => new D3Fixtures.PieChartLabelRadiusOffset(harness),
         "D3Cov_Scatterplot" => new D3ChartCoverageFixtures.Scatterplot(harness),
         "D3Cov_Histogram" => new D3ChartCoverageFixtures.Histogram(harness),
         "D3Cov_DonutChart" => new D3ChartCoverageFixtures.DonutChart(harness),
@@ -1040,6 +1064,7 @@ internal static class SelfTestFixtureRegistry
         "ThreadSafe_HighFrequencyLargeTree" => new ThreadSafeHookFixtures.HighFrequencyLargeTree(harness),
         "ThreadSafe_RenderCoalescing" => new ThreadSafeHookFixtures.RenderCoalescing(harness),
         "ThreadSafe_RenderCoalescingDispatcherBatch" => new ThreadSafeHookFixtures.RenderCoalescingDispatcherBatch(harness),
+        "ThreadSafe_NonThreadSafeAutoMarshal" => new ThreadSafeHookFixtures.NonThreadSafeAutoMarshal(harness),
         // Animation system — Curve & Easing
         "Curve_RecordEquality" => new CurveTests.RecordEquality(harness),
         "Curve_PresetValues" => new CurveTests.PresetValues(harness),
@@ -1114,6 +1139,8 @@ internal static class SelfTestFixtureRegistry
         "CoreCov_TemplatedFlipViewMountUpdate" => new CoreCoverageFixtures.TemplatedFlipViewMountUpdate(harness),
         "CoreCov_LazyVStackMountUpdate" => new CoreCoverageFixtures.LazyVStackMountUpdate(harness),
         "CoreCov_ContentDialogMount" => new CoreCoverageFixtures.ContentDialogMount(harness),
+        "CoreCov_ContentDialogOpensAtMount" => new CoreCoverageFixtures.ContentDialogOpensAtMount(harness),
+        "CoreCov_ContentDialogOpensOnStateFlip" => new CoreCoverageFixtures.ContentDialogOpensOnStateFlip(harness),
         "CoreCov_CommandBarMountUpdate" => new CoreCoverageFixtures.CommandBarMountUpdate(harness),
         "CoreCov_CommandHostMountUpdate" => new CoreCoverageFixtures.CommandHostMountUpdate(harness),
         "CoreCov_MenuBarMountUpdate" => new CoreCoverageFixtures.MenuBarMountUpdate(harness),
@@ -1236,6 +1263,9 @@ internal static class SelfTestFixtureRegistry
         "EchoSuppress_PasswordBox" => new EchoSuppressionFixtures.PasswordBoxNoEcho(harness),
         "EchoSuppress_TextField" => new EchoSuppressionFixtures.TextFieldNoEcho(harness),
         "EchoSuppress_ToggleSplitButton" => new EchoSuppressionFixtures.ToggleSplitButtonNoEcho(harness),
+        "TF_Mount_MultiLinePreserved" => new TextFieldMountFixtures.MultiLineTextPreserved(harness),
+        "TF_Mount_SingleLineCorrect" => new TextFieldMountFixtures.SingleLineMountCorrect(harness),
+        "TF_Mount_MultiLineUpdatePreserved" => new TextFieldMountFixtures.MultiLineUpdatePreserved(harness),
         // Control identity preservation
         "IdentityPreserve_ComboBox" => new IdentityPreservationFixtures.ComboBoxSurvivesSiblingUpdate(harness),
         "IdentityPreserve_ComboBoxElements" => new IdentityPreservationFixtures.ComboBoxElementItemsSurvivesSiblingUpdate(harness),
@@ -1442,6 +1472,11 @@ internal static class SelfTestFixtureRegistry
         "ValueEvt_PasswordBox" => new ValueChangeEventFixtures.PasswordBoxChangeFires(harness),
         "ValueEvt_ColorPicker" => new ValueChangeEventFixtures.ColorPickerChangeFires(harness),
 
+        // Validation pit-of-success
+        "Immediate_NumberBoxFiresOnTextChange" => new ImmediateAndDisabledFocusableFixtures.NumberBoxImmediateFiresOnTextChange(harness),
+        "DisabledFocusable_ButtonState" => new ImmediateAndDisabledFocusableFixtures.ButtonDisabledFocusableState(harness),
+        "DisabledFocusable_ButtonToggleRestoresState" => new ImmediateAndDisabledFocusableFixtures.ButtonDisabledFocusableToggleRestoresState(harness),
+
         // Specialized editors — mount each editor standalone under real WinUI.
         "Editors_CheckBoxMounts" => new SpecializedEditorsTests.CheckBoxEditorMounts(harness),
         "Editors_ToggleMounts" => new SpecializedEditorsTests.ToggleEditorMounts(harness),
@@ -1536,6 +1571,15 @@ internal static class SelfTestFixtureRegistry
 
         "Issue142_CustomControlPrivateDp_Renders" => new Issue142Fixtures.CustomControlPrivateDp_Renders(harness),
         "Issue142_ThirdPartyControlPrivateDp_Renders" => new Issue142Fixtures.ThirdPartyControlPrivateDp_Renders(harness),
+
+        // Spec 036 — Window model live-shell coverage
+        "WindowModel_LifecycleEvents" => new WindowModelFixtures.WindowLifecycleEvents(harness),
+        "WindowModel_ClosingEventCancels" => new WindowModelFixtures.WindowClosingEventCancels(harness),
+        "WindowModel_TaskbarProgressLiveCom" => new WindowModelFixtures.TaskbarProgressLiveCom(harness),
+        "WindowModel_ThumbnailToolbarLiveCom" => new WindowModelFixtures.ThumbnailToolbarLiveCom(harness),
+        "WindowModel_PersistedScopeIsolated" => new WindowModelFixtures.WindowPersistedScopeIsolated(harness),
+        "WindowModel_TrayIconRoundTrip" => new WindowModelFixtures.TrayIconRoundTrip(harness),
+        "WindowModel_UseOpenWindowReusesByKey" => new WindowModelFixtures.UseOpenWindowReusesByKey(harness),
 
         _ => null,
     };

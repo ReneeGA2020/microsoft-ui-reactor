@@ -3,11 +3,12 @@ using System.Text.Json.Serialization;
 namespace Minesweeper.Persistence;
 
 /// <summary>
-/// One entry in the high-score table — the player's name and time for a single
-/// difficulty preset. Custom games are not tracked (the original game's
-/// behavior).
+/// One entry in the high-score table — the time for a single difficulty
+/// preset. This is a single-player game; scores are saved per-user in
+/// LocalAppData and aren't shared, so we don't track names.
+/// Custom games are not tracked (the original game's behavior).
 /// </summary>
-public sealed record HighScoreEntry(string Name, int Seconds, string AchievedAtIso);
+public sealed record HighScoreEntry(int Seconds, string AchievedAtIso);
 
 /// <summary>
 /// Top score per classic difficulty. A null entry means "no record yet".

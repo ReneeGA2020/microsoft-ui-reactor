@@ -82,15 +82,12 @@ public sealed class HighScoreStore
     /// <paramref name="current"/> unchanged. Custom difficulties are never
     /// recorded.
     /// </summary>
-    public static HighScores TryUpdate(HighScores current, DifficultyKind kind, string name, int seconds)
+    public static HighScores TryUpdate(HighScores current, DifficultyKind kind, int seconds)
     {
         var existing = GetEntry(current, kind);
         if (existing != null && existing.Seconds <= seconds) return current;
 
-        var entry = new HighScoreEntry(
-            string.IsNullOrWhiteSpace(name) ? "Anonymous" : name.Trim(),
-            seconds,
-            DateTime.UtcNow.ToString("O"));
+        var entry = new HighScoreEntry(seconds, DateTime.UtcNow.ToString("O"));
 
         return kind switch
         {

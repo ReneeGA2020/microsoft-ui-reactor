@@ -22,7 +22,7 @@ internal static class DialogContent
                 TextBlock(label).Width(140).SemiBold(),
                 entry is null
                     ? TextBlock("(no record yet)").Foreground(Theme.SecondaryText)
-                    : TextBlock($"{entry.Seconds}s — {entry.Name}").Foreground(Theme.PrimaryText)
+                    : TextBlock($"{entry.Seconds}s").Foreground(Theme.PrimaryText)
             );
 
         return VStack(8,
@@ -32,15 +32,14 @@ internal static class DialogContent
         );
     }
 
-    /// <summary>New-best capture form. Shows the result and a name input.</summary>
-    public static Element NewBest(DifficultyKind kind, int seconds, string name, Action<string> onNameChanged)
+    /// <summary>New-best celebration. The score is auto-saved when this
+    /// dialog opens — there's no input to fill in.</summary>
+    public static Element NewBest(DifficultyKind kind, int seconds)
     {
-        return VStack(12,
+        return VStack(8,
             TextBlock($"You set a new best time on {kind}: {seconds} seconds!")
                 .FontSize(16).SemiBold(),
-            TextBlock("Enter your name for the high-score table:")
-                .Foreground(Theme.SecondaryText),
-            TextField(name, onNameChanged, placeholder: "Your name").Width(280)
+            TextBlock("Saved to your high scores.").Foreground(Theme.SecondaryText)
         );
     }
 

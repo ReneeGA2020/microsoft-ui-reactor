@@ -33,6 +33,16 @@ if (arg == "--skill")
     return ShowSkill();
 }
 
+if (arg == "--api" || arg == "api")
+{
+    return ShowApi();
+}
+
+if (arg == "--regen-api" || arg == "regen-api")
+{
+    return RegenApi();
+}
+
 if (arg == "--create")
 {
     if (args.Length < 2)
@@ -59,6 +69,16 @@ if (arg == "devtools")
     return Microsoft.UI.Reactor.Cli.Devtools.DevtoolsSupervisor.Run(args.Skip(1).ToArray());
 }
 
+if (arg == "check")
+{
+    return Microsoft.UI.Reactor.Cli.Check.CheckCommand.Run(args.Skip(1).ToArray());
+}
+
+if (arg == "pack-local")
+{
+    return Microsoft.UI.Reactor.Cli.Pack.PackLocalCommand.Run(args.Skip(1).ToArray());
+}
+
 Console.Error.WriteLine($"Unknown option: {args[0]}");
 Console.Error.WriteLine();
 ShowHelp();
@@ -78,6 +98,8 @@ void ShowHelp()
     Console.WriteLine("  --help, -h       Show this help message");
     Console.WriteLine("  --version, -v    Show version information");
     Console.WriteLine("  --skill          Print the SKILL.md AI reference to stdout");
+    Console.WriteLine("  --api            Print the reactor.api.txt signatures index to stdout");
+    Console.WriteLine("  --regen-api      Regenerate skills/reactor.api.txt from the built Reactor.dll");
     Console.WriteLine("  --create <name>  Scaffold a new Reactor project");
     Console.WriteLine();
     Console.WriteLine("Commands:");
@@ -88,6 +110,8 @@ void ShowHelp()
     Console.WriteLine("  loc prune        Find unused localization keys");
     Console.WriteLine("  docs compile     Compile documentation from templates and doc apps");
     Console.WriteLine("  devtools         Launch project with --devtools run and supervise reloads");
+    Console.WriteLine("  check [path]     Build and emit one-line diagnostics with skill-file pointers");
+    Console.WriteLine("  pack-local       Pack the in-source framework to <repo>/local-nupkgs/ as 0.0.0-local");
 }
 
 int ShowSkill()
@@ -101,6 +125,72 @@ int ShowSkill()
     using var reader = new StreamReader(stream);
     Console.Write(reader.ReadToEnd());
     return 0;
+}
+
+int ShowApi()
+{
+    // Prefer the embedded copy (always up-to-date with this `mur` binary).
+    // Fallback path: a NuGet consumer with no `mur` install can read the file
+    // directly from their package cache:
+    //   %USERPROFILE%\.nuget\packages\microsoft.ui.reactor\<version>\agentkit\reactor.api.txt
+    using var stream = assembly.GetManifestResourceStream("reactor.api.txt");
+    if (stream is null)
+    {
+        Console.Error.WriteLine("Error: Embedded reactor.api.txt resource not found.");
+        Console.Error.WriteLine("Run `mur --regen-api` (selfhost) or read the file from the NuGet package cache.");
+        return 1;
+    }
+    using var reader = new StreamReader(stream);
+    Console.Write(reader.ReadToEnd());
+    return 0;
+}
+
+int RegenApi()
+{
+    // Walk up from the running mur binary to find the repo root (the dir that
+    // contains src/Reactor and tools/Reactor.SignaturesGen). Then invoke the
+    // generator project. Selfhost only — NuGet consumers don't have the source.
+    var dir = AppContext.BaseDirectory;
+    string? repoRoot = null;
+    for (var d = new DirectoryInfo(dir); d is not null; d = d.Parent)
+    {
+        if (Directory.Exists(Path.Combine(d.FullName, "tools", "Reactor.SignaturesGen"))
+            && Directory.Exists(Path.Combine(d.FullName, "src", "Reactor")))
+        {
+            repoRoot = d.FullName;
+            break;
+        }
+    }
+    if (repoRoot is null)
+    {
+        Console.Error.WriteLine("Error: --regen-api must be run from a Reactor source checkout (could not locate tools/Reactor.SignaturesGen).");
+        return 1;
+    }
+
+    // Build the generator project — its AfterBuild target writes
+    // skills/reactor.api.txt automatically.
+    var psi = new System.Diagnostics.ProcessStartInfo("dotnet")
+    {
+        WorkingDirectory = repoRoot,
+        UseShellExecute = false,
+    };
+    psi.ArgumentList.Add("build");
+    psi.ArgumentList.Add(Path.Combine("tools", "Reactor.SignaturesGen", "Reactor.SignaturesGen.csproj"));
+    psi.ArgumentList.Add("--nologo");
+    psi.ArgumentList.Add("-v:m");
+    // WinUI projects require an explicit Platform — match the host arch so
+    // the AfterBuild target can execute the freshly-built apphost.
+    var arch = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture switch
+    {
+        System.Runtime.InteropServices.Architecture.Arm64 => "ARM64",
+        System.Runtime.InteropServices.Architecture.X64 => "x64",
+        _ => null,
+    };
+    if (arch is not null) psi.ArgumentList.Add($"-p:Platform={arch}");
+
+    using var proc = System.Diagnostics.Process.Start(psi)!;
+    proc.WaitForExit();
+    return proc.ExitCode;
 }
 
 int CreateProject(string name)
@@ -227,29 +317,32 @@ string GenerateSln(string name, string appGuid, string patchGuid)
         $"Project(\"{csharpGuid}\") = \"Reactor\", \"..\\src\\Reactor\\Reactor.csproj\", \"{pg}\"",
         "EndProject",
         "Global",
+        // x64 is listed first so `dotnet build` with no -p:Platform picks x64,
+        // which matches the vast majority of host machines today. ARM64 hosts
+        // can still build ARM64 explicitly with -p:Platform=ARM64.
         $"{t1}GlobalSection(SolutionConfigurationPlatforms) = preSolution",
-        $"{t2}Debug|ARM64 = Debug|ARM64",
         $"{t2}Debug|x64 = Debug|x64",
-        $"{t2}Release|ARM64 = Release|ARM64",
+        $"{t2}Debug|ARM64 = Debug|ARM64",
         $"{t2}Release|x64 = Release|x64",
+        $"{t2}Release|ARM64 = Release|ARM64",
         $"{t1}EndGlobalSection",
         $"{t1}GlobalSection(ProjectConfigurationPlatforms) = postSolution",
-        $"{t2}{ag}.Debug|ARM64.ActiveCfg = Debug|ARM64",
-        $"{t2}{ag}.Debug|ARM64.Build.0 = Debug|ARM64",
         $"{t2}{ag}.Debug|x64.ActiveCfg = Debug|x64",
         $"{t2}{ag}.Debug|x64.Build.0 = Debug|x64",
-        $"{t2}{ag}.Release|ARM64.ActiveCfg = Release|ARM64",
-        $"{t2}{ag}.Release|ARM64.Build.0 = Release|ARM64",
+        $"{t2}{ag}.Debug|ARM64.ActiveCfg = Debug|ARM64",
+        $"{t2}{ag}.Debug|ARM64.Build.0 = Debug|ARM64",
         $"{t2}{ag}.Release|x64.ActiveCfg = Release|x64",
         $"{t2}{ag}.Release|x64.Build.0 = Release|x64",
-        $"{t2}{pg}.Debug|ARM64.ActiveCfg = Debug|ARM64",
-        $"{t2}{pg}.Debug|ARM64.Build.0 = Debug|ARM64",
+        $"{t2}{ag}.Release|ARM64.ActiveCfg = Release|ARM64",
+        $"{t2}{ag}.Release|ARM64.Build.0 = Release|ARM64",
         $"{t2}{pg}.Debug|x64.ActiveCfg = Debug|x64",
         $"{t2}{pg}.Debug|x64.Build.0 = Debug|x64",
-        $"{t2}{pg}.Release|ARM64.ActiveCfg = Release|ARM64",
-        $"{t2}{pg}.Release|ARM64.Build.0 = Release|ARM64",
+        $"{t2}{pg}.Debug|ARM64.ActiveCfg = Debug|ARM64",
+        $"{t2}{pg}.Debug|ARM64.Build.0 = Debug|ARM64",
         $"{t2}{pg}.Release|x64.ActiveCfg = Release|x64",
         $"{t2}{pg}.Release|x64.Build.0 = Release|x64",
+        $"{t2}{pg}.Release|ARM64.ActiveCfg = Release|ARM64",
+        $"{t2}{pg}.Release|ARM64.Build.0 = Release|ARM64",
         $"{t1}EndGlobalSection",
         $"{t1}GlobalSection(SolutionProperties) = preSolution",
         $"{t2}HideSolutionNode = FALSE",

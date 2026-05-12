@@ -1728,6 +1728,18 @@ public record RichTextLineBreak() : RichTextInline;
 public record ButtonElement(string Label, Action? OnClick = null) : Element
 {
     public bool IsEnabled { get; init; } = true;
+    /// <summary>
+    /// When true, the button is visually dimmed and its <c>OnClick</c> handler
+    /// is suppressed, but it stays keyboard-focusable and reachable via Tab.
+    /// Use for submit buttons gated on validation so users can discover them
+    /// and the disable state doesn't trap keyboard navigation through commit-
+    /// on-blur inputs. Conceptually equivalent to Fluent UI React's
+    /// <c>disabledFocusable</c> / ARIA's <c>aria-disabled</c>. UIA still
+    /// reports the button as enabled — full assistive-tech "unavailable"
+    /// reporting requires a custom <c>ButtonAutomationPeer</c> and is tracked
+    /// as a follow-up.
+    /// </summary>
+    public bool IsDisabledFocusable { get; init; }
     public Element? ContentElement { get; init; }
     internal Action<WinUI.Button>[] Setters { get; init; } = [];
     internal override bool HasCallbacks => OnClick is not null;
@@ -2247,6 +2259,15 @@ public record TitleBarElement(
     public Action? OnPaneToggleRequested { get; init; }
     public Element? Content { get; init; }
     public Element? RightHeader { get; init; }
+    /// <summary>
+    /// Icon shown in the title bar's leading slot. Mirrors WinUI 3
+    /// <c>TitleBar.IconSource</c>. Pass a <see cref="SymbolIconData"/> /
+    /// <see cref="FontIconData"/> for built-in glyphs, or
+    /// <see cref="ImageIconData"/> / <see cref="BitmapIconData"/> for a
+    /// bundled <c>.ico</c> / image (e.g. <c>new ImageIconData(new
+    /// Uri("ms-appx:///Assets/AppIcon.ico"))</c>).
+    /// </summary>
+    public IconData? Icon { get; init; }
     internal Action<WinUI.TitleBar>[] Setters { get; init; } = [];
     internal override bool HasCallbacks => OnBackRequested is not null || OnPaneToggleRequested is not null;
 }

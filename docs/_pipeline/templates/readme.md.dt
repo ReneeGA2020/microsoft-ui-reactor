@@ -71,6 +71,7 @@ to wire up, no dispatcher threading to worry about.
 ### Beginner
 
 - **[Getting Started](getting-started.md)** — Create your first app, manage state, build a todo list
+- **[Reactor for XAML Developers](xaml-developers.md)** — Translate XAML, bindings, MVVM, and navigation into Reactor concepts
 - **[Dev Tooling](dev-tooling.md)** — Preview mode, hot reload, development workflow
 - **[Components](components.md)** — Component classes, props, function components, composition
 - **[Hooks](hooks.md)** — UseState, UseReducer, UseEffect, UseMemo, UseRef, UseCallback
@@ -97,6 +98,7 @@ to wire up, no dispatcher threading to worry about.
 - **[Advanced Patterns](advanced.md)** — Performance tuning, custom hooks, large-scale architecture
 - **[Data System](data-system.md)** — DataGrid with sort, filter, search, inline editing, paging
 - **[WinForms Interop](winforms-interop.md)** — Host Reactor components inside WinForms apps via XAML Islands
+- **[Windows](windows.md)** — Top-level windows, tray icons, shutdown policy, multi-window apps
 
 ## Minimal Project Setup
 

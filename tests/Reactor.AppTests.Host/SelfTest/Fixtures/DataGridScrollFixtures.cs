@@ -165,7 +165,14 @@ internal static class DataGridScrollFixtures
 
             await Harness.Render(500);
 
-            // Verify initial data
+            // WaitForIdleAsync returns once the first render pass is idle, but the
+            // DataGrid's async block fetch fires after that pass and isn't tracked
+            // by _renderPending. Poll until data appears rather than betting on a
+            // fixed delay.
+            var deadline = Environment.TickCount64 + 5_000;
+            while (H.FindTextContaining("Emp-000000") is null && Environment.TickCount64 < deadline)
+                await Harness.Render(200);
+
             H.Check("ScrollBack_InitialData",
                 H.FindTextContaining("Emp-000000") is not null);
 
@@ -223,10 +230,10 @@ internal static class DataGridScrollFixtures
                         renderItem: index =>
                         {
                             var cells = new Element[4];
-                            cells[0] = TextBlock($"{index}").Padding(8, 4).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 0);
-                            cells[1] = TextBlock($"Emp-{index:D6}").Padding(8, 4).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 1);
-                            cells[2] = TextBlock($"Dept-{index % 12}").Padding(8, 4).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 2);
-                            cells[3] = TextBlock($"Title-{index % 50}").Padding(8, 4).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 3);
+                            cells[0] = TextBlock($"{index}").Padding(horizontal: 8, vertical: 4).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 0);
+                            cells[1] = TextBlock($"Emp-{index:D6}").Padding(horizontal: 8, vertical: 4).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 1);
+                            cells[2] = TextBlock($"Dept-{index % 12}").Padding(horizontal: 8, vertical: 4).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 2);
+                            cells[3] = TextBlock($"Title-{index % 50}").Padding(horizontal: 8, vertical: 4).VAlign(VerticalAlignment.Center).Grid(row: 0, column: 3);
                             var bg = index % 2 == 0 ? "#ffffff" : "#f9f9f9";
                             return Grid(colDefs, rowDef, cells).Background(bg);
                         },

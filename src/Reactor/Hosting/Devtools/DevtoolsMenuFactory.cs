@@ -58,7 +58,7 @@ public static partial class Factories
                 ReactorFeatureFlags.HighlightReconcileChanges = v;
                 // Nudge a render so wrapper install / teardown happens
                 // immediately, mirroring the layout-cost toggle.
-                ReactorApp.ActiveHost?.RequestRender();
+                ReactorApp.ActiveHostInternal?.RequestRender();
             });
 
         // Layout-cost overlay toggle (spec 032). The overlay wiring builds
@@ -71,7 +71,7 @@ public static partial class Factories
             v =>
             {
                 ReactorFeatureFlags.ShowLayoutCost = v;
-                ReactorApp.ActiveHost?.RequestRender();
+                ReactorApp.ActiveHostInternal?.RequestRender();
             });
 
         // Separator only makes sense when there are user items to separate from.
@@ -85,7 +85,7 @@ public static partial class Factories
             .Foreground("#F59E0B")
             .Background("#00000000")
             .WithBorder("#00000000", 0)
-            .Padding(8, 4)
+            .Padding(horizontal: 8, vertical: 4)
             .FontSize(16)
             .ToolTip(toolTip)
             .AutomationName(toolTip);

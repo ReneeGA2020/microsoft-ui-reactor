@@ -320,6 +320,83 @@ internal static class ThreadSafeHookFixtures
     }
 
     // ════════════════════════════════════════════════════════════════════
+    //  Issue #212 — non-thread-safe setter from a background task auto-marshals
+    // ════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Reproduces the Pomodoro / PeriodicTimer scenario from microsoft-ui-reactor#212:
+    /// a default <c>UseState</c> + <c>UseReducer</c> hook (no <c>threadSafe: true</c>)
+    /// whose setters are invoked from inside <c>Task.Run</c>. Before the fix this
+    /// either silently failed (RELEASE) or threw an unobserved
+    /// <see cref="InvalidOperationException"/> inside <c>_ = Task.Run(...)</c> (DEBUG).
+    /// After the fix the setter auto-marshals onto the UI dispatcher and the
+    /// rendered text reflects the writes.
+    /// </summary>
+    internal class NonThreadSafeAutoMarshal(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            Action<int>? setValue = null;
+            Action<Func<int, int>>? bumpValue = null;
+
+            var host = H.CreateHost();
+            host.Mount(ctx =>
+            {
+                var (value, set) = ctx.UseState(0); // threadSafe: false (default)
+                var (sum, bump) = ctx.UseReducer(0); // threadSafe: false (default)
+                setValue = set;
+                bumpValue = bump;
+                return VStack(
+                    TextBlock($"Value: {value}"),
+                    TextBlock($"Sum: {sum}")
+                );
+            });
+
+            await Harness.Render();
+            H.Check("AutoMarshal_Initial",
+                H.FindText("Value: 0") is not null &&
+                H.FindText("Sum: 0") is not null);
+
+            // Fire from background tasks — the failure mode the issue documents.
+            // The discard `_ = Task.Run(...)` is intentional: it's the exact shape
+            // that swallows the legacy AssertUIThread throw. Wrap the body in
+            // try/catch + TrySetException so a regression that throws from the
+            // setter doesn't hang `await done.Task` forever; the outer
+            // Task.WhenAny + Task.Delay is the belt-and-suspenders timeout in
+            // case TrySetException is itself bypassed.
+            const int iterations = 25;
+            var done = new TaskCompletionSource();
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    for (int i = 1; i <= iterations; i++)
+                    {
+                        setValue!(i);
+                        bumpValue!(prev => prev + 1);
+                        await Task.Delay(1);
+                    }
+                    done.TrySetResult();
+                }
+                catch (Exception ex)
+                {
+                    done.TrySetException(ex);
+                }
+            });
+
+            var timeout = Task.Delay(TimeSpan.FromSeconds(10));
+            var winner = await Task.WhenAny(done.Task, timeout);
+            H.Check("AutoMarshal_LoopCompleted", winner == done.Task);
+            if (winner == done.Task) await done.Task; // surface any captured exception
+            // Let the marshaled writes drain and render
+            for (int i = 0; i < 4; i++) await Harness.Render();
+
+            H.Check("AutoMarshal_ValueFinal", H.FindText($"Value: {iterations}") is not null);
+            H.Check("AutoMarshal_SumFinal", H.FindText($"Sum: {iterations}") is not null);
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════
     //  Strict render coalescing: setStates inside one dispatcher block
     // ════════════════════════════════════════════════════════════════════
 

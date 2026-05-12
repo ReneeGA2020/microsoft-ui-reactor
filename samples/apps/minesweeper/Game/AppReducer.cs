@@ -15,7 +15,6 @@ public sealed record AppState(
     bool ShowHighScores,
     bool ShowCustomDialog,
     bool ShowNewBest,
-    string PendingPlayerName,
     HighScores Scores,
     /// <summary>Center of the L+R "chord preview" box, or null when no chord gesture is in progress.</summary>
     (int Row, int Col)? ChordPreview);
@@ -35,8 +34,7 @@ public sealed record OpenHighScoresAction : AppAction;
 public sealed record CloseHighScoresAction : AppAction;
 public sealed record ResetHighScoresAction : AppAction;
 public sealed record ShowNewBestAction : AppAction;
-public sealed record SetPendingNameAction(string Name) : AppAction;
-public sealed record SaveNewBestAction(string Name) : AppAction;
+public sealed record CloseNewBestAction : AppAction;
 
 /// <summary>
 /// Pure reducer for the whole app. Side effects (timer ticks, persisting
@@ -53,7 +51,6 @@ public static class AppReducer
         ShowHighScores: false,
         ShowCustomDialog: false,
         ShowNewBest: false,
-        PendingPlayerName: "",
         Scores: initialScores,
         ChordPreview: null);
 
@@ -138,16 +135,18 @@ public static class AppReducer
                 onScoresChanged?.Invoke(HighScores.Empty);
                 return s with { Scores = HighScores.Empty, ShowHighScores = false };
             case ShowNewBestAction:
-                return s with { ShowNewBest = true, PendingPlayerName = "" };
-            case SetPendingNameAction n:
-                return s with { PendingPlayerName = n.Name };
-            case SaveNewBestAction save:
-            {
-                var updated = HighScoreStore.TryUpdate(
-                    s.Scores, s.Board.Difficulty.Kind, save.Name, s.ElapsedSeconds);
-                onScoresChanged?.Invoke(updated);
-                return s with { Scores = updated, ShowNewBest = false, PendingPlayerName = "" };
-            }
+                // Auto-persist the new score as soon as we open the
+                // celebration dialog. There's nothing to capture from the
+                // user — single-player game, name-less score table.
+                {
+                    var updated = HighScoreStore.TryUpdate(
+                        s.Scores, s.Board.Difficulty.Kind, s.ElapsedSeconds);
+                    if (!ReferenceEquals(updated, s.Scores))
+                        onScoresChanged?.Invoke(updated);
+                    return s with { Scores = updated, ShowNewBest = true };
+                }
+            case CloseNewBestAction:
+                return s with { ShowNewBest = false };
             default:
                 return s;
         }

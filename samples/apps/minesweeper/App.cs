@@ -119,9 +119,6 @@ public sealed class MinesweeperApp : Component
                 MenuSeparator(),
                 MenuItem("High scores…", () => dispatch(new OpenHighScoresAction()))
             ),
-            Menu("Help",
-                MenuItem("About", () => { /* about dialog could be added later */ })
-            ),
         ]);
 
         var board = ScrollView(
@@ -184,11 +181,9 @@ public sealed class MinesweeperApp : Component
             title: "New best time!",
             body: Components.Dialogs.DialogContent.NewBest(
                 state.Board.Difficulty.Kind,
-                state.ElapsedSeconds,
-                state.PendingPlayerName,
-                name => dispatch(new SetPendingNameAction(name))),
+                state.ElapsedSeconds),
             buttons: [
-                ("Save", () => dispatch(new SaveNewBestAction(state.PendingPlayerName)), true),
+                ("Close", () => dispatch(new CloseNewBestAction()), true),
             ]);
 
         // The main content + overlays stack via a Grid so dialogs sit above

@@ -34,9 +34,9 @@ public class HighScoreStoreTests : IDisposable
     {
         var store = new HighScoreStore(_filePath);
         var scores = new HighScores(
-            Beginner: new HighScoreEntry("Alice", 12, "2026-01-01T12:00:00Z"),
-            Intermediate: new HighScoreEntry("Bob", 87, "2026-01-02T12:00:00Z"),
-            Expert: new HighScoreEntry("Carol", 320, "2026-01-03T12:00:00Z"));
+            Beginner: new HighScoreEntry(12, "2026-01-01T12:00:00Z"),
+            Intermediate: new HighScoreEntry(87, "2026-01-02T12:00:00Z"),
+            Expert: new HighScoreEntry(320, "2026-01-03T12:00:00Z"));
 
         Assert.True(store.Save(scores));
         var loaded = store.Load();
@@ -48,7 +48,7 @@ public class HighScoreStoreTests : IDisposable
     {
         var nested = Path.Combine(_tempDir, "deep", "nested", "highscores.json");
         var store = new HighScoreStore(nested);
-        Assert.True(store.Save(new HighScores(Beginner: new HighScoreEntry("A", 1, "x"))));
+        Assert.True(store.Save(new HighScores(Beginner: new HighScoreEntry(1, "x"))));
         Assert.True(File.Exists(nested));
     }
 
@@ -69,14 +69,14 @@ public class HighScoreStoreTests : IDisposable
     [Fact]
     public void IsNewRecord_FasterThanExisting_ReturnsTrue()
     {
-        var current = new HighScores(Beginner: new HighScoreEntry("A", 50, "x"));
+        var current = new HighScores(Beginner: new HighScoreEntry(50, "x"));
         Assert.True(HighScoreStore.IsNewRecord(current, DifficultyKind.Beginner, 49));
     }
 
     [Fact]
     public void IsNewRecord_SlowerThanExisting_ReturnsFalse()
     {
-        var current = new HighScores(Beginner: new HighScoreEntry("A", 50, "x"));
+        var current = new HighScores(Beginner: new HighScoreEntry(50, "x"));
         Assert.False(HighScoreStore.IsNewRecord(current, DifficultyKind.Beginner, 51));
         Assert.False(HighScoreStore.IsNewRecord(current, DifficultyKind.Beginner, 50));
     }
@@ -91,14 +91,13 @@ public class HighScoreStoreTests : IDisposable
     public void TryUpdate_WritesNewBest_AndPreservesOtherSlots()
     {
         var current = new HighScores(
-            Beginner: new HighScoreEntry("OldBeg", 30, "x"),
-            Intermediate: new HighScoreEntry("Med", 60, "y"));
+            Beginner: new HighScoreEntry(30, "x"),
+            Intermediate: new HighScoreEntry(60, "y"));
 
-        var updated = HighScoreStore.TryUpdate(current, DifficultyKind.Beginner, "NewBeg", 25);
+        var updated = HighScoreStore.TryUpdate(current, DifficultyKind.Beginner, 25);
 
         Assert.NotNull(updated.Beginner);
-        Assert.Equal("NewBeg", updated.Beginner!.Name);
-        Assert.Equal(25, updated.Beginner.Seconds);
+        Assert.Equal(25, updated.Beginner!.Seconds);
         Assert.Equal(current.Intermediate, updated.Intermediate); // untouched
         Assert.Null(updated.Expert);
     }
@@ -106,15 +105,8 @@ public class HighScoreStoreTests : IDisposable
     [Fact]
     public void TryUpdate_DoesNothingIfNotFaster()
     {
-        var current = new HighScores(Beginner: new HighScoreEntry("Old", 10, "x"));
-        var updated = HighScoreStore.TryUpdate(current, DifficultyKind.Beginner, "New", 11);
+        var current = new HighScores(Beginner: new HighScoreEntry(10, "x"));
+        var updated = HighScoreStore.TryUpdate(current, DifficultyKind.Beginner, 11);
         Assert.Same(current, updated);
-    }
-
-    [Fact]
-    public void TryUpdate_BlankNameBecomesAnonymous()
-    {
-        var updated = HighScoreStore.TryUpdate(HighScores.Empty, DifficultyKind.Beginner, "   ", 5);
-        Assert.Equal("Anonymous", updated.Beginner!.Name);
     }
 }

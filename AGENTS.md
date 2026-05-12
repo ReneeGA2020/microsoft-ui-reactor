@@ -5,8 +5,8 @@ Reactor is a declarative, component-based C# framework for building WinUI 3 desk
 ## Build, Test, Lint
 
 ```bash
-# Build (platform defaults to machine arch; force with -p:Platform=x64 or ARM64)
-dotnet build Reactor.sln
+# Build (platform defaults to machine arch for apps; libraries are AnyCPU)
+dotnet build Reactor.slnx
 
 # Unit tests — xUnit, headless, fast (~2200 tests incl. 590 Yoga fixtures)
 dotnet test tests/Reactor.Tests
@@ -27,7 +27,7 @@ dotnet test tests/Reactor.AppTests
 dotnet test tests/Reactor.AppTests --filter "ClassName=Reactor.AppTests.Tests.AccessibilityTests"
 ```
 
-CI runs unit tests + selftests + full solution build on every PR. .NET 9 SDK, `windows-latest` runner.
+CI runs unit tests + selftests + full solution build on every PR. .NET 10 SDK, `windows-latest` runner.
 
 ## Architecture
 
@@ -121,7 +121,7 @@ Tests that write to `Console.Out`/`Console.Error` must be grouped with `[Collect
 
 ### AOT compatibility
 
-`IsAotCompatible=true` is set for all net8.0+ projects. The core Reactor library promotes IL trimming/AOT warnings to errors — new reflection usage must be annotated before merging. Non-Reactor projects (tests, samples) suppress these warnings.
+`IsAotCompatible=true` is set for all net10.0+ projects. The core Reactor library promotes IL trimming/AOT warnings to errors — new reflection usage must be annotated before merging. Non-Reactor projects (tests, samples) suppress these warnings.
 
 ### WinUI library projects
 

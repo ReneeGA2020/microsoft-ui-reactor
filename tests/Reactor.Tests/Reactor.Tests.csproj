@@ -35,6 +35,7 @@
     <ProjectReference Include="..\..\src\Reactor.Cli\Reactor.Cli.csproj" />
     <ProjectReference Include="..\..\src\Reactor.Analyzers\Reactor.Analyzers.csproj" />
     <ProjectReference Include="..\..\samples\apps\minesweeper\Minesweeper.csproj" />
+    <ProjectReference Include="..\..\tools\Reactor.MurCheckGuardrail\Reactor.MurCheckGuardrail.csproj" />
   </ItemGroup>
 
 </Project>

@@ -13,11 +13,23 @@
          can put that directory on PATH and `mur` resolves to the freshly-built
          binary. The release workflow produces the same bin/x64 + bin/arm64
          layout via a self-contained `dotnet publish`. -->
-    <ReactorBinDir>$(MSBuildThisFileDirectory)..\..\bin\$(Platform.ToLowerInvariant())</ReactorBinDir>
+  </PropertyGroup>
+
+  <!-- Resolve the effective architecture from Platform or RuntimeIdentifier
+       so the bin/<arch> mirror layout stays consistent with the skill kit. -->
+  <PropertyGroup>
+    <_ReactorArch Condition="'$(Platform)' == 'x64' or '$(Platform)' == 'ARM64'">$(Platform.ToLowerInvariant())</_ReactorArch>
+    <_ReactorArch Condition="'$(_ReactorArch)' == '' and '$(RuntimeIdentifier)' == 'win-x64'">x64</_ReactorArch>
+    <_ReactorArch Condition="'$(_ReactorArch)' == '' and '$(RuntimeIdentifier)' == 'win-arm64'">arm64</_ReactorArch>
+    <ReactorBinDir Condition="'$(_ReactorArch)' != ''">$(MSBuildThisFileDirectory)..\..\bin\$(_ReactorArch)</ReactorBinDir>
   </PropertyGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Reactor.Tests" />
+    <!-- Spec 038 §8 guardrail tool re-uses PolicyTable so the two sources
+         can never drift. The guardrail is offline / CI-only; no runtime
+         dependency on it from the CLI itself. -->
+    <InternalsVisibleTo Include="Reactor.MurCheckGuardrail" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,19 +41,48 @@
 
   <ItemGroup>
     <EmbeddedResource Include="..\..\SKILL.md" Link="SKILL.md" LogicalName="SKILL.md" />
+    <EmbeddedResource Include="..\..\skills\reactor.api.txt" Link="reactor.api.txt" LogicalName="reactor.api.txt"
+                      Condition="Exists('..\..\skills\reactor.api.txt')" />
+  </ItemGroup>
+
+  <!-- SignaturesGen transitively references WindowsAppSDK, whose targets
+       reject AnyCPU. Pick a concrete Platform for the SignaturesGen build
+       so a bare `dotnet build src/Reactor.Cli` (no -p:Platform) succeeds:
+         - if $(Platform) is already x64 or ARM64, mirror it;
+         - else, derive from $(RuntimeIdentifier) when set (so a cross-arch
+           `dotnet publish -r win-arm64` from an x64 runner doesn't hit
+           NETSDK1032 by mixing PlatformTarget=x64 with RID=win-arm64);
+         - else (AnyCPU and no RID), fall back to host arch.
+       SignaturesGen's own AfterBuild regen step is already gated on
+       target arch == host arch, so api.txt regen only fires when the
+       freshly-built apphost can actually execute on this machine. -->
+  <PropertyGroup>
+    <_SignaturesGenPlatform Condition="'$(Platform)' == 'x64' or '$(Platform)' == 'ARM64'">$(Platform)</_SignaturesGenPlatform>
+    <_SignaturesGenPlatform Condition="'$(_SignaturesGenPlatform)' == '' and '$(RuntimeIdentifier)' == 'win-arm64'">ARM64</_SignaturesGenPlatform>
+    <_SignaturesGenPlatform Condition="'$(_SignaturesGenPlatform)' == '' and '$(RuntimeIdentifier)' == 'win-x64'">x64</_SignaturesGenPlatform>
+    <_SignaturesGenPlatform Condition="'$(_SignaturesGenPlatform)' == '' and $(NETCoreSdkRuntimeIdentifier.EndsWith('-arm64'))">ARM64</_SignaturesGenPlatform>
+    <_SignaturesGenPlatform Condition="'$(_SignaturesGenPlatform)' == ''">x64</_SignaturesGenPlatform>
+  </PropertyGroup>
+
+  <!-- Build-order only: ensures the signatures generator runs (and writes
+       skills/reactor.api.txt) before this project embeds it. The generator
+       isn't a runtime dependency of mur. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\tools\Reactor.SignaturesGen\Reactor.SignaturesGen.csproj"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      SetPlatform="Platform=$(_SignaturesGenPlatform)" />
   </ItemGroup>
 
   <!-- After build, mirror the CLI output to <repo>/bin/<arch>/ so it matches
        the deployed skill-kit layout. Add that directory to your PATH once and
        `mur` works from anywhere — same invocation in selfhost and deployed.
 
-       Condition: only fire when Platform is concrete (x64/ARM64). A sln-level
-       `dotnet build -p:Platform=x64` can translate to AnyCPU at the project
-       level via sln config mapping — silently skip rather than create a
-       bin/anycpu/ folder. Build with explicit per-project Platform to mirror. -->
+       Fires when a concrete architecture can be determined from either
+       Platform (x64/ARM64) or RuntimeIdentifier (win-x64/win-arm64). -->
   <Target Name="MirrorBinForSelfhost"
           AfterTargets="Build"
-          Condition="'$(Platform)' == 'x64' or '$(Platform)' == 'ARM64'">
+          Condition="'$(_ReactorArch)' != ''">
     <ItemGroup>
       <ReactorCliOutputs Include="$(OutputPath)**\*.*" />
     </ItemGroup>

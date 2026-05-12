@@ -30,13 +30,53 @@ public sealed class RenderContext
         _uiThreadId = Environment.CurrentManagedThreadId;
     }
 
-    [global::System.Diagnostics.Conditional("DEBUG")]
-    private void AssertUIThread(string hookName)
+    /// <summary>
+    /// Auto-marshals <paramref name="work"/> to the captured UI dispatcher when the
+    /// caller is not on the UI thread. Returns <c>true</c> if the work was
+    /// scheduled cross-thread (caller should return without executing inline).
+    /// Returns <c>false</c> when the caller is already on the UI thread (hot path).
+    /// <para>
+    /// When no <see cref="Microsoft.UI.Reactor.ReactorApp.UIDispatcher"/> has been
+    /// captured (unit-test / headless render contexts) or when the dispatcher has
+    /// already begun shutting down, a cross-thread call throws instead of silently
+    /// racing or dropping the update. The dispatcher is captured during host
+    /// bootstrap (<c>ReactorApp</c>'s <c>OnLaunched</c> for packaged apps, or
+    /// <c>ReactorHost</c>/<c>ReactorHostControl</c> initialization for embedded /
+    /// test scenarios), so production code reaches this method only after at
+    /// least one render has happened.
+    /// </para>
+    /// </summary>
+    private bool MarshalIfOffUIThread(string hookName, Action work)
     {
-        if (Environment.CurrentManagedThreadId != _uiThreadId)
+        // Hot path — same thread that ran BeginRender. ~1ns TLS read + cmp + branch.
+        if (Environment.CurrentManagedThreadId == _uiThreadId) return false;
+
+        var dq = Microsoft.UI.Reactor.ReactorApp.UIDispatcher;
+        if (dq is null)
+        {
+            // Test/headless context with no captured UI dispatcher AND off-thread.
+            // The legacy [Conditional("DEBUG")] assert at this spot swallowed silently
+            // in RELEASE; surface loudly in both flavors so the call is visible.
             throw new InvalidOperationException(
                 $"{hookName} setter was called from thread {Environment.CurrentManagedThreadId}, " +
-                $"but the UI thread is {_uiThreadId}. Use threadSafe: true to allow cross-thread calls.");
+                $"but the captured UI thread is {_uiThreadId}, and no UI dispatcher is " +
+                $"available to marshal the call. Run the setter on the UI thread, " +
+                $"or pass threadSafe: true to the hook.");
+        }
+        // TryEnqueue returns false when the dispatcher has begun shutting down
+        // (queue closed, owning thread exiting). Silently swallowing that case
+        // would lose the state update with no diagnostic; throw so the caller
+        // sees the same loud failure mode as the no-dispatcher path.
+        if (!dq.TryEnqueue(() => work()))
+        {
+            throw new InvalidOperationException(
+                $"{hookName} setter was called from thread {Environment.CurrentManagedThreadId}, " +
+                $"but the UI dispatcher refused the marshaled call (TryEnqueue returned " +
+                $"false — typically because the dispatcher is shutting down). The state " +
+                $"update was dropped. Stop scheduling background setters past window/app " +
+                $"shutdown (cancel the producing task in the effect cleanup).");
+        }
+        return true;
     }
 
     /// <summary>
@@ -55,9 +95,18 @@ public sealed class RenderContext
     /// <summary>
     /// Declares a piece of state. Returns (currentValue, setter).
     /// Must be called in the same order every render (just like React hooks).
-    /// When <paramref name="threadSafe"/> is true, the setter can be called from any thread
-    /// and reads/writes are synchronized. When false (default), the setter must be called
-    /// from the UI thread — in DEBUG builds, a cross-thread call throws.
+    /// <para>
+    /// When <paramref name="threadSafe"/> is true, reads and writes are synchronized
+    /// with a per-hook lock so concurrent setter calls from many threads serialize.
+    /// When false (default), cross-thread setter calls are auto-marshaled onto the
+    /// captured UI dispatcher — the write and the rerender both run on the UI thread,
+    /// so background-thread setters from <c>Task.Run</c>, <c>PeriodicTimer</c>, or
+    /// callbacks after <c>await … ConfigureAwait(false)</c> work correctly without
+    /// any extra opt-in. Use <paramref name="threadSafe"/>: <c>true</c> when you need
+    /// many concurrent setters to apply in-place (i.e., without an intervening UI
+    /// thread hop) or when the setter result must be visible to its caller before
+    /// the next UI tick.
+    /// </para>
     /// </summary>
     public (T Value, Action<T> Set) UseState<T>(T initialValue, bool threadSafe = false)
     {
@@ -99,7 +148,7 @@ public sealed class RenderContext
             }
             else
             {
-                AssertUIThread("UseState");
+                if (MarshalIfOffUIThread("UseState", () => Setter(newValue))) return;
                 changed = !EqualityComparer<T>.Default.Equals(h.Value, newValue);
                 if (changed) h.Value = newValue;
                 if (Diagnostics.ReactorEventSource.Log.IsEnabled(
@@ -116,7 +165,10 @@ public sealed class RenderContext
     /// <summary>
     /// Declares a piece of state with a functional updater variant.
     /// The updater receives the previous value and returns the next.
-    /// When <paramref name="threadSafe"/> is true, the updater can be called from any thread.
+    /// Cross-thread updater calls are auto-marshaled onto the captured UI dispatcher
+    /// (same semantics as <see cref="UseState{T}(T, bool)"/>); pass
+    /// <paramref name="threadSafe"/>: <c>true</c> for locked in-place updates that
+    /// serialize many concurrent writers without an intervening UI tick.
     /// </summary>
     public (T Value, Action<Func<T, T>> Update) UseReducer<T>(T initialValue, bool threadSafe = false)
     {
@@ -160,7 +212,7 @@ public sealed class RenderContext
             }
             else
             {
-                AssertUIThread("UseReducer");
+                if (MarshalIfOffUIThread("UseReducer", () => Updater(reducer))) return;
                 var prev = h.Value;
                 var next = reducer(prev);
                 changed = !EqualityComparer<T>.Default.Equals(prev, next);
@@ -180,7 +232,10 @@ public sealed class RenderContext
     /// Declares a piece of state managed by a reducer function (like Redux).
     /// The reducer takes (currentState, action) and returns the next state.
     /// Returns (currentState, dispatch) where dispatch sends an action through the reducer.
-    /// When <paramref name="threadSafe"/> is true, dispatch can be called from any thread.
+    /// Cross-thread dispatch calls are auto-marshaled onto the captured UI dispatcher
+    /// (same semantics as <see cref="UseState{T}(T, bool)"/>); pass
+    /// <paramref name="threadSafe"/>: <c>true</c> for locked in-place dispatch that
+    /// serializes concurrent writers without an intervening UI tick.
     /// </summary>
     public (TState Value, Action<TAction> Dispatch) UseReducer<TState, TAction>(
         Func<TState, TAction, TState> reducer, TState initialValue, bool threadSafe = false)
@@ -221,7 +276,7 @@ public sealed class RenderContext
             }
             else
             {
-                AssertUIThread("UseReducer");
+                if (MarshalIfOffUIThread("UseReducer", () => Dispatch(action))) return;
                 var prev = h.Value;
                 var next = reducer(prev, action);
                 if (!EqualityComparer<TState>.Default.Equals(prev, next))
@@ -368,18 +423,23 @@ public sealed class RenderContext
     /// process-wide state.
     /// </summary>
     /// <remarks>
-    /// In this release, both scopes resolve to
-    /// <see cref="ApplicationPersistedScope.Default"/>. The
-    /// <see cref="WindowPersistedScope"/> infrastructure is in place; per-host
-    /// resolution will be wired through <c>ReactorHost</c> in a follow-up
-    /// without a public-API change.
+    /// <see cref="PersistedScope.Window"/> resolves to the active host's
+    /// <see cref="Microsoft.UI.Reactor.ReactorWindow.PersistedScope"/> when the
+    /// host has an owning window; otherwise it falls back to the process-wide
+    /// scope so unit-test contexts (which never construct a window) keep their
+    /// existing semantics. Two windows of the same component class therefore
+    /// hold independent state under <see cref="PersistedScope.Window"/>.
+    /// (spec 036 §3.4 / §4.4 — closes spec 033 §7.5.)
     /// </remarks>
     public (T Value, Action<T> Set) UsePersisted<T>(string key, T initialValue, PersistedScope scope)
     {
         if (_hookIndex >= _hooks.Count)
         {
-            T initial = PersistedStateCache.TryGet<T>(key, out var cached) ? cached : initialValue;
-            _hooks.Add(new PersistedHookState<T>(initial) { PersistKey = key });
+            var resolvedScope = ResolvePersistedScope(scope);
+            T initial = (resolvedScope is not null && resolvedScope.TryGet<T>(key, out var cached))
+                ? cached
+                : initialValue;
+            _hooks.Add(new PersistedHookState<T>(initial) { PersistKey = key, Scope = resolvedScope });
         }
 
         var currentIndex = _hookIndex;
@@ -394,6 +454,7 @@ public sealed class RenderContext
 
         void Setter(T newValue)
         {
+            if (MarshalIfOffUIThread("UsePersisted", () => Setter(newValue))) return;
             var h = (PersistedHookState<T>)_hooks[currentIndex];
             if (!EqualityComparer<T>.Default.Equals(h.Value, newValue))
             {
@@ -944,12 +1005,340 @@ public sealed class RenderContext
     }
 
     /// <summary>
+    /// Parameterless overload — resolves the current host's window via the
+    /// active host's back-pointer and re-renders on resize. Returns
+    /// <c>(0, 0)</c> when called outside a window (e.g. tray-flyout content);
+    /// no implicit fallback to <c>PrimaryWindow</c>. (spec 036 §5.2 / §7.1)
+    /// </summary>
+    public (double Width, double Height) UseWindowSize()
+    {
+        var hostWindow = Microsoft.UI.Reactor.ReactorApp.ActiveHostInternal?.OwningWindow;
+        if (hostWindow is null)
+        {
+            // Reserve the same hook slots as the live branch (UseState +
+            // UseEffect) and use the same tuple-shaped state so a render that
+            // crosses the no-window → window transition doesn't trip the
+            // hook-state type check.
+            _ = UseState((0.0, 0.0));
+            UseEffect(() => { /* no-op */ }, this);
+            return (0, 0);
+        }
+        return UseWindowSize(hostWindow.NativeWindow);
+    }
+
+    /// <summary>
+    /// Resolves the current host's <see cref="Microsoft.UI.Reactor.ReactorWindow"/>
+    /// (or <c>null</c> when called outside a window — e.g. tray-flyout content).
+    /// O(1) field read; no subscription, no re-render trigger. (spec 036 §7 / §7.1)
+    /// </summary>
+    public Microsoft.UI.Reactor.ReactorWindow? UseWindow()
+        => Microsoft.UI.Reactor.ReactorApp.ActiveHostInternal?.OwningWindow;
+
+    /// <summary>
+    /// Subscribes to the host window's <c>StateChanged</c> event and re-renders
+    /// on change. Returns <see cref="Microsoft.UI.Reactor.WindowState.Normal"/>
+    /// outside a window. (spec 036 §7)
+    /// </summary>
+    public Microsoft.UI.Reactor.WindowState UseWindowState()
+    {
+        var win = Microsoft.UI.Reactor.ReactorApp.ActiveHostInternal?.OwningWindow;
+        if (win is null) { _ = UseState(Microsoft.UI.Reactor.WindowState.Normal); return Microsoft.UI.Reactor.WindowState.Normal; }
+        var (state, setState) = UseState(win.State);
+        UseEffect(() =>
+        {
+            void handler(object? sender, Microsoft.UI.Reactor.WindowState newState) => setState(newState);
+            win.StateChanged += handler;
+            return () => win.StateChanged -= handler;
+        }, win);
+        return state;
+    }
+
+    /// <summary>
+    /// Subscribes to the host window's activation events and re-renders on
+    /// change. Returns <c>true</c> outside a window (the surface is "active"
+    /// while shown). (spec 036 §7)
+    /// </summary>
+    public bool UseIsActive()
+    {
+        var win = Microsoft.UI.Reactor.ReactorApp.ActiveHostInternal?.OwningWindow;
+        if (win is null) { _ = UseState(true); return true; }
+        var (active, setActive) = UseState(win.IsActive);
+        UseEffect(() =>
+        {
+            void onAct(object? s, EventArgs e) => setActive(true);
+            void onDeact(object? s, EventArgs e) => setActive(false);
+            win.Activated += onAct;
+            win.Deactivated += onDeact;
+            return () =>
+            {
+                win.Activated -= onAct;
+                win.Deactivated -= onDeact;
+            };
+        }, win);
+        return active;
+    }
+
+    /// <summary>
+    /// Registers a synchronous "can the window close right now?" predicate.
+    /// Multiple guards stack — any returning <c>false</c> cancels the close.
+    /// Runs on the UI thread; for async confirmation, return <c>false</c> and
+    /// re-trigger <see cref="Microsoft.UI.Reactor.ReactorWindow.Close"/> from
+    /// the dialog callback. No-op outside a window. (spec 036 §7 / §13.4)
+    /// </summary>
+    public void UseClosingGuard(Func<bool> canClose)
+    {
+        ArgumentNullException.ThrowIfNull(canClose);
+        var win = Microsoft.UI.Reactor.ReactorApp.ActiveHostInternal?.OwningWindow;
+        if (win is null) { UseEffect(() => { /* no-op */ }, canClose); return; }
+        UseEffect(() =>
+        {
+            var token = win.RegisterClosingGuard(canClose);
+            return () => token.Dispose();
+        }, win, canClose);
+    }
+
+    /// <summary>
+    /// Returns the current per-window DPI (<see cref="Microsoft.UI.Reactor.ReactorWindow.Dpi"/>)
+    /// and re-renders on DPI change. Returns the system primary-monitor DPI when
+    /// called outside a window. (spec 036 §5.2)
+    /// </summary>
+    public uint UseDpi()
+    {
+        var win = Microsoft.UI.Reactor.ReactorApp.ActiveHostInternal?.OwningWindow;
+        if (win is null)
+        {
+            _ = UseState((uint)0);
+            return DpiHelpers.GetSystemDpiSafe();
+        }
+
+        var (dpi, setDpi) = UseState(win.Dpi);
+
+        UseEffect(() =>
+        {
+            void handler(object? sender, uint newDpi) => setDpi(newDpi);
+            win.DpiChanged += handler;
+            return () => win.DpiChanged -= handler;
+        }, win);
+
+        return dpi == 0 ? win.Dpi : dpi;
+    }
+
+    /// <summary>
+    /// Open or reuse a secondary window keyed by <paramref name="key"/>. Renders
+    /// that pass the same <paramref name="key"/> share the same
+    /// <see cref="Microsoft.UI.Reactor.ReactorWindow"/>; if the spec changes
+    /// across renders the live window is updated via
+    /// <see cref="Microsoft.UI.Reactor.ReactorWindow.Update"/>. The returned
+    /// handle is identity-stable across renders so long as the key is stable.
+    /// </summary>
+    /// <remarks>
+    /// <para>Unmount semantics: when the calling component unmounts, the opened
+    /// window stays open. Components that want the inverse behavior must close
+    /// the window explicitly — e.g. by registering a <c>UseEffect</c> cleanup
+    /// that calls <see cref="Microsoft.UI.Reactor.ReactorWindow.Close"/> on the
+    /// returned handle. (spec 036 §4.3 / §15.6)</para>
+    /// <para><b>Note — asymmetry with <see cref="UseTrayIcon"/>:</b> tray icons
+    /// are component-scoped and close on unmount; opened windows are app-scoped
+    /// and survive unmount. The asymmetry is deliberate (a window is normally
+    /// expected to outlive the menu item that opened it, while a tray icon
+    /// belongs to the component that declared it), so the two hooks behave
+    /// inversely despite the matching naming.</para>
+    /// <para>Returns <c>null</c> when no UI dispatcher has been captured —
+    /// happens in unit-test contexts where no <c>ReactorApp.Run</c> is in
+    /// flight. In production this is unreachable.</para>
+    /// </remarks>
+    public Microsoft.UI.Reactor.ReactorWindow? UseOpenWindow(
+        Microsoft.UI.Reactor.WindowKey key,
+        Microsoft.UI.Reactor.WindowSpec spec,
+        Func<Component> factory)
+    {
+        ArgumentNullException.ThrowIfNull(spec);
+        ArgumentNullException.ThrowIfNull(factory);
+
+        // Capture an identity-stable handle slot. Renders that pass the same
+        // key reuse this slot; rekeying clears the handle so a fresh window
+        // opens for the new key.
+        var handleRef = UseRef<Microsoft.UI.Reactor.ReactorWindow?>(null);
+        var lastKeyRef = UseRef<Microsoft.UI.Reactor.WindowKey?>(null);
+
+        // Resolve the live window for this key. Three cases:
+        //   1. Slot already holds a non-disposed window with the matching key — reuse.
+        //   2. The key changed since last render — drop the slot (the old window
+        //      stays open per spec §15.6) and look up by new key.
+        //   3. No window matches — open one, save the handle.
+        if (handleRef.Current is { } prior && lastKeyRef.Current is { } priorKey && priorKey.Equals(key))
+        {
+            // Reuse — but if the underlying window has been closed externally,
+            // drop the stale reference so the next branch reopens.
+            var snapshot = Microsoft.UI.Reactor.ReactorApp.Windows;
+            bool stillOpen = false;
+            for (int i = 0; i < snapshot.Count; i++)
+                if (ReferenceEquals(snapshot[i], prior)) { stillOpen = true; break; }
+            if (!stillOpen) handleRef.Current = null;
+        }
+        else
+        {
+            // Key changed (or first render) — clear the slot. We do NOT close
+            // the previous window; the spec calls for explicit close-on-cleanup.
+            handleRef.Current = null;
+        }
+
+        // Slot is empty — try a process-wide lookup by key first (the user may
+        // have already opened a window with this key from elsewhere) and only
+        // fall back to OpenWindow when no live window owns it.
+        if (handleRef.Current is null)
+        {
+            var existing = Microsoft.UI.Reactor.ReactorApp.FindWindow(key);
+            if (existing is not null)
+            {
+                handleRef.Current = existing;
+            }
+            else if (Microsoft.UI.Reactor.ReactorApp.UIDispatcher is not null)
+            {
+                // Stamp the key onto the spec so FindWindow / FindTrayIcon /
+                // shutdown-policy bookkeeping work without an explicit
+                // WindowSpec.Key on the caller.
+                var stamped = spec.Key is null ? spec with { Key = key } : spec;
+                try
+                {
+                    handleRef.Current = Microsoft.UI.Reactor.ReactorApp.OpenWindow(stamped, factory);
+                }
+                catch (Exception ex) when (ex is InvalidOperationException || ex is global::System.Runtime.InteropServices.COMException)
+                {
+                    // No XAML application or UI dispatcher available. Hooks
+                    // must not crash the calling render; the live multi-
+                    // window path is exercised in selftest fixtures.
+                    handleRef.Current = null;
+                }
+            }
+            else
+            {
+                // No UI dispatcher captured — unit-test contexts. Hook slot
+                // count must stay stable so the hook-order check passes on
+                // subsequent renders.
+                handleRef.Current = null;
+            }
+        }
+        lastKeyRef.Current = key;
+
+        // If the spec changed since the last render, push it through Update so
+        // chrome stays in sync. Effect dependency is the spec record's
+        // value-equality so we only call Update on real changes.
+        var win = handleRef.Current;
+        if (win is not null)
+        {
+            UseEffect(() =>
+            {
+                try { win.Update(spec.Key is null ? spec with { Key = key } : spec); }
+                catch { /* best effort — disposed windows / threading races */ }
+            }, win, spec);
+        }
+        else
+        {
+            // Keep the hook slot count stable across the no-window branch.
+            UseEffect(() => { /* no-op */ }, key, spec);
+        }
+
+        return win;
+    }
+
+    /// <summary>
+    /// Open (or reuse-by-<see cref="Microsoft.UI.Reactor.TrayIconSpec.Key"/>) a
+    /// system-tray icon scoped to the calling component. The icon closes
+    /// automatically on unmount — that's the only difference from
+    /// <see cref="Microsoft.UI.Reactor.ReactorApp.OpenTrayIcon"/>, which is
+    /// app-scoped and keeps the icon alive until explicit
+    /// <see cref="Microsoft.UI.Reactor.ReactorTrayIcon.Close"/>.
+    /// </summary>
+    /// <remarks>
+    /// Returns <c>null</c> when no UI dispatcher has been captured (test
+    /// contexts) or when the spec change cannot be reconciled — callers
+    /// should null-check before subscribing to events. Identity-stable across
+    /// re-renders so the same handle wires through subsequent
+    /// <c>UseEffect</c> dependencies.
+    /// (spec 036 §11.4)
+    /// </remarks>
+    public Microsoft.UI.Reactor.ReactorTrayIcon? UseTrayIcon(Microsoft.UI.Reactor.TrayIconSpec spec)
+    {
+        ArgumentNullException.ThrowIfNull(spec);
+
+        var handleRef = UseRef<Microsoft.UI.Reactor.ReactorTrayIcon?>(null);
+
+        // Open on first render; reuse on subsequent renders if a key match
+        // already exists. The hook owns the lifetime — UseEffect cleanup
+        // closes the icon on unmount.
+        if (handleRef.Current is null)
+        {
+            if (spec.Key is { } key)
+            {
+                handleRef.Current = Microsoft.UI.Reactor.ReactorApp.FindTrayIcon(key);
+            }
+
+            if (handleRef.Current is null && Microsoft.UI.Reactor.ReactorApp.UIDispatcher is not null)
+            {
+                try
+                {
+                    handleRef.Current = Microsoft.UI.Reactor.ReactorApp.OpenTrayIcon(spec);
+                }
+                catch (Exception ex) when (ex is InvalidOperationException || ex is global::System.Runtime.InteropServices.COMException)
+                {
+                    // Shell COM unavailable in test/headless contexts.
+                    handleRef.Current = null;
+                }
+            }
+        }
+
+        var icon = handleRef.Current;
+
+        // Spec-change diff: re-apply only when the value-equal record
+        // signature changes. Effect dependency carries the spec record.
+        if (icon is not null)
+        {
+            UseEffect(() =>
+            {
+                try { icon.Update(spec); }
+                catch { /* best effort */ }
+            }, icon, spec);
+        }
+        else
+        {
+            // Keep slot count stable so the hook-order check passes on
+            // subsequent renders even when the open failed.
+            UseEffect(() => { /* no-op */ }, spec);
+        }
+
+        // Component-scoped lifetime — close on unmount. UseEffect with
+        // empty deps runs once. Read the icon via handleRef inside the
+        // cleanup so a late-bound icon (e.g. UIDispatcher captured after the
+        // first render) still gets closed.
+        UseEffect(() =>
+        {
+            return () =>
+            {
+                try { handleRef.Current?.Close(); } catch { /* best effort */ }
+            };
+        });
+
+        return icon;
+    }
+
+    /// <summary>
     /// Returns true when the given window's width is >= minWidth.
     /// Re-renders when the window resizes across the breakpoint.
     /// </summary>
     public bool UseBreakpoint(Microsoft.UI.Xaml.Window window, double minWidth)
     {
         var (width, _) = UseWindowSize(window);
+        return width >= minWidth;
+    }
+
+    /// <summary>
+    /// Parameterless overload — resolves the current host's window. Returns
+    /// false when called outside a window. (spec 036 §5.2)
+    /// </summary>
+    public bool UseBreakpoint(double minWidth)
+    {
+        var (width, _) = UseWindowSize();
         return width >= minWidth;
     }
 
@@ -1179,6 +1568,11 @@ public sealed class RenderContext
     internal abstract class PersistedHookStateBase : HookState
     {
         public string PersistKey = default!;
+        // Resolved at hook-construction time. Null is valid: indicates "no
+        // backing store available" (e.g. PersistedScope.Window outside a
+        // window in a unit-test context). When null, save-on-cleanup is a
+        // no-op.
+        public IPersistedStateScope? Scope;
         public abstract void SaveToCache();
     }
 
@@ -1186,7 +1580,37 @@ public sealed class RenderContext
     {
         public T Value;
         public PersistedHookState(T value) => Value = value;
-        public override void SaveToCache() => PersistedStateCache.Set(PersistKey, Value);
+        public override void SaveToCache()
+        {
+            if (Scope is null) return;
+            Scope.Set(PersistKey, Value);
+        }
+    }
+
+    /// <summary>
+    /// Resolve a <see cref="PersistedScope"/> selector to a concrete
+    /// <see cref="IPersistedStateScope"/>. <see cref="PersistedScope.Window"/>
+    /// prefers the active host's window scope; falls back to the application
+    /// scope when no window owns the host (test fixtures, headless renders).
+    /// </summary>
+    private static IPersistedStateScope? ResolvePersistedScope(PersistedScope scope)
+    {
+        switch (scope)
+        {
+            case PersistedScope.Window:
+                var win = Microsoft.UI.Reactor.ReactorApp.ActiveHostInternal?.OwningWindow;
+                if (win is not null)
+                    return win.PersistedScope;
+                // Fall back to the process-wide scope so unit tests that
+                // exercise UsePersisted without a Window keep working. The
+                // legacy two-arg overload defaults to PersistedScope.Application
+                // anyway — only callers that explicitly opted into Window
+                // scope land here.
+                return ApplicationPersistedScope.Default;
+            case PersistedScope.Application:
+            default:
+                return ApplicationPersistedScope.Default;
+        }
     }
 }
 

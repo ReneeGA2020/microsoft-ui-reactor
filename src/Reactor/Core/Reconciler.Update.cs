@@ -643,7 +643,7 @@ public sealed partial class Reconciler
 
     private UIElement? UpdateButton(ButtonElement o, ButtonElement n, WinUI.Button b, Action requestRerender)
     {
-        b.IsEnabled = n.IsEnabled;
+        ApplyButtonEnabledState(b, n);
         if (n.ContentElement is not null && o.ContentElement is not null && b.Content is UIElement existingContent)
         {
             var replacement = UpdateChild(o.ContentElement, n.ContentElement, existingContent, requestRerender);
@@ -833,8 +833,21 @@ public sealed partial class Reconciler
         }
         if (nb.Value != n.Value)
         {
-            ChangeEchoSuppressor.BeginSuppress(nb);
-            nb.Value = n.Value;
+            // Immediate mode: if the user's current text already represents
+            // n.Value, leave the text alone — writing Value mid-edit would
+            // reformat the text and clobber the caret / trailing zeros /
+            // partial decimals while the user is still typing.
+            var skipValueWrite = n.GetAttached<Microsoft.UI.Reactor.Controls.Validation.ImmediateValueAttached>() is not null
+                && double.TryParse(nb.Text,
+                    global::System.Globalization.NumberStyles.Float,
+                    global::System.Globalization.CultureInfo.CurrentCulture, out var typed)
+                && double.IsFinite(typed)   // NaN/Infinity must never defeat the skip and slip through
+                && typed == n.Value;
+            if (!skipValueWrite)
+            {
+                ChangeEchoSuppressor.BeginSuppress(nb);
+                nb.Value = n.Value;
+            }
         }
         nb.SmallChange = n.SmallChange; nb.LargeChange = n.LargeChange;
         nb.SpinButtonPlacementMode = n.SpinButtonPlacement;
@@ -1561,6 +1574,13 @@ public sealed partial class Reconciler
         titleBar.IsBackButtonVisible = n.IsBackButtonVisible;
         titleBar.IsBackButtonEnabled = n.IsBackButtonEnabled;
         titleBar.IsPaneToggleButtonVisible = n.IsPaneToggleButtonVisible;
+
+        // Icon: only re-resolve when the IconData record changed (record
+        // value equality covers the path / kind delta). Skipping when
+        // unchanged avoids reallocating BitmapImage and keeps the title
+        // bar's icon stable across re-renders.
+        if (!Equals(o.Icon, n.Icon))
+            titleBar.IconSource = ResolveIconSource(n.Icon);
 
         ReconcileChild(o.Content, n.Content,
             () => titleBar.Content as UIElement,
@@ -2406,7 +2426,7 @@ public sealed partial class Reconciler
 
     private UIElement? UpdateContentDialog(ContentDialogElement o, ContentDialogElement n, FrameworkElement fe, Action requestRerender)
     {
-        if (n.IsOpen && !o.IsOpen) ShowContentDialog(n, requestRerender);
+        if (n.IsOpen && !o.IsOpen) ShowContentDialog(n, fe, requestRerender);
         SetElementTag(fe, n);
         return null;
     }

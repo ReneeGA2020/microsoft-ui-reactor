@@ -314,7 +314,7 @@ public sealed partial class Reconciler
     {
         var rented = _pool.TryRent(typeof(WinUI.Button));
         var button = rented as WinUI.Button ?? new WinUI.Button();
-        button.IsEnabled = btn.IsEnabled;
+        ApplyButtonEnabledState(button, btn);
         if (btn.ContentElement is not null)
             button.Content = Mount(btn.ContentElement, requestRerender);
         else
@@ -323,6 +323,38 @@ public sealed partial class Reconciler
         EnsureButtonWiring(button, btn);
         ApplySetters(btn.Setters, button);
         return button;
+    }
+
+    /// <summary>
+    /// Applies the (Disabled, DisabledFocusable) state to a WinUI Button.
+    /// True disable: IsEnabled=false (removes from tab order). Disabled-
+    /// focusable: IsEnabled=true plus visual dim; UIA still reports the
+    /// button as enabled (full AT "unavailable" reporting is a follow-up
+    /// requiring a custom AutomationPeer override). The Click trampoline
+    /// (see EnsureButtonWiring) drops invokes when the element is in
+    /// disabled-focusable mode.
+    /// </summary>
+    internal static void ApplyButtonEnabledState(WinUI.Button button, ButtonElement btn)
+    {
+        // Visual dim + Click trampoline drop. UIA still reports the button as
+        // enabled — a future fix would attach a custom ButtonAutomationPeer
+        // overriding IsEnabledCore() to fully mirror the WinUI Win32 / ARIA
+        // aria-disabled pattern. Tracked as a TODO; not required for the
+        // keyboard-reachability win this method delivers.
+        if (btn.IsDisabledFocusable)
+        {
+            button.IsEnabled = true;
+            button.Opacity = 0.4;
+        }
+        else
+        {
+            button.IsEnabled = btn.IsEnabled;
+            // ClearValue (not Opacity=1.0) so any opacity coming from a XAML
+            // style, template, or external code path survives. Forcing 1.0
+            // here would silently override a Setters/Resources Opacity binding
+            // every time the button rerenders out of disabled-focusable mode.
+            button.ClearValue(UIElement.OpacityProperty);
+        }
     }
 
     /// <summary>
@@ -337,7 +369,14 @@ public sealed partial class Reconciler
         var flags = GetPoolableWireFlags(button);
         if (flags.ButtonClick) return;
         flags.ButtonClick = true;
-        button.Click += (s, _) => (GetElementTag((UIElement)s!) as ButtonElement)?.OnClick?.Invoke();
+        button.Click += (s, _) =>
+        {
+            if (GetElementTag((UIElement)s!) is ButtonElement live)
+            {
+                if (live.IsDisabledFocusable) return;
+                live.OnClick?.Invoke();
+            }
+        };
     }
 
     private WinUI.HyperlinkButton MountHyperlinkButton(HyperlinkButtonElement hlBtn)
@@ -426,14 +465,19 @@ public sealed partial class Reconciler
         // this mount's element, not the pool's last owner. The BeginSuppress
         // guard below is additional belt-and-suspenders against echo.
         SetElementTag(textBox, tf);
+        // AcceptsReturn and TextWrapping must be set BEFORE Text. WinUI TextBox
+        // defaults to single-line mode (AcceptsReturn=false); assigning Text
+        // with embedded \r\n while in single-line mode silently strips the
+        // newlines, keeping only the first paragraph. Setting these first
+        // ensures multi-line content round-trips correctly on mount.
+        if (tf.AcceptsReturn == true) textBox.AcceptsReturn = true;
+        if (tf.TextWrapping.HasValue) textBox.TextWrapping = tf.TextWrapping.Value;
         if (rented is not null && textBox.Text != tf.Value)
             ChangeEchoSuppressor.BeginSuppress(textBox);
         textBox.Text = tf.Value;
         textBox.PlaceholderText = tf.Placeholder ?? "";
         if (tf.Header is not null) textBox.Header = tf.Header;
         if (tf.IsReadOnly == true) textBox.IsReadOnly = true;
-        if (tf.AcceptsReturn == true) textBox.AcceptsReturn = true;
-        if (tf.TextWrapping.HasValue) textBox.TextWrapping = tf.TextWrapping.Value;
         if (tf.SelectionStart.HasValue) textBox.SelectionStart = tf.SelectionStart.Value;
         if (tf.SelectionLength.HasValue) textBox.SelectionLength = tf.SelectionLength.Value;
         EnsureTextFieldWiring(textBox, tf, requestRerender);
@@ -507,9 +551,33 @@ public sealed partial class Reconciler
                 if (ChangeEchoSuppressor.ShouldSuppress(box)) return;
                 (GetElementTag(box) as NumberBoxElement)?.OnValueChanged?.Invoke(box.Value);
             };
+        // Per-keystroke value fire for Immediate-mode controls. Registered
+        // unconditionally so that toggling .Immediate() between renders works
+        // without re-mounting — the handler re-checks the marker each fire.
+        numBox.RegisterPropertyChangedCallback(WinUI.NumberBox.TextProperty,
+            NumberBoxImmediateTextChanged);
         ApplySetters(nb.Setters, numBox);
         return numBox;
     }
+
+    private static readonly Microsoft.UI.Xaml.DependencyPropertyChangedCallback NumberBoxImmediateTextChanged =
+        (sender, _) =>
+        {
+            if (sender is not WinUI.NumberBox box) return;
+            if (GetElementTag(box) is not NumberBoxElement el) return;
+            if (el.OnValueChanged is null) return;
+            if (el.GetAttached<Microsoft.UI.Reactor.Controls.Validation.ImmediateValueAttached>() is null) return;
+            if (!double.TryParse(box.Text,
+                global::System.Globalization.NumberStyles.Float,
+                global::System.Globalization.CultureInfo.CurrentCulture, out var parsed)) return;
+            // Reject NaN/±Infinity — double.TryParse accepts the literal strings
+            // "NaN"/"Infinity" by default, and NaN comparisons are never equal,
+            // so the sync-guard below would let them through.
+            if (!double.IsFinite(parsed)) return;
+            if (parsed < el.Minimum || parsed > el.Maximum) return;
+            if (parsed == el.Value) return; // already in sync; suppresses post-programmatic-write callback
+            el.OnValueChanged.Invoke(parsed);
+        };
 
     private WinUI.AutoSuggestBox MountAutoSuggestBox(AutoSuggestBoxElement asb)
     {
@@ -1165,6 +1233,7 @@ public sealed partial class Reconciler
             IsPaneToggleButtonVisible = tb.IsPaneToggleButtonVisible,
         };
         if (tb.Subtitle is not null) titleBar.Subtitle = tb.Subtitle;
+        if (tb.Icon is not null) titleBar.IconSource = ResolveIconSource(tb.Icon);
         if (tb.Content is not null) titleBar.Content = Mount(tb.Content, requestRerender);
         if (tb.RightHeader is not null) titleBar.RightHeader = Mount(tb.RightHeader, requestRerender);
         SetElementTag(titleBar, tb);
@@ -1175,7 +1244,7 @@ public sealed partial class Reconciler
         ApplySetters(tb.Setters, titleBar);
 
         // Register with the window for drag regions and caption buttons
-        if (Microsoft.UI.Reactor.ReactorApp.ActiveHost is { } host)
+        if (Microsoft.UI.Reactor.ReactorApp.ActiveHostInternal is { } host)
         {
             host.Window.ExtendsContentIntoTitleBar = true;
             host.Window.SetTitleBar(titleBar);
@@ -1663,30 +1732,60 @@ public sealed partial class Reconciler
     {
         var placeholder = new WinUI.StackPanel { Visibility = Visibility.Collapsed };
         SetElementTag(placeholder, cdEl);
-        if (cdEl.IsOpen) ShowContentDialog(cdEl, requestRerender);
+        if (cdEl.IsOpen) ShowContentDialog(cdEl, placeholder, requestRerender);
         return placeholder;
     }
 
-    private async void ShowContentDialog(ContentDialogElement cdEl, Action requestRerender)
+    private void ShowContentDialog(ContentDialogElement cdEl, FrameworkElement anchor, Action requestRerender)
+    {
+        // Source XamlRoot from the placeholder so the dialog routes to the
+        // window that owns the anchor. If the anchor isn't attached yet
+        // (mount-time IsOpen=true) defer via Loaded — falling back to
+        // PrimaryWindow here would misroute the dialog when the anchor lives
+        // in a secondary window.
+        if (anchor.XamlRoot is null)
+        {
+            void OnLoaded(object sender, RoutedEventArgs _)
+            {
+                anchor.Loaded -= OnLoaded;
+                // Re-read the current element from the anchor's Tag in case
+                // IsOpen was toggled back to false (or the element was
+                // replaced) before Loaded fired.
+                if (GetElementTag(anchor) is not ContentDialogElement current || !current.IsOpen)
+                    return;
+                var deferredRoot = anchor.XamlRoot
+                    ?? ReactorApp.PrimaryWindow?.NativeWindow.Content?.XamlRoot;
+                ShowContentDialogCore(current, deferredRoot, requestRerender);
+            }
+            anchor.Loaded += OnLoaded;
+            return;
+        }
+        ShowContentDialogCore(cdEl, anchor.XamlRoot, requestRerender);
+    }
+
+    private async void ShowContentDialogCore(ContentDialogElement cdEl, XamlRoot? xamlRoot, Action requestRerender)
     {
         var dialog = new WinUI.ContentDialog
         {
             Title = cdEl.Title, PrimaryButtonText = cdEl.PrimaryButtonText,
             DefaultButton = cdEl.DefaultButton,
-            XamlRoot = null,
         };
         if (cdEl.SecondaryButtonText is not null) dialog.SecondaryButtonText = cdEl.SecondaryButtonText;
         if (cdEl.CloseButtonText is not null) dialog.CloseButtonText = cdEl.CloseButtonText;
         dialog.Content = Mount(cdEl.Content, requestRerender);
+        if (xamlRoot is not null) dialog.XamlRoot = xamlRoot;
+        // ApplySetters last so caller .Set(...) wins (including overriding XamlRoot).
         ApplySetters(cdEl.Setters, dialog);
         try
         {
-            if (dialog.Content is UIElement contentUi && contentUi.XamlRoot is not null)
-                dialog.XamlRoot = contentUi.XamlRoot;
             var winUiResult = await dialog.ShowAsync();
             cdEl.OnClosed?.Invoke(winUiResult);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            global::System.Diagnostics.Debug.WriteLine(
+                $"[Reactor.ContentDialog] ShowAsync failed: {ex.GetType().Name}: {ex.Message}");
+        }
     }
 
     private UIElement? MountFlyout(FlyoutElement flyEl, Action requestRerender)
@@ -1986,6 +2085,43 @@ public sealed partial class Reconciler
             FontFamily = Microsoft.UI.Xaml.Application.Current?.Resources["SymbolThemeFontFamily"] as Microsoft.UI.Xaml.Media.FontFamily
                          ?? new Microsoft.UI.Xaml.Media.FontFamily("Segoe Fluent Icons"),
         };
+    }
+
+    /// <summary>
+    /// Strongly-typed <see cref="IconData"/> → <see cref="WinUI.IconSource"/>
+    /// projection. Used by controls that expose an <c>IconSource</c> slot
+    /// (TitleBar, TabView, etc.). Returns null on unknown subtypes so the
+    /// caller can fall through to the string-glyph overload.
+    /// </summary>
+    internal static WinUI.IconSource? ResolveIconSource(IconData? iconData) => iconData switch
+    {
+        null => null,
+        SymbolIconData sym => ResolveIconSource(sym.Symbol),
+        FontIconData fi => new WinUI.FontIconSource
+        {
+            Glyph = fi.Glyph,
+            FontFamily = fi.FontFamily is null ? null! : WinRTCache.GetFontFamily(fi.FontFamily),
+            FontSize = fi.FontSize ?? double.NaN,
+        },
+        BitmapIconData bi => new WinUI.BitmapIconSource { UriSource = bi.Source, ShowAsMonochrome = bi.ShowAsMonochrome },
+        PathIconData pi => CreatePathIconSource(pi),
+        ImageIconData ii => new WinUI.ImageIconSource
+        {
+            ImageSource = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(ii.Source),
+        },
+        _ => null,
+    };
+
+    private static WinUI.PathIconSource? CreatePathIconSource(PathIconData pi)
+    {
+        var src = new WinUI.PathIconSource();
+        if (Microsoft.UI.Xaml.Markup.XamlReader.Load(
+            $"<Geometry xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'>{pi.Data}</Geometry>")
+            is Microsoft.UI.Xaml.Media.Geometry geo)
+        {
+            src.Data = geo;
+        }
+        return src;
     }
 
     private static WinUI.FontIcon CreateFontIcon(FontIconData fi)
