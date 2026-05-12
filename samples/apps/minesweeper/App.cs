@@ -121,33 +121,36 @@ public sealed class MinesweeperApp : Component
             ),
         ]);
 
-        // Natural board size at the configured cell size — used to cap how
-        // big the board can render so the tiles never zoom past 1x. The
-        // +2 accounts for BoardView's 1-px frame on each side.
-        var naturalBoardWidth = cellSize * state.Board.Columns + 2;
-        var naturalBoardHeight = cellSize * state.Board.Rows + 2;
+        // Cap at the configured natural cell size so the board never zooms
+        // up past 1x. Also track an "available" cell size that adapts to
+        // the play area's actual measured dimensions — driven by an
+        // OnSizeChanged hook on the board container. This sidesteps WinUI
+        // Viewbox quirks (Stretch=Uniform with HAlign=Center won't shrink
+        // height-bounded windows; HAlign=Stretch breaks centering).
+        var (availableCellSize, setAvailableCellSize) = UseState(cellSize);
+        var displayedCellSize = Math.Min(cellSize, availableCellSize);
 
-        // Layout: a centered Border bounds the *available* area for the
-        // board to its natural size (so a huge window doesn't make the
-        // tiles balloon). Inside it, a Viewbox scales the BoardView
-        // uniformly to fit whatever the Border ended up at — which is
-        // either natural size (big window) or smaller (cramped window).
-        // Setting HAlign/VAlign=Center on the Border prevents it from
-        // claiming the full Star-row area.
+        var displayBoardProps = boardProps with { CellSize = displayedCellSize };
+
+        // The board sits in a Star row that fills whatever vertical space
+        // is left after the menu and status panel. OnSizeChanged on this
+        // wrapper tells us the actual area available so we can pick a
+        // cell size that fits both dimensions while preserving aspect.
         var boardScaled = Border(
-            Viewbox(
-                Component<BoardView, BoardViewProps>(boardProps)
-            ).Set(vb =>
-            {
-                vb.Stretch = Microsoft.UI.Xaml.Media.Stretch.Uniform;
-            })
+            Component<BoardView, BoardViewProps>(displayBoardProps)
+                .HAlign(HorizontalAlignment.Center)
+                .VAlign(VerticalAlignment.Center)
         )
-        .HAlign(HorizontalAlignment.Center)
-        .VAlign(VerticalAlignment.Center)
-        .Set(b =>
+        .OnSizeChanged((_, e) =>
         {
-            b.MaxWidth = naturalBoardWidth;
-            b.MaxHeight = naturalBoardHeight;
+            var w = e.NewSize.Width - 2;     // -2 for the BoardView frame
+            var h = e.NewSize.Height - 2;
+            if (w <= 0 || h <= 0) return;
+            var byW = w / state.Board.Columns;
+            var byH = h / state.Board.Rows;
+            var sz = Math.Min(byW, byH);
+            if (Math.Abs(sz - availableCellSize) > 0.5)
+                setAvailableCellSize(sz);
         });
 
         var titleSubtitle = state.Board.Phase switch
