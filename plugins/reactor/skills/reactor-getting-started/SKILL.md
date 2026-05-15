@@ -240,12 +240,17 @@ items.Select(i => Component<Card, CardProps>(new CardProps(i)).WithKey(i.Id)).To
 
 ## Theme tokens (always)
 
-Use `Theme.*` for all themed colors — never hardcoded hex on themed surfaces. The full token list with WinUI keys is in the api index.
+Use `Theme.*` for all themed colors — never hardcoded hex on themed surfaces. The full token list with WinUI keys is in the `reactor-design` skill.
+
+> ⚠️ **`Theme.Error`, `Theme.Success`, `Theme.Warning`, `Theme.ErrorText` do NOT exist.**
+> Use `Theme.SystemCritical` (red/error), `Theme.SystemSuccess` (green), `Theme.SystemCaution` (yellow).
 
 ```csharp
 TextBlock("Hi").Foreground(Theme.PrimaryText)
 Border(child).Background(Theme.CardBackground).WithBorder(Theme.CardStroke, 1)
 Button("Action").Background(Theme.Accent)
+TextBlock("Error!").Foreground(Theme.SystemCritical)       // NOT Theme.Error
+TextBlock("Saved").Foreground(Theme.SystemSuccess)         // NOT Theme.Success
 ```
 
 ## Critical gotchas
