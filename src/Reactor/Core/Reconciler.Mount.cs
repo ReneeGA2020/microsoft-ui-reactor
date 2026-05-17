@@ -1,4 +1,5 @@
 using Microsoft.UI.Reactor.Animation;
+using Microsoft.UI.Reactor.Core.Internal;
 using Microsoft.UI.Reactor.Hooks;
 using Microsoft.UI.Reactor.Hosting;
 using Microsoft.UI.Reactor.Controls.Validation;
@@ -1809,6 +1810,57 @@ public sealed partial class Reconciler
             var ctrl = Mount(itemElement, requestRerender);
             cc.Content = ctrl;
             SetElementTag(cc, itemElement); // Store for later reconciliation
+
+            // Spec 042 §6 — if this container is materializing a row that
+            // the keyed diff tagged as inserted under an active
+            // Animations.Animate transaction, fire a one-shot enter
+            // animation on the realized container and clear the tag so the
+            // next recycle/materialize cycle doesn't replay it.
+            if (args.Item is ReactorRow row && row.PendingEnterAnimation is { } kind)
+            {
+                row.PendingEnterAnimation = null;
+                ApplyAmbientEnterAnimation(args.ItemContainer, kind);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Spec 042 §6 — apply a default fade-up enter animation to a
+    /// container freshly realized under an <see cref="Animations.Animate"/>
+    /// transaction. Uses the same per-container Composition path resolved
+    /// by Q4 (not the shared <c>ListView.ItemContainerTransitions</c>
+    /// collection) so concurrent transactions don't clobber each other. The element
+    /// developer's <c>.Transition(...)</c> modifier still wins when set —
+    /// this only fires when no per-element transition has been declared.
+    /// </summary>
+    internal static void ApplyAmbientEnterAnimation(UIElement container, AnimationKind kind)
+    {
+        var curve = AnimationKindMap.ToCurve(kind);
+        if (curve is null) return;
+
+        try
+        {
+            var visual = global::Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(container);
+            var compositor = visual.Compositor;
+
+            // Set initial state, then animate to final. Opacity carries the
+            // fade-in; a small Y offset carries the slide-up so the row
+            // visibly emerges rather than just appearing. Both targets use
+            // the same curve so they stay phase-locked.
+            visual.Opacity = 0f;
+            var prevOffset = visual.Offset;
+            visual.Offset = new global::System.Numerics.Vector3(prevOffset.X, prevOffset.Y + 12f, prevOffset.Z);
+
+            var opacityAnim = AnimationHelper.CreateScalarTargetAnimation(compositor, 1.0f, curve);
+            visual.StartAnimation("Opacity", opacityAnim);
+
+            var offsetAnim = AnimationHelper.CreateVector3TargetAnimation(compositor, prevOffset, curve);
+            visual.StartAnimation("Offset", offsetAnim);
+        }
+        catch
+        {
+            // Composition can throw in headless / disposing contexts.
+            // Animation is non-critical — correctness is preserved.
         }
     }
 
@@ -1837,23 +1889,73 @@ public sealed partial class Reconciler
             {
                 var snapshot = new List<int>(l.SelectedItems.Count);
                 foreach (var item in l.SelectedItems)
-                    if (item is int i) snapshot.Add(i);
+                {
+                    // Spec 042 Phase 1: items in SelectedItems are
+                    // ReactorRow when the OC delta path is active; preserve
+                    // the legacy int path for the rare direct-int consumer.
+                    if (item is ReactorRow row) snapshot.Add(row.Index);
+                    else if (item is int i) snapshot.Add(i);
+                }
                 tel.InvokeMultiSelectionChanged(snapshot);
             }
         };
         listView.ItemClick += (s, args) =>
         {
             var l = (WinUI.ListView)s!;
-            if (args.ClickedItem is int idx)
-                (GetElementTag(l) as TemplatedListElementBase)?.InvokeItemClick(idx);
+            // ClickedItem is the OC element — ReactorRow under the delta
+            // path; int under the legacy path. Translate to the data index
+            // either way.
+            int? idx = args.ClickedItem switch
+            {
+                ReactorRow row => row.Index,
+                int i => i,
+                _ => null,
+            };
+            if (idx is int v)
+                (GetElementTag(l) as TemplatedListElementBase)?.InvokeItemClick(v);
         };
 
-        listView.ItemsSource = Enumerable.Range(0, el.ItemCount).ToList();
+        // Spec 042 Phase 1: bind to an internally-owned
+        // ObservableCollection<ReactorRow> so insert/remove/move surface
+        // as INotifyCollectionChanged deltas — WinUI animates only the
+        // affected containers rather than re-realizing the entire viewport.
+        var listState = BuildListStateFor(el);
+        SetListState(listView, listState);
+        listView.ItemsSource = listState.Source;
 
         var selectedIndex = el.GetSelectedIndex();
         if (selectedIndex >= 0) listView.SelectedIndex = selectedIndex;
         el.ApplyControlSetters(listView);
         return listView;
+    }
+
+    /// <summary>
+    /// Builds a fresh <see cref="ReactorListState"/> populated with the
+    /// element's current keys. Used at mount time and at bulk-replace
+    /// bailout time. Tolerates duplicate keys per <see cref="ReactorListState.Reset"/>;
+    /// the bailout path is where duplicate-key diagnostics surface (see
+    /// <see cref="KeyedListDiff"/>).
+    /// </summary>
+    private static ReactorListState BuildListStateFor(TemplatedListElementBase el)
+    {
+        var state = new ReactorListState();
+        int n = el.ItemCount;
+        var seeded = new (int Index, string Key)[n];
+        for (int i = 0; i < n; i++)
+            seeded[i] = (i, el.GetKeyAt(i) ?? $"__null_{i}");
+        state.Reset(seeded);
+        return state;
+    }
+
+    private static ReactorListState BuildListStateForLazy(LazyStackElementBase lazy)
+    {
+        var state = new ReactorListState();
+        int n = lazy.ItemCount;
+        var seeded = new (int Index, string Key)[n];
+        for (int i = 0; i < n; i++)
+            seeded[i] = (i, lazy.GetKeyAt(i) ?? $"__null_{i}");
+        state.Reset(seeded);
+        return state;
     }
 
     private WinUI.GridView MountTemplatedGridView(TemplatedListElementBase el, Action requestRerender)
@@ -1881,18 +1983,29 @@ public sealed partial class Reconciler
             {
                 var snapshot = new List<int>(g.SelectedItems.Count);
                 foreach (var item in g.SelectedItems)
-                    if (item is int i) snapshot.Add(i);
+                {
+                    if (item is ReactorRow row) snapshot.Add(row.Index);
+                    else if (item is int i) snapshot.Add(i);
+                }
                 tel.InvokeMultiSelectionChanged(snapshot);
             }
         };
         gridView.ItemClick += (s, args) =>
         {
             var g = (WinUI.GridView)s!;
-            if (args.ClickedItem is int idx)
-                (GetElementTag(g) as TemplatedListElementBase)?.InvokeItemClick(idx);
+            int? idx = args.ClickedItem switch
+            {
+                ReactorRow row => row.Index,
+                int i => i,
+                _ => null,
+            };
+            if (idx is int v)
+                (GetElementTag(g) as TemplatedListElementBase)?.InvokeItemClick(v);
         };
 
-        gridView.ItemsSource = Enumerable.Range(0, el.ItemCount).ToList();
+        var gridState = BuildListStateFor(el);
+        SetListState(gridView, gridState);
+        gridView.ItemsSource = gridState.Source;
 
         var selectedIndex = el.GetSelectedIndex();
         if (selectedIndex >= 0) gridView.SelectedIndex = selectedIndex;
@@ -2820,8 +2933,19 @@ public sealed partial class Reconciler
             Spacing = lazy.Spacing,
         };
 
-        repeater.ItemsSource = lazy.GetItemsSource();
-        repeater.ItemTemplate = lazy.CreateFactory(this, requestRerender, _pool);
+        // Spec 042 Phase 1: bind the repeater to an internally-owned
+        // ObservableCollection<ReactorRow>. Without this, every Items.Count
+        // change replaced the int-range source wholesale and the
+        // ItemsRepeater re-realized every visible child.
+        var listState = BuildListStateForLazy(lazy);
+        SetListState(repeater, listState);
+        repeater.ItemsSource = listState.Source;
+        var factory = lazy.CreateFactory(this, requestRerender, _pool);
+        // Plumb the list state into the factory so its _mountedElements
+        // dictionary is keyed by ReactorRow.Key (reorder-stable) instead
+        // of by realized index.
+        lazy.AttachListStateToFactory(factory, listState);
+        repeater.ItemTemplate = factory;
         SetElementTag(repeater, lazy);
         ApplySetters(lazy.RepeaterSetters, repeater);
 

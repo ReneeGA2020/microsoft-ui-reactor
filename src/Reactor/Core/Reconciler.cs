@@ -280,6 +280,13 @@ public sealed partial class Reconciler : IDisposable
         // wrapper and ShouldSuppress on a different wrapper for the same native
         // DependencyObject see the same counter. See ChangeEchoSuppressor.cs.
         public int EchoSuppressCount;
+        // Spec 042 Phase 1 — keyed-list reconciliation state. Set when the
+        // host element is a templated items control (ListView/GridView/
+        // ItemsRepeater). The internal ObservableCollection<ReactorRow> in
+        // ListState is what WinUI binds to so incremental insert/remove/move
+        // ops translate into container-level animations rather than full
+        // re-realization.
+        public Internal.ReactorListState? ListState;
     }
 
     internal static class ReactorAttached
@@ -323,6 +330,32 @@ public sealed partial class Reconciler : IDisposable
 
     internal static Element? GetElementTag(FrameworkElement fe) =>
         (fe.GetValue(ReactorAttached.StateProperty) as ReactorState)?.Element;
+
+    // ────────────────────────────────────────────────────────────────────
+    // Spec 042 Phase 1 — keyed-list reconciliation state accessors.
+    // Stored on the same attached ReactorState as Element/Events so we do
+    // not pay for a second DependencyProperty on every realized container.
+    // Only mounted templated items controls populate this.
+    // ────────────────────────────────────────────────────────────────────
+
+    internal static Internal.ReactorListState? GetListState(DependencyObject control)
+    {
+        if (control is FrameworkElement fe
+            && fe.GetValue(ReactorAttached.StateProperty) is ReactorState state)
+            return state.ListState;
+        return null;
+    }
+
+    internal static void SetListState(FrameworkElement control, Internal.ReactorListState listState)
+    {
+        if (control.GetValue(ReactorAttached.StateProperty) is ReactorState state)
+        {
+            state.ListState = listState;
+            return;
+        }
+        state = new ReactorState { ListState = listState };
+        control.SetValue(ReactorAttached.StateProperty, state);
+    }
 
     /// <summary>
     /// Clears the Element pointer while preserving EventHandlerState. Call on
@@ -1119,11 +1152,70 @@ public sealed partial class Reconciler : IDisposable
                 }
                 UnmountAndPool(control);
             });
+            return;
         }
-        else
+
+        // Spec 042 §6 — under an Animations.Animate ambient and with no
+        // per-element exit transition, fade the child out in place before
+        // removal so the structural change reads visually. The exit is
+        // best-effort: if Composition throws we fall through to the
+        // synchronous remove below.
+        var ambient = Microsoft.UI.Reactor.Core.Internal.AnimationAmbient.Current;
+        if (ambient is { HasEffect: true }
+            && TryApplyAmbientExit(control, ambient.Kind, onComplete: () =>
+            {
+                for (int i = 0; i < children.Count; i++)
+                {
+                    if (ReferenceEquals(children.Get(i), control))
+                    {
+                        children.RemoveAt(i);
+                        break;
+                    }
+                }
+                UnmountAndPool(control);
+            }))
         {
-            children.RemoveAt(index);
-            UnmountAndPool(control);
+            return;
+        }
+
+        children.RemoveAt(index);
+        UnmountAndPool(control);
+    }
+
+    /// <summary>
+    /// Spec 042 §6 — fade-out a child whose exit was triggered under an
+    /// <see cref="Animations.Animate"/> transaction with no per-element
+    /// transition set. Returns <see langword="true"/> when the fade was
+    /// scheduled (the caller must wait for the completion callback to
+    /// remove the child); <see langword="false"/> when Composition rejects
+    /// the request (headless / disposed contexts) so the caller falls back
+    /// to synchronous removal.
+    /// </summary>
+    private static bool TryApplyAmbientExit(UIElement control, AnimationKind kind, Action onComplete)
+    {
+        var curve = Microsoft.UI.Reactor.Core.Internal.AnimationKindMap.ToCurve(kind);
+        if (curve is null) return false;
+
+        try
+        {
+            var visual = global::Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(control);
+            var compositor = visual.Compositor;
+            var batch = compositor.CreateScopedBatch(global::Microsoft.UI.Composition.CompositionBatchTypes.Animation);
+            var anim = Microsoft.UI.Reactor.Animation.AnimationHelper.CreateScalarTargetAnimation(compositor, 0f, curve);
+            visual.StartAnimation("Opacity", anim);
+            batch.End();
+            batch.Completed += (_, _) =>
+            {
+                // Reset opacity so a recycled element doesn't reappear
+                // invisible if it gets re-mounted later.
+                visual.Opacity = 1f;
+                onComplete();
+            };
+            return true;
+        }
+        catch
+        {
+            return false;
         }
     }
 

@@ -1,4 +1,5 @@
 using Microsoft.UI.Reactor.Animation;
+using Microsoft.UI.Reactor.Core.Internal;
 using Microsoft.UI.Reactor.Hosting;
 using Microsoft.UI.Reactor.Controls.Validation;
 using Microsoft.Extensions.Logging;
@@ -2803,18 +2804,18 @@ public sealed partial class Reconciler
         var header = n.GetHeader();
         if (header is not null) lv.Header = header;
 
-        if (o.ItemCount != n.ItemCount)
-            lv.ItemsSource = Enumerable.Range(0, n.ItemCount).ToList();
-        else
-            // Always refresh realized containers on update. The viewBuilder is
-            // a closure that legitimately captures outer state (UseState values,
-            // counters, theme, etc.); we cannot assume "items reference unchanged"
-            // implies "rendered output unchanged". Each realized container is
-            // diffed via the standard Update path, so the per-item cost is bounded
-            // by leaf ShallowEquals — invisible when nothing actually changed.
-            RefreshRealizedContainers(lv, n, requestRerender);
-
+        // SetElementTag *before* the diff so HandleTemplatedContainerContentChanging
+        // — which fires synchronously inside the OC insert/move ops — reads the
+        // new element when materializing freshly-inserted containers.
         SetElementTag(lv, n);
+
+        // Spec 042 Phase 1: feed structural changes through the
+        // keyed-diff pipeline so WinUI animates only the affected
+        // containers. RefreshRealizedContainers still runs in every case
+        // because the viewBuilder is a closure that may produce
+        // different content even when the key set is unchanged.
+        ApplyKeyedDiffOrFallback(lv, n);
+        RefreshRealizedContainers(lv, n, requestRerender);
 
         var selectedIndex = n.GetSelectedIndex();
         if (selectedIndex >= 0) lv.SelectedIndex = selectedIndex;
@@ -2829,18 +2830,96 @@ public sealed partial class Reconciler
         var header = n.GetHeader();
         if (header is not null) gv.Header = header;
 
-        if (o.ItemCount != n.ItemCount)
-            gv.ItemsSource = Enumerable.Range(0, n.ItemCount).ToList();
-        else
-            // Always refresh realized containers on update — see UpdateTemplatedListView.
-            RefreshRealizedContainers(gv, n, requestRerender);
-
         SetElementTag(gv, n);
+        ApplyKeyedDiffOrFallback(gv, n);
+        RefreshRealizedContainers(gv, n, requestRerender);
 
         var selectedIndex = n.GetSelectedIndex();
         if (selectedIndex >= 0) gv.SelectedIndex = selectedIndex;
         n.ApplyControlSetters(gv);
         return null;
+    }
+
+    /// <summary>
+    /// Spec 042 §4 — apply the keyed diff to the control's attached
+    /// <see cref="ReactorListState"/>. If the state is missing (control
+    /// mounted before Phase 1, or the diff bailed out and the legacy
+    /// ItemsSource was swapped in) we transparently rebuild a fresh
+    /// state and re-bind ItemsSource. The result is correctness either
+    /// way; bailout only degrades the animation.
+    /// </summary>
+    private void ApplyKeyedDiffOrFallback(WinUI.ListViewBase lvb, TemplatedListElementBase n)
+    {
+        var state = GetListState(lvb);
+        if (state is null || !ReferenceEquals(lvb.ItemsSource, state.Source))
+        {
+            // No state, or another path replaced ItemsSource (bailout from a
+            // prior render). Rebuild and rebind in one step.
+            var fresh = BuildListStateFromElement(n);
+            SetListState(lvb, fresh);
+            lvb.ItemsSource = fresh.Source;
+            return;
+        }
+
+        // Project new keys through the typed peer. Pass the active ambient
+        // so newly-inserted ReactorRows are tagged with the kind and the
+        // ContainerContentChanging handler can attach a per-container
+        // enter animation as those containers realize. (spec 042 §6.)
+        var ambient = AnimationAmbient.Current;
+        var stats = KeyedListDiff.Apply(
+            state,
+            new TemplatedKeyAdapter(n),
+            static (item, _) => item.Key,
+            _logger,
+            lvb.GetType().Name,
+            ambient,
+            controlInstance: lvb);
+
+        // Drive per-container offset animations for survivors that moved.
+        // Insert / Remove animations attach through the realize/recycle
+        // path so they survive virtualization; Move requires the live
+        // container handle here because the row instance was already
+        // realized before the move op.
+        if (ambient is { HasEffect: true } && stats.MovedRows is { Count: > 0 } movedRows)
+            ApplyMoveAnimations(lvb, movedRows, ambient.Kind);
+
+        if (stats.Bailout)
+        {
+            // Reset replaced state.Source's contents in bulk; ItemsSource
+            // still references the same OC object so WinUI sees a single
+            // Reset action and re-realizes. Acceptable per spec §4.3.
+            // No additional binding refresh needed.
+        }
+    }
+
+    /// <summary>
+    /// Adapter so the generic <see cref="KeyedListDiff.Apply{T}"/> can run
+    /// against the abstract non-generic <see cref="TemplatedListElementBase"/>
+    /// without an extra allocation per item.
+    /// </summary>
+    private readonly struct TemplatedKeyAdapter : IReadOnlyList<TemplatedKeyAdapter.KeyOnly>
+    {
+        private readonly TemplatedListElementBase _el;
+        public TemplatedKeyAdapter(TemplatedListElementBase el) => _el = el;
+        public KeyOnly this[int index] => new(_el.GetKeyAt(index) ?? $"__null_{index}");
+        public int Count => _el.ItemCount;
+        public IEnumerator<KeyOnly> GetEnumerator()
+        {
+            for (int i = 0; i < _el.ItemCount; i++) yield return this[i];
+        }
+        global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+        public readonly record struct KeyOnly(string Key);
+    }
+
+    private static ReactorListState BuildListStateFromElement(TemplatedListElementBase el)
+    {
+        var state = new ReactorListState();
+        int n = el.ItemCount;
+        var seeded = new (int Index, string Key)[n];
+        for (int i = 0; i < n; i++)
+            seeded[i] = (i, el.GetKeyAt(i) ?? $"__null_{i}");
+        state.Reset(seeded);
+        return state;
     }
 
     private UIElement? UpdateTemplatedFlipView(TemplatedListElementBase o, TemplatedListElementBase n, WinUI.FlipView fv, Action requestRerender)
@@ -2901,25 +2980,25 @@ public sealed partial class Reconciler
             // uses the updated viewBuilder to produce new content.
             if (repeater.ItemTemplate is IElementFactory existingFactory && n.TryUpdateFactory(existingFactory))
             {
-                // Item count may have changed — update the source
-                var newSource = n.GetItemsSource();
-                if (newSource is IReadOnlyList<int> newList
-                    && repeater.ItemsSource is IList<int> oldList
-                    && newList.Count != oldList.Count)
-                {
-                    repeater.ItemsSource = newSource;
-                }
-
-                // Reconcile realized items with the new viewBuilder output.
-                // This updates existing controls via property diffs — no
-                // collection modifications on the ItemsRepeater.
+                // Spec 042 Phase 1: route Items changes through the keyed
+                // diff into the internally-owned OC<ReactorRow>. WinUI
+                // sees incremental Insert/Move/RemoveAt events and only
+                // animates affected containers; the steady-state
+                // RefreshRealizedItems below still runs for per-row
+                // content updates.
+                ApplyLazyKeyedDiffOrFallback(repeater, n, existingFactory);
                 n.RefreshRealizedItems(existingFactory, repeater);
             }
             else
             {
-                // First mount or type mismatch — full replacement
-                repeater.ItemsSource = n.GetItemsSource();
-                repeater.ItemTemplate = n.CreateFactory(this, requestRerender, _pool);
+                // First mount or type mismatch — full replacement using the
+                // Phase 1 OC<ReactorRow> binding shape.
+                var fresh = BuildListStateFromLazy(n);
+                SetListState(repeater, fresh);
+                repeater.ItemsSource = fresh.Source;
+                var factory = n.CreateFactory(this, requestRerender, _pool);
+                n.AttachListStateToFactory(factory, fresh);
+                repeater.ItemTemplate = factory;
             }
             if (repeater.Layout is WinUI.StackLayout layout)
                 layout.Spacing = n.Spacing;
@@ -2929,6 +3008,151 @@ public sealed partial class Reconciler
         SetElementTag(sv, n);
         ApplySetters(n.ScrollViewerSetters, sv);
         return null;
+    }
+
+    private void ApplyLazyKeyedDiffOrFallback(WinUI.ItemsRepeater repeater, LazyStackElementBase n, IElementFactory factory)
+    {
+        var state = GetListState(repeater);
+        if (state is null || !ReferenceEquals(repeater.ItemsSource, state.Source))
+        {
+            var fresh = BuildListStateFromLazy(n);
+            SetListState(repeater, fresh);
+            repeater.ItemsSource = fresh.Source;
+            n.AttachListStateToFactory(factory, fresh);
+            return;
+        }
+
+        var ambient = AnimationAmbient.Current;
+        var stats = KeyedListDiff.Apply(
+            state,
+            new LazyKeyAdapter(n),
+            static (item, _) => item.Key,
+            _logger,
+            repeater.GetType().Name,
+            ambient,
+            controlInstance: repeater);
+
+        // ItemsRepeater realizes containers through ElementFactory, so the
+        // enter animation runs from there. Moves on already-realized
+        // elements need the same handle-based offset animation as the
+        // templated list path. (spec 042 §6.)
+        if (ambient is { HasEffect: true } && stats.MovedRows is { Count: > 0 } movedRows)
+            ApplyMoveAnimationsRepeater(repeater, movedRows, ambient.Kind);
+        // Bailout reset still mutates state.Source in place, so the
+        // existing ItemsSource binding remains valid.
+    }
+
+    private readonly struct LazyKeyAdapter : IReadOnlyList<LazyKeyAdapter.KeyOnly>
+    {
+        private readonly LazyStackElementBase _el;
+        public LazyKeyAdapter(LazyStackElementBase el) => _el = el;
+        public KeyOnly this[int index] => new(_el.GetKeyAt(index) ?? $"__null_{index}");
+        public int Count => _el.ItemCount;
+        public IEnumerator<KeyOnly> GetEnumerator()
+        {
+            for (int i = 0; i < _el.ItemCount; i++) yield return this[i];
+        }
+        global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+        public readonly record struct KeyOnly(string Key);
+    }
+
+    private static ReactorListState BuildListStateFromLazy(LazyStackElementBase lazy)
+    {
+        var state = new ReactorListState();
+        int n = lazy.ItemCount;
+        var seeded = new (int Index, string Key)[n];
+        for (int i = 0; i < n; i++)
+            seeded[i] = (i, lazy.GetKeyAt(i) ?? $"__null_{i}");
+        state.Reset(seeded);
+        return state;
+    }
+
+    /// <summary>
+    /// Spec 042 §6 — per-container offset animation for ListView/GridView
+    /// survivors that moved index inside an active <see cref="Animations.Animate"/>
+    /// transaction. WinUI's <c>ListViewBase.ContainerFromItem</c>
+    /// returns the live container for a realized row (null for virtualized
+    /// ones, which is fine — the realize path attaches the animation when
+    /// they come back into view).
+    /// </summary>
+    private void ApplyMoveAnimations(WinUI.ListViewBase lvb, IReadOnlyList<ReactorRow> moved, AnimationKind kind)
+    {
+        var curve = AnimationKindMap.ToCurve(kind);
+        if (curve is null) return;
+
+        // WinUI's container realignment for OC.Move events runs on the
+        // next layout pass — calling ContainerFromIndex synchronously
+        // here returns null even for items whose containers are realized,
+        // because the lookup is keyed on the pre-move position the
+        // ListView hasn't reconciled yet. Defer to the next dispatcher
+        // turn so the lookup runs after layout. Implicit-Offset attached
+        // *after* the position change still animates subsequent layout
+        // shifts on the same container, which is the right shape for
+        // continued reordering inside one Animate block.
+        var dq = global::Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+        Action attach = () =>
+        {
+            for (int i = 0; i < moved.Count; i++)
+            {
+                var row = moved[i];
+                try
+                {
+                    var container = lvb.ContainerFromIndex(row.Index) as UIElement
+                                  ?? lvb.ContainerFromItem(row) as UIElement;
+                    if (container is not null)
+                        StartMoveOffsetAnimation(container, curve);
+                }
+                catch { /* best-effort */ }
+            }
+        };
+        if (dq is not null) dq.TryEnqueue(global::Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => attach());
+        else attach();
+    }
+
+    /// <summary>
+    /// Spec 042 §6 — same as <see cref="ApplyMoveAnimations"/> but routed
+    /// through <see cref="WinUI.ItemsRepeater.TryGetElement"/> because
+    /// ItemsRepeater doesn't expose <c>ContainerFromItem</c>. Row.Index is
+    /// the post-move target position, which is what TryGetElement keys on.
+    /// </summary>
+    private void ApplyMoveAnimationsRepeater(WinUI.ItemsRepeater repeater, IReadOnlyList<ReactorRow> moved, AnimationKind kind)
+    {
+        var curve = AnimationKindMap.ToCurve(kind);
+        if (curve is null) return;
+        for (int i = 0; i < moved.Count; i++)
+        {
+            try
+            {
+                var container = repeater.TryGetElement(moved[i].Index);
+                if (container is not null)
+                    StartMoveOffsetAnimation(container, curve);
+            }
+            catch { /* best-effort */ }
+        }
+    }
+
+    /// <summary>
+    /// One-shot Composition offset animation: snap the visual to its
+    /// previous offset and animate to zero so the row visibly slides into
+    /// its new layout slot. The expression keyframe form is required so
+    /// the spring/ease curve picks the *current* visual.Offset as the
+    /// starting value — WinUI has already moved the layout slot under us
+    /// by the time we attach. (spec 042 §6, Q4 — per-container.)
+    /// </summary>
+    private static void StartMoveOffsetAnimation(UIElement container, Curve curve)
+    {
+        var visual = global::Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(container);
+        var compositor = visual.Compositor;
+        var anim = AnimationHelper.CreateVector3ImplicitAnimation(compositor, "Offset", curve);
+        // Implicit animations fire automatically when WinUI assigns the
+        // new Offset on layout; attaching here means the next layout pass
+        // animates instead of snapping. We deliberately don't pre-set
+        // Offset — letting the implicit animation observe WinUI's own
+        // assignment is what makes the move read correctly without us
+        // racing the layout pass.
+        var coll = compositor.CreateImplicitAnimationCollection();
+        coll["Offset"] = anim;
+        visual.ImplicitAnimations = coll;
     }
 
     private UIElement? UpdateMenuBar(MenuBarElement o, MenuBarElement n, WinUI.MenuBar mb)
