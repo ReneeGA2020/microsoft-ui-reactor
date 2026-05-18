@@ -174,6 +174,7 @@ public sealed partial class ElementFactory<T> : IElementFactory
         }
     }
 
+    // <snippet:factory-shape>
     public UIElement GetElement(ElementFactoryGetArgs args)
     {
         // Resolve the realized data → (key, dataIndex). Three paths:
@@ -252,6 +253,7 @@ public sealed partial class ElementFactory<T> : IElementFactory
 
         return control ?? new TextBlock { Text = "" };
     }
+    // </snippet:factory-shape>
 
     // Detach a UIElement from whatever container it's parented to. ItemsRepeater
     // is a Panel subclass so the standard Children.Remove path applies; we also

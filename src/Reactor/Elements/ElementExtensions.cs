@@ -2314,6 +2314,7 @@ public static partial class ElementExtensions
     //  Internal
     // ════════════════════════════════════════════════════════════════
 
+    // <snippet:modifier-chain>
     private static T Modify<T>(T el, ElementModifiers mods) where T : Element =>
         el with { Modifiers = el.Modifiers is not null ? el.Modifiers.Merge(mods) : mods };
 
@@ -2331,4 +2332,5 @@ public static partial class ElementExtensions
             : new Dictionary<string, ThemeRef> { [property] = theme };
         return el with { ThemeBindings = bindings };
     }
+    // </snippet:modifier-chain>
 }
