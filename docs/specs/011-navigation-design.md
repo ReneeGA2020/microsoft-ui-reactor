@@ -1010,18 +1010,22 @@ restored on relaunch.
 #### API
 
 ```csharp
-// Save
-string json = nav.GetState();
-// json: {"backStack":[{"$type":"Home"},{"$type":"Detail","Id":42}],
-//        "current":{"$type":"Settings"},
-//        "forwardStack":[]}
+// Save (caller picks the storage format)
+NavigationState<AppRoute> state = nav.GetState();
+string json = JsonSerializer.Serialize(state, AppJsonContext.Default.NavigationStateAppRoute);
+// json: {"BackStack":[{"$type":"home"},{"$type":"detail","Id":42}],
+//        "Current":{"$type":"settings"},
+//        "ForwardStack":[]}
+// (Default STJ casing — apply JsonNamingPolicy.CamelCase on your context if
+//  you prefer camelCase output.)
 
 ApplicationData.Current.LocalSettings.Values["nav_state"] = json;
 
 // Restore
 if (ApplicationData.Current.LocalSettings.Values.TryGetValue("nav_state", out var saved))
 {
-    nav.SetState((string)saved);
+    var restored = JsonSerializer.Deserialize((string)saved, AppJsonContext.Default.NavigationStateAppRoute);
+    if (restored is not null) nav.SetState(restored);
 }
 ```
 
@@ -1044,12 +1048,12 @@ var options = new JsonSerializerOptions
 abstract record AppRoute;
 ```
 
-The `NavigationStack` serializes as:
+The `NavigationStack` serializes (with default STJ casing) as:
 ```json
 {
-    "backStack": [ ... ],
-    "current": { ... },
-    "forwardStack": [ ... ]
+    "BackStack": [ ... ],
+    "Current": { ... },
+    "ForwardStack": [ ... ]
 }
 ```
 
