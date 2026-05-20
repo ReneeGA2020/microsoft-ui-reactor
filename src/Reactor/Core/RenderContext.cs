@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.UI.Reactor.Core.Diagnostics;
 using Microsoft.UI.Reactor.Hooks;
 
 namespace Microsoft.UI.Reactor.Core;
@@ -926,15 +927,17 @@ public sealed class RenderContext
             if (guardRef.Current) return;
             guardRef.Current = true;
             setIsExecuting(true);
+            // try/finally — NOT try/catch. The user's command throw becomes a
+            // faulted Task; the framework's reentry-guard and IsExecuting
+            // state still get restored. We deliberately let the exception
+            // surface via Task.UnobservedTaskException rather than swallowing,
+            // so a buggy command is visible to the developer (matches the
+            // dispose / lifecycle policy elsewhere — don't hide user bugs).
             _ = Task.Run(async () =>
             {
                 try
                 {
                     await asyncAction();
-                }
-                catch (Exception ex)
-                {
-                    global::System.Diagnostics.Debug.WriteLine($"[Reactor] UseCommand async action threw: {ex}");
                 }
                 finally
                 {
@@ -967,15 +970,13 @@ public sealed class RenderContext
             if (guardRef.Current) return;
             guardRef.Current = true;
             setIsExecuting(true);
+            // try/finally — same shape as the non-generic UseCommand above.
+            // Cleanup runs; user throw surfaces via Task.UnobservedTaskException.
             _ = Task.Run(async () =>
             {
                 try
                 {
                     await asyncAction(arg);
-                }
-                catch (Exception ex)
-                {
-                    global::System.Diagnostics.Debug.WriteLine($"[Reactor] UseCommand<{typeof(T).Name}> async action threw: {ex}");
                 }
                 finally
                 {
@@ -1363,7 +1364,10 @@ public sealed class RenderContext
                 }
                 catch (Exception ex)
                 {
-                    global::System.Diagnostics.Debug.WriteLine($"[Reactor] Effect cleanup at index {i} threw: {ex}");
+                    // User-callback isolation (spec 044 §6.7.3): one bad
+                    // cleanup must not block the remaining cleanups or
+                    // Phase 2 effect re-runs in this flush.
+                    DiagnosticLog.SwallowedError(LogCategory.Reactor, $"UseEffect.cleanup[i={i}]", ex);
                 }
                 hook.PendingCleanup = null;
             }
@@ -1390,7 +1394,9 @@ public sealed class RenderContext
             }
             catch (Exception ex)
             {
-                global::System.Diagnostics.Debug.WriteLine($"[Reactor] Effect at index {i} threw: {ex}");
+                // User-callback isolation (spec 044 §6.7.3): a thrown effect
+                // body must not block subsequent effects on this flush.
+                DiagnosticLog.SwallowedError(LogCategory.Reactor, $"UseEffect.effect[i={i}]", ex);
             }
         }
     }
@@ -1408,7 +1414,10 @@ public sealed class RenderContext
                 }
                 catch (Exception ex)
                 {
-                    global::System.Diagnostics.Debug.WriteLine($"[Reactor] Cleanup at index {i} threw: {ex}");
+                    // User-callback isolation (spec 044 §6.7.3): a thrown
+                    // cleanup must not block subsequent cleanups or the
+                    // persisted-state save phase below.
+                    DiagnosticLog.SwallowedError(LogCategory.Reactor, $"RunCleanups.effectCleanup[i={i}]", ex);
                 }
             }
         }
@@ -1424,7 +1433,10 @@ public sealed class RenderContext
                 }
                 catch (Exception ex)
                 {
-                    global::System.Diagnostics.Debug.WriteLine($"[Reactor] Persisted state save at index {i} threw: {ex}");
+                    // User-callback isolation (spec 044 §6.7.3): a thrown
+                    // serializer for one persisted-state slot must not
+                    // block subsequent slots from saving.
+                    DiagnosticLog.SwallowedError(LogCategory.Reactor, $"RunCleanups.persistedSave[i={i}]", ex);
                 }
             }
         }

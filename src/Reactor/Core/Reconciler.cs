@@ -1,5 +1,6 @@
 using System.Numerics;
 using Microsoft.UI.Reactor.Animation;
+using Microsoft.UI.Reactor.Core.Diagnostics;
 using Microsoft.UI.Reactor.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -1032,7 +1033,7 @@ public sealed partial class Reconciler : IDisposable
                 service.PrepareToAnimate(caEl.ConnectedAnimationKey, control);
             }
             catch (global::System.Runtime.InteropServices.COMException) { }
-            catch (Exception ex) { global::System.Diagnostics.Debug.WriteLine($"[Reactor] ConnectedAnimation PrepareToAnimate failed: {ex}"); }
+            catch (Exception ex) { Microsoft.UI.Reactor.Core.Diagnostics.DiagnosticLog.SwallowedError(Microsoft.UI.Reactor.Core.Diagnostics.LogCategory.Reactor, "ConnectedAnimation.PrepareToAnimate", ex); }
         }
 
         // Clean up animation state (mirrors UnmountAndCollect)
@@ -1302,7 +1303,7 @@ public sealed partial class Reconciler : IDisposable
                 service.PrepareToAnimate(caEl.ConnectedAnimationKey, control);
             }
             catch (global::System.Runtime.InteropServices.COMException) { }
-            catch (Exception ex) { global::System.Diagnostics.Debug.WriteLine($"[Reactor] ConnectedAnimation PrepareToAnimate failed: {ex}"); }
+            catch (Exception ex) { Microsoft.UI.Reactor.Core.Diagnostics.DiagnosticLog.SwallowedError(Microsoft.UI.Reactor.Core.Diagnostics.LogCategory.Reactor, "ConnectedAnimation.PrepareToAnimate", ex); }
         }
 
         // Clean up animation state
@@ -2308,7 +2309,7 @@ public sealed partial class Reconciler : IDisposable
                 _pendingConnectedAnimationStarts.Add((anim, target));
         }
         catch (global::System.Runtime.InteropServices.COMException) { }
-        catch (Exception ex) { global::System.Diagnostics.Debug.WriteLine($"[Reactor] ConnectedAnimation GetAnimation failed: {ex}"); }
+        catch (Exception ex) { Microsoft.UI.Reactor.Core.Diagnostics.DiagnosticLog.SwallowedError(Microsoft.UI.Reactor.Core.Diagnostics.LogCategory.Reactor, "ConnectedAnimation.GetAnimation", ex); }
     }
 
     /// <summary>
@@ -2323,7 +2324,7 @@ public sealed partial class Reconciler : IDisposable
         {
             try { anim.TryStart(target); }
             catch (global::System.Runtime.InteropServices.COMException) { }
-            catch (Exception ex) { global::System.Diagnostics.Debug.WriteLine($"[Reactor] ConnectedAnimation TryStart failed: {ex}"); }
+            catch (Exception ex) { Microsoft.UI.Reactor.Core.Diagnostics.DiagnosticLog.SwallowedError(Microsoft.UI.Reactor.Core.Diagnostics.LogCategory.Reactor, "ConnectedAnimation.TryStart", ex); }
         }
         _pendingConnectedAnimationStarts.Clear();
     }
@@ -3295,7 +3296,10 @@ public sealed partial class Reconciler : IDisposable
         }
         catch (Exception ex)
         {
-            global::System.Diagnostics.Debug.WriteLine($"[Reactor.Theme] Failed to apply ThemeBindings: {ex.Message}");
+            Microsoft.UI.Reactor.Core.Diagnostics.DiagnosticLog.SwallowedError(
+                Microsoft.UI.Reactor.Core.Diagnostics.LogCategory.Theme,
+                "ApplyThemeBindings",
+                ex);
         }
     }
 
@@ -3685,7 +3689,10 @@ public sealed partial class Reconciler : IDisposable
             try { hook.OnNavigatedTo?.Invoke(navigatedToCtx); }
             catch (Exception ex)
             {
-                global::System.Diagnostics.Debug.WriteLine($"[Reactor] onNavigatedTo threw: {ex}");
+                // User-callback isolation (spec 044 §6.7.3): a thrown
+                // onNavigatedTo must not block sibling subscribers or the
+                // onNavigatedFrom phase below.
+                DiagnosticLog.SwallowedError(LogCategory.Reactor, "Reconciler.OnNavigatedTo", ex);
             }
         }
 
@@ -3699,7 +3706,8 @@ public sealed partial class Reconciler : IDisposable
                 try { hook.OnNavigatedFrom?.Invoke(navigatedFromCtx); }
                 catch (Exception ex)
                 {
-                    global::System.Diagnostics.Debug.WriteLine($"[Reactor] onNavigatedFrom threw: {ex}");
+                    // User-callback isolation (spec 044 §6.7.3).
+                    DiagnosticLog.SwallowedError(LogCategory.Reactor, "Reconciler.OnNavigatedFrom", ex);
                 }
             }
         }
@@ -3720,7 +3728,10 @@ public sealed partial class Reconciler : IDisposable
             try { hook.OnNavigatingTo?.Invoke(ctx); }
             catch (Exception ex)
             {
-                global::System.Diagnostics.Debug.WriteLine($"[Reactor] onNavigatingTo threw: {ex}");
+                // User-callback isolation (spec 044 §6.7.3): a thrown
+                // onNavigatingTo must not silently cancel navigation — we
+                // still evaluate IsCancelled below for the explicit veto.
+                DiagnosticLog.SwallowedError(LogCategory.Reactor, "Reconciler.OnNavigatingTo", ex);
             }
             if (ctx.IsCancelled)
             {
