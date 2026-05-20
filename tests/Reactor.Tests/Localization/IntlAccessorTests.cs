@@ -30,8 +30,25 @@ public class IntlAccessorTests
             .Add("en-US", "Settings", "LoggedInAs", "Logged in as {name}");
 
         var t = CreateAccessor("en-US", provider);
-        var result = t.Message(new MessageKey("Settings", "LoggedInAs"), new { name = "Alice" });
+        var result = t.Message(new MessageKey("Settings", "LoggedInAs"), ("name", "Alice"));
         Assert.Equal("Logged in as Alice", result);
+    }
+
+    [Fact]
+    public void Message_TupleArgs_NullValuesAreSkipped()
+    {
+        // Matches the prior reflection-path behavior: null-valued args are
+        // dropped before the formatter runs, so the placeholder is treated as
+        // missing rather than substituted with "null"/empty.
+        var provider = new InMemoryResourceProvider()
+            .Add("en-US", "Cart", "ItemCount",
+                "{count, plural, =0 {Your cart is empty} one {# item in cart} other {# items in cart}}");
+
+        var t = CreateAccessor("en-US", provider);
+        // No `count` arg → ICU treats the placeholder as missing; the
+        // accessor degrades gracefully to the raw pattern rather than throwing.
+        var result = t.Message(new MessageKey("Cart", "ItemCount"), ("count", (object?)null));
+        Assert.DoesNotContain("null", result);
     }
 
     [Fact]
@@ -43,9 +60,9 @@ public class IntlAccessorTests
 
         var t = CreateAccessor("en-US", provider);
 
-        Assert.Equal("Your cart is empty", t.Message(new MessageKey("Cart", "ItemCount"), new { count = 0 }));
-        Assert.Equal("1 item in cart", t.Message(new MessageKey("Cart", "ItemCount"), new { count = 1 }));
-        Assert.Equal("5 items in cart", t.Message(new MessageKey("Cart", "ItemCount"), new { count = 5 }));
+        Assert.Equal("Your cart is empty", t.Message(new MessageKey("Cart", "ItemCount"), ("count", 0)));
+        Assert.Equal("1 item in cart", t.Message(new MessageKey("Cart", "ItemCount"), ("count", 1)));
+        Assert.Equal("5 items in cart", t.Message(new MessageKey("Cart", "ItemCount"), ("count", 5)));
     }
 
     [Fact]
@@ -57,9 +74,9 @@ public class IntlAccessorTests
 
         var t = CreateAccessor("en-US", provider);
 
-        Assert.Equal("He joined", t.Message(new MessageKey("Profile", "Greeting"), new { gender = "male" }));
-        Assert.Equal("She joined", t.Message(new MessageKey("Profile", "Greeting"), new { gender = "female" }));
-        Assert.Equal("They joined", t.Message(new MessageKey("Profile", "Greeting"), new { gender = "other" }));
+        Assert.Equal("He joined", t.Message(new MessageKey("Profile", "Greeting"), ("gender", "male")));
+        Assert.Equal("She joined", t.Message(new MessageKey("Profile", "Greeting"), ("gender", "female")));
+        Assert.Equal("They joined", t.Message(new MessageKey("Profile", "Greeting"), ("gender", "other")));
     }
 
     [Fact]

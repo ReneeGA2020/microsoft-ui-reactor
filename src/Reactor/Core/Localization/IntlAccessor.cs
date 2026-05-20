@@ -1,8 +1,5 @@
-using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Globalization;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Core.Diagnostics;
@@ -22,7 +19,6 @@ public sealed class IntlAccessor
     private readonly CultureInfo _culture;
     private readonly bool _pseudoLocalize;
     private readonly Dictionary<string, string> _assetCache = new();
-    private static readonly ConcurrentDictionary<Type, PropertyInfo[]> _propertyCache = new();
 
     public IntlAccessor(
         string locale,
@@ -55,7 +51,7 @@ public sealed class IntlAccessor
     /// Loads a string resource by key, then formats it with ICU MessageFormat.
     /// Falls back to the default locale if the key is missing in the current locale.
     /// </summary>
-    public string Message(MessageKey key, object? args = null)
+    public string Message(MessageKey key, IDictionary<string, object>? args = null)
     {
         var pattern = ResolvePattern(key);
         if (pattern is null)
@@ -64,13 +60,9 @@ public sealed class IntlAccessor
         string result;
         try
         {
-            if (args is null)
-                result = _messageCache.Format(Locale, pattern);
-            else
-            {
-                var dict = ToArgsDictionary(args);
-                result = _messageCache.Format(Locale, pattern, dict);
-            }
+            result = args is null
+                ? _messageCache.Format(Locale, pattern)
+                : _messageCache.Format(Locale, pattern, args);
         }
         catch (Exception ex)
         {
@@ -85,6 +77,27 @@ public sealed class IntlAccessor
     }
 
     /// <summary>
+    /// Compact tuple-args overload for the common case of formatting a single
+    /// message with a handful of ICU placeholders. Builds a plain
+    /// <see cref="Dictionary{TKey, TValue}"/> in-place — no reflection, AOT-safe.
+    /// </summary>
+    /// <remarks>
+    /// Tuples with a null <c>Value</c> are dropped before the dictionary is
+    /// built — this matches the behavior of the prior reflection path, which
+    /// skipped null-valued properties so the formatter saw the placeholder as
+    /// "missing" rather than substituting an empty string.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// t.Message(Greeting, ("name", "World"));
+    /// t.Message(SearchResults, ("count", 0), ("query", "test"));
+    /// </code>
+    /// </example>
+    public string Message(MessageKey key, (string Name, object? Value) arg1,
+        params (string Name, object? Value)[] more)
+        => Message(key, BuildArgs(arg1, more));
+
+    /// <summary>
     /// Formats a message that contains rich text tags (e.g., &lt;bold&gt;text&lt;/bold&gt;),
     /// mapping each tag to an element factory. Returns a GroupElement containing the
     /// resulting child elements (text spans + wrapped elements).
@@ -95,7 +108,7 @@ public sealed class IntlAccessor
     /// rendered as plain text (tag markers stripped). Nested tags are not supported — only
     /// the outermost tag is processed.
     /// </remarks>
-    public Element RichMessage(MessageKey key, object? args = null,
+    public Element RichMessage(MessageKey key, IDictionary<string, object>? args = null,
         Dictionary<string, Func<string, Element>>? tags = null)
     {
         var pattern = ResolvePattern(key);
@@ -116,8 +129,7 @@ public sealed class IntlAccessor
                 // BEFORE formatting so a translator-controlled arg can't
                 // mint a `<link>` tag that ParseRichText would dispatch to a
                 // developer-supplied factory.
-                var dict = ToArgsDictionary(args);
-                var escaped = EscapeForRichTags(dict);
+                var escaped = EscapeForRichTags(args);
                 formatted = _messageCache.Format(Locale, pattern, escaped);
             }
         }
@@ -136,6 +148,17 @@ public sealed class IntlAccessor
 
         return ParseRichText(formatted, tags);
     }
+
+    /// <summary>
+    /// Compact tuple-args overload of the dict-based <c>RichMessage</c> —
+    /// same allocation profile as the tuple-args <c>Message</c> overload.
+    /// Tags must be supplied via the dict-based overload; this variant is for
+    /// the common case where the developer just wants the formatted text.
+    /// Null-valued tuples are dropped (see the tuple-args <c>Message</c> remarks).
+    /// </summary>
+    public Element RichMessage(MessageKey key, (string Name, object? Value) arg1,
+        params (string Name, object? Value)[] more)
+        => RichMessage(key, BuildArgs(arg1, more));
 
     /// <summary>
     /// Resolves a locale-qualified asset path. Falls back to the unqualified path
@@ -334,47 +357,20 @@ public sealed class IntlAccessor
         return null;
     }
 
-    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "ToArgsDictionary uses reflection on anonymous types for localization args.")]
-    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "ToArgsDictionary uses reflection on anonymous types for localization args.")]
-    private static IDictionary<string, object> ToArgsDictionary(object args)
+    // Null-valued tuples are skipped so the formatter sees a "missing"
+    // placeholder rather than receiving a null arg — preserves the behavior
+    // of the prior reflection path, which dropped null-valued properties.
+    private static Dictionary<string, object> BuildArgs(
+        (string Name, object? Value) arg1,
+        (string Name, object? Value)[] more)
     {
-        if (args is IDictionary<string, object> dict)
-            return dict;
-
-        // SECURITY (TASK-051): refuse arbitrary DTOs. Anonymous types and the
-        // [LocArgs]-marked record contract are the only accepted shapes;
-        // anything else (e.g. a domain DTO with `AccessToken`/`Email`/...)
-        // would expose every public property to translator-controlled patterns.
-        var type = args.GetType();
-        if (!IsAcceptableArgsContainer(type))
-            throw new ArgumentException(
-                $"Localization args must be an IDictionary<string,object>, an anonymous type, or a record marked with [LocArgs]. Got '{type.FullName}'.",
-                nameof(args));
-
-        var result = new Dictionary<string, object>();
-        var props = _propertyCache.GetOrAdd(type,
-            t => t.GetProperties(BindingFlags.Public | BindingFlags.Instance));
-        foreach (var prop in props)
+        var dict = new Dictionary<string, object>(more.Length + 1);
+        if (arg1.Value is not null) dict[arg1.Name] = arg1.Value;
+        foreach (var (k, v) in more)
         {
-            var value = prop.GetValue(args);
-            if (value is not null)
-                result[prop.Name] = value;
+            if (v is not null) dict[k] = v;
         }
-        return result;
-    }
-
-    private static bool IsAcceptableArgsContainer(Type type)
-    {
-        // Anonymous types are sealed, generic, public-property-only with a
-        // compiler-generated name like `<>f__AnonymousType0`.
-        if (type.Name.StartsWith("<>", StringComparison.Ordinal)) return true;
-        // Allow opt-in via [LocArgs] attribute name match.
-        foreach (var attr in type.GetCustomAttributes(inherit: false))
-        {
-            var n = attr.GetType().Name;
-            if (n == "LocArgsAttribute" || n == "LocArgs") return true;
-        }
-        return false;
+        return dict;
     }
 
     /// <summary>
@@ -403,7 +399,7 @@ public sealed class IntlAccessor
 
     /// <summary>
     /// HTML-escapes string-valued args before they are substituted into a
-    /// pattern that <see cref="RichMessage"/> will tag-parse. TASK-053.
+    /// pattern that the <c>RichMessage</c> overloads will tag-parse. TASK-053.
     /// Non-string values pass through untouched.
     /// </summary>
     private static IDictionary<string, object> EscapeForRichTags(IDictionary<string, object> args)
