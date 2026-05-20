@@ -800,22 +800,30 @@ public sealed class RenderContext
     {
         var (state, _) = UseState(new HighContrastState());
 
-        // Subscribe once to HighContrastChanged and re-render when it fires.
+        // AccessibilitySettings.HighContrastChanged throws ERROR_NOT_FOUND
+        // (0x80070490) in WinUI 3 desktop apps because it requires a CoreWindow.
+        // Instead, use UISettings.ColorValuesChanged which fires reliably for
+        // system theme changes including high contrast toggles.
         UseEffect(() =>
         {
-            state.Settings ??= new global::Windows.UI.ViewManagement.AccessibilitySettings();
+            state.A11ySettings ??= new global::Windows.UI.ViewManagement.AccessibilitySettings();
+            state.UiSettings ??= new global::Windows.UI.ViewManagement.UISettings();
             var rerender = _requestRerender;
-            void OnChanged(global::Windows.UI.ViewManagement.AccessibilitySettings sender, object args)
+
+            void OnColorValuesChanged(global::Windows.UI.ViewManagement.UISettings sender, object args)
             {
-                state.IsHighContrast = sender.HighContrast;
-                state.HighContrastScheme = sender.HighContrast ? sender.HighContrastScheme : null;
+                var a11y = state.A11ySettings;
+                state.IsHighContrast = a11y.HighContrast;
+                state.HighContrastScheme = a11y.HighContrast ? a11y.HighContrastScheme : null;
                 rerender?.Invoke();
             }
-            state.Settings.HighContrastChanged += OnChanged;
+
+            state.UiSettings.ColorValuesChanged += OnColorValuesChanged;
+
             // Sync initial value
-            state.IsHighContrast = state.Settings.HighContrast;
-            state.HighContrastScheme = state.Settings.HighContrast ? state.Settings.HighContrastScheme : null;
-            return () => state.Settings.HighContrastChanged -= OnChanged;
+            state.IsHighContrast = state.A11ySettings.HighContrast;
+            state.HighContrastScheme = state.A11ySettings.HighContrast ? state.A11ySettings.HighContrastScheme : null;
+            return () => state.UiSettings.ColorValuesChanged -= OnColorValuesChanged;
         });
 
         return state;
@@ -823,7 +831,8 @@ public sealed class RenderContext
 
     private sealed class HighContrastState
     {
-        public global::Windows.UI.ViewManagement.AccessibilitySettings? Settings;
+        public global::Windows.UI.ViewManagement.AccessibilitySettings? A11ySettings;
+        public global::Windows.UI.ViewManagement.UISettings? UiSettings;
         public bool IsHighContrast;
         public string? HighContrastScheme;
     }
@@ -1358,17 +1367,7 @@ public sealed class RenderContext
         {
             if (_hooks[i] is EffectHookState hook && hook.PendingCleanup is not null)
             {
-                try
-                {
-                    hook.PendingCleanup();
-                }
-                catch (Exception ex)
-                {
-                    // User-callback isolation (spec 044 §6.7.3): one bad
-                    // cleanup must not block the remaining cleanups or
-                    // Phase 2 effect re-runs in this flush.
-                    DiagnosticLog.SwallowedError(LogCategory.Reactor, $"UseEffect.cleanup[i={i}]", ex);
-                }
+                hook.PendingCleanup();
                 hook.PendingCleanup = null;
             }
         }
@@ -1379,24 +1378,15 @@ public sealed class RenderContext
             if (_hooks[i] is not EffectHookState hook || !hook.Pending) continue;
             hook.Pending = false;
 
-            try
+            if (hook.EffectWithCleanup is not null)
             {
-                if (hook.EffectWithCleanup is not null)
-                {
-                    hook.Cleanup = hook.EffectWithCleanup();
-                    hook.EffectWithCleanup = null;
-                }
-                else if (hook.Effect is not null)
-                {
-                    hook.Effect();
-                    hook.Effect = null;
-                }
+                hook.Cleanup = hook.EffectWithCleanup();
+                hook.EffectWithCleanup = null;
             }
-            catch (Exception ex)
+            else if (hook.Effect is not null)
             {
-                // User-callback isolation (spec 044 §6.7.3): a thrown effect
-                // body must not block subsequent effects on this flush.
-                DiagnosticLog.SwallowedError(LogCategory.Reactor, $"UseEffect.effect[i={i}]", ex);
+                hook.Effect();
+                hook.Effect = null;
             }
         }
     }
@@ -1408,17 +1398,7 @@ public sealed class RenderContext
         {
             if (_hooks[i] is EffectHookState hook)
             {
-                try
-                {
-                    hook.Cleanup?.Invoke();
-                }
-                catch (Exception ex)
-                {
-                    // User-callback isolation (spec 044 §6.7.3): a thrown
-                    // cleanup must not block subsequent cleanups or the
-                    // persisted-state save phase below.
-                    DiagnosticLog.SwallowedError(LogCategory.Reactor, $"RunCleanups.effectCleanup[i={i}]", ex);
-                }
+                hook.Cleanup?.Invoke();
             }
         }
 
@@ -1427,17 +1407,7 @@ public sealed class RenderContext
         {
             if (_hooks[i] is PersistedHookStateBase persisted)
             {
-                try
-                {
-                    persisted.SaveToCache();
-                }
-                catch (Exception ex)
-                {
-                    // User-callback isolation (spec 044 §6.7.3): a thrown
-                    // serializer for one persisted-state slot must not
-                    // block subsequent slots from saving.
-                    DiagnosticLog.SwallowedError(LogCategory.Reactor, $"RunCleanups.persistedSave[i={i}]", ex);
-                }
+                persisted.SaveToCache();
             }
         }
     }
