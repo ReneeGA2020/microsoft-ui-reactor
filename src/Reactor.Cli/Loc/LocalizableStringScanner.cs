@@ -24,6 +24,7 @@ internal static class LocalizableStringScanner
     // DSL factory methods with named string parameters that are localizable
     private static readonly Dictionary<string, HashSet<string>> LocalizableNamedParams = new(StringComparer.Ordinal)
     {
+        ["TextBox"] = new(StringComparer.Ordinal) { "placeholder", "header" },
         ["TextField"] = new(StringComparer.Ordinal) { "placeholder", "header" },
         ["PasswordBox"] = new(StringComparer.Ordinal) { "placeholderText" },
         ["NumberBox"] = new(StringComparer.Ordinal) { "header" },
@@ -132,12 +133,21 @@ internal static class LocalizableStringScanner
             }
 
             // Also check positional arguments that map to localizable params
-            // For TextField: placeholder is arg index 2, header is set via property
-            if (methodName == "TextField" && args.Count >= 3 && args[2].NameColon == null)
+            // For TextBox/TextField: placeholder is arg index 2, header is arg index 3
+            if (methodName == "TextBox" || methodName == "TextField")
             {
-                var placeholderArg = args[2].Expression;
-                if (!IsMessageCall(placeholderArg))
-                    ProcessExpression(placeholderArg, className, "TextField.placeholder");
+                if (args.Count >= 3 && args[2].NameColon == null)
+                {
+                    var placeholderArg = args[2].Expression;
+                    if (!IsMessageCall(placeholderArg))
+                        ProcessExpression(placeholderArg, className, $"{methodName}.placeholder");
+                }
+                if (args.Count >= 4 && args[3].NameColon == null)
+                {
+                    var headerArg = args[3].Expression;
+                    if (!IsMessageCall(headerArg))
+                        ProcessExpression(headerArg, className, $"{methodName}.header");
+                }
             }
             if (methodName == "PasswordBox" && args.Count >= 3 && args[2].NameColon == null)
             {

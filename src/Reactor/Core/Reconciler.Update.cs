@@ -133,7 +133,7 @@ public sealed partial class Reconciler
                 => UpdateToggleSplitButton(o, n, tsb),
             (RichEditBoxElement o, RichEditBoxElement n, WinUI.RichEditBox reb)
                 => UpdateRichEditBox(o, n, reb),
-            (TextFieldElement o, TextFieldElement n, TextBox tb)
+            (TextBoxElement o, TextBoxElement n, TextBox tb)
                 => UpdateTextField(o, n, tb, requestRerender),
             (PasswordBoxElement o, PasswordBoxElement n, WinUI.PasswordBox pb)
                 => UpdatePasswordBox(o, n, pb),
@@ -778,7 +778,7 @@ public sealed partial class Reconciler
         return null;
     }
 
-    private UIElement? UpdateTextField(TextFieldElement o, TextFieldElement n, TextBox tb, Action requestRerender)
+    private UIElement? UpdateTextField(TextBoxElement o, TextBoxElement n, TextBox tb, Action requestRerender)
     {
         // Tag first so any echoed TextChanged sees this element.
         SetElementTag(tb, n);
@@ -807,13 +807,14 @@ public sealed partial class Reconciler
             // Uncontrolled divergence: value is set but no onChange to reconcile.
             // Log once per field to help developers catch mismatched bindings.
             _logger?.LogWarning(
-                "TextField value diverged from controlled value with no OnChanged handler. " +
+                "TextBox value diverged from controlled value with no OnChanged handler. " +
                 "Controlled: \"{ControlledValue}\", Actual: \"{ActualValue}\". " +
                 "Wire up OnChanged to keep state in sync, or this field won't reflect user edits after re-renders.",
                 Truncate(n.Value, 20), Truncate(tb.Text, 20));
         }
         tb.PlaceholderText = n.Placeholder ?? "";
         if (n.Header is not null) tb.Header = n.Header;
+        else if (o.Header is not null) tb.ClearValue(TextBox.HeaderProperty);
         if (n.IsReadOnly.HasValue) tb.IsReadOnly = n.IsReadOnly.Value;
         if (n.AcceptsReturn.HasValue) tb.AcceptsReturn = n.AcceptsReturn.Value;
         if (n.TextWrapping.HasValue) tb.TextWrapping = n.TextWrapping.Value;
@@ -823,6 +824,7 @@ public sealed partial class Reconciler
         if (tb.CharacterCasing != n.CharacterCasing) tb.CharacterCasing = n.CharacterCasing;
         if (tb.TextAlignment != n.TextAlignment) tb.TextAlignment = n.TextAlignment;
         if (n.Description is not null) tb.Description = n.Description;
+        else if (o.Description is not null) tb.ClearValue(TextBox.DescriptionProperty);
         // Apply selection position after text — must come after Text is set so the range is valid
         if (n.SelectionStart.HasValue) tb.SelectionStart = Math.Min(n.SelectionStart.Value, tb.Text.Length);
         if (n.SelectionLength.HasValue) tb.SelectionLength = Math.Min(n.SelectionLength.Value, tb.Text.Length - tb.SelectionStart);
