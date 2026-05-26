@@ -412,6 +412,17 @@ public sealed class ReactorWindow : IDisposable
         else if (isInitial)
             TryApplyExeIconFallback();
 
+        // Spec 045 §2.6 tear-off — window-wide alpha via WS_EX_LAYERED +
+        // SetLayeredWindowAttributes. Skipped when Opacity==1.0 so opaque
+        // windows pay zero layering overhead (Windows compositor fast-path).
+        ApplyOpacity(spec.Opacity);
+
+        // Spec 045 §2.6 tear-off — NoActivate must be applied before
+        // Activate fires (in MountAndActivate) so the window's first show
+        // observes the flag. Re-applied on Update so flips stick.
+        SetNoActivate(spec.NoActivate);
+        SetIgnorePointerInput(spec.IgnorePointerInput);
+
         // Owner relationship — only meaningful at initial apply time.
         // Subsequent Update calls do not re-parent (changing ownership of a
         // realized window has no AppWindow API and is rarely the right thing
@@ -958,6 +969,141 @@ public sealed class ReactorWindow : IDisposable
         try { _appWindow.Move(DipToPhysicalPoint(x, y)); }
         catch (COMException ex) when (HResults.IsTeardownReentry(ex.HResult))
         { DiagnosticLog.SwallowedError(LogCategory.Hosting, "ReactorWindow.SetPosition", ex); }
+    }
+
+    /// <summary>
+    /// Set window-wide alpha in [0..1]. 1.0 strips the layered-window
+    /// extended style; values below 1.0 install it and call
+    /// <c>SetLayeredWindowAttributes</c>. UI-thread only. No-op after disposal.
+    /// </summary>
+    public void SetOpacity(double opacity)
+    {
+        ThreadAffinity.ThrowIfNotOnUIThread(nameof(SetOpacity));
+        if (_disposed) return;
+        if (!(opacity >= 0.0 && opacity <= 1.0) || double.IsNaN(opacity))
+            throw new ArgumentOutOfRangeException(nameof(opacity), "Opacity must be in [0, 1].");
+        ApplyOpacity(opacity);
+        // Mirror into _spec so a subsequent Update() diff doesn't fight the
+        // imperative call. Volatile.Write because Spec is read from any thread.
+        var prev = Volatile.Read(ref _spec);
+        Volatile.Write(ref _spec, prev with { Opacity = opacity });
+    }
+
+    private void ApplyOpacity(double opacity)
+    {
+        // Clamp defensively even though Validate() / SetOpacity already
+        // checked — the Win32 LWA_ALPHA byte is [0..255].
+        if (opacity < 0.0) opacity = 0.0;
+        if (opacity > 1.0) opacity = 1.0;
+
+        var current = NativeOpacity.GetWindowLongPtr(_hwnd, NativeOpacity.GWL_EXSTYLE);
+        bool isLayered = ((long)current & NativeOpacity.WS_EX_LAYERED) != 0;
+
+        if (opacity >= 1.0)
+        {
+            // Strip WS_EX_LAYERED so the compositor fast-path is restored.
+            // Also strip WS_EX_TRANSPARENT — that style is only meaningful
+            // on layered windows, so leaving it set after un-layering would
+            // wedge the window in an inconsistent extended-style state.
+            // Mirror IgnorePointerInput=false into _spec so Update() diffs
+            // see the live state.
+            long currentBits = (long)current;
+            long strippedBits = currentBits & ~(NativeOpacity.WS_EX_LAYERED | NativeOpacity.WS_EX_TRANSPARENT);
+            if (strippedBits != currentBits)
+                _ = NativeOpacity.SetWindowLongPtr(_hwnd, NativeOpacity.GWL_EXSTYLE, (nint)strippedBits);
+            var prevSpec = Volatile.Read(ref _spec);
+            if (prevSpec.IgnorePointerInput)
+                Volatile.Write(ref _spec, prevSpec with { IgnorePointerInput = false });
+            return;
+        }
+
+        if (!isLayered)
+        {
+            nint withLayered = (nint)((long)current | NativeOpacity.WS_EX_LAYERED);
+            _ = NativeOpacity.SetWindowLongPtr(_hwnd, NativeOpacity.GWL_EXSTYLE, withLayered);
+        }
+        byte alpha = (byte)Math.Round(opacity * 255.0);
+        _ = NativeOpacity.SetLayeredWindowAttributes(_hwnd, 0, alpha, NativeOpacity.LWA_ALPHA);
+    }
+
+    /// <summary>
+    /// Toggle the <c>WS_EX_NOACTIVATE</c> extended style on the underlying
+    /// HWND. When set, the window appears without stealing foreground
+    /// activation (matches VS tool-window / drag-preview behavior).
+    /// UI-thread only. No-op after disposal.
+    /// </summary>
+    public void SetNoActivate(bool noActivate)
+    {
+        ThreadAffinity.ThrowIfNotOnUIThread(nameof(SetNoActivate));
+        if (_disposed) return;
+        var current = NativeOpacity.GetWindowLongPtr(_hwnd, NativeOpacity.GWL_EXSTYLE);
+        long bits = (long)current;
+        long updated = noActivate
+            ? bits | NativeOpacity.WS_EX_NOACTIVATE
+            : bits & ~NativeOpacity.WS_EX_NOACTIVATE;
+        if (updated != bits)
+            _ = NativeOpacity.SetWindowLongPtr(_hwnd, NativeOpacity.GWL_EXSTYLE, (nint)updated);
+        // Mirror into _spec so Update() diffs see the live value.
+        var prev = Volatile.Read(ref _spec);
+        if (prev.NoActivate != noActivate)
+            Volatile.Write(ref _spec, prev with { NoActivate = noActivate });
+    }
+
+    /// <summary>
+    /// Toggle the <c>WS_EX_TRANSPARENT</c> extended style on the underlying
+    /// HWND. When set, mouse events pass THROUGH the window to whatever's
+    /// underneath. The window must already be layered (via
+    /// <see cref="SetOpacity"/> with a value &lt; 1.0) when enabling —
+    /// the OS only honors transparent on layered windows. UI-thread only.
+    /// No-op after disposal.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when <paramref name="ignore"/> is true but the window is not
+    /// currently layered. Call <see cref="SetOpacity"/> with a value &lt; 1.0
+    /// first.
+    /// </exception>
+    public void SetIgnorePointerInput(bool ignore)
+    {
+        ThreadAffinity.ThrowIfNotOnUIThread(nameof(SetIgnorePointerInput));
+        if (_disposed) return;
+        var current = NativeOpacity.GetWindowLongPtr(_hwnd, NativeOpacity.GWL_EXSTYLE);
+        long bits = (long)current;
+
+        // Enabling transparent on a non-layered window is a silent no-op at
+        // the OS level — reject up front rather than leave the caller with
+        // a flag that doesn't do anything.
+        if (ignore && (bits & NativeOpacity.WS_EX_LAYERED) == 0)
+            throw new InvalidOperationException(
+                "SetIgnorePointerInput(true) requires the window to be layered. " +
+                "Call SetOpacity with a value < 1.0 first.");
+
+        long updated = ignore
+            ? bits | NativeOpacity.WS_EX_TRANSPARENT
+            : bits & ~NativeOpacity.WS_EX_TRANSPARENT;
+        if (updated != bits)
+            _ = NativeOpacity.SetWindowLongPtr(_hwnd, NativeOpacity.GWL_EXSTYLE, (nint)updated);
+        var prev = Volatile.Read(ref _spec);
+        if (prev.IgnorePointerInput != ignore)
+            Volatile.Write(ref _spec, prev with { IgnorePointerInput = ignore });
+    }
+
+    private static class NativeOpacity
+    {
+        public const int GWL_EXSTYLE = -20;
+        public const long WS_EX_LAYERED = 0x00080000;
+        public const long WS_EX_NOACTIVATE = 0x08000000;
+        public const long WS_EX_TRANSPARENT = 0x00000020;
+        public const uint LWA_ALPHA = 0x00000002;
+
+        [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW", SetLastError = true)]
+        public static extern nint GetWindowLongPtr(nint hWnd, int nIndex);
+
+        [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW", SetLastError = true)]
+        public static extern nint SetWindowLongPtr(nint hWnd, int nIndex, nint dwNewLong);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool SetLayeredWindowAttributes(nint hwnd, uint crKey, byte bAlpha, uint dwFlags);
     }
 
     /// <summary>Center on the window's current monitor. UI-thread only.</summary>
