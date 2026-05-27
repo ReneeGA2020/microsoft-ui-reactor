@@ -449,11 +449,317 @@ shrink lands after V1 ships ON by default.
       `MaxDate` / format props on subsequent renders; the descriptor's
       `OneWayConditional` entries do (positive divergence — element
       changes flow through).
-- [ ] Batch 3 — `NumberBox` (needs Immediate-mode keystroke handling +
-      `NumberFormatter` reference-equality semantics that the descriptor
-      builders don't yet express — likely needs a new entry shape or a
-      `HandCoded*` path). Remaining value-bearing leaves
-      (`PersonPicture`, etc.) to follow.
+- [x] **Batch 3** — `TextBlock`, `Image`, `PersonPicture`, `ProgressBar`,
+      `ProgressRing`, `InfoBadge`. All `.OneWay` / `.OneWayConditional`
+      zero-event ports under the Display family. Fixtures:
+      `Desc_TextBlock_MountUpdate`, `Desc_Image_MountUpdate`,
+      `Desc_PersonPicture_MountUpdate`, `Desc_ProgressBar_MountUpdate`,
+      `Desc_ProgressRing_MountUpdate`, `Desc_InfoBadge_MountUpdate` —
+      all pass under V1 ON and V1 OFF.
+      **Known gaps:**
+      - `RichTextBlock` was *not* ported — its
+        `MountRichTextBlock`/`UpdateRichTextBlock` arms build a stateful
+        `Paragraphs/Inlines` tree and the `Update` path does incremental
+        per-paragraph inline diffing that doesn't fit a `.OneWay` lambda
+        without regressing the fast paths. Escape-hatched; legacy arm
+        continues to serve V1 OFF authors and V1 ON falls through.
+      - `ImageDescriptor` does not subscribe to `ImageOpened` /
+        `ImageFailed` (Batch 3 is zero-event only). The legacy arm
+        continues to fire `OnImageOpened` / `OnImageFailed` callbacks;
+        descriptor authors who need image-load events fall through.
+      - `InfoBadgeDescriptor` does not write `Icon` (the legacy arm
+        doesn't either — mirrored gap, not regressed).
+- [x] **Batch 4** — `Button`, `HyperlinkButton`, `RepeatButton`,
+      `ToggleButton`, `DropDownButton`, `SplitButton`. Button-family
+      ports: `.HandCodedEvent<...EventPayload, RoutedEventHandler>` for
+      Click + `.OneWay` props. ToggleButton's Click handler fires both
+      `OnIsCheckedChanged` and `OnCheckedStateChanged` via the same
+      trampoline (mirrors legacy). Four new payload types added to
+      ControlEventPayloads.cs (`HyperlinkButtonEventPayload`,
+      `RepeatButtonEventPayload`, `ToggleButtonEventPayload`,
+      `SplitButtonEventPayload`); existing `ButtonEventPayload` reused
+      for `ButtonDescriptor`. `SplitButtonEventPayload.ClickTrampoline`
+      uses `TypedEventHandler<SplitButton, SplitButtonClickEventArgs>`
+      (SplitButton's Click signature is typed, not RoutedEventHandler).
+      Fixtures: `Desc_Button_MountUpdate`, `Desc_HyperlinkButton_MountUpdate`,
+      `Desc_RepeatButton_MountUpdate`, `Desc_ToggleButton_MountUpdate`,
+      `Desc_DropDownButton_MountUpdate`, `Desc_SplitButton_MountUpdate` —
+      all pass under V1 ON and V1 OFF.
+      **Known gaps:**
+      - `Flyout` on `DropDownButton` / `SplitButton` is escape-hatched
+        (requires `CreateFlyoutFromElement` engine-internal helper, not
+        expressible via the descriptor builders this session). Authors
+        needing a Flyout fall through to the legacy arm (V1 OFF) or wire
+        via setters chain.
+      - `ButtonElement.ContentElement` (Button hosting a child Element
+        rather than a string label) not expressed by `ButtonDescriptor` —
+        descriptor handles the string-Content fast path only; nested
+        element content falls through to the legacy arm.
+- [x] **Batch 5** — `RichEditBox`, `PasswordBox`, `RadioButtons` (plural
+      group control; the singular `RadioButton` was Batch 1). Value-bearing
+      input ports: `.HandCodedControlled<...EventPayload, TValue, TDelegate>`
+      for the controlled DP + change event. Three new payload types added
+      to ControlEventPayloads.cs (`RichEditBoxEventPayload`,
+      `PasswordBoxEventPayload`, `RadioButtonsEventPayload`).
+      PasswordBox trampoline keeps the manual
+      `ChangeEchoSuppressor.ShouldSuppress` gate (mirrors legacy) so even
+      author-driven suppressor tokens (e.g. from a future coercing setter)
+      still gate the user-vs-engine echo on top of HandCodedControlled's
+      WriteSuppressed wrap.
+      Fixtures: `Desc_RichEditBox_MountUpdate`, `Desc_PasswordBox_MountUpdate`,
+      `Desc_RadioButtons_MountUpdate` — all pass under V1 ON and V1 OFF.
+      **Known gaps:**
+      - `RichEditBoxDescriptor.Text` write is gated on
+        `!IsNullOrEmpty` (mirrors the legacy mount guard) — programmatic
+        clears via `Text=""` on Update are NOT propagated; authors who
+        need a fully-controlled empty document stay on the legacy arm.
+        No symmetric snap-back, same pattern as `TextBoxDescriptor`.
+      - `RadioButtonsDescriptor.Items` uses Clear+Add when the new array
+        differs by sequence — no keyed reconciliation. Suitable for the
+        typical 3–7 fixed-option case; large dynamic item lists fall
+        through to the legacy arm.
+      - `RadioButtonsElement` only carries a `string[]`; Element-typed
+        items (icon-rich radios) are not in scope this batch.
+- [x] **Batch 6** — `AutoSuggestBox`, `ComboBox`. First multi-event
+      descriptor ports — each mixes one `.HandCodedControlled` round-trip
+      with two `.HandCodedEvent` fire-only subscriptions over a shared
+      per-control payload. Two new payload types added to
+      ControlEventPayloads.cs (`AutoSuggestBoxEventPayload`,
+      `ComboBoxEventPayload`), each with three trampoline slots.
+      `AutoSuggestBoxDescriptor.Text` trampoline filters on
+      `args.Reason == UserInput` (mirrors legacy) on top of the
+      `ChangeEchoSuppressor` gate from `HandCodedControlled`'s
+      `WriteSuppressed` wrap. `ComboBox.SelectedIndex` is gated by the
+      same suppressor pattern. Fixtures:
+      `Desc_AutoSuggestBox_MountUpdate`, `Desc_ComboBox_MountUpdate` —
+      both pass under V1 ON and V1 OFF.
+      **Known gaps:**
+      - `ComboBoxDescriptor.Items` is escape-hatched. ComboBox's items
+        collection requires the legacy mode-switch logic (string[] vs
+        Element[] keyed reconciliation against `requestRerender`), none
+        of which the descriptor builders can yet express. Authors who
+        need ComboBox items must run V1 OFF (legacy arm handles Items)
+        or populate `cb.Items` via a `.Set` setter (imperative escape).
+        The Batch 6 fixture exercises the setter route to prove
+        SelectedIndex coordinates with a populated list.
+      - `AutoSuggestBoxDescriptor.QueryIcon` is re-resolved each pass
+        when present (legacy arm gates on
+        `!ReferenceEquals(o.QueryIcon, n.QueryIcon)` — descriptor's
+        OneWay path can't see the previous element ref). Same visual
+        result, slightly more work per pass when QueryIcon is set.
+      - `AutoSuggestBoxDescriptor.Suggestions` transition to empty
+        does not clear the previous `ItemsSource` (mirrors the legacy
+        mount guard's `Length > 0` gate).
+      - `ComboBoxElement.IsDropDownOpen` is not exposed on the element
+        record itself; descriptor doesn't surface it. (Legacy parity.)
+- [x] **Batch 7** — `Viewbox`, `Expander`, `ScrollViewer`, `ScrollView`.
+      First single-content container ports — all use the
+      `SingleContent<TElement, TControl>` children strategy for the
+      primary child slot. Viewbox is pure data (zero events, two
+      `.OneWayConditional` enum props); Expander adds a
+      `.HandCodedControlled` for `IsExpanded` paired with a
+      `.HandCodedEvent` for `Collapsed` on a new
+      `ExpanderEventPayload` (two `TypedEventHandler` slots, one per
+      direction); ScrollViewer + ScrollView add a single
+      `.HandCodedEvent` for `ViewChanged` on the pre-existing
+      `ScrollViewerEventPayload` / `ScrollViewEventPayload`. One new
+      payload type added to ControlEventPayloads.cs
+      (`ExpanderEventPayload`).
+      Fixtures: `Desc_Viewbox_MountUpdate`, `Desc_Expander_MountUpdate`,
+      `Desc_ScrollViewer_MountUpdate`, `Desc_ScrollView_MountUpdate` —
+      all pass under V1 ON and V1 OFF.
+      **Known gaps:**
+      - `ExpanderDescriptor.HeaderTemplate` (Element-typed header) is
+        not surfaced. Mounting an Element into a non-primary slot
+        requires reconciler context the descriptor builders can't yet
+        express (no NamedSlots for a single Element slot that also
+        coexists with a string fallback). The string `Header` path is
+        fully supported. Authors with Element headers stay on V1 OFF
+        (legacy arm reconciles `HeaderTemplate` via `ReconcileChild`).
+      - `ExpanderDescriptor.ContentTransitions` is not surfaced
+        (same reason — escape-hatched via setter when needed).
+- [x] **Batch 8** — `StackPanel`, `Grid`, `Canvas`, `FlexPanel`,
+      `RelativePanel`. First panel container ports — all zero-event, all
+      use the `Panel<TElement, TControl>` children strategy from
+      `ChildrenStrategy.cs`. Each descriptor wires container-level
+      one-way props through `.OneWay` / `.OneWayConditional`. `Grid` ports
+      the imperative `RowDefinitions` / `ColumnDefinitions` rebuild as a
+      single `.OneWay<GridDefinition>` whose set lambda clears + rebuilds
+      both collections through `Reconciler.ParseRowDef` /
+      `ParseColumnDef`; the comparer is reference-equality so the rebuild
+      only fires when the element's `Definition` instance changes
+      (mirrors the legacy `!ReferenceEquals(o.Definition, n.Definition)`
+      gate). No new payload types.
+      Fixtures: `Desc_StackPanel_MountUpdate`, `Desc_Grid_MountUpdate`,
+      `Desc_Canvas_MountUpdate`, `Desc_FlexPanel_MountUpdate`,
+      `Desc_RelativePanel_MountUpdate` — all pass under V1 ON and V1 OFF.
+      **Known gaps:**
+      - **Per-child attached properties are not applied** on
+        descriptor-mounted children for any panel. The legacy hand-coded
+        path applies `GridAttached` (Row/Column/RowSpan/ColumnSpan),
+        `CanvasAttached` (Left/Top), `FlexAttached` (Grow/Shrink/Basis
+        etc.), `RelativePanelAttached` (the two-pass name-map for
+        RightOf/Below/AlignWithPanel), and `WrapGridAttached` (RowSpan /
+        ColumnSpan) as a post-children-mount step. The Panel strategy in
+        `V1HandlerAdapter` doesn't surface a per-child post-mount hook
+        yet — descriptor-mounted children stack at the panel origin /
+        Row 0 / default Yoga config. Authors who depend on attached
+        positioning stay on V1 OFF (legacy arm). Container-level layout
+        (spacing, orientation, definitions) has full parity.
+      - **`WrapGridElement` (VariableSizedWrapGrid) is escape-hatched** —
+        the legacy element is hand-coded only. WrapGrid's primary use is
+        items-positioned (RowSpan / ColumnSpan per child via
+        `WrapGridAttached`), so without the per-child post-mount hook a
+        descriptor port has no meaningful coverage. Re-evaluate when the
+        Panel strategy grows an attached-props hook.
+- [x] **Batch 9** — `SplitView`, `InfoBar`, `TeachingTip`. First named-slot
+      container ports — all use the
+      `NamedSlots<TElement, TControl>` children strategy. SplitView
+      surfaces two Element slots (Pane + Content) with `GetCurrentChild`
+      for structural reconciliation, plus twin `.HandCodedEvent` entries
+      on `PaneOpening` / `PaneClosing` that dispatch the same
+      `OnPaneOpenChanged(bool)` callback with the corresponding direction
+      (legacy parity — no echo suppression; the WinUI events fire on both
+      user and programmatic transitions, matching the hand-coded arm).
+      InfoBar has a single Content slot plus a `.HandCodedEvent` on
+      `Closed`; TeachingTip has two named slots (Content + HeroContent)
+      plus two `.HandCodedEvent` entries (`ActionButtonClick` and
+      `Closed`). Three new payload types: `SplitViewEventPayload` (two
+      typed slots), `InfoBarEventPayload` (one slot), `TeachingTipEventPayload`
+      (two slots). IconSource on InfoBar / TeachingTip routes through
+      `Reconciler.ResolveIconSource` via `.OneWayConditional` with a
+      private reference-equality comparer (mirrors the legacy
+      `!ReferenceEquals` gate).
+      Fixtures: `Desc_SplitView_MountUpdate`, `Desc_InfoBar_MountUpdate`,
+      `Desc_TeachingTip_MountUpdate` — all pass under V1 ON and V1 OFF.
+      **Known gaps:**
+      - **InfoBar `ActionButtonContent` + `OnActionButtonClick` is
+        escape-hatched.** The legacy arm constructs an inner `Button`
+        dynamically inside the InfoBar's `ActionButton` slot when
+        `ActionButtonContent` is non-null, then wires `Click` on that
+        dynamically-created child. The descriptor framework binds events
+        to the primary control, not to a sub-control created during
+        mount, so this asymmetric pattern doesn't fit. Authors who need
+        the action button stay on V1 OFF (legacy arm), or use a `.Set`
+        imperative setter to construct the button themselves.
+      - **TeachingTip `Target` / `PlacementTarget` is escape-hatched.**
+        `TeachingTip.Target` is a `FrameworkElement` reference pointing
+        at a sibling control the tip is anchored to (not a child the tip
+        mounts). The descriptor framework can't express "reference
+        another element's mounted control"; legacy authors set `Target`
+        directly via a `.Set` imperative setter and the descriptor
+        follows the same escape.
+      - **TeachingTip `HeroContent`** uses the standard NamedSlot
+        reconciliation path, which preserves descendant state across
+        re-renders (the legacy arm re-mounts wholesale on every swap).
+        Strictly an improvement, documented for parity audit visibility.
+- [x] **Batch 10** — `Rectangle`, `Ellipse`, `Line`, `Path`, `AnimatedIcon`.
+      Five zero-event leaves with no children — pure
+      `.OneWay` / `.OneWayConditional`. Shape descriptors live under the
+      `WinShapes = Microsoft.UI.Xaml.Shapes` alias.
+      Fixtures: `Desc_Rectangle_MountUpdate`, `Desc_Ellipse_MountUpdate`,
+      `Desc_Line_MountUpdate`, `Desc_Path_MountUpdate`,
+      `Desc_AnimatedIcon_MountUpdate` — all pass under V1 ON and V1 OFF.
+      **Known gaps:**
+      - **`PathElement.Data` / `PathDataString` is escape-hatched.** The
+        legacy `MountPath` branches across three strategies (XamlReader
+        load of a constructed `<Path Data="…"/>`, pre-built
+        `Geometry` assignment with structured error reporting, and a
+        `PathDataParser.Parse` fallback) and the legacy `UpdatePath` gates
+        the Data write on a string-diff of `PathDataString` (the parser
+        creates fresh COM `PathGeometry` instances per call, so reference
+        equality is never true). None of these compose with a plain
+        `.OneWay` setter — the engine's per-prop comparer can't replicate
+        the string-diff-against-old-element trick. Authors who need
+        `Path.Data` stay on V1 OFF. The descriptor still covers the bulk
+        of the Path styling surface (Fill / Stroke / dash / cap / join /
+        transform), which is the per-render write pressure for D3 charts.
+      - **`PathElement.FillRule` is escape-hatched** — the legacy handler
+        propagates `FillRule` onto the inner `PathGeometry`, but the
+        descriptor doesn't own that `PathGeometry` (Data is escape-hatched
+        above).
+      - **`IconElement` is escape-hatched (not ported).** The legacy
+        `MountIcon` is polymorphic — it dispatches the `IconData` subtype
+        through `ResolveIcon` to construct one of `FontIcon` /
+        `SymbolIcon` / `PathIcon` / `BitmapIcon` (different `IconElement`
+        subtypes). `ControlDescriptor<TElement, TControl>` is single-`TControl`
+        by construction, so a single descriptor can't carry the dispatch.
+        Worse, `UpdateIcon` can swap the entire native control when the
+        `IconData` subtype changes (returning a replacement `UIElement`),
+        a path the descriptor framework's update protocol doesn't
+        currently express. Authors stay on V1 OFF.
+      - **`AnimatedIcon.Source` is shape-checked** in the descriptor's
+        `set` lambda (mirrors legacy behavior — non-`IAnimatedVisualSource2`
+        values silently no-op). The descriptor doesn't expose a typed
+        Source slot because `AnimatedIconElement.Source` is `object?` on
+        the element record.
+      - **Shape mount-time `> 0` gates** — the legacy `Mount*` arms write
+        `StrokeThickness` / `RadiusX` / `RadiusY` only when `> 0`; the
+        legacy `Update*` arms write them unconditionally. The descriptors
+        mirror the update path (plain `.OneWay`), which lines up with
+        every `Update*` write and the element's default zero values; the
+        visible output is the same for callers who never set them. No
+        behavior delta for non-zero callers.
+- [x] **Batch 11** — Long-tail triage: `PipsPager`, `ListBox`,
+      `SelectorBar`, `BreadcrumbBar` ported. `FrameElement` and
+      `CalendarViewElement` deferred (escape-hatched).
+      Fixtures: `Desc_PipsPager_MountUpdate`, `Desc_ListBox_MountUpdate`,
+      `Desc_SelectorBar_MountUpdate`, `Desc_BreadcrumbBar_MountUpdate` —
+      all pass under V1 ON and V1 OFF.
+      **Ported (4):**
+      - **PipsPager** — `SelectedPageIndex` round-trip via
+        `.HandCodedControlled` against the new `PipsPagerEventPayload`;
+        `NumberOfPages` / `WrapMode` / `MaxVisiblePips` /
+        `PreviousButtonVisibility` / `NextButtonVisibility` as
+        `.OneWay`. Trampoline gates on `ChangeEchoSuppressor`.
+      - **ListBox** — `Items` (non-keyed Clear+Add cycle on sequence
+        delta, mirroring `RadioButtonsDescriptor`) + `SelectedIndex`
+        round-trip. The single `SelectionChanged` trampoline fires
+        BOTH `OnSelectedIndexChanged` and the multi-select snapshot
+        `OnSelectionChanged` — matches the legacy arm's twin-invoke
+        shape, including the `IndexOf`-against-Items snapshot
+        reconstruction.
+      - **SelectorBar** — `Items` cycle (Text + Icon per item) +
+        `SelectedIndex` round-trip mapped through `SelectedItem` ref
+        (SelectorBar exposes `SelectedItem`, not `SelectedIndex`, as
+        the live property). Item icon resolution reuses
+        `Reconciler.ResolveIconForDescriptor` via a
+        `SymbolIconData` wrapper.
+      - **BreadcrumbBar** — `Items` → `ItemsSource` (label list) +
+        `ItemClicked` fire-only event. Trampoline maps
+        `args.Index` back to `el.Items[idx]` per the legacy arm.
+      **Escape-hatched (2) — documented gaps:**
+      - **FrameElement** — `Navigate(SourcePageType, NavigationParameter)`
+        is an imperative API call invoked only at Mount time (the
+        legacy `UpdateFrame` is just `SetElementTag` + `ApplySetters`,
+        no re-navigate). The descriptor builders don't distinguish
+        mount-only writes from update writes — a `.OneWay` for
+        `SourcePageType` would re-Navigate on every update pass.
+        The 3 events (`Navigated`, `Navigating`, `NavigationFailed`)
+        could be ported in isolation, but a descriptor that handles
+        only events while losing the Mount-time navigation would be
+        a regression vs. V1 OFF. Authors who need declarative `Frame`
+        stay on V1 OFF; future work is a mount-only entry shape.
+      - **CalendarViewElement** — `SelectedDates` is an
+        `IObservableVector<DateTimeOffset>` collection that the legacy
+        arm mutates element-by-element with per-mutation
+        `ChangeEchoSuppressor.BeginSuppress` tokens
+        (`UpdateCalendarView` → `SyncSelectedDates`: a hash-set diff
+        with one suppress per Add/Remove). The descriptor builders
+        don't express collection diffs with per-element suppression
+        — a single `.OneWay` write to `SelectedDates` would either
+        echo per element or require a custom collection-aware entry
+        shape. Authors who need declarative multi-date selection stay
+        on V1 OFF.
+- [ ] Batch 3-followup — `NumberBox` (needs Immediate-mode keystroke
+      handling + `NumberFormatter` reference-equality semantics that the
+      descriptor builders don't yet express — likely needs a new entry
+      shape or a `HandCoded*` path). `RichTextBlock` (incremental
+      paragraph/inline diffing — needs a child-strategy or new entry
+      shape). `FrameElement` (needs a Mount-only entry shape for
+      imperative `Navigate` calls — see Batch 11). `CalendarViewElement`
+      (needs a collection-diff entry shape with per-element echo
+      suppression — see Batch 11).
 
 **Carry-forward known defects** (from Phase 1):
 

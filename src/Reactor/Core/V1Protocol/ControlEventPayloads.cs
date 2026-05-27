@@ -79,6 +79,197 @@ internal sealed class SliderEventPayload
     public Action<Element, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs>? CurrentValueChanged;
 }
 
+/// <summary>Spec 047 §14 Phase 3 batch 4 — HyperlinkButton Click payload.</summary>
+internal sealed class HyperlinkButtonEventPayload
+{
+    public Microsoft.UI.Xaml.RoutedEventHandler? ClickTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 batch 4 — RepeatButton Click payload.</summary>
+internal sealed class RepeatButtonEventPayload
+{
+    public Microsoft.UI.Xaml.RoutedEventHandler? ClickTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 batch 4 — ToggleButton Click payload.
+/// Click fires both OnIsCheckedChanged (bool) and OnCheckedStateChanged (bool?)
+/// — see <see cref="V1Protocol.Descriptor.Descriptors.ToggleButtonDescriptor"/>.</summary>
+internal sealed class ToggleButtonEventPayload
+{
+    public Microsoft.UI.Xaml.RoutedEventHandler? ClickTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 batch 4 — SplitButton Click payload.
+/// SplitButton's Click event is a <c>TypedEventHandler&lt;SplitButton,
+/// SplitButtonClickEventArgs&gt;</c>, not a plain RoutedEventHandler.</summary>
+internal sealed class SplitButtonEventPayload
+{
+    public global::Windows.Foundation.TypedEventHandler<Microsoft.UI.Xaml.Controls.SplitButton, Microsoft.UI.Xaml.Controls.SplitButtonClickEventArgs>? ClickTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 batch 5 — RichEditBox TextChanged payload.
+/// Round-trips <c>Document.GetText</c> into <c>OnTextChanged(string)</c>.
+/// RichEditBox's <c>TextChanged</c> uses <see cref="Microsoft.UI.Xaml.RoutedEventHandler"/>
+/// (unlike the plain TextBox's typed <c>TextChangedEventHandler</c>).</summary>
+internal sealed class RichEditBoxEventPayload
+{
+    public Microsoft.UI.Xaml.RoutedEventHandler? TextChangedTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 batch 5 — PasswordBox PasswordChanged payload.
+/// Round-trips <c>Password</c> into <c>OnPasswordChanged(string)</c> with
+/// the manual <c>ChangeEchoSuppressor.ShouldSuppress</c> gate that the
+/// hand-coded mount/update arms use.</summary>
+internal sealed class PasswordBoxEventPayload
+{
+    public Microsoft.UI.Xaml.RoutedEventHandler? PasswordChangedTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 batch 5 — RadioButtons SelectionChanged
+/// payload. Round-trips <c>SelectedIndex</c> into
+/// <c>OnSelectedIndexChanged(int)</c>.</summary>
+internal sealed class RadioButtonsEventPayload
+{
+    public Microsoft.UI.Xaml.Controls.SelectionChangedEventHandler? SelectionChangedTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 batch 6 — AutoSuggestBox multi-event
+/// payload. Three slots: <c>Text</c> round-trip (filtered to
+/// <c>UserInput</c>), <c>QuerySubmitted</c> fire-only, and
+/// <c>SuggestionChosen</c> fire-only. Each event uses its native
+/// <see cref="global::Windows.Foundation.TypedEventHandler{TSender,TArgs}"/>
+/// because <see cref="Microsoft.UI.Xaml.Controls.AutoSuggestBox"/> emits
+/// typed args (<c>AutoSuggestBoxTextChangedEventArgs</c> etc.) we need to
+/// inspect inside the trampolines (the TextChanged trampoline gates on
+/// <c>args.Reason == UserInput</c>).</summary>
+internal sealed class AutoSuggestBoxEventPayload
+{
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.AutoSuggestBox,
+        Microsoft.UI.Xaml.Controls.AutoSuggestBoxTextChangedEventArgs>? TextChangedTrampoline;
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.AutoSuggestBox,
+        Microsoft.UI.Xaml.Controls.AutoSuggestBoxQuerySubmittedEventArgs>? QuerySubmittedTrampoline;
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.AutoSuggestBox,
+        Microsoft.UI.Xaml.Controls.AutoSuggestBoxSuggestionChosenEventArgs>? SuggestionChosenTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 batch 6 — ComboBox multi-event payload.
+/// Three slots: <c>SelectedIndex</c> round-trip via SelectionChanged,
+/// <c>DropDownOpened</c> fire-only, <c>DropDownClosed</c> fire-only.
+/// The Items collection is escape-hatched (not surfaced by the
+/// descriptor); the legacy arm continues to handle Items reconciliation
+/// for authors who need it.</summary>
+internal sealed class ComboBoxEventPayload
+{
+    public Microsoft.UI.Xaml.Controls.SelectionChangedEventHandler? SelectionChangedTrampoline;
+    public global::System.EventHandler<object>? DropDownOpenedTrampoline;
+    public global::System.EventHandler<object>? DropDownClosedTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 batch 7 — Expander IsExpanded round-trip
+/// payload. Two trampoline slots because the legacy arm wires both
+/// <c>Expanding</c> (fires on transition to expanded) and <c>Collapsed</c>
+/// (fires on transition to collapsed). The descriptor uses
+/// <c>HandCodedControlled</c> for Expanding (the DP round-trip with
+/// <c>OnIsExpandedChanged(true)</c>) and <c>HandCodedEvent</c> for
+/// Collapsed (fire-only with <c>OnIsExpandedChanged(false)</c>) — both
+/// fire the same element callback with the corresponding bool.</summary>
+internal sealed class ExpanderEventPayload
+{
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.Expander,
+        Microsoft.UI.Xaml.Controls.ExpanderExpandingEventArgs>? ExpandingTrampoline;
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.Expander,
+        Microsoft.UI.Xaml.Controls.ExpanderCollapsedEventArgs>? CollapsedTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 batch 9 — SplitView named-slot container
+/// payload. <c>IsPaneOpen</c> is a plain <c>.OneWay</c> write (mirrors the
+/// legacy arm — programmatic writes fire the same events as user toggles).
+/// <c>PaneOpening</c> and <c>PaneClosing</c> are fire-only
+/// <c>.HandCodedEvent</c> trampolines; both invoke
+/// <c>OnPaneOpenChanged</c> with the corresponding bool.</summary>
+internal sealed class SplitViewEventPayload
+{
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.SplitView,
+        object>? PaneOpeningTrampoline;
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.SplitView,
+        Microsoft.UI.Xaml.Controls.SplitViewPaneClosingEventArgs>? PaneClosingTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 batch 9 — InfoBar named-slot container
+/// payload. <c>IsOpen</c> is a plain <c>.OneWay</c> write (mirrors the
+/// legacy arm). <c>Closed</c> is a fire-only <c>.HandCodedEvent</c>
+/// trampoline that invokes <c>OnClosed</c> when the user dismisses the
+/// InfoBar.</summary>
+internal sealed class InfoBarEventPayload
+{
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.InfoBar,
+        Microsoft.UI.Xaml.Controls.InfoBarClosedEventArgs>? ClosedTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 batch 9 — TeachingTip named-slot container
+/// payload. <c>IsOpen</c> is a plain <c>.OneWay</c> write (mirrors the
+/// legacy arm). <c>Closed</c> and <c>ActionButtonClick</c> are fire-only
+/// <c>.HandCodedEvent</c> trampolines.</summary>
+internal sealed class TeachingTipEventPayload
+{
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.TeachingTip,
+        Microsoft.UI.Xaml.Controls.TeachingTipClosedEventArgs>? ClosedTrampoline;
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.TeachingTip,
+        object>? ActionButtonClickTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 batch 11 — PipsPager SelectedPageIndex
+/// round-trip payload. Single slot: <c>SelectedIndexChanged</c> is the only
+/// event we surface; the descriptor uses <see cref="ChangeEchoSuppressor"/>
+/// to drain the programmatic write.</summary>
+internal sealed class PipsPagerEventPayload
+{
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.PipsPager,
+        Microsoft.UI.Xaml.Controls.PipsPagerSelectedIndexChangedEventArgs>? SelectedIndexChangedTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 batch 11 — ListBox SelectedIndex round-trip
+/// payload. The single <c>SelectionChanged</c> trampoline fires BOTH the
+/// element's <c>OnSelectedIndexChanged</c> and (if present) the
+/// <c>OnSelectionChanged</c> snapshot callback — mirrors the legacy
+/// <c>MountListBox</c> arm's twin-invoke shape.</summary>
+internal sealed class ListBoxEventPayload
+{
+    public Microsoft.UI.Xaml.Controls.SelectionChangedEventHandler? SelectionChangedTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 batch 11 — SelectorBar SelectedIndex
+/// round-trip payload. <c>SelectionChanged</c> trampoline reads the live
+/// SelectedItem reference and converts back to the index via
+/// <c>Items.IndexOf</c> to feed <c>OnSelectedIndexChanged</c>.</summary>
+internal sealed class SelectorBarEventPayload
+{
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.SelectorBar,
+        Microsoft.UI.Xaml.Controls.SelectorBarSelectionChangedEventArgs>? SelectionChangedTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 batch 11 — BreadcrumbBar ItemClicked
+/// fire-only payload. Trampoline maps <c>args.Index</c> back to the live
+/// element's <c>Items[idx]</c> data — mirrors the legacy arm.</summary>
+internal sealed class BreadcrumbBarEventPayload
+{
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.BreadcrumbBar,
+        Microsoft.UI.Xaml.Controls.BreadcrumbBarItemClickedEventArgs>? ItemClickedTrampoline;
+}
+
 /// <summary>
 /// Spec 047 §9.2 — open-ended anchor for delegates registered via
 /// <see cref="ReactorBinding{TElement}.OnCustomEvent{TArgs}"/>. Holds a

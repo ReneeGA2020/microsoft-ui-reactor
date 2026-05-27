@@ -1119,6 +1119,53 @@ internal static class SelfTestFixtureRegistry
         "Desc_CalendarDatePicker_MountUpdate",
         "Desc_DatePicker_MountUpdate",
         "Desc_TimePicker_MountUpdate",
+        // Spec 047 §14 Phase 3 (batch 3) — Display family zero-event ports.
+        "Desc_TextBlock_MountUpdate",
+        "Desc_Image_MountUpdate",
+        "Desc_PersonPicture_MountUpdate",
+        "Desc_ProgressBar_MountUpdate",
+        "Desc_ProgressRing_MountUpdate",
+        "Desc_InfoBadge_MountUpdate",
+        // Spec 047 §14 Phase 3 (batch 4) — Button family ports.
+        "Desc_Button_MountUpdate",
+        "Desc_HyperlinkButton_MountUpdate",
+        "Desc_RepeatButton_MountUpdate",
+        "Desc_ToggleButton_MountUpdate",
+        "Desc_DropDownButton_MountUpdate",
+        "Desc_SplitButton_MountUpdate",
+        // Spec 047 §14 Phase 3 (batch 5) — Value-bearing input ports.
+        "Desc_RichEditBox_MountUpdate",
+        "Desc_PasswordBox_MountUpdate",
+        "Desc_RadioButtons_MountUpdate",
+        // Spec 047 §14 Phase 3 (batch 6) — Multi-event input ports.
+        "Desc_AutoSuggestBox_MountUpdate",
+        "Desc_ComboBox_MountUpdate",
+        // Spec 047 §14 Phase 3 (batch 7) — Single-content container ports.
+        "Desc_Viewbox_MountUpdate",
+        "Desc_Expander_MountUpdate",
+        "Desc_ScrollViewer_MountUpdate",
+        "Desc_ScrollView_MountUpdate",
+        // Spec 047 §14 Phase 3 (batch 8) — Panel container ports.
+        "Desc_StackPanel_MountUpdate",
+        "Desc_Grid_MountUpdate",
+        "Desc_Canvas_MountUpdate",
+        "Desc_FlexPanel_MountUpdate",
+        "Desc_RelativePanel_MountUpdate",
+        // Spec 047 §14 Phase 3 (batch 9) — Named-slot container ports.
+        "Desc_SplitView_MountUpdate",
+        "Desc_InfoBar_MountUpdate",
+        "Desc_TeachingTip_MountUpdate",
+        // Spec 047 §14 Phase 3 (batch 10) — Shape + display-leaf ports.
+        "Desc_Rectangle_MountUpdate",
+        "Desc_Ellipse_MountUpdate",
+        "Desc_Line_MountUpdate",
+        "Desc_Path_MountUpdate",
+        "Desc_AnimatedIcon_MountUpdate",
+        // Spec 047 §14 Phase 3 (batch 11) — Long-tail ports.
+        "Desc_PipsPager_MountUpdate",
+        "Desc_ListBox_MountUpdate",
+        "Desc_SelectorBar_MountUpdate",
+        "Desc_BreadcrumbBar_MountUpdate",
 
         // Spec 047 §14 Phase 1 (1.16) — external-assembly proof fixtures.
         // The MarqueeHandler is authored in tests/external_proof/
@@ -2214,6 +2261,51 @@ internal static class SelfTestFixtureRegistry
         "Desc_CalendarDatePicker_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescCalendarDatePickerMountUpdate(harness),
         "Desc_DatePicker_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescDatePickerMountUpdate(harness),
         "Desc_TimePicker_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescTimePickerMountUpdate(harness),
+        // Spec 047 §14 Phase 3 (batch 3) — Display family zero-event ports.
+        "Desc_TextBlock_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescTextBlockMountUpdate(harness),
+        "Desc_Image_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescImageMountUpdate(harness),
+        "Desc_PersonPicture_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescPersonPictureMountUpdate(harness),
+        "Desc_ProgressBar_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescProgressBarMountUpdate(harness),
+        "Desc_ProgressRing_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescProgressRingMountUpdate(harness),
+        "Desc_InfoBadge_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescInfoBadgeMountUpdate(harness),
+        // Spec 047 §14 Phase 3 (batch 4) — Button family ports.
+        "Desc_Button_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescButtonMountUpdate(harness),
+        "Desc_HyperlinkButton_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescHyperlinkButtonMountUpdate(harness),
+        "Desc_RepeatButton_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescRepeatButtonMountUpdate(harness),
+        "Desc_ToggleButton_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescToggleButtonMountUpdate(harness),
+        "Desc_DropDownButton_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescDropDownButtonMountUpdate(harness),
+        "Desc_SplitButton_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescSplitButtonMountUpdate(harness),
+        "Desc_RichEditBox_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescRichEditBoxMountUpdate(harness),
+        "Desc_PasswordBox_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescPasswordBoxMountUpdate(harness),
+        "Desc_RadioButtons_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescRadioButtonsMountUpdate(harness),
+        "Desc_AutoSuggestBox_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescAutoSuggestBoxMountUpdate(harness),
+        "Desc_ComboBox_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescComboBoxMountUpdate(harness),
+        // Spec 047 §14 Phase 3 (batch 7) — Single-content container ports.
+        "Desc_Viewbox_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescViewboxMountUpdate(harness),
+        "Desc_Expander_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescExpanderMountUpdate(harness),
+        "Desc_ScrollViewer_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescScrollViewerMountUpdate(harness),
+        "Desc_ScrollView_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescScrollViewMountUpdate(harness),
+        // Spec 047 §14 Phase 3 (batch 8) — Panel container ports.
+        "Desc_StackPanel_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescStackPanelMountUpdate(harness),
+        "Desc_Grid_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescGridMountUpdate(harness),
+        "Desc_Canvas_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescCanvasMountUpdate(harness),
+        "Desc_FlexPanel_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescFlexPanelMountUpdate(harness),
+        "Desc_RelativePanel_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescRelativePanelMountUpdate(harness),
+        // Spec 047 §14 Phase 3 (batch 9) — Named-slot container ports.
+        "Desc_SplitView_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescSplitViewMountUpdate(harness),
+        "Desc_InfoBar_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescInfoBarMountUpdate(harness),
+        "Desc_TeachingTip_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescTeachingTipMountUpdate(harness),
+        // Spec 047 §14 Phase 3 (batch 10) — Shape + display-leaf ports.
+        "Desc_Rectangle_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescRectangleMountUpdate(harness),
+        "Desc_Ellipse_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescEllipseMountUpdate(harness),
+        "Desc_Line_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescLineMountUpdate(harness),
+        "Desc_Path_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescPathMountUpdate(harness),
+        "Desc_AnimatedIcon_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescAnimatedIconMountUpdate(harness),
+        // Spec 047 §14 Phase 3 (batch 11) — Long-tail ports.
+        "Desc_PipsPager_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescPipsPagerMountUpdate(harness),
+        "Desc_ListBox_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescListBoxMountUpdate(harness),
+        "Desc_SelectorBar_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescSelectorBarMountUpdate(harness),
+        "Desc_BreadcrumbBar_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescBreadcrumbBarMountUpdate(harness),
 
         // Spec 047 §14 Phase 1 (1.16) — external-assembly proof fixtures.
         "Spec047ExternalProof_Marquee_MountUpdate" => new Spec047ExternalProofFixtures.MarqueeMountUpdate(harness),
