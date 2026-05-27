@@ -22,20 +22,44 @@
 .PARAMETER Configuration
     Build configuration for the CLI nupkg. Default: Release.
 
+.PARAMETER InstallWinAppSdk
+    Install the Windows App Runtime 2.0 via winget without prompting.
+    Useful for CI / one-shot dev-box automation. Mutually exclusive with
+    -NoWinAppSdk. The framework defaults to self-contained, so the
+    runtime is only required for framework-dependent deployment.
+
+.PARAMETER NoWinAppSdk
+    Skip the Windows App Runtime 2.0 prompt silently. Useful for
+    non-interactive scripts that explicitly don't want the runtime
+    installed. Mutually exclusive with -InstallWinAppSdk.
+
 .EXAMPLE
     ./bootstrap.ps1
-    Full bootstrap.
+    Full bootstrap (prompts before installing WindowsAppRuntime).
 
 .EXAMPLE
     ./bootstrap.ps1 -SkipPlugin
     Skip the Claude plugin step.
+
+.EXAMPLE
+    ./bootstrap.ps1 -InstallWinAppSdk -SkipPlugin
+    Non-interactive: install everything (incl. WindowsAppRuntime) and
+    skip the agent plugin. Suitable for CI / fresh-dev-box automation.
 #>
 [CmdletBinding()]
 param(
     [switch]$SkipPlugin,
     [switch]$SkipMurInstall,
-    [string]$Configuration = 'Release'
+    [string]$Configuration = 'Release',
+    [switch]$InstallWinAppSdk,
+    [switch]$NoWinAppSdk
 )
+
+if ($InstallWinAppSdk -and $NoWinAppSdk) {
+    Write-Host ''
+    Write-Host "ERROR: -InstallWinAppSdk and -NoWinAppSdk are mutually exclusive." -ForegroundColor Red
+    exit 1
+}
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = $PSScriptRoot
@@ -56,32 +80,108 @@ function Fail($msg) {
     exit 1
 }
 
+# Install a winget package and refresh $env:Path so the freshly-installed tool
+# is resolvable in this same shell. Hard-fails if winget itself is missing —
+# that's an OS-level prerequisite this script doesn't try to repair.
+function Install-WithWinget {
+    param(
+        [Parameter(Mandatory)][string]$Id,
+        [string]$Reason = $Id
+    )
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        Fail "Need to install '$Reason' but winget is not on PATH. Install App Installer from the Microsoft Store, then re-run ./bootstrap.ps1."
+    }
+    Write-Host "    Installing $Reason via winget ($Id)..." -ForegroundColor Yellow
+    & winget install --id $Id --accept-source-agreements --accept-package-agreements --silent --disable-interactivity
+    if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne -1978335189) {
+        # -1978335189 = APPINSTALLER_CLI_ERROR_UPDATE_NOT_APPLICABLE (already installed / up-to-date)
+        Fail "winget install $Id failed (exit $LASTEXITCODE). Install $Reason manually and re-run ./bootstrap.ps1."
+    }
+    # winget edits the Machine + User PATH but the current process keeps its
+    # original. Rebuild $env:Path from the registry so subsequent commands in
+    # this script can find the freshly-installed binaries.
+    $env:Path = (
+        [Environment]::GetEnvironmentVariable('Path', 'Machine'),
+        [Environment]::GetEnvironmentVariable('Path', 'User')
+    ) -join ';'
+}
+
 # ---------------------------------------------------------------------------
 # 1. Pre-flight
 # ---------------------------------------------------------------------------
 Write-Step 'Pre-flight checks'
 
-$dotnetCmd = Get-Command dotnet -ErrorAction SilentlyContinue
-if (-not $dotnetCmd) {
-    winget install Microsoft.DotNet.SDK.10
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+function Test-DotnetSdk10 {
+    if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) { return $false }
+    foreach ($line in (& dotnet --list-sdks)) {
+        if ($line -match '^(\d+)\.' -and [int]$Matches[1] -ge 10) { return $true }
+    }
+    return $false
 }
-$sdkOutput = & dotnet --list-sdks
-$has10OrLater = $false
-foreach ($line in $sdkOutput) {
-    if ($line -match '^(\d+)\.') {
-        if ([int]$Matches[1] -ge 10) { $has10OrLater = $true; break }
+
+if (-not (Test-DotnetSdk10)) {
+    if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+        Write-Host "    [info] dotnet not found on PATH." -ForegroundColor Yellow
+    } else {
+        Write-Host "    [info] dotnet present but no .NET 10+ SDK detected. Installed:" -ForegroundColor Yellow
+        & dotnet --list-sdks | ForEach-Object { Write-Host "          $_" -ForegroundColor Yellow }
+    }
+    Install-WithWinget -Id 'Microsoft.DotNet.SDK.10' -Reason '.NET 10 SDK'
+    if (-not (Test-DotnetSdk10)) {
+        Fail '.NET 10 SDK install reported success but `dotnet --list-sdks` still does not show a 10.x entry. Open a new shell and re-run ./bootstrap.ps1.'
     }
 }
-if (-not $has10OrLater) {
-    Fail @"
-.NET 10+ SDK not detected — Reactor requires 10 or later.
-Installed SDKs:
-$($sdkOutput -join "`n")
-Install the latest .NET SDK from https://dotnet.microsoft.com/download and re-run ./bootstrap.ps1.
-"@
-}
 Write-Ok ".NET SDK present"
+
+# Windows App SDK runtime — optional but recommended.
+#
+# The framework defaults to WindowsAppSDKSelfContained=true (see
+# Directory.Build.props), so builds and scaffolded apps work *without* the
+# machine-wide runtime — every app's bin/ output ships its own copy of WAS
+# native binaries from NuGet restore.
+#
+# But many devs prefer framework-dependent deployment: smaller per-app
+# output, faster incremental builds, and the runtime installed once on the
+# machine. For that path the user needs the WindowsAppRuntime 2.0 install
+# matching our WindowsAppSDKVersion=2.0.1.
+#
+# So we prompt by default. `-InstallWinAppSdk` to force-install,
+# `-InstallWinAppSdk:$false` to skip the prompt non-interactively.
+
+function Test-WindowsAppRuntime20 {
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) { return $true }  # nothing we can check without winget
+    # --accept-source-agreements is needed even for `list` on a winget that
+    # hasn't been used before (e.g. a fresh CI runner). Without it, winget
+    # prompts for msstore terms and fails on a non-interactive shell with
+    # exit -1978335166.
+    & winget list --id Microsoft.WindowsAppRuntime.2.0 --exact --accept-source-agreements 2>$null | Out-Null
+    $rc = $LASTEXITCODE
+    $global:LASTEXITCODE = 0  # don't let winget's status leak out of the probe
+    return ($rc -eq 0)
+}
+
+if (-not (Test-WindowsAppRuntime20)) {
+    if ($InstallWinAppSdk) {
+        Install-WithWinget -Id 'Microsoft.WindowsAppRuntime.2.0' -Reason 'Windows App Runtime 2.0'
+    } elseif ($NoWinAppSdk) {
+        Write-Host '    [skip] Windows App Runtime 2.0 not installed (skipped per -NoWinAppSdk).' -ForegroundColor Yellow
+    } else {
+        Write-Host ''
+        Write-Host '    Windows App Runtime 2.0 is not installed on this machine.' -ForegroundColor Yellow
+        Write-Host '    Reactor builds default to WindowsAppSDKSelfContained=true, so this is optional —'
+        Write-Host '    your apps will work either way. Installing it enables framework-dependent'
+        Write-Host '    deployment (smaller per-app output, faster builds) when you override'
+        Write-Host '    WindowsAppSDKSelfContained=false in a consuming project.'
+        $answer = Read-Host '    Install Windows App Runtime 2.0 via winget now? [y/N]'
+        if ($answer -match '^[Yy]') {
+            Install-WithWinget -Id 'Microsoft.WindowsAppRuntime.2.0' -Reason 'Windows App Runtime 2.0'
+        } else {
+            Write-Host "    Skipped. Re-run later with: winget install Microsoft.WindowsAppRuntime.2.0" -ForegroundColor Cyan
+        }
+    }
+} else {
+    Write-Ok 'Windows App Runtime 2.0 installed'
+}
 
 # ---------------------------------------------------------------------------
 # 2. Pack `mur` as a global-tool nupkg
