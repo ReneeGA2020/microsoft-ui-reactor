@@ -4,12 +4,14 @@ using Microsoft.UI.Reactor.Core;
 using Microsoft.UI.Reactor.Core.V1Protocol;
 using Microsoft.UI.Reactor.Core.V1Protocol.Descriptor;
 using Microsoft.UI.Reactor.Core.V1Protocol.Descriptor.Descriptors;
+using Microsoft.UI.Reactor.Hosting;
 using Microsoft.UI.Reactor.AppTests.Host.SelfTest;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Windows.UI;
 using WinUI = Microsoft.UI.Xaml.Controls;
+using ReactorIconElement = Microsoft.UI.Reactor.Core.IconElement;
 using static Microsoft.UI.Reactor.Factories;
 
 namespace Microsoft.UI.Reactor.AppTests.Host.SelfTest.Fixtures;
@@ -3521,6 +3523,134 @@ internal static class Spec047V1ProtocolDescriptorFixtures
     }
 
     // ────────────────────────────────────────────────────────────────────
+    //  SemanticDescriptor — accessibility wrapper with reconciled child.
+    // ────────────────────────────────────────────────────────────────────
+
+    internal class DescSemanticMountUpdate(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterHandler<SemanticElement, Microsoft.UI.Reactor.Accessibility.SemanticPanel>(
+                new DescriptorHandler<SemanticElement, Microsoft.UI.Reactor.Accessibility.SemanticPanel>(
+                    SemanticDescriptor.Descriptor));
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            var el1 = new SemanticElement(
+                TextBlock("score:3"),
+                new SemanticDescription(
+                    Role: "slider",
+                    Value: "3 of 5",
+                    RangeMin: 0,
+                    RangeMax: 5,
+                    RangeValue: 3,
+                    IsReadOnly: false));
+
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is Microsoft.UI.Reactor.Accessibility.SemanticPanel panel)
+            {
+                parent.Children.Add(panel);
+                await Harness.Render();
+
+                H.Check("Desc_Semantic_Mounted", true);
+                H.Check("Desc_Semantic_Role", panel.SemanticRole == "slider");
+                H.Check("Desc_Semantic_Value", panel.SemanticValue == "3 of 5");
+                H.Check("Desc_Semantic_Range", panel.RangeMinimum == 0 && panel.RangeMaximum == 5 && panel.RangeValue == 3);
+                H.Check("Desc_Semantic_IsReadOnly", panel.IsReadOnly == false);
+                H.Check("Desc_Semantic_ChildMounted",
+                    panel.Children.Count == 1 && panel.Children[0] is WinUI.TextBlock { Text: "score:3" });
+
+                var el2 = new SemanticElement(
+                    TextBlock("score:4"),
+                    new SemanticDescription(
+                        Role: "slider",
+                        Value: "4 of 5",
+                        RangeMin: 0,
+                        RangeMax: 5,
+                        RangeValue: 4,
+                        IsReadOnly: true));
+                var oldChild = panel.Children[0];
+                rec.UpdateChild(el1, el2, panel, _noOp);
+                await Harness.Render();
+
+                H.Check("Desc_Semantic_UpdatedValue", panel.SemanticValue == "4 of 5");
+                H.Check("Desc_Semantic_UpdatedRange", panel.RangeValue == 4);
+                H.Check("Desc_Semantic_UpdatedReadOnly", panel.IsReadOnly == true);
+                H.Check("Desc_Semantic_ChildReconciled",
+                    panel.Children.Count == 1
+                    && ReferenceEquals(panel.Children[0], oldChild)
+                    && panel.Children[0] is WinUI.TextBlock { Text: "score:4" });
+
+                rec.UnmountChild(panel);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_Semantic_Mounted", false);
+            }
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────────────
+    //  AnnounceRegionDescriptor — hidden UIA live-region anchor.
+    // ────────────────────────────────────────────────────────────────────
+
+    internal class DescAnnounceRegionMountUpdate(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterHandler<Microsoft.UI.Reactor.Hooks.AnnounceRegionElement, WinUI.TextBlock>(
+                new DescriptorHandler<Microsoft.UI.Reactor.Hooks.AnnounceRegionElement, WinUI.TextBlock>(
+                    AnnounceRegionDescriptor.Descriptor));
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            var handle = new Microsoft.UI.Reactor.Hooks.AnnounceHandle();
+            var el1 = (Microsoft.UI.Reactor.Hooks.AnnounceRegionElement)handle.Region;
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is WinUI.TextBlock tb)
+            {
+                handle.Announce("mounted");
+
+                H.Check("Desc_AnnounceRegion_Mounted", true);
+                H.Check("Desc_AnnounceRegion_Hidden",
+                    tb.Width == 0 && tb.Height == 0 && tb.Opacity == 0 && tb.IsHitTestVisible == false && tb.IsTabStop == false);
+                H.Check("Desc_AnnounceRegion_LiveSetting",
+                    Microsoft.UI.Xaml.Automation.AutomationProperties.GetLiveSetting(tb)
+                    == Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
+                H.Check("Desc_AnnounceRegion_AccessibilityView",
+                    Microsoft.UI.Xaml.Automation.AutomationProperties.GetAccessibilityView(tb)
+                    == Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
+                H.Check("Desc_AnnounceRegion_HandleBound_NoCrash", true);
+
+                parent.Children.Add(tb);
+                await Harness.Render();
+
+                var el2 = el1 with { };
+                rec.UpdateChild(el1, el2, tb, _noOp);
+                await Harness.Render();
+
+                H.Check("Desc_AnnounceRegion_UpdateKeepsHidden",
+                    tb.Width == 0 && tb.Height == 0 && tb.Opacity == 0 && tb.IsHitTestVisible == false && tb.IsTabStop == false);
+                H.Check("Desc_AnnounceRegion_UpdateKeepsLiveSetting",
+                    Microsoft.UI.Xaml.Automation.AutomationProperties.GetLiveSetting(tb)
+                    == Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
+
+                rec.UnmountChild(tb);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_AnnounceRegion_Mounted", false);
+            }
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────────────
     //  PipsPagerDescriptor (Phase 3 batch 11) — SelectedPageIndex
     //  round-trip; multi-prop one-way envelope.
     // ────────────────────────────────────────────────────────────────────
@@ -3836,6 +3966,221 @@ internal static class Spec047V1ProtocolDescriptorFixtures
             else
             {
                 H.Check("Desc_Frame_Mounted", false);
+            }
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────────────
+    //  Decorator-style descriptors — polymorphic Icon + XAML interop.
+    // ────────────────────────────────────────────────────────────────────
+
+    internal class DescIconMountedSymbol(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterDecoratorHandler<ReactorIconElement>(IconDescriptor.Handler);
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            var el = new ReactorIconElement(new SymbolIconData("Accept"));
+            var ui = rec.Mount(el, _noOp);
+            if (ui is WinUI.SymbolIcon si)
+            {
+                parent.Children.Add(si);
+                await Harness.Render();
+
+                H.Check("Desc_Icon_Mounted_Symbol", true);
+                H.Check("Desc_Icon_Mounted_SymbolValue", si.Symbol == Symbol.Accept);
+
+                rec.UnmountChild(si);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_Icon_Mounted_Symbol", false);
+            }
+        }
+    }
+
+    internal class DescIconAfterUpdateSymbolChange(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterDecoratorHandler<ReactorIconElement>(IconDescriptor.Handler);
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            var el1 = new ReactorIconElement(new SymbolIconData("Accept"));
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is WinUI.SymbolIcon si)
+            {
+                parent.Children.Add(si);
+                await Harness.Render();
+
+                var el2 = el1 with { Data = new SymbolIconData("Cancel") };
+                var next = rec.UpdateChild(el1, el2, si, _noOp);
+                await Harness.Render();
+
+                H.Check("Desc_Icon_AfterUpdate_SymbolChange", next is null || ReferenceEquals(next, si));
+                H.Check("Desc_Icon_AfterUpdate_SymbolValue", si.Symbol == Symbol.Cancel);
+
+                rec.UnmountChild(si);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_Icon_AfterUpdate_SymbolChange", false);
+            }
+        }
+    }
+
+    internal class DescIconTypeSwapReplacesControl(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterDecoratorHandler<ReactorIconElement>(IconDescriptor.Handler);
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            var el1 = new ReactorIconElement(new SymbolIconData("Accept"));
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is WinUI.SymbolIcon si)
+            {
+                parent.Children.Add(si);
+                await Harness.Render();
+
+                var el2 = el1 with { Data = new FontIconData("E10B") };
+                var next = rec.UpdateChild(el1, el2, si, _noOp);
+                await Harness.Render();
+
+                H.Check("Desc_Icon_TypeSwap_ReplacesControl",
+                    next is WinUI.FontIcon && !ReferenceEquals(next, si));
+                H.Check("Desc_Icon_TypeSwap_Glyph",
+                    next is WinUI.FontIcon fi && fi.Glyph == "E10B");
+
+                rec.UnmountChild(si);
+                if (next is UIElement nextUi)
+                    rec.UnmountChild(nextUi);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_Icon_TypeSwap_ReplacesControl", false);
+            }
+        }
+    }
+
+    internal class DescXamlHostMounted(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterDecoratorHandler<XamlHostElement>(XamlHostDescriptor.Handler);
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            var hosted = new TextBlock { Text = "hosted" };
+            var el = new XamlHostElement(() => hosted);
+            var ui = rec.Mount(el, _noOp);
+            if (ui is TextBlock tb)
+            {
+                parent.Children.Add(tb);
+                await Harness.Render();
+
+                H.Check("Desc_XamlHost_Mounted", ReferenceEquals(tb, hosted));
+                H.Check("Desc_XamlHost_FactoryText", tb.Text == "hosted");
+
+                rec.UnmountChild(tb);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_XamlHost_Mounted", false);
+            }
+        }
+    }
+
+    internal class DescXamlHostUpdaterRuns(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterDecoratorHandler<XamlHostElement>(XamlHostDescriptor.Handler);
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            int updateCount = 0;
+            var el1 = new XamlHostElement(
+                () => new TextBlock(),
+                fe => ((TextBlock)fe).Text = "one");
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is TextBlock tb)
+            {
+                parent.Children.Add(tb);
+                await Harness.Render();
+                H.Check("Desc_XamlHost_UpdaterMount", tb.Text == "one");
+
+                var el2 = el1 with
+                {
+                    Updater = fe =>
+                    {
+                        updateCount++;
+                        ((TextBlock)fe).Text = "two";
+                    },
+                };
+                var next = rec.UpdateChild(el1, el2, tb, _noOp);
+                await Harness.Render();
+
+                H.Check("Desc_XamlHost_UpdaterRuns", updateCount == 1);
+                H.Check("Desc_XamlHost_UpdaterInPlace", next is null || ReferenceEquals(next, tb));
+                H.Check("Desc_XamlHost_UpdaterText", tb.Text == "two");
+
+                rec.UnmountChild(tb);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_XamlHost_UpdaterRuns", false);
+            }
+        }
+    }
+
+    internal class DescXamlPageMounted(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterDecoratorHandler<XamlPageElement>(XamlPageDescriptor.Handler);
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            var el = new XamlPageElement(typeof(Page));
+            var ui = rec.Mount(el, _noOp);
+            if (ui is WinUI.Frame frame)
+            {
+                parent.Children.Add(frame);
+                await Harness.Render();
+
+                H.Check("Desc_XamlPage_Mounted", true);
+                H.Check("Desc_XamlPage_NavigatedToTestPage", frame.Content is Page);
+                H.Check("Desc_XamlPage_Parameter", frame.CurrentSourcePageType == typeof(Page));
+
+                rec.UnmountChild(frame);
+                parent.Children.Clear();
+                H.Check("Desc_XamlPage_UnmountClearedContent", frame.Content is null);
+            }
+            else
+            {
+                H.Check("Desc_XamlPage_Mounted", false);
             }
         }
     }
@@ -4623,6 +4968,206 @@ internal static class Spec047V1ProtocolDescriptorFixtures
     //  through the element's IKeyedItemSource implementation.
     // ════════════════════════════════════════════════════════════════════
 
+    internal class DescGridViewMountUpdate(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterHandler<GridViewElement, WinUI.GridView>(
+                new DescriptorHandler<GridViewElement, WinUI.GridView>(
+                    GridViewDescriptor.Descriptor));
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            int selectedFires = 0;
+            int multiFires = 0;
+            var el1 = new GridViewElement(new Element[]
+            {
+                new TextBlockElement("one"),
+                new TextBlockElement("two"),
+                new TextBlockElement("three"),
+            })
+            {
+                SelectedIndex = 1,
+                Header = "GridHeader",
+                SelectionMode = ListViewSelectionMode.Multiple,
+                OnSelectedIndexChanged = _ => selectedFires++,
+                OnSelectionChanged = _ => multiFires++,
+            };
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is WinUI.GridView gv)
+            {
+                parent.Children.Add(gv);
+                await Harness.Render();
+
+                H.Check("Desc_GridView_Mounted", true);
+                H.Check("Desc_GridView_ItemsMounted", gv.Items.Count == 3 && gv.Items[0] is TextBlock);
+                H.Check("Desc_GridView_HeaderApplied", (gv.Header as string) == "GridHeader");
+                H.Check("Desc_GridView_SelectionMode", gv.SelectionMode == ListViewSelectionMode.Multiple);
+                H.Check("Desc_GridView_InitialSelectedIndex", gv.SelectedIndex == 1);
+
+                var firesAfterMount = selectedFires + multiFires;
+                var el2 = el1 with
+                {
+                    Items = new Element[]
+                    {
+                        new TextBlockElement("alpha"),
+                        new TextBlockElement("beta"),
+                    },
+                    SelectedIndex = 0,
+                    Header = "GridHeader2",
+                    SelectionMode = ListViewSelectionMode.Single,
+                };
+                rec.UpdateChild(el1, el2, gv, _noOp);
+                await Harness.Render();
+
+                H.Check("Desc_GridView_UpdateItems", gv.Items.Count == 2 && gv.Items[1] is TextBlock);
+                H.Check("Desc_GridView_UpdateHeader", (gv.Header as string) == "GridHeader2");
+                H.Check("Desc_GridView_UpdateSelectionMode", gv.SelectionMode == ListViewSelectionMode.Single);
+                H.Check("Desc_GridView_UpdateSelectedIndex", gv.SelectedIndex == 0);
+                H.Check("Desc_GridView_UpdateSelectionEventsBounded", selectedFires + multiFires - firesAfterMount <= 2);
+
+                rec.UnmountChild(gv);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_GridView_Mounted", false);
+            }
+        }
+    }
+
+    internal class DescItemContainerMountUpdate(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterHandler<ItemContainerElement, WinUI.ItemContainer>(
+                new DescriptorHandler<ItemContainerElement, WinUI.ItemContainer>(
+                    ItemContainerDescriptor.Descriptor));
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            var el1 = new ItemContainerElement(new TextBlockElement("before"))
+            {
+                IsSelected = false,
+            };
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is WinUI.ItemContainer ic)
+            {
+                parent.Children.Add(ic);
+                await Harness.Render();
+
+                H.Check("Desc_ItemContainer_Mounted", true);
+                H.Check("Desc_ItemContainer_ChildMounted",
+                    ic.Child is TextBlock tb1 && tb1.Text == "before");
+                H.Check("Desc_ItemContainer_InitialSelection", ic.IsSelected == false);
+
+                var firstChild = ic.Child;
+                var el2 = el1 with
+                {
+                    Child = new TextBlockElement("after"),
+                    IsSelected = true,
+                };
+                rec.UpdateChild(el1, el2, ic, _noOp);
+                await Harness.Render();
+
+                H.Check("Desc_ItemContainer_ChildUpdatedInPlace",
+                    ReferenceEquals(firstChild, ic.Child)
+                    && ic.Child is TextBlock tb2
+                    && tb2.Text == "after");
+                H.Check("Desc_ItemContainer_SelectionUpdated", ic.IsSelected == true);
+
+                rec.UnmountChild(ic);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_ItemContainer_Mounted", false);
+            }
+        }
+    }
+
+    internal class DescItemsViewMountUpdate(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterHandlerForDerivedTypes<ItemsViewElementBase, WinUI.ItemsView>(
+                new DescriptorHandler<ItemsViewElementBase, WinUI.ItemsView>(
+                    ItemsViewDescriptor.Descriptor));
+            rec.RegisterHandler<ItemContainerElement, WinUI.ItemContainer>(
+                new DescriptorHandler<ItemContainerElement, WinUI.ItemContainer>(
+                    ItemContainerDescriptor.Descriptor));
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            var el1 = new ItemsViewElement<string>(
+                Items: new[] { "one", "two", "three" },
+                KeySelector: static s => s,
+                ViewBuilder: static (s, _) => new ItemContainerElement(new TextBlockElement(s)))
+            {
+                LayoutKind = ItemsViewLayoutKind.StackLayout,
+                SelectionMode = ItemsViewSelectionMode.Multiple,
+                IsItemInvokedEnabled = true,
+            };
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is WinUI.ItemsView iv)
+            {
+                parent.Children.Add(iv);
+                await Harness.Render();
+
+                H.Check("Desc_ItemsView_Mounted", true);
+                H.Check("Desc_ItemsView_LayoutStack", iv.Layout is WinUI.StackLayout);
+                H.Check("Desc_ItemsView_SelectionMode", iv.SelectionMode == ItemsViewSelectionMode.Multiple);
+                H.Check("Desc_ItemsView_InvokeEnabled", iv.IsItemInvokedEnabled == true);
+                var listState = Reconciler.GetListState(iv);
+                H.Check("Desc_ItemsView_ListStateAttached", listState is not null);
+                H.Check("Desc_ItemsView_ItemsSourceBound",
+                    listState is not null && ReferenceEquals(iv.ItemsSource, listState.Source));
+                H.Check("Desc_ItemsView_KeysOk",
+                    listState is not null
+                        && listState.Source[0].Key == "one"
+                        && listState.Source[1].Key == "two"
+                        && listState.Source[2].Key == "three");
+                H.Check("Desc_ItemsView_ItemTemplateAttached", iv.ItemTemplate is not null);
+
+                var el2 = el1 with
+                {
+                    Items = new[] { "one", "two", "four", "three" },
+                    LayoutKind = ItemsViewLayoutKind.UniformGridLayout,
+                    SelectionMode = ItemsViewSelectionMode.Single,
+                    IsItemInvokedEnabled = false,
+                };
+                rec.UpdateChild(el1, el2, iv, _noOp);
+                await Harness.Render();
+
+                H.Check("Desc_ItemsView_LayoutUpdated", iv.Layout is WinUI.UniformGridLayout);
+                H.Check("Desc_ItemsView_SelectionModeUpdated", iv.SelectionMode == ItemsViewSelectionMode.Single);
+                H.Check("Desc_ItemsView_InvokeDisabled", iv.IsItemInvokedEnabled == false);
+                listState = Reconciler.GetListState(iv);
+                H.Check("Desc_ItemsView_DiffApplied_Count4",
+                    listState is not null && listState.Source.Count == 4);
+                H.Check("Desc_ItemsView_DiffApplied_KeysOk",
+                    listState is not null
+                        && listState.Source[0].Key == "one"
+                        && listState.Source[1].Key == "two"
+                        && listState.Source[2].Key == "four"
+                        && listState.Source[3].Key == "three");
+
+                rec.UnmountChild(iv);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_ItemsView_Mounted", false);
+            }
+        }
+    }
+
     internal class DescTemplatedListViewMountUpdate(Harness h) : SelfTestFixtureBase(h)
     {
         public override async Task RunAsync()
@@ -5117,6 +5662,160 @@ internal static class Spec047V1ProtocolDescriptorFixtures
     }
 
     // ────────────────────────────────────────────────────────────────────
+    //  §14 Phase 3 completion — TemplatedFlipView via PreMountedItems.
+    //  Engine-gap closer: the typed `TemplatedFlipViewElement<T>` peer
+    //  was previously legacy because FlipView has no
+    //  ContainerContentChanging. The new PreMountedItems<> strategy
+    //  pre-mounts items up-front via IItemViewSource and positionally
+    //  reconciles on Update through ReconcileV1Child.
+    // ────────────────────────────────────────────────────────────────────
+
+    internal class DescTemplatedFlipViewMountUpdate(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterHandlerForDerivedTypes<TemplatedFlipViewElementBase, WinUI.FlipView>(
+                new DescriptorHandler<TemplatedFlipViewElementBase, WinUI.FlipView>(
+                    TemplatedFlipViewDescriptor.Descriptor));
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            int selectedFires = 0;
+            int lastSelected = -1;
+            var el1 = new TemplatedFlipViewElement<string>(
+                Items: new[] { "page-a", "page-b", "page-c" },
+                KeySelector: static s => s,
+                ViewBuilder: static (s, _) => new TextBlockElement(s))
+            {
+                SelectedIndex = 1,
+                OnSelectedIndexChanged = i => { selectedFires++; lastSelected = i; },
+            };
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is WinUI.FlipView fv)
+            {
+                parent.Children.Add(fv);
+                await Harness.Render();
+
+                H.Check("Desc_TemplatedFlipView_Mounted", true);
+                H.Check("Desc_TemplatedFlipView_ItemsCount3", fv.Items.Count == 3);
+                H.Check("Desc_TemplatedFlipView_PreMounted_AllUIElements",
+                    fv.Items[0] is UIElement && fv.Items[1] is UIElement && fv.Items[2] is UIElement);
+                H.Check("Desc_TemplatedFlipView_InitialSelectedIndex1", fv.SelectedIndex == 1);
+                // Initial mount must not echo back through OnSelectedIndexChanged.
+                H.Check("Desc_TemplatedFlipView_MountDidNotFire", selectedFires == 0);
+
+                // ── Update SelectedIndex; programmatic write must be echo-suppressed.
+                var el2 = el1 with { SelectedIndex = 2 };
+                rec.UpdateChild(el1, el2, fv, _noOp);
+                await Harness.Render();
+                H.Check("Desc_TemplatedFlipView_SelectedIndexUpdated", fv.SelectedIndex == 2);
+                H.Check("Desc_TemplatedFlipView_NoEchoOnProgrammaticWrite", selectedFires == 0);
+
+                // ── Grow: append one item (positional shared loop + append tail).
+                var el3 = el2 with
+                {
+                    Items = new[] { "page-a", "page-b", "page-c", "page-d" },
+                };
+                rec.UpdateChild(el2, el3, fv, _noOp);
+                await Harness.Render();
+                H.Check("Desc_TemplatedFlipView_GrewToCount4", fv.Items.Count == 4);
+                H.Check("Desc_TemplatedFlipView_GrowAppendedSlot",
+                    fv.Items[3] is UIElement);
+
+                // ── Shrink: drop the last two (truncate-from-tail path).
+                var el4 = el3 with
+                {
+                    Items = new[] { "page-a", "page-b" },
+                    SelectedIndex = 0,
+                };
+                rec.UpdateChild(el3, el4, fv, _noOp);
+                await Harness.Render();
+                H.Check("Desc_TemplatedFlipView_ShrankToCount2", fv.Items.Count == 2);
+                H.Check("Desc_TemplatedFlipView_ShrinkClampedSelectedIndex", fv.SelectedIndex == 0);
+
+                // ── Same-ref Update: positional reconcile must be idempotent.
+                rec.UpdateChild(el4, el4, fv, _noOp);
+                await Harness.Render();
+                H.Check("Desc_TemplatedFlipView_SameRefIdempotent_Count2", fv.Items.Count == 2);
+
+                // ── Edit-in-place: same key, same length — CanUpdate path through
+                // ReconcileV1Child reuses each slot's UIElement.
+                var snapshotBeforeEdit = fv.Items[0];
+                var el5 = el4 with
+                {
+                    Items = new[] { "page-edited", "page-b" },
+                };
+                rec.UpdateChild(el4, el5, fv, _noOp);
+                await Harness.Render();
+                H.Check("Desc_TemplatedFlipView_EditReusedSlot",
+                    ReferenceEquals(fv.Items[0], snapshotBeforeEdit));
+
+                rec.UnmountChild(fv);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_TemplatedFlipView_Mounted", false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// §14 Phase 3 completion — TemplatedFlipView descriptor with NO
+    /// OnSelectedIndexChanged callback: the `HasCallbacks`-gated
+    /// HandCodedControlled.callback probe must return null, so the
+    /// engine never subscribes the trampoline. Programmatic SelectedIndex
+    /// writes still must not fire because no callback exists, but the
+    /// trampoline-not-subscribed branch is the one we want to cover here.
+    /// </summary>
+    internal class DescTemplatedFlipViewNoCallbackDoesNotSubscribe(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterHandlerForDerivedTypes<TemplatedFlipViewElementBase, WinUI.FlipView>(
+                new DescriptorHandler<TemplatedFlipViewElementBase, WinUI.FlipView>(
+                    TemplatedFlipViewDescriptor.Descriptor));
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            var el1 = new TemplatedFlipViewElement<string>(
+                Items: new[] { "a", "b", "c" },
+                KeySelector: static s => s,
+                ViewBuilder: static (s, _) => new TextBlockElement(s))
+            {
+                SelectedIndex = 0,
+                // No OnSelectedIndexChanged — HasCallbacks => false.
+            };
+
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is WinUI.FlipView fv)
+            {
+                parent.Children.Add(fv);
+                await Harness.Render();
+                H.Check("Desc_TemplatedFlipView_NoCallback_Mounted", true);
+                H.Check("Desc_TemplatedFlipView_NoCallback_ItemsCount3", fv.Items.Count == 3);
+                H.Check("Desc_TemplatedFlipView_NoCallback_InitialIndex0", fv.SelectedIndex == 0);
+
+                var el2 = el1 with { SelectedIndex = 2 };
+                rec.UpdateChild(el1, el2, fv, _noOp);
+                await Harness.Render();
+                H.Check("Desc_TemplatedFlipView_NoCallback_IndexUpdated", fv.SelectedIndex == 2);
+
+                rec.UnmountChild(fv);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_TemplatedFlipView_NoCallback_Mounted", false);
+            }
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────────────
     //  §14 Phase 3 finish — Port (10) TabView via TabItemsHost.
     // ────────────────────────────────────────────────────────────────────
 
@@ -5176,6 +5875,458 @@ internal static class Spec047V1ProtocolDescriptorFixtures
             else
             {
                 H.Check("Desc_TabView_Mounted", false);
+            }
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────────────
+    //  §14 Phase 3 deferred specialized controls.
+    // ────────────────────────────────────────────────────────────────────
+
+    internal class DescAnimatedVisualPlayerMountUpdate(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterHandler<AnimatedVisualPlayerElement, WinUI.AnimatedVisualPlayer>(
+                new DescriptorHandler<AnimatedVisualPlayerElement, WinUI.AnimatedVisualPlayer>(
+                    AnimatedVisualPlayerDescriptor.Descriptor));
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            var el1 = new AnimatedVisualPlayerElement { AutoPlay = false };
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is WinUI.AnimatedVisualPlayer avp)
+            {
+                parent.Children.Add(avp);
+                await Harness.Render();
+
+                H.Check("Desc_AnimatedVisualPlayer_Mounted", true);
+                H.Check("Desc_AnimatedVisualPlayer_InitialAutoPlayFalse", avp.AutoPlay == false);
+
+                var el2 = el1 with { AutoPlay = true };
+                rec.UpdateChild(el1, el2, avp, _noOp);
+                await Harness.Render();
+                H.Check("Desc_AnimatedVisualPlayer_UpdatedAutoPlayTrue", avp.AutoPlay == true);
+
+                rec.UnmountChild(avp);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_AnimatedVisualPlayer_Mounted", false);
+            }
+        }
+    }
+
+    internal class DescAnnotatedScrollBarMountUpdate(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterHandler<AnnotatedScrollBarElement, WinUI.AnnotatedScrollBar>(
+                new DescriptorHandler<AnnotatedScrollBarElement, WinUI.AnnotatedScrollBar>(
+                    AnnotatedScrollBarDescriptor.Descriptor));
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            var el1 = AnnotatedScrollBar().Set(c => c.Width = 48);
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is WinUI.AnnotatedScrollBar asb)
+            {
+                parent.Children.Add(asb);
+                await Harness.Render();
+
+                H.Check("Desc_AnnotatedScrollBar_Mounted", true);
+                H.Check("Desc_AnnotatedScrollBar_InitialWidth", asb.Width == 48);
+
+                var el2 = AnnotatedScrollBar().Set(c => c.Width = 72);
+                rec.UpdateChild(el1, el2, asb, _noOp);
+                await Harness.Render();
+                H.Check("Desc_AnnotatedScrollBar_UpdatedWidth", asb.Width == 72);
+
+                rec.UnmountChild(asb);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_AnnotatedScrollBar_Mounted", false);
+            }
+        }
+    }
+
+    internal class DescMapControlMountUpdate(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterHandler<MapControlElement, WinUI.MapControl>(
+                new DescriptorHandler<MapControlElement, WinUI.MapControl>(
+                    MapControlDescriptor.Descriptor));
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            // MapControl can process-terminate the selftest host on machines
+            // without a Maps runtime/token. Keep this fixture descriptor-only;
+            // E2E owns real MapControl construction/lifecycle validation.
+            _ = parent;
+            await Harness.Render();
+            H.Check("Desc_MapControl_DescriptorAvailable", MapControlDescriptor.Descriptor.Properties.Count == 2);
+        }
+    }
+
+    internal class DescParallaxViewMountUpdate(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterHandler<ParallaxViewElement, WinUI.ParallaxView>(
+                new DescriptorHandler<ParallaxViewElement, WinUI.ParallaxView>(
+                    ParallaxViewDescriptor.Descriptor));
+            rec.RegisterHandler<TextBlockElement, WinUI.TextBlock>(
+                new DescriptorHandler<TextBlockElement, WinUI.TextBlock>(TextBlockDescriptor.Descriptor));
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            var el1 = ParallaxView(TextBlock("parallax"), verticalShift: 12, horizontalShift: 3);
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is WinUI.ParallaxView pv)
+            {
+                parent.Children.Add(pv);
+                await Harness.Render();
+
+                H.Check("Desc_ParallaxView_Mounted", true);
+                H.Check("Desc_ParallaxView_InitialVerticalShift", pv.VerticalShift == 12);
+                H.Check("Desc_ParallaxView_ChildMounted", pv.Child is WinUI.TextBlock tb && tb.Text == "parallax");
+
+                var el2 = ParallaxView(TextBlock("updated"), verticalShift: 24, horizontalShift: 6);
+                rec.UpdateChild(el1, el2, pv, _noOp);
+                await Harness.Render();
+                H.Check("Desc_ParallaxView_UpdatedVerticalShift", pv.VerticalShift == 24);
+                H.Check("Desc_ParallaxView_ChildUpdated", pv.Child is WinUI.TextBlock tb2 && tb2.Text == "updated");
+
+                rec.UnmountChild(pv);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_ParallaxView_Mounted", false);
+            }
+        }
+    }
+
+    internal class DescRefreshContainerMountUpdate(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterHandler<RefreshContainerElement, WinUI.RefreshContainer>(
+                new DescriptorHandler<RefreshContainerElement, WinUI.RefreshContainer>(
+                    RefreshContainerDescriptor.Descriptor));
+            rec.RegisterHandler<TextBlockElement, WinUI.TextBlock>(
+                new DescriptorHandler<TextBlockElement, WinUI.TextBlock>(TextBlockDescriptor.Descriptor));
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            var el1 = RefreshContainer(TextBlock("refresh"), onRefreshRequested: _noOp);
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is WinUI.RefreshContainer rc)
+            {
+                parent.Children.Add(rc);
+                await Harness.Render();
+
+                H.Check("Desc_RefreshContainer_Mounted", true);
+                H.Check("Desc_RefreshContainer_InitialDirection", rc.PullDirection == WinUI.RefreshPullDirection.TopToBottom);
+                H.Check("Desc_RefreshContainer_ContentMounted", rc.Content is WinUI.TextBlock tb && tb.Text == "refresh");
+
+                var el2 = RefreshContainer(TextBlock("updated"), onRefreshRequested: _noOp)
+                    .PullDirection(WinUI.RefreshPullDirection.BottomToTop);
+                rec.UpdateChild(el1, el2, rc, _noOp);
+                await Harness.Render();
+                H.Check("Desc_RefreshContainer_UpdatedDirection", rc.PullDirection == WinUI.RefreshPullDirection.BottomToTop);
+                H.Check("Desc_RefreshContainer_ContentUpdated", rc.Content is WinUI.TextBlock tb2 && tb2.Text == "updated");
+
+                rec.UnmountChild(rc);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_RefreshContainer_Mounted", false);
+            }
+        }
+    }
+
+    internal class DescSwipeControlMountUpdate(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterHandler<SwipeControlElement, WinUI.SwipeControl>(
+                new DescriptorHandler<SwipeControlElement, WinUI.SwipeControl>(
+                    SwipeControlDescriptor.Descriptor));
+            rec.RegisterHandler<TextBlockElement, WinUI.TextBlock>(
+                new DescriptorHandler<TextBlockElement, WinUI.TextBlock>(TextBlockDescriptor.Descriptor));
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            var el1 = SwipeControl(TextBlock("swipe"), leftItems: [new SwipeItemData("Archive")]);
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is WinUI.SwipeControl sc)
+            {
+                parent.Children.Add(sc);
+                await Harness.Render();
+
+                H.Check("Desc_SwipeControl_Mounted", true);
+                H.Check("Desc_SwipeControl_ContentMounted", sc.Content is WinUI.TextBlock tb && tb.Text == "swipe");
+                H.Check("Desc_SwipeControl_LeftItemMounted", sc.LeftItems?.Count == 1 && sc.LeftItems[0].Text == "Archive");
+
+                var el2 = SwipeControl(TextBlock("updated"), leftItems: [new SwipeItemData("Delete")])
+                    with { LeftItemsMode = WinUI.SwipeMode.Execute };
+                rec.UpdateChild(el1, el2, sc, _noOp);
+                await Harness.Render();
+                H.Check("Desc_SwipeControl_ContentUpdated", sc.Content is WinUI.TextBlock tb2 && tb2.Text == "updated");
+                H.Check("Desc_SwipeControl_LeftItemUpdated", sc.LeftItems?.Count == 1 && sc.LeftItems[0].Text == "Delete");
+                H.Check("Desc_SwipeControl_LeftModeUpdated", sc.LeftItems?.Mode == WinUI.SwipeMode.Execute);
+
+                rec.UnmountChild(sc);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_SwipeControl_Mounted", false);
+            }
+        }
+    }
+
+    internal class DescSemanticZoomMountUpdate(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterHandler<SemanticZoomElement, WinUI.SemanticZoom>(
+                new DescriptorHandler<SemanticZoomElement, WinUI.SemanticZoom>(
+                    SemanticZoomDescriptor.Descriptor));
+            rec.RegisterHandler<ListViewElement, WinUI.ListView>(
+                new Microsoft.UI.Reactor.Core.V1Protocol.Handlers.ListViewHandler());
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            var el1 = SemanticZoom(new ListViewElement(["in-a"]), new ListViewElement(["out-a"]));
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is WinUI.SemanticZoom sz)
+            {
+                parent.Children.Add(sz);
+                await Harness.Render();
+
+                H.Check("Desc_SemanticZoom_Mounted", true);
+                H.Check("Desc_SemanticZoom_InViewMounted", sz.ZoomedInView is WinUI.ListView inList && inList.Items.Count == 1);
+                H.Check("Desc_SemanticZoom_OutViewMounted", sz.ZoomedOutView is WinUI.ListView outList && outList.Items.Count == 1);
+
+                var el2 = SemanticZoom(new ListViewElement(["in-b", "in-c"]), new ListViewElement(["out-b"]));
+                rec.UpdateChild(el1, el2, sz, _noOp);
+                await Harness.Render();
+                H.Check("Desc_SemanticZoom_InViewUpdated", sz.ZoomedInView is WinUI.ListView inList2 && inList2.Items.Count == 2);
+
+                rec.UnmountChild(sz);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_SemanticZoom_Mounted", false);
+            }
+        }
+    }
+
+    internal class DescMediaPlayerElementMountUpdate(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterHandler<MediaPlayerElementElement, WinUI.MediaPlayerElement>(
+                new DescriptorHandler<MediaPlayerElementElement, WinUI.MediaPlayerElement>(
+                    MediaPlayerElementDescriptor.Descriptor));
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            // No media source: selftest validates construction + scalar lifecycle only.
+            var el1 = MediaPlayerElement() with { AreTransportControlsEnabled = true, AutoPlay = false };
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is WinUI.MediaPlayerElement mpe)
+            {
+                parent.Children.Add(mpe);
+                await Harness.Render();
+
+                H.Check("Desc_MediaPlayerElement_Mounted", true);
+                H.Check("Desc_MediaPlayerElement_InitialTransport", mpe.AreTransportControlsEnabled == true);
+                H.Check("Desc_MediaPlayerElement_InitialAutoPlay", mpe.AutoPlay == false);
+
+                var el2 = MediaPlayerElement() with { AreTransportControlsEnabled = false, AutoPlay = true };
+                rec.UpdateChild(el1, el2, mpe, _noOp);
+                await Harness.Render();
+                H.Check("Desc_MediaPlayerElement_UpdatedTransport", mpe.AreTransportControlsEnabled == false);
+                H.Check("Desc_MediaPlayerElement_UpdatedAutoPlay", mpe.AutoPlay == true);
+
+                rec.UnmountChild(mpe);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_MediaPlayerElement_Mounted", false);
+            }
+        }
+    }
+
+    internal class DescWebView2MountUpdate(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterHandler<WebView2Element, WinUI.WebView2>(
+                new DescriptorHandler<WebView2Element, WinUI.WebView2>(WebView2Descriptor.Descriptor));
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            // No Source: avoids async CoreWebView2 initialization in selftest.
+            var el1 = WebView2().Set(c => c.Width = 320);
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is WinUI.WebView2 wv)
+            {
+                parent.Children.Add(wv);
+                await Harness.Render();
+
+                H.Check("Desc_WebView2_Mounted", true);
+                H.Check("Desc_WebView2_InitialWidth", wv.Width == 320);
+
+                var el2 = WebView2().Set(c => c.Width = 480);
+                rec.UpdateChild(el1, el2, wv, _noOp);
+                await Harness.Render();
+                H.Check("Desc_WebView2_UpdatedWidth", wv.Width == 480);
+
+                rec.UnmountChild(wv);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_WebView2_Mounted", false);
+            }
+        }
+    }
+
+    internal class DescTitleBarMountUpdate(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterHandler<TitleBarElement, WinUI.TitleBar>(
+                new DescriptorHandler<TitleBarElement, WinUI.TitleBar>(TitleBarDescriptor.Descriptor));
+            rec.RegisterHandler<TextBlockElement, WinUI.TextBlock>(
+                new DescriptorHandler<TextBlockElement, WinUI.TextBlock>(TextBlockDescriptor.Descriptor));
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            var el1 = TitleBar("App")
+                .Subtitle("One")
+                .BackButtonVisible(true)
+                .BackButtonEnabled(false)
+                .Content(TextBlock("center"));
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is WinUI.TitleBar tb)
+            {
+                parent.Children.Add(tb);
+                await Harness.Render();
+
+                H.Check("Desc_TitleBar_Mounted", true);
+                H.Check("Desc_TitleBar_InitialTitle", tb.Title == "App");
+                H.Check("Desc_TitleBar_InitialSubtitle", tb.Subtitle == "One");
+                H.Check("Desc_TitleBar_ContentMounted", tb.Content is WinUI.TextBlock text && text.Text == "center");
+
+                var el2 = TitleBar("Renamed")
+                    .Subtitle("Two")
+                    .BackButtonVisible(true)
+                    .BackButtonEnabled(true)
+                    .Content(TextBlock("updated"));
+                rec.UpdateChild(el1, el2, tb, _noOp);
+                await Harness.Render();
+                H.Check("Desc_TitleBar_UpdatedTitle", tb.Title == "Renamed");
+                H.Check("Desc_TitleBar_UpdatedSubtitle", tb.Subtitle == "Two");
+                H.Check("Desc_TitleBar_UpdatedBackEnabled", tb.IsBackButtonEnabled == true);
+                H.Check("Desc_TitleBar_ContentUpdated", tb.Content is WinUI.TextBlock text2 && text2.Text == "updated");
+
+                rec.UnmountChild(tb);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_TitleBar_Mounted", false);
+            }
+        }
+    }
+
+    internal class DescNavigationViewMountUpdate(Harness h) : SelfTestFixtureBase(h)
+    {
+        public override async Task RunAsync()
+        {
+            var rec = NewDescriptorReconciler();
+            rec.RegisterHandler<NavigationViewElement, WinUI.NavigationView>(
+                new DescriptorHandler<NavigationViewElement, WinUI.NavigationView>(NavigationViewDescriptor.Descriptor));
+            rec.RegisterHandler<TextBlockElement, WinUI.TextBlock>(
+                new DescriptorHandler<TextBlockElement, WinUI.TextBlock>(TextBlockDescriptor.Descriptor));
+
+            var parent = new Grid { Background = new SolidColorBrush(Colors.Transparent) };
+            H.SetContent(parent);
+
+            var el1 = NavigationView(
+                [new NavigationViewItemData("Home", Tag: "home"), new NavigationViewItemData("Settings", Tag: "settings")],
+                TextBlock("home-content")) with
+            {
+                SelectedTag = "home",
+                PaneTitle = "Main",
+                IsBackEnabled = false,
+            };
+            var ui = rec.Mount(el1, _noOp);
+            if (ui is WinUI.NavigationView nv)
+            {
+                parent.Children.Add(nv);
+                await Harness.Render();
+
+                H.Check("Desc_NavigationView_Mounted", true);
+                H.Check("Desc_NavigationView_MenuCount", nv.MenuItems.Count == 2);
+                H.Check("Desc_NavigationView_PaneTitle", nv.PaneTitle == "Main");
+                H.Check("Desc_NavigationView_SelectedHome", nv.SelectedItem is WinUI.NavigationViewItem home && (home.Tag as string) == "home");
+                H.Check("Desc_NavigationView_ContentMounted", nv.Content is WinUI.TextBlock tb && tb.Text == "home-content");
+
+                var el2 = NavigationView(
+                    [new NavigationViewItemData("Home", Tag: "home"), new NavigationViewItemData("Settings", Tag: "settings"), new NavigationViewItemData("About", Tag: "about")],
+                    TextBlock("settings-content")) with
+                {
+                    SelectedTag = "settings",
+                    PaneTitle = "Updated",
+                    IsBackEnabled = true,
+                };
+                rec.UpdateChild(el1, el2, nv, _noOp);
+                await Harness.Render();
+                H.Check("Desc_NavigationView_MenuUpdated", nv.MenuItems.Count == 3);
+                H.Check("Desc_NavigationView_TitleUpdated", nv.PaneTitle == "Updated");
+                H.Check("Desc_NavigationView_BackUpdated", nv.IsBackEnabled == true);
+                H.Check("Desc_NavigationView_SelectedSettings", nv.SelectedItem is WinUI.NavigationViewItem settings && (settings.Tag as string) == "settings");
+                H.Check("Desc_NavigationView_ContentUpdated", nv.Content is WinUI.TextBlock tb2 && tb2.Text == "settings-content");
+
+                rec.UnmountChild(nv);
+                parent.Children.Clear();
+            }
+            else
+            {
+                H.Check("Desc_NavigationView_Mounted", false);
             }
         }
     }

@@ -1186,6 +1186,8 @@ internal static class SelfTestFixtureRegistry
         "Desc_Line_MountUpdate",
         "Desc_Path_MountUpdate",
         "Desc_AnimatedIcon_MountUpdate",
+        "Desc_Semantic_MountUpdate",
+        "Desc_AnnounceRegion_MountUpdate",
         // Spec 047 §14 Phase 3 (batch 11) — Long-tail ports.
         "Desc_PipsPager_MountUpdate",
         "Desc_ListBox_MountUpdate",
@@ -1193,6 +1195,13 @@ internal static class SelfTestFixtureRegistry
         "Desc_BreadcrumbBar_MountUpdate",
         // Spec 047 §14 Phase 3-final Batch B — Frame + RichTextBlock + NumberBox.
         "Desc_Frame_MountUpdate",
+        // Spec 047 §14 Phase 3 completion — decorator-style polymorphic/interop ports.
+        "Desc_Icon_Mounted_Symbol",
+        "Desc_Icon_AfterUpdate_SymbolChange",
+        "Desc_Icon_TypeSwap_ReplacesControl",
+        "Desc_XamlHost_Mounted",
+        "Desc_XamlHost_UpdaterRuns",
+        "Desc_XamlPage_Mounted",
         "Desc_RichTextBlock_MountUpdate",
         "Desc_NumberBox_MountUpdate",
         // Spec 047 §14 Phase 3-final Batch C — CalendarView.
@@ -1206,6 +1215,9 @@ internal static class SelfTestFixtureRegistry
         "Desc_ComboBox_Items",
         "Desc_RadioButtons_Items",
         // Spec 047 §14 Phase 3 close-out — typed templated lists G2.
+        "Desc_GridView_MountUpdate",
+        "Desc_ItemContainer_MountUpdate",
+        "Desc_ItemsView_MountUpdate",
         "Desc_TemplatedListView_MountUpdate",
         "Desc_TemplatedGridView_MountUpdate",
         // Spec 047 §14 Phase 3 finish — Port (6) Lazy*Stack G2.
@@ -1214,8 +1226,22 @@ internal static class SelfTestFixtureRegistry
         "Desc_ItemsRepeater_MountUpdate",
         "Desc_TreeView_MountUpdate",
         "Desc_FlipView_MountUpdate",
+        "Desc_TemplatedFlipView_MountUpdate",
+        "Desc_TemplatedFlipView_NoCallback_DoesNotSubscribe",
         "Desc_TabView_MountUpdate",
         "Desc_Pivot_MountUpdate",
+        // Spec 047 §14 Phase 3 deferred specialized controls.
+        "Desc_AnimatedVisualPlayer_MountUpdate",
+        "Desc_AnnotatedScrollBar_MountUpdate",
+        "Desc_MapControl_MountUpdate",
+        "Desc_ParallaxView_MountUpdate",
+        "Desc_RefreshContainer_MountUpdate",
+        "Desc_SwipeControl_MountUpdate",
+        "Desc_SemanticZoom_MountUpdate",
+        "Desc_MediaPlayerElement_MountUpdate",
+        "Desc_WebView2_MountUpdate",
+        "Desc_TitleBar_MountUpdate",
+        "Desc_NavigationView_MountUpdate",
 
         // Spec 047 §14 Phase 1 (1.16) — external-assembly proof fixtures.
         // The MarqueeHandler is authored in tests/external_proof/
@@ -2391,6 +2417,8 @@ internal static class SelfTestFixtureRegistry
         "Desc_Line_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescLineMountUpdate(harness),
         "Desc_Path_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescPathMountUpdate(harness),
         "Desc_AnimatedIcon_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescAnimatedIconMountUpdate(harness),
+        "Desc_Semantic_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescSemanticMountUpdate(harness),
+        "Desc_AnnounceRegion_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescAnnounceRegionMountUpdate(harness),
         // Spec 047 §14 Phase 3 (batch 11) — Long-tail ports.
         "Desc_PipsPager_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescPipsPagerMountUpdate(harness),
         "Desc_ListBox_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescListBoxMountUpdate(harness),
@@ -2398,6 +2426,13 @@ internal static class SelfTestFixtureRegistry
         "Desc_BreadcrumbBar_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescBreadcrumbBarMountUpdate(harness),
         // Spec 047 §14 Phase 3-final Batch B — Frame + RichTextBlock + NumberBox.
         "Desc_Frame_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescFrameMountUpdate(harness),
+        // Spec 047 §14 Phase 3 completion — decorator-style polymorphic/interop ports.
+        "Desc_Icon_Mounted_Symbol" => new Spec047V1ProtocolDescriptorFixtures.DescIconMountedSymbol(harness),
+        "Desc_Icon_AfterUpdate_SymbolChange" => new Spec047V1ProtocolDescriptorFixtures.DescIconAfterUpdateSymbolChange(harness),
+        "Desc_Icon_TypeSwap_ReplacesControl" => new Spec047V1ProtocolDescriptorFixtures.DescIconTypeSwapReplacesControl(harness),
+        "Desc_XamlHost_Mounted" => new Spec047V1ProtocolDescriptorFixtures.DescXamlHostMounted(harness),
+        "Desc_XamlHost_UpdaterRuns" => new Spec047V1ProtocolDescriptorFixtures.DescXamlHostUpdaterRuns(harness),
+        "Desc_XamlPage_Mounted" => new Spec047V1ProtocolDescriptorFixtures.DescXamlPageMounted(harness),
         "Desc_RichTextBlock_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescRichTextBlockMountUpdate(harness),
         "Desc_NumberBox_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescNumberBoxMountUpdate(harness),
         // Spec 047 §14 Phase 3-final Batch C — CalendarView.
@@ -2412,6 +2447,9 @@ internal static class SelfTestFixtureRegistry
         "Desc_RadioButtons_Items" => new Spec047V1ProtocolDescriptorFixtures.DescRadioButtonsItemsHost(harness),
 
         // Spec 047 §14 Phase 3 close-out — typed templated lists G2.
+        "Desc_GridView_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescGridViewMountUpdate(harness),
+        "Desc_ItemContainer_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescItemContainerMountUpdate(harness),
+        "Desc_ItemsView_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescItemsViewMountUpdate(harness),
         "Desc_TemplatedListView_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescTemplatedListViewMountUpdate(harness),
         "Desc_TemplatedGridView_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescTemplatedGridViewMountUpdate(harness),
 
@@ -2425,8 +2463,23 @@ internal static class SelfTestFixtureRegistry
         // Spec 047 §14 Phase 3 finish — Ports (8)+(9)+(10)+(11) G3 controls.
         "Desc_TreeView_MountUpdate"  => new Spec047V1ProtocolDescriptorFixtures.DescTreeViewMountUpdate(harness),
         "Desc_FlipView_MountUpdate"  => new Spec047V1ProtocolDescriptorFixtures.DescFlipViewMountUpdate(harness),
+        "Desc_TemplatedFlipView_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescTemplatedFlipViewMountUpdate(harness),
+        "Desc_TemplatedFlipView_NoCallback_DoesNotSubscribe" => new Spec047V1ProtocolDescriptorFixtures.DescTemplatedFlipViewNoCallbackDoesNotSubscribe(harness),
         "Desc_TabView_MountUpdate"   => new Spec047V1ProtocolDescriptorFixtures.DescTabViewMountUpdate(harness),
         "Desc_Pivot_MountUpdate"     => new Spec047V1ProtocolDescriptorFixtures.DescPivotMountUpdate(harness),
+
+        // Spec 047 §14 Phase 3 deferred specialized controls.
+        "Desc_AnimatedVisualPlayer_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescAnimatedVisualPlayerMountUpdate(harness),
+        "Desc_AnnotatedScrollBar_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescAnnotatedScrollBarMountUpdate(harness),
+        "Desc_MapControl_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescMapControlMountUpdate(harness),
+        "Desc_ParallaxView_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescParallaxViewMountUpdate(harness),
+        "Desc_RefreshContainer_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescRefreshContainerMountUpdate(harness),
+        "Desc_SwipeControl_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescSwipeControlMountUpdate(harness),
+        "Desc_SemanticZoom_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescSemanticZoomMountUpdate(harness),
+        "Desc_MediaPlayerElement_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescMediaPlayerElementMountUpdate(harness),
+        "Desc_WebView2_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescWebView2MountUpdate(harness),
+        "Desc_TitleBar_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescTitleBarMountUpdate(harness),
+        "Desc_NavigationView_MountUpdate" => new Spec047V1ProtocolDescriptorFixtures.DescNavigationViewMountUpdate(harness),
 
         // Spec 047 §14 Phase 1 (1.16) — external-assembly proof fixtures.
         "Spec047ExternalProof_Marquee_MountUpdate" => new Spec047ExternalProofFixtures.MarqueeMountUpdate(harness),

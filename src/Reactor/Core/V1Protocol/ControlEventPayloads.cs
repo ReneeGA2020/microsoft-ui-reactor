@@ -266,6 +266,29 @@ internal sealed class ListBoxEventPayload
     public Microsoft.UI.Xaml.Controls.SelectionChangedEventHandler? SelectionChangedTrampoline;
 }
 
+/// <summary>Spec 047 §14 Phase 3 completion — GridView selected-index and
+/// item-click payload. SelectionChanged fires both single-index and
+/// multi-select snapshot callbacks; ItemClick maps the clicked item back to
+/// the flat ItemsHost collection index.</summary>
+internal sealed class GridViewEventPayload
+{
+    public Microsoft.UI.Xaml.Controls.SelectionChangedEventHandler? SelectionChangedTrampoline;
+    public Microsoft.UI.Xaml.Controls.ItemClickEventHandler? ItemClickTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 completion — ItemsView item-invoked and
+/// selection-changed payload. Trampolines translate ReactorRow payloads back
+/// to the user's typed item indices through ItemsViewElementBase.</summary>
+internal sealed class ItemsViewEventPayload
+{
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.ItemsView,
+        Microsoft.UI.Xaml.Controls.ItemsViewItemInvokedEventArgs>? ItemInvokedTrampoline;
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.ItemsView,
+        Microsoft.UI.Xaml.Controls.ItemsViewSelectionChangedEventArgs>? SelectionChangedTrampoline;
+}
+
 /// <summary>Spec 047 §14 Phase 3 batch 11 — SelectorBar SelectedIndex
 /// round-trip payload. <c>SelectionChanged</c> trampoline reads the live
 /// SelectedItem reference and converts back to the index via
@@ -344,6 +367,49 @@ internal sealed class BreadcrumbBarEventPayload
     public global::Windows.Foundation.TypedEventHandler<
         Microsoft.UI.Xaml.Controls.BreadcrumbBar,
         Microsoft.UI.Xaml.Controls.BreadcrumbBarItemClickedEventArgs>? ItemClickedTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 deferred controls — RefreshContainer RefreshRequested payload.</summary>
+internal sealed class RefreshContainerEventPayload
+{
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.RefreshContainer,
+        Microsoft.UI.Xaml.Controls.RefreshRequestedEventArgs>? RefreshRequestedTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 deferred controls — WebView2 event payload.</summary>
+internal sealed class WebView2EventPayload
+{
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.WebView2,
+        Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs>? NavigationStartingTrampoline;
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.WebView2,
+        Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs>? NavigationCompletedTrampoline;
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.WebView2,
+        Microsoft.Web.WebView2.Core.CoreWebView2WebMessageReceivedEventArgs>? WebMessageReceivedTrampoline;
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.WebView2,
+        Microsoft.UI.Xaml.Controls.CoreWebView2InitializedEventArgs>? CoreInitializedTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 deferred controls — TitleBar event payload.</summary>
+internal sealed class TitleBarEventPayload
+{
+    public global::Windows.Foundation.TypedEventHandler<Microsoft.UI.Xaml.Controls.TitleBar, object>? BackRequestedTrampoline;
+    public global::Windows.Foundation.TypedEventHandler<Microsoft.UI.Xaml.Controls.TitleBar, object>? PaneToggleRequestedTrampoline;
+}
+
+/// <summary>Spec 047 §14 Phase 3 deferred controls — NavigationView event payload.</summary>
+internal sealed class NavigationViewEventPayload
+{
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.NavigationView,
+        Microsoft.UI.Xaml.Controls.NavigationViewSelectionChangedEventArgs>? SelectionChangedTrampoline;
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.NavigationView,
+        Microsoft.UI.Xaml.Controls.NavigationViewBackRequestedEventArgs>? BackRequestedTrampoline;
 }
 
 /// <summary>

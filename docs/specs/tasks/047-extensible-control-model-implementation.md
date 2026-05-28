@@ -928,14 +928,11 @@ carve-outs:
 - [x] **G3 typed lists — `TreeView`, `FlipView`, `TabView`, `Pivot`** —
       closed by Phase 3 finish. **Note:** "FlipView" here is the
       simple non-templated `FlipViewElement` (Element[] items). The
-      typed `TemplatedFlipViewElement<T>` peer stays carved exactly
-      as documented at Phase 3 close-out — FlipView lacks
-      `ContainerContentChanging` so the realization pipeline used by
-      `TemplatedListView<T>` / `TemplatedGridView<T>` doesn't apply;
-      a `PreMountedItems` strategy would land it but no fixture
-      currently demands it. The intermediate marker base
-      `TemplatedFlipViewElementBase` is reserved in the element
-      hierarchy for that future port.
+      typed `TemplatedFlipViewElement<T>` peer was ported in Phase 3
+      completion via the new `PreMountedItems<>` strategy + base-derived
+      `TemplatedFlipViewDescriptor` registered on
+      `TemplatedFlipViewElementBase` — see the Phase 3 completion entry
+      below.
       - **TreeView** via new `TreeChildren<TElement, TControl>`
         strategy (hierarchical, positional rebuild on Update,
         recursive `ContentElement` mount).
@@ -959,43 +956,139 @@ Phase 3 descriptor — out of scope for the Phase 3 batch list, recorded
 here for a future Phase 3.5 / Phase 4 prelude). Cross-referenced from
 the audit at the end of `spec/047-phase3-finish`:
 
-- **Genuine engine gap:** `TemplatedFlipViewElement<T>` — close-out
-  carve. Needs a `PreMountedItems` ChildrenStrategy. The intermediate
-  base `TemplatedFlipViewElementBase` already exists for the
-  base-derived registration.
-- **Untyped items hosts not ported:** `GridViewElement` (the plain
-  Element[] variant — `ListViewElement` got a Phase 1 V1 handler,
-  GridView did not), `ItemsViewElementBase` (the higher-level
-  `ItemsView` wrapping its own ItemsRepeater), `ItemContainerElement`.
+- **Genuine engine gap (CLOSED — Phase 3 completion):**
+  `TemplatedFlipViewElement<T>` — ported via the new
+  `PreMountedItems<TElement, TControl>` ChildrenStrategy and
+  `TemplatedFlipViewDescriptor`, registered base-derived against
+  `TemplatedFlipViewElementBase`. The strategy pre-mounts every item
+  up-front into `FlipView.Items` (no `ContainerContentChanging` to
+  drive realization) and positionally reconciles via
+  `Reconciler.ReconcileV1Child` on Update.
+- **Untyped items hosts (CLOSED — Phase 3 completion, partial):**
+  `ItemsViewElementBase`, `ItemContainerElement` — ported as
+  standard descriptors and registered in `RegisterV1BuiltInHandlers`.
+  `GridViewElement` (plain Element[]) — descriptor authored
+  (`GridViewDescriptor`) but **carved during PR #440 CR**: the
+  descriptor's `ItemsHost<>` strategy pre-mounts every item into
+  `GridView.Items` (one container per item, no virtualization),
+  while the legacy `MountGridView` arm uses
+  `ItemsSource = Range(0..N) + ItemTemplate + ContainerContentChanging`
+  to realize containers lazily (matches Phase 1 `ListViewHandler`).
+  Closing this needs either a hand-coded `GridViewHandler` or a new
+  ChildrenStrategy variant wrapping CCC. Tracked alongside TabView /
+  overlays / NavigationHost gap-closure.
+- **Heavy / specialized controls (CLOSED — Phase 3 completion):**
+  `WebView2Element`, `NavigationViewElement`, `TitleBarElement`,
+  `MediaPlayerElementElement`, `AnimatedVisualPlayerElement`,
+  `MapControlElement`, `SemanticZoomElement`,
+  `AnnotatedScrollBarElement`, `RefreshContainerElement`,
+  `SwipeControlElement`, `ParallaxViewElement` — all descriptors
+  authored and registered. (`NavigationHostElement` stays deferred —
+  see below.)
+- **Polymorphic / a11y (CLOSED — Phase 3 completion):**
+  `IconElement` (decorator-style handler via the
+  `IDecoratorElementHandler` engine extension landed this phase),
+  `SemanticElement`, `AnnounceRegionElement` — all registered.
+
+**Phase 3 completion — still deferred to the next PR (not regressions;
+scoped carve list documented inline in `RegisterV1BuiltInHandlers`):**
+
 - **Dialog / overlay family:** `ContentDialogElement`,
   `FlyoutElement`, `PopupElement`, `MenuBarElement`,
   `MenuFlyoutElement`, `CommandBarElement`,
-  `CommandBarFlyoutElement`. Button-family `Flyout` ships through the
-  `.OneWayBridged` setter on the button descriptors; the standalone
-  flyout elements are their own legacy paths.
-- **Heavy / specialized controls:** `WebView2Element`,
-  `NavigationViewElement`, `NavigationHostElement`,
-  `TitleBarElement`, `MediaPlayerElementElement`,
-  `AnimatedVisualPlayerElement`, `MapControlElement`,
-  `SemanticZoomElement`, `AnnotatedScrollBarElement`,
-  `RefreshContainerElement`, `SwipeControlElement`,
-  `ParallaxViewElement`.
-- **Polymorphic / interop / a11y:** `IconElement` (already documented
-  as escape-hatched — polymorphic mount), `SemanticElement`,
-  `AnnounceRegionElement`, `XamlHostElement`, `XamlPageElement`.
-- **Reactor infrastructure (likely SHOULD stay out of V1 dispatch):**
-  `ComponentElement`, `FuncElement`, `MemoElement`,
-  `ErrorBoundaryElement`, `CommandHostElement`, `ModifiedElement`,
-  `Validation.FormFieldElement` /
-  `ValidationVisualizerElement` / `ValidationRuleElement`. These are
-  Reactor composition primitives, not WinUI control wrappers — they
-  sit above the V1 handler protocol rather than being consumers of
-  it.
+  `CommandBarFlyoutElement`. Modal lifecycle (control-side-mounted,
+  not parent-tree-mounted) requires decorator-style ports beyond
+  the IDecoratorElementHandler shape used for `IconElement`.
+- **Stateful host:** `NavigationHostElement`. Per-instance
+  route/cache/transition state is intercepted in
+  `Reconciler.UnmountRecursive` BEFORE the V1 dispatch arm; needs
+  a small refactor to internal-expose `MountNavigationHost` /
+  `UpdateNavigationHost` and duplicate cleanup logic in the V1
+  handler before it can route through V1.
+- **`TabViewDescriptor` (descriptor exists, registration carved):**
+  Bisect (3× clean V1 ON full selftest with only TabViewDescriptor
+  carved, vs. 1–4 random docking-text-find failures per run when
+  registered: DockHooks / PixDoc / RoleAware / Composition /
+  FloatRoot) ratifies the descriptor's documented gaps as hot in
+  the docking suite — missing spec 045 §2.4 drag pipeline
+  (`OnTabDragStarting` / `OnTabDragCompleted`), §2.2 pinnable
+  headers (`BuildTabHeader` / `BuildPinButton` / in-place
+  `TryUpdatePinHeaderInPlace`), in-place CanUpdate for tab content
+  (preserves focus/state on re-renders), conditional `SelectedIndex`
+  write, and `TabStripHeader` / `TabStripFooter` Element slots.
+  Closing them requires engine work (post-children mount-hook so
+  `SelectionChanged` subscribes after children-add + an
+  `ImperativeBridged` shape for the named tab strip slots).
+- **`GridViewDescriptor` (descriptor exists, registration carved
+  during PR #440 CR):** The descriptor's `ItemsHost<>` ChildrenStrategy
+  pre-mounts every item into `GridView.Items` (one container per item,
+  no virtualization). The legacy `MountGridView` arm uses
+  `ItemsSource = Range(0..N) + ItemTemplate + ContainerContentChanging`
+  to realize containers lazily — matching Phase 1
+  `ListViewHandler`. A|B tests pass either way (no fixture stresses
+  GridView scale), but production memory/lifecycle would silently
+  regress. Closing this needs either a hand-coded `GridViewHandler`
+  mirroring `ListViewHandler`'s CCC virtualization, or a new
+  ChildrenStrategy variant (e.g. `RecyclingItemsHost<>`) that wraps
+  the `ItemsSource` + `ContainerContentChanging` realization
+  contract.
+- **Interop bridges:** `XamlHostElement`, `XamlPageElement`. V1
+  descriptors exist (`XamlHostDescriptor`, `XamlPageDescriptor`)
+  but stay unregistered because `XamlInterop.Register(reconciler)`
+  populates the external `_typeRegistry` at app startup; auto-
+  registering V1 would clash via `EnsureRegistrableElementType`.
+  Unification is Phase 4 follow-up.
 
-The "100% V1 dispatch" goal as scoped by §14's Phase 3 batches IS
-met (every batch entry has a V1 handler or descriptor). The list
-above is genuine post-Phase-3 scope, not a regression against the
-shipped Phase 3 plan.
+**Reactor composition primitives (intentionally above the V1
+protocol — Phase 4 cleanup keeps their legacy arms):**
+
+- `ComponentElement`, `FuncElement`, `MemoElement`,
+  `ErrorBoundaryElement`, `CommandHostElement`,
+  `Validation.FormFieldElement` /
+  `ValidationVisualizerElement` / `ValidationRuleElement`. These
+  orchestrate child reconciliation rather than wrap a single WinUI
+  control, so the V1 handler protocol does not apply.
+  (`ModifiedElement` is intentionally NOT in this list — it's
+  unwrapped to its wrapped element BEFORE dispatch at the top of
+  `Reconciler.Mount`, so it never reaches the switch and does not
+  count as a carved arm.)
+
+**Phase 3 completion status (PR #440 — landed-pending-merge):**
+Every element type in the production codebase either (a) routes
+through V1 dispatch (Phase 1 hand-coded handler OR Phase 3
+descriptor registered in `RegisterV1BuiltInHandlers`), (b) is a
+Reactor composition primitive intentionally kept above the V1
+protocol, or (c) is in the explicit deferred carve list above with
+a documented gap-closure path. The A|B parity bar — V1 ON ≡ V1 OFF
+across the full xunit + selftest matrix — is met for every
+registered element: 9134 xunit + 4410 selftest, 0 failures both
+flags. Phase 4 cleanup can delete every legacy `MountXxx` /
+`UpdateXxx` method that backs an element that has been registered
+through V1; the legacy switch arms for the composition primitives
++ the deferred carve list must remain until their respective
+follow-up PRs land.
+
+**Quantified V1 dispatch coverage (post-PR #440):**
+
+| Bucket | Arms | % of total |
+|---|---:|---:|
+| Routed through V1 (75 = 5 Phase 1 + 6 base-derived + 63 standard descriptors + 1 decorator) | 75 | 79% |
+| Reachable-but-deferred (overlays 7, NavigationHost 1, TabView 1, GridView 1, XamlHost/Page 2) | 12 | 12.6% |
+| Intentionally above V1 (composition primitives — permanent carve) | 8 | 8.4% |
+| **Total `Reconciler.Mount.cs` switch arms** | **95** | **100%** |
+
+- **Coverage of V1-reachable surface (excludes 8 composition primitives):** 75 / 87 ≈ **86%**.
+- **Coverage of all switch arms:** 75 / 95 ≈ **79%**.
+- **Path to 100% reachable:** the follow-up PR closes the 12 deferred:
+  1. Port the 7 overlay descriptors (ContentDialog, Flyout, Popup, MenuBar, MenuFlyout, CommandBar, CommandBarFlyout) — needs a decorator strategy variant for modal lifecycle beyond `IDecoratorElementHandler`.
+  2. Refactor `NavigationHostElement` cleanup path so V1 can own it (internal-expose `MountNavigationHost` / `UpdateNavigationHost`, duplicate cleanup logic in the V1 handler, remove the `UnmountRecursive` intercept).
+  3. Close `TabViewDescriptor` gaps (engine post-children mount-hook + `ImperativeBridged` for named slots + port `BuildTabHeader` / `BuildPinButton` / `TryUpdatePinHeaderInPlace` + drag pipeline trampolines + conditional `SelectedIndex` write + in-place `CanUpdate`).
+  4. Close `GridViewDescriptor` lifecycle gap — either author a Phase 1 hand-coded `GridViewHandler` mirroring `ListViewHandler`'s CCC virtualization, or introduce a `RecyclingItemsHost<>` ChildrenStrategy variant.
+  5. Unify `XamlInterop.Register` with V1 auto-registration so `XamlHostElement` / `XamlPageElement` descriptors can register without `EnsureRegistrableElementType` clash.
+
+Phase 4 cleanup (deletion of legacy switch arms + `UseV1Protocol`
+flag) is unblocked for the 75 routed arms today; the remaining 12
+arms unblock as the follow-up PR lands each closure.
 
 **Carry-forward known defects** (from Phase 1):
 
