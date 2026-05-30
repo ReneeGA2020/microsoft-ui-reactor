@@ -28,7 +28,6 @@ namespace Microsoft.UI.Reactor.Core.V1Protocol.Descriptor;
 /// On Update, <see cref="Update"/> runs and writes through
 /// <c>ReactorBinding.WriteSuppressed</c> when the entry is controlled.</para>
 /// </summary>
-[Experimental("REACTOR_V1_PREVIEW")]
 public abstract class PropEntry<TElement, TControl>
     where TElement : Element
     where TControl : UIElement
@@ -203,13 +202,51 @@ internal sealed class ControlledPropEntry<TElement, TControl, TValue, TArgs> : P
     private static readonly EventHandler<TArgs> StaticTrampoline = (sender, args) =>
     {
         var fe = (FrameworkElement)sender!;
-        if (ChangeEchoSuppressor.ShouldSuppress(fe)) return;
-        if (Reconciler.GetElementTag(fe) is not TElement liveEl) return;
-        var payload = Reconciler.GetOrCreateControlEventPayload<
+        var payload = Reconciler.TryGetControlEventPayload<
             DescriptorControlledPayload<TElement, TControl, TValue, TArgs>>(fe);
-        if (payload.ReadBack is not { } rb || payload.GetCallback is not { } gc) return;
+
+        // Counter / setter-scope suppression still wins on this control: an
+        // external ReactorBinding.WriteSuppressed token or an ApplySetters
+        // `.Set(...)` scope (which carry no expected value) are honored first.
+        // But if a value-diff echo is also armed and THIS suppressed event is
+        // that echo (readback matches), drain it here — otherwise the pending
+        // flag would strand and swallow the user's next real interaction.
+        if (ChangeEchoSuppressor.ShouldSuppress(fe))
+        {
+            if (payload is { HasExpectedEcho: true } ps && ps.ReadBack is { } rbs)
+            {
+                var cmps = ps.EchoComparer ?? EqualityComparer<TValue>.Default;
+                if (cmps.Equals(rbs((TControl)fe), ps.ExpectedEcho!))
+                {
+                    ps.HasExpectedEcho = false;
+                    ps.ExpectedEcho = default;
+                    ps.EchoComparer = null;
+                }
+            }
+            return;
+        }
+
+        if (Reconciler.GetElementTag(fe) is not TElement liveEl) return;
+        if (payload is null || payload.ReadBack is not { } rb || payload.GetCallback is not { } gc) return;
+
+        var current = rb((TControl)fe);
+
+        // §8 value-diff echo suppression (PoC): a programmatic controlled write
+        // armed ExpectedEcho. If this event's readback equals it, this IS that
+        // echo — consume it once and drop. A mismatch means a real user change
+        // superseded the pending write, so clear and fall through to the callback.
+        if (payload.HasExpectedEcho)
+        {
+            var expected = payload.ExpectedEcho;
+            var cmp = payload.EchoComparer ?? EqualityComparer<TValue>.Default;
+            payload.HasExpectedEcho = false;
+            payload.ExpectedEcho = default;
+            payload.EchoComparer = null;
+            if (cmp.Equals(current, expected!)) return;
+        }
+
         var cb = gc(liveEl);
-        cb?.Invoke(rb((TControl)fe));
+        cb?.Invoke(current);
     };
 
     public ControlledPropEntry(
@@ -232,8 +269,21 @@ internal sealed class ControlledPropEntry<TElement, TControl, TValue, TArgs> : P
 
     public override void Mount(TControl ctrl, TElement el)
     {
+        // §8 PoC: clear any value-diff arm left on a pooled payload from a prior
+        // lifecycle (the payload survives pool rent/return per KD-3) so it can't
+        // suppress this lifecycle's first real event.
+        var pooled = Reconciler.TryGetControlEventPayload<
+            DescriptorControlledPayload<TElement, TControl, TValue, TArgs>>(ctrl);
+        if (pooled is not null)
+        {
+            pooled.HasExpectedEcho = false;
+            pooled.ExpectedEcho = default;
+            pooled.EchoComparer = null;
+        }
+
         // Bare initial write — subscription has not yet been wired (the
-        // interpreter calls EnsureSubscribed after all Mount writes).
+        // interpreter calls EnsureSubscribed after all Mount writes), so this
+        // write raises no echo callback and needs no arming.
         var v = _get(el);
         if (!_comparer.Equals(_readBack(ctrl), v))
             _set(ctrl, v);
@@ -242,13 +292,33 @@ internal sealed class ControlledPropEntry<TElement, TControl, TValue, TArgs> : P
     public override void Update(TControl ctrl, TElement oldEl, TElement newEl)
     {
         var nv = _get(newEl);
-        var ov = _get(oldEl);
         var current = _readBack(ctrl);
-        // Write when the element prop genuinely changed OR the control has
-        // drifted from the element's authority (e.g. user-typed text the
-        // descriptor is overriding).
-        if (!_comparer.Equals(ov, nv) || !_comparer.Equals(current, nv))
-            ReactorBinding.WriteSuppressed(ctrl, () => _set(ctrl, nv));
+        // Spec 047 §8 echo-suppression contract: write ONLY when the control has
+        // drifted from the element's authority. A no-drift write raises no event,
+        // so arming would strand the pending flag (the §8 cross-state echo class).
+        if (_comparer.Equals(current, nv))
+            return;
+
+        // §8 value-diff echo suppression (PoC) for the controlled fast path: arm
+        // the per-control "expected echo" instead of bumping the causal counter,
+        // then write. The synthesized change event is recognized in the trampoline
+        // by readback == expected and dropped once. Only arm when a callback is
+        // present (otherwise no echo can fire) and a payload exists (it does iff
+        // EnsureSubscribed wired the trampoline for this control's lifetime); if
+        // it does not, there is no subscription, hence no echo to suppress.
+        if (_getCallback(newEl) is not null)
+        {
+            var payload = Reconciler.TryGetControlEventPayload<
+                DescriptorControlledPayload<TElement, TControl, TValue, TArgs>>(ctrl);
+            if (payload is not null)
+            {
+                payload.ExpectedEcho = nv;
+                payload.HasExpectedEcho = true;
+                payload.EchoComparer = _comparer;
+            }
+        }
+
+        _set(ctrl, nv);
     }
 
     public override void EnsureSubscribed(
@@ -298,6 +368,27 @@ internal sealed class DescriptorControlledPayload<TElement, TControl, TValue, TA
     public EventHandler<TArgs>? Trampoline;
     public Func<TControl, TValue>? ReadBack;
     public Func<TElement, Action<TValue>?>? GetCallback;
+
+    // Spec 047 §8 value-diff echo suppression (PoC). A programmatic controlled
+    // write arms ExpectedEcho with the value it just wrote; the change-event
+    // trampoline drops the single matching echo (readback == ExpectedEcho) once,
+    // then clears it. Replaces the causal counter on this fast path only — the
+    // counter is retained everywhere else (setter scope, public WriteSuppressed,
+    // hand-coded / coercing / collection entries).
+    //
+    // CAVEAT (accepted PoC tradeoff): this is a SINGLE pending slot and is only
+    // correct if the control raises its change event SYNCHRONOUSLY inside the
+    // `_set` write (so the trampoline drains the arm before Update can run again).
+    // All controls on this path today (RadioButton/ToggleSplitButton/ToggleSwitch
+    // .IsChecked-style toggles, RatingControl, the date/time pickers) raise their
+    // change event inline. If a control with a deferred/queued change event is
+    // ever routed through ControlledPropEntry, a second Update could overwrite the
+    // arm before the queued echo arrives, mis-suppressing or leaking one event —
+    // at which point this path should migrate back to the causal counter (which
+    // is deliberately kept intact for exactly that fallback).
+    public TValue? ExpectedEcho;
+    public bool HasExpectedEcho;
+    public IEqualityComparer<TValue>? EchoComparer;
 }
 
 /// <summary>§14 Phase 3 (3.0.1) — <c>Prop.Controlled</c> escape-hatch entry
@@ -345,6 +436,7 @@ internal sealed class HandCodedControlledPropEntry<TElement, TControl, TPayload,
     private readonly Func<TPayload, bool> _slotIsNull;
     private readonly Action<TPayload, TDelegate> _setSlot;
     private readonly IEqualityComparer<TValue> _comparer;
+    private readonly bool _valueDiffEcho;
 
     public HandCodedControlledPropEntry(
         Func<TElement, TValue> get,
@@ -355,7 +447,8 @@ internal sealed class HandCodedControlledPropEntry<TElement, TControl, TPayload,
         TDelegate trampoline,
         Func<TPayload, bool> slotIsNull,
         Action<TPayload, TDelegate> setSlot,
-        IEqualityComparer<TValue>? comparer = null)
+        IEqualityComparer<TValue>? comparer = null,
+        bool valueDiffEcho = false)
     {
         _get = get;
         _set = set;
@@ -366,10 +459,17 @@ internal sealed class HandCodedControlledPropEntry<TElement, TControl, TPayload,
         _slotIsNull = slotIsNull;
         _setSlot = setSlot;
         _comparer = comparer ?? EqualityComparer<TValue>.Default;
+        _valueDiffEcho = valueDiffEcho;
     }
 
     public override void Mount(TControl ctrl, TElement el)
     {
+        // §8 value-diff: clear any stale arm left on a pooled control so it
+        // can't suppress this lifecycle's first real event. Mount writes are
+        // bare (subscription not yet wired), so no arming here.
+        if (_valueDiffEcho)
+            ChangeEchoSuppressor.ClearExpectedEcho(ctrl);
+
         var v = _get(el);
         if (!_comparer.Equals(_readBack(ctrl), v))
             _set(ctrl, v);
@@ -378,10 +478,41 @@ internal sealed class HandCodedControlledPropEntry<TElement, TControl, TPayload,
     public override void Update(TControl ctrl, TElement oldEl, TElement newEl)
     {
         var nv = _get(newEl);
-        var ov = _get(oldEl);
         var current = _readBack(ctrl);
-        if (!_comparer.Equals(ov, nv) || !_comparer.Equals(current, nv))
+        // Spec 047 §8: suppress-write only on real drift (see ControlledPropEntry).
+        // The prior `oldEl != newEl` disjunct stranded the suppress token on the
+        // standard controlled round-trip and swallowed the next real user event.
+        if (_comparer.Equals(current, nv))
+            return;
+
+        // §8 value-diff (opt-in via valueDiffEcho): arm the per-control expected
+        // echo instead of bumping the causal counter, then write bare. The
+        // hand-written trampoline drops the single synthesized echo whose
+        // readback matches via ShouldSuppressEcho. Arm only when a callback is
+        // present (otherwise nothing is subscribed to echo). The control's event
+        // fires synchronously inside _set, so a trampoline that is not yet wired
+        // (null→non-null callback transition) simply produces no echo — no strand.
+        if (_valueDiffEcho)
+        {
+            if (_getCallback(newEl) is not null)
+            {
+                var expected = nv;
+                var cmp = _comparer;
+                ChangeEchoSuppressor.ArmExpectedEcho(
+                    ctrl, rb => cmp.Equals(rb is TValue tv ? tv : default!, expected));
+            }
+            _set(ctrl, nv);
+            // If a guarded/coerced setter (e.g. `if (v >= 0) ...`, bounds checks)
+            // dropped the write, the synchronous echo never fired to consume the
+            // arm. Clear it so it can't strand and swallow a later real event
+            // whose readback happens to equal the never-applied value.
+            if (!_comparer.Equals(_readBack(ctrl), nv))
+                ChangeEchoSuppressor.ClearExpectedEcho(ctrl);
+        }
+        else
+        {
             ReactorBinding.WriteSuppressed(ctrl, () => _set(ctrl, nv));
+        }
     }
 
     public override void EnsureSubscribed(
@@ -645,7 +776,6 @@ internal sealed class OneWayBridgedPropEntry<TElement, TControl, TValue> : PropE
 /// <see cref="MountContext"/> / <see cref="UpdateContext"/> doesn't need
 /// to be passed — the entry projects the two pieces a bridge typically
 /// needs (the <see cref="Reconciler"/> and the rerender callback).</summary>
-[Experimental("REACTOR_V1_PREVIEW")]
 public delegate void OneWayBridgedSetter<in TControl, in TValue>(
     TControl ctrl, TValue value, Reconciler reconciler, Action requestRerender)
     where TControl : UIElement;

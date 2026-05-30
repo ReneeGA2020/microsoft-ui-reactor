@@ -249,24 +249,4 @@ public class TypeRegistryTests
         // CanUpdate should work for built-in types
         Assert.True(reconciler.CanUpdate(new TextBlockElement("a"), new TextBlockElement("b")));
     }
-
-    [Fact]
-    public void Override_Builtin_Type_Mount_Is_Dispatched()
-    {
-        var reconciler = new Reconciler();
-        bool customCalled = false;
-
-        // Override built-in TextBlockElement
-        reconciler.RegisterType<TextBlockElement, TextBlock>(
-            mount: (r, el, rerender) =>
-            {
-                customCalled = true;
-                throw new InvalidOperationException("Custom handler reached");
-            },
-            update: (r, oldEl, newEl, ctrl, rerender) => null);
-
-        Assert.Throws<InvalidOperationException>(() =>
-            reconciler.Mount(new TextBlockElement("hello"), () => { }));
-        Assert.True(customCalled);
-    }
 }

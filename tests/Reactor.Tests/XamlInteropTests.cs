@@ -178,27 +178,25 @@ public class XamlInteropTests
     [Fact]
     public void Register_Adds_XamlPageElement_To_Registry()
     {
+        // §14 Phase 4 (§4.0.5 + §4.1): with V1 ON by default, XamlPage is owned
+        // by V1 auto-registration (the V1 handler registry), so Register is an
+        // idempotent no-op for it. Under the V1-OFF escape hatch, Register
+        // populates the legacy _typeRegistry instead. IsElementTypeRegistered
+        // unifies both, so it is the flag-independent assertion.
         var reconciler = new Reconciler();
         XamlInterop.Register(reconciler);
 
-        var registry = typeof(Reconciler)
-            .GetField("_typeRegistry", global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Instance)!
-            .GetValue(reconciler) as global::System.Collections.IDictionary;
-
-        Assert.True(registry!.Contains(typeof(XamlPageElement)));
+        Assert.True(reconciler.IsElementTypeRegistered(typeof(XamlPageElement)));
     }
 
     [Fact]
     public void Register_Adds_XamlHostElement_To_Registry()
     {
+        // See Register_Adds_XamlPageElement_To_Registry — flag-independent check.
         var reconciler = new Reconciler();
         XamlInterop.Register(reconciler);
 
-        var registry = typeof(Reconciler)
-            .GetField("_typeRegistry", global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Instance)!
-            .GetValue(reconciler) as global::System.Collections.IDictionary;
-
-        Assert.True(registry!.Contains(typeof(XamlHostElement)));
+        Assert.True(reconciler.IsElementTypeRegistered(typeof(XamlHostElement)));
     }
 
     [Fact]
@@ -231,15 +229,17 @@ public class XamlInteropTests
     }
 
     [Fact]
-    public void Register_Twice_Throws_In_V1()
+    public void Register_Twice_Is_Idempotent()
     {
-        // Spec 047 §13 Q17 / §14 Phase 1 (1.9): duplicate registration is
-        // forbidden. The pre-v1 idempotent-overwrite behavior has been
-        // removed; callers that initialized the interop twice must
-        // refactor to call XamlInterop.Register exactly once per Reconciler.
+        // Spec 047 §14 Phase 4 (4.0.5): XamlInterop.Register now skips any
+        // element type that is already registered (whether by a prior Register
+        // call or by V1 auto-registration), so calling it more than once per
+        // Reconciler is a safe no-op rather than tripping the §13 Q17
+        // duplicate-registration guard.
         var reconciler = new Reconciler();
         XamlInterop.Register(reconciler);
-        Assert.Throws<InvalidOperationException>(() => XamlInterop.Register(reconciler));
+        var ex = Record.Exception(() => XamlInterop.Register(reconciler));
+        Assert.Null(ex);
     }
 
     // ── XamlHostElement record with TypeKey ───────────────────────

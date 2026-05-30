@@ -45,13 +45,12 @@ namespace Microsoft.UI.Reactor.Core.V1Protocol.Descriptor.Descriptors;
 /// the time the SelectedIndex prop setter fires, <c>FlipView.Items</c>
 /// is populated and WinUI accepts the index.</para>
 /// </summary>
-[Experimental("REACTOR_V1_PREVIEW")]
 internal static class TemplatedFlipViewDescriptor
 {
     private static readonly WinUI.SelectionChangedEventHandler SelectionChangedTrampoline = (s, _) =>
     {
         var f = (WinUI.FlipView)s!;
-        if (ChangeEchoSuppressor.ShouldSuppress(f)) return;
+        if (ChangeEchoSuppressor.ShouldSuppressEcho(f, f.SelectedIndex)) return;
         (Reconciler.GetElementTag(f) as TemplatedFlipViewElementBase)?.InvokeSelectionChanged(f.SelectedIndex);
     };
 
@@ -81,5 +80,6 @@ internal static class TemplatedFlipViewDescriptor
                             : null,
             trampoline:  SelectionChangedTrampoline,
             slotIsNull:  static p => p.SelectionChangedTrampoline is null,
-            setSlot:     static (p, h) => p.SelectionChangedTrampoline = h);
+            setSlot:     static (p, h) => p.SelectionChangedTrampoline = h,
+            valueDiffEcho: true);
 }

@@ -14,14 +14,17 @@ namespace Microsoft.UI.Reactor.Core.V1Protocol;
 /// control's lifetime) plus a Current* user delegate the trampoline reads
 /// on each fire.
 ///
-/// Phase 1 ships only the shape and storage. Legacy MountXxx paths still
-/// use the shared <c>EventHandlerState</c> (Toggled / Click / TextChanged
-/// trampolines); ported V1 controls opt into a per-control payload via
+/// The control-intrinsic events live here in per-control payload boxes; the
+/// routed/modifier input family (pointer / key / focus / etc.) lives in the
+/// shared <c>ModifierEventHandlerState</c>. Ported V1 controls opt into a
+/// per-control payload via
 /// <see cref="ReactorBinding{TElement}.OnCustomEvent{TArgs}"/>.
 ///
 /// Handlers verify the payload type via <see cref="ControlEventStateBox.HandlerType"/>
 /// before unboxing (§9.2 "Why the discriminator matters"). The pool reset
-/// contract clears <c>ReactorState.ControlEventState</c> on return.
+/// contract PRESERVES <c>ReactorState.ControlEventState</c> across rent/return
+/// (issue #114) — trampolines stay subscribed for the control's lifetime and
+/// the box is only dropped on full detach.
 /// </summary>
 internal sealed class ToggleSwitchEventPayload
 {
@@ -41,6 +44,13 @@ internal sealed class TextBoxEventPayload
     public Action<Element, Microsoft.UI.Xaml.Controls.TextChangedEventArgs>? CurrentTextChanged;
     public Microsoft.UI.Xaml.RoutedEventHandler? SelectionChangedTrampoline;
     public Action<Element, Microsoft.UI.Xaml.RoutedEventArgs>? CurrentSelectionChanged;
+
+    // Spec 047 §8 value-diff echo suppression (PoC) — see TextBoxHandler. A
+    // programmatic controlled `Text` write arms ExpectedEchoText with the value
+    // it just wrote; the TextChanged trampoline drops the single matching echo
+    // (readback == ExpectedEchoText) once instead of the legacy counter.
+    public string? ExpectedEchoText;
+    public bool HasExpectedEchoText;
 }
 
 internal sealed class ImageEventPayload
@@ -335,6 +345,15 @@ internal sealed class TabViewEventPayload
     public global::Windows.Foundation.TypedEventHandler<
         Microsoft.UI.Xaml.Controls.TabView,
         object>? AddTabButtonClickTrampoline;
+    // Spec 045 §2.4 docking drag pipeline — fire-only slots wired by the
+    // §4.0.3 TabViewDescriptor port (replaces the always-subscribed legacy
+    // MountTabView arms).
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.TabView,
+        Microsoft.UI.Xaml.Controls.TabViewTabDragStartingEventArgs>? TabDragStartingTrampoline;
+    public global::Windows.Foundation.TypedEventHandler<
+        Microsoft.UI.Xaml.Controls.TabView,
+        Microsoft.UI.Xaml.Controls.TabViewTabDragCompletedEventArgs>? TabDragCompletedTrampoline;
 }
 
 /// <summary>Spec 047 §14 Phase 3-final Batch B — Frame multi-event payload.

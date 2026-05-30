@@ -26,8 +26,15 @@ namespace Microsoft.UI.Reactor.Core.V1Protocol.Descriptor.Descriptors;
 /// <para><b>Known gaps vs. hand-coded handler:</b> Items reconciliation is
 /// non-keyed (full rebuild on any structural delta). Acceptable for short
 /// ListBoxes (typical 3–15 options).</para>
+///
+/// <para><b>Echo suppression — causal counter (PR #455 CR item #1):</b>
+/// <c>SelectedIndex</c> uses <c>ShouldSuppress</c> / <c>WriteSuppressed</c>,
+/// not the §8 value-diff arm, for the same reason as
+/// <see cref="GridViewDescriptor"/> — see that type for the full rationale and
+/// the empirical findings. The counter gate suppresses the entire trampoline
+/// fire, so it governs the multi-select snapshot <c>OnSelectionChanged</c> too
+/// (CR item #3).</para>
 /// </summary>
-[Experimental("REACTOR_V1_PREVIEW")]
 internal static class ListBoxDescriptor
 {
     private static readonly global::System.Action<int> NoOpSelectedIndexChanged = static _ => { };

@@ -13,9 +13,13 @@ namespace Microsoft.UI.Reactor.Core.V1Protocol.Descriptor.Descriptors;
 /// <para><b>Coverage:</b>
 /// <list type="bullet">
 ///   <item><c>SelectedIndex</c> — <see cref="ControlDescriptor{TElement,TControl}.HandCodedControlled{TPayload,TValue,TDelegate}"/>
-///   with <c>SelectionChangedEventHandler</c> trampoline. Trampoline
-///   gates on <c>ChangeEchoSuppressor.ShouldSuppress</c>; HandCodedControlled
-///   wraps the programmatic write in <c>WriteSuppressed</c>.</item>
+///   with <c>SelectionChangedEventHandler</c> trampoline. ComboBox's
+///   <c>SelectionChanged</c> fires synchronously inside the programmatic
+///   write, so this opts into the §8 value-diff arm (<c>valueDiffEcho: true</c>):
+///   the trampoline gates on <c>ChangeEchoSuppressor.ShouldSuppressEcho</c> and
+///   the write is a bare <c>_set</c> + <c>ArmExpectedEcho</c> (no counter bump).
+///   Contrast GridView/ListBox, which stay on the causal counter — see
+///   <see cref="GridViewDescriptor"/> (PR #455 CR item #1).</item>
 ///   <item><c>DropDownOpened</c> — <see cref="ControlDescriptor{TElement,TControl}.HandCodedEvent{TPayload,TDelegate}"/>
 ///   with <c>EventHandler&lt;object&gt;</c> trampoline (ComboBox's
 ///   DropDownOpened/Closed events are plain <c>EventHandler&lt;object&gt;</c>).</item>
@@ -36,13 +40,12 @@ namespace Microsoft.UI.Reactor.Core.V1Protocol.Descriptor.Descriptors;
 /// re-renders. Reconciliation is positional (clear + add on structural
 /// delta); keyed reconciliation for templated lists lands in batch G2.</para>
 /// </summary>
-[Experimental("REACTOR_V1_PREVIEW")]
 internal static class ComboBoxDescriptor
 {
     private static readonly WinUI.SelectionChangedEventHandler SelectionChangedTrampoline = (s, _) =>
     {
         var cb = (WinUI.ComboBox)s!;
-        if (ChangeEchoSuppressor.ShouldSuppress(cb)) return;
+        if (ChangeEchoSuppressor.ShouldSuppressEcho(cb, cb.SelectedIndex)) return;
         (Reconciler.GetElementTag(cb) as ComboBoxElement)
             ?.OnSelectedIndexChanged?.Invoke(cb.SelectedIndex);
     };
@@ -78,7 +81,8 @@ internal static class ComboBoxDescriptor
             callback:    static e => e.OnSelectedIndexChanged,
             trampoline:  SelectionChangedTrampoline,
             slotIsNull:  static p => p.SelectionChangedTrampoline is null,
-            setSlot:     static (p, h) => p.SelectionChangedTrampoline = h)
+            setSlot:     static (p, h) => p.SelectionChangedTrampoline = h,
+            valueDiffEcho: true)
         .HandCodedEvent<ComboBoxEventPayload, global::System.EventHandler<object>>(
             subscribe:        static (c, h) => c.DropDownOpened += h,
             callbackPresent:  static e => e.OnDropDownOpened,

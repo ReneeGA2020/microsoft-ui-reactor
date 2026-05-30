@@ -27,16 +27,15 @@ namespace Microsoft.UI.Reactor.Core.V1Protocol.Descriptor.Descriptors;
 /// for the common prefix. Acceptable for short SelectorBars (typical
 /// 2–5 segments).</para>
 /// </summary>
-[Experimental("REACTOR_V1_PREVIEW")]
 internal static class SelectorBarDescriptor
 {
     private static readonly TypedEventHandler<WinUI.SelectorBar, WinUI.SelectorBarSelectionChangedEventArgs>
         SelectionChangedTrampoline = (s, _) =>
         {
             var bar = (WinUI.SelectorBar)s!;
-            if (ChangeEchoSuppressor.ShouldSuppress(bar)) return;
-            if (Reconciler.GetElementTag(bar) is not SelectorBarElement el) return;
             var idx = bar.Items.IndexOf(bar.SelectedItem);
+            if (ChangeEchoSuppressor.ShouldSuppressEcho(bar, idx)) return;
+            if (Reconciler.GetElementTag(bar) is not SelectorBarElement el) return;
             el.OnSelectedIndexChanged?.Invoke(idx);
         };
 
@@ -82,7 +81,8 @@ internal static class SelectorBarDescriptor
             callback:    static e => e.OnSelectedIndexChanged,
             trampoline:  SelectionChangedTrampoline,
             slotIsNull:  static p => p.SelectionChangedTrampoline is null,
-            setSlot:     static (p, h) => p.SelectionChangedTrampoline = h);
+            setSlot:     static (p, h) => p.SelectionChangedTrampoline = h,
+            valueDiffEcho: true);
 
     private sealed class SelectorBarItemsComparer : IEqualityComparer<SelectorBarItemData[]>
     {
