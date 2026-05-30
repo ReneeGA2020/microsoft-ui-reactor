@@ -291,6 +291,14 @@ public static partial class ElementExtensions
     public static TreeViewElement Expanding(this TreeViewElement el, Action<TreeViewNodeData>? handler) =>
         el with { OnExpanding = handler };
 
+    /// <summary>Wires the item-invoked handler for the typed tree (receives the developer's <c>T</c>). Passing <c>null</c> clears.</summary>
+    public static TemplatedTreeViewElement<T> ItemInvoked<T>(this TemplatedTreeViewElement<T> el, Action<T>? handler) =>
+        el with { OnItemInvoked = handler };
+
+    /// <summary>Wires the expanding handler for the typed tree (receives the developer's <c>T</c>). Passing <c>null</c> clears.</summary>
+    public static TemplatedTreeViewElement<T> Expanding<T>(this TemplatedTreeViewElement<T> el, Action<T>? handler) =>
+        el with { OnExpanding = handler };
+
     /// <summary>Wires the selected-index-changed handler. Passing <c>null</c> clears.</summary>
     public static FlipViewElement SelectedIndexChanged(this FlipViewElement el, Action<int>? handler) =>
         el with { OnSelectedIndexChanged = handler };

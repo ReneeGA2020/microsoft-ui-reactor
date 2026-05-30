@@ -372,6 +372,9 @@ public sealed record TreeChildren<TElement, TControl>(
             tree.RootNodes.Add(CreateTreeNode(nodes[i], hasContentElements, reconciler, requestRerender));
     }
 
+    // Legacy TreeViewNodeData.ContentElement reads — [Obsolete] in favor of
+    // typed TreeView<T> (issue #447); suppress CS0618 at the internal use sites.
+#pragma warning disable CS0618
     private static bool HasAnyContentElement(IReadOnlyList<TreeViewNodeData> nodes)
     {
         for (int i = 0; i < nodes.Count; i++)
@@ -395,6 +398,7 @@ public sealed record TreeChildren<TElement, TControl>(
                 node.Children.Add(CreateTreeNode(data.Children[i], mountElements, reconciler, requestRerender));
         return node;
     }
+#pragma warning restore CS0618
 
     private static void UnmountTreeContent(IList<WinUI.TreeViewNode> nodes, Reconciler reconciler)
     {

@@ -670,6 +670,25 @@ public sealed partial class Reconciler : IDisposable
         return state;
     }
 
+    // ── Typed TreeView<T> container hosting ──────────────────────────────
+    //
+    // The typed TreeView hosts each node's view imperatively (the WinUI
+    // ItemTemplate-equivalent), exactly like the typed ListView: the
+    // ItemTemplate is an empty ContentControl shell, and we populate each
+    // realized container's ContentControl from the node's data item on
+    // realization (and tear it down on recycle). This is what makes
+    // expand/collapse robust — a fresh view is mounted into whichever pooled
+    // container WinUI realizes the node into, so no element is ever stuck
+    // parented to a stale (recycled) container. node.Content holds the
+    // developer's data item (the boxed T) — WinUI-aligned, and read back by
+    // the ItemInvoked / Expanding trampolines.
+    //
+    // Caches the internal TreeViewList (template part "ListControl", a public
+    // ListView subclass) per TreeView so Update can reconcile realized
+    // containers, and so the ContainerContentChanging subscription is attached
+    // exactly once.
+    private readonly global::System.Runtime.CompilerServices.ConditionalWeakTable<WinUI.TreeView, WinUI.ListView> _typedTreeListControls = new();
+
     /// <summary>
     /// Spec 047 §14 Phase 1 (1.3) — promoted from internal. Associates a
     /// control with its current Reactor element via the
@@ -1967,6 +1986,70 @@ public sealed partial class Reconciler : IDisposable
         {
             UnmountRecursive(ccChild);
         }
+        else if (control is WinUI.TreeView typedTree && GetElementTag(typedTree) is TemplatedTreeViewElementBase)
+        {
+            // Typed TreeView<T> hosts each node's view in a per-container
+            // ContentControl (populated on realization — see _typedTreeListControls).
+            // WinUI.TreeView is a Control (not a Panel / ContentControl), so the
+            // branches above don't recurse into it; walk its realized containers
+            // and tear down the mounted views, or their Components' cleanups
+            // (UseEffect, timers, subscriptions) would leak on unmount.
+            UnmountTypedTreeViewContainers(typedTree);
+            _typedTreeListControls.Remove(typedTree);
+        }
+    }
+
+    /// <summary>
+    /// Walks a typed TreeView's visual subtree and unmounts every per-node view
+    /// hosted in a tagged container ContentControl. Used on full-tree unmount
+    /// (recycle of individual containers is handled by the
+    /// ContainerContentChanging recycle path).
+    /// </summary>
+    private void UnmountTypedTreeViewContainers(WinUI.TreeView treeView)
+    {
+        int count = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(treeView);
+        for (int i = 0; i < count; i++)
+            UnmountTypedTreeViewContainersRecursive(Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChild(treeView, i));
+    }
+
+    private void UnmountTypedTreeViewContainersRecursive(DependencyObject node)
+    {
+        // Our node-view hosts are ContentControls tagged with the view Element.
+        if (node is WinUI.ContentControl cc && cc.Content is UIElement view && GetElementTag(cc) is not null)
+        {
+            UnmountChild(view);
+            cc.Content = null;
+            ClearElementTag(cc);
+            return; // the view's own subtree is handled by UnmountChild
+        }
+        int count = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(node);
+        for (int i = 0; i < count; i++)
+            UnmountTypedTreeViewContainersRecursive(Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChild(node, i));
+    }
+
+    /// <summary>
+    /// Finds the typed TreeView's internal <c>TreeViewList</c> (template part
+    /// "ListControl", a public <see cref="WinUI.ListView"/> subclass). Returns
+    /// the cached instance when hosting is already attached; otherwise walks the
+    /// visual subtree without caching — only <c>AttachTypedTreeHosting</c> writes
+    /// <see cref="_typedTreeListControls"/> (its presence marks "subscribed", so
+    /// a read-side cache write here would suppress the real subscription).
+    /// </summary>
+    internal WinUI.ListView? FindTypedTreeListControl(WinUI.TreeView treeView) =>
+        _typedTreeListControls.TryGetValue(treeView, out var cached)
+            ? cached
+            : FindDescendantListView(treeView);
+
+    private static WinUI.ListView? FindDescendantListView(DependencyObject root)
+    {
+        int count = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < count; i++)
+        {
+            var child = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChild(root, i);
+            if (child is WinUI.ListView lv) return lv;
+            if (FindDescendantListView(child) is { } nested) return nested;
+        }
+        return null;
     }
 
     /// <summary>

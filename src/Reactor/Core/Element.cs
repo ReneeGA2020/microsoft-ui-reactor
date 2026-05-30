@@ -814,6 +814,16 @@ public abstract record Element
                 && ta.GetIsItemClickEnabled() == tb.GetIsItemClickEnabled()
                 && !ta.HasSetters && !tb.HasSetters,
 
+            // Templated hierarchical TreeView — same rationale as the
+            // templated lists above: Items/selectors/ViewBuilder are factory
+            // inputs that drive child reconcile, not parent-control props.
+            (TemplatedTreeViewElementBase tta, TemplatedTreeViewElementBase ttb) =>
+                tta.GetSelectionMode() == ttb.GetSelectionMode()
+                && tta.GetCanDragItems() == ttb.GetCanDragItems()
+                && tta.GetAllowDrop() == ttb.GetAllowDrop()
+                && tta.GetCanReorderItems() == ttb.GetCanReorderItems()
+                && !tta.HasSetters && !ttb.HasSetters,
+
             // Lazy (virtualized) stacks: same rationale — Items/ViewBuilder
             // are factory inputs, not control properties.
             (LazyStackElementBase la, LazyStackElementBase lb) =>
@@ -1999,6 +2009,17 @@ public record TreeViewNodeData(string Content, TreeViewNodeData[]? Children = nu
     /// Optional Reactor element to render as the node's visual content.
     /// When null, a TextBlock showing Content is rendered.
     /// </summary>
+    /// <remarks>
+    /// Deprecated. WinUI's node-mode <c>TreeView</c> stringifies node content
+    /// and cannot host a pre-built <c>UIElement</c>, so rich per-node visuals
+    /// must come from a template (a <c>data → Element</c> function), never an
+    /// element instance. Use the typed, data-driven
+    /// <c>UI.TreeView&lt;T&gt;(items, keySelector, childrenSelector, viewBuilder)</c>
+    /// — the hierarchical peer of <c>ListView&lt;T&gt;</c> — instead. The legacy
+    /// path stays functional for back-compat but renders blank under
+    /// virtualization recycling.
+    /// </remarks>
+    [Obsolete("Use the typed UI.TreeView<T>(items, keySelector, childrenSelector, viewBuilder) overload (the hierarchical peer of ListView<T>); a pre-built Element cannot be hosted in a node-mode TreeViewNode. See issue #447.")]
     public Element? ContentElement { get; init; }
 }
 
@@ -3453,6 +3474,122 @@ public record TemplatedFlipViewElement<T>(
         Reconciler.ApplySetters(Setters, (WinUI.FlipView)control);
     internal override bool HasCallbacks => OnSelectedIndexChanged is not null;
     internal override bool HasSetters => Setters.Length > 0;
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  Templated (data-driven) hierarchical TreeView
+// ════════════════════════════════════════════════════════════════════════
+
+/// <summary>
+/// Abstract non-generic base for the typed, data-driven <c>TreeView</c>.
+/// Non-generic so the reconciler can match a single type in its switch
+/// expression (same type-erasure pattern as <see cref="TemplatedListElementBase"/>).
+///
+/// <para>This is the hierarchical peer of <see cref="TemplatedListViewElement{T}"/>:
+/// the developer supplies their own data items, a key selector, a children
+/// selector (the hierarchy), and a <c>viewBuilder</c> (<c>data → Element</c>,
+/// the WinUI <c>ItemTemplate</c> equivalent). It exists because WinUI's
+/// node-mode <c>TreeView</c> stringifies <c>TreeViewNode.Content</c> and
+/// cannot host a pre-built <c>UIElement</c> — rich per-node visuals must come
+/// from a template, never an element instance (the root cause of issue #447).</para>
+///
+/// <para>The base exposes object-erased accessors; the generic leaf casts back
+/// to <c>T</c>. Reference-type <c>T</c> flows through the covariant
+/// <see cref="IReadOnlyList{T}"/> → <c>IReadOnlyList&lt;object&gt;</c>
+/// conversion; value-type <c>T</c> is boxed once via the leaf's projection
+/// helper.</para>
+/// </summary>
+public abstract record TemplatedTreeViewElementBase : Element
+{
+    /// <summary>The root data items (object-erased), in document order.</summary>
+    public abstract IReadOnlyList<object> GetRoots();
+    /// <summary>The children of <paramref name="item"/>, or null for a leaf.</summary>
+    public abstract IReadOnlyList<object>? GetChildren(object item);
+    /// <summary>The stable identity string for <paramref name="item"/> (the keyed-diff key).</summary>
+    public abstract string GetKey(object item);
+    /// <summary>Builds the per-node view (the <c>ItemTemplate</c> equivalent).</summary>
+    public abstract Element BuildView(object item);
+    /// <summary>Whether <paramref name="item"/>'s node should start expanded.</summary>
+    public abstract bool GetIsExpanded(object item);
+    /// <summary>Dispatches <c>OnItemInvoked</c> with the developer's own <c>T</c>.</summary>
+    public abstract void InvokeItemInvoked(object item);
+    /// <summary>Dispatches <c>OnExpanding</c> with the developer's own <c>T</c>.</summary>
+    public abstract void InvokeExpanding(object item);
+
+    public abstract TreeViewSelectionMode GetSelectionMode();
+    public abstract bool GetCanDragItems();
+    public abstract bool GetAllowDrop();
+    public abstract bool GetCanReorderItems();
+    public abstract void ApplyControlSetters(object control);
+
+    /// <summary>
+    /// True when programmatic setter actions (.Set(...)) are attached. Used by
+    /// <see cref="Element.OwnPropsEqual"/> to suppress the reconcile-highlight
+    /// short-circuit (same rationale as <see cref="TemplatedListElementBase.HasSetters"/>).
+    /// </summary>
+    internal virtual bool HasSetters => false;
+}
+
+/// <summary>
+/// Typed, data-driven <c>TreeView</c>. The hierarchical peer of
+/// <see cref="TemplatedListViewElement{T}"/>. See
+/// <see cref="TemplatedTreeViewElementBase"/>.
+/// </summary>
+public record TemplatedTreeViewElement<T>(
+    IReadOnlyList<T> Items,
+    Func<T, string> KeySelector,
+    Func<T, IReadOnlyList<T>?> ChildrenSelector,
+    Func<T, Element> ViewBuilder
+) : TemplatedTreeViewElementBase
+{
+    /// <summary>Invoked with the developer's <c>T</c> when a node is clicked/invoked.</summary>
+    public Action<T>? OnItemInvoked { get; init; }
+    /// <summary>Invoked with the developer's <c>T</c> just before a node expands.</summary>
+    public Action<T>? OnExpanding { get; init; }
+    /// <summary>Per-item initial-expansion selector. Defaults to collapsed.</summary>
+    public Func<T, bool>? IsExpanded { get; init; }
+    public TreeViewSelectionMode SelectionMode { get; init; } = TreeViewSelectionMode.Single;
+    public bool CanDragItems { get; init; }
+    public bool AllowDrop { get; init; }
+    public bool CanReorderItems { get; init; }
+    internal Action<WinUI.TreeView>[] Setters { get; init; } = [];
+
+    public override IReadOnlyList<object> GetRoots() => Project(Items);
+    public override IReadOnlyList<object>? GetChildren(object item)
+    {
+        var children = ChildrenSelector((T)item);
+        return children is null ? null : Project(children);
+    }
+    public override string GetKey(object item) => KeySelector((T)item);
+    public override Element BuildView(object item) => ViewBuilder((T)item);
+    public override bool GetIsExpanded(object item) => IsExpanded?.Invoke((T)item) ?? false;
+    public override void InvokeItemInvoked(object item) => OnItemInvoked?.Invoke((T)item);
+    public override void InvokeExpanding(object item) => OnExpanding?.Invoke((T)item);
+
+    public override TreeViewSelectionMode GetSelectionMode() => SelectionMode;
+    public override bool GetCanDragItems() => CanDragItems;
+    public override bool GetAllowDrop() => AllowDrop;
+    public override bool GetCanReorderItems() => CanReorderItems;
+    public override void ApplyControlSetters(object control) =>
+        Reconciler.ApplySetters(Setters, (WinUI.TreeView)control);
+
+    internal override bool HasCallbacks => OnItemInvoked is not null || OnExpanding is not null;
+    internal override bool HasSetters => Setters.Length > 0;
+
+    /// <summary>
+    /// Object-erases the source list. Reference-type <c>T</c> reuses the same
+    /// instance through covariance (no copy); value-type <c>T</c> is boxed into
+    /// a fresh <c>object[]</c>. Identity-stable mapping back to <c>T</c> is via
+    /// <see cref="GetKey"/> (a string), not object reference, so the per-call
+    /// boxing of value types is harmless.
+    /// </summary>
+    private static IReadOnlyList<object> Project(IReadOnlyList<T> source)
+    {
+        if (source is IReadOnlyList<object> covariant) return covariant;
+        var boxed = new object[source.Count];
+        for (int i = 0; i < source.Count; i++) boxed[i] = source[i]!;
+        return boxed;
+    }
 }
 
 // ════════════════════════════════════════════════════════════════════════

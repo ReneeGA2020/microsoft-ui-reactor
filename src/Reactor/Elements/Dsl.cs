@@ -646,6 +646,38 @@ public static partial class Factories
     public static TreeViewNodeData TreeNode(string content, params TreeViewNodeData[] children) =>
         new(content, children.Length > 0 ? children : null);
 
+    /// <summary>
+    /// Creates a typed, data-driven <see cref="TemplatedTreeViewElement{T}"/> —
+    /// the hierarchical peer of <see cref="ListView{T}(IReadOnlyList{T}, Func{T, string}, Func{T, int, Element})"/>.
+    /// The reconciler builds a WinUI <c>TreeView</c> from <paramref name="items"/>,
+    /// walks the hierarchy via <paramref name="childrenSelector"/>, and renders
+    /// each node via <paramref name="viewBuilder"/> (the <c>ItemTemplate</c>
+    /// equivalent — a <c>data → Element</c> function).
+    /// </summary>
+    /// <remarks>
+    /// Heterogeneous nodes with per-shape visuals are expressed as a
+    /// <c>switch</c> inside <paramref name="viewBuilder"/> (the C# equivalent of
+    /// WinUI's <c>ItemTemplateSelector</c>). This supersedes the deprecated
+    /// <see cref="TreeViewNodeData.ContentElement"/> (issue #447). (spec 039 §0.3)
+    /// </remarks>
+    public static TemplatedTreeViewElement<T> TreeView<T>(
+        IReadOnlyList<T> items,
+        Func<T, string> keySelector,
+        Func<T, IReadOnlyList<T>?> childrenSelector,
+        Func<T, Element> viewBuilder) => new(items, keySelector, childrenSelector, viewBuilder);
+
+    /// <summary>
+    /// <see cref="IReactorKeyed"/>-typed overload of
+    /// <see cref="TreeView{T}(IReadOnlyList{T}, Func{T, string}, Func{T, IReadOnlyList{T}}, Func{T, Element})"/>;
+    /// <c>KeySelector</c> defaults to <c>t =&gt; t.Key</c> so call sites can omit
+    /// it. (spec 042 §5)
+    /// </summary>
+    public static TemplatedTreeViewElement<T> TreeView<T>(
+        IReadOnlyList<T> items,
+        Func<T, IReadOnlyList<T>?> childrenSelector,
+        Func<T, Element> viewBuilder) where T : IReactorKeyed =>
+        new(items, static t => t.Key, childrenSelector, viewBuilder);
+
     public static FlipViewElement FlipView(params Element[] items) => new(items);
 
     // ── Dialogs / Overlays ──────────────────────────────────────────

@@ -128,6 +128,10 @@ public sealed partial class Reconciler
         {
         result = (oldEl, newEl, control) switch
         {
+            // Typed, data-driven TreeView<T> — hand-coded escape-hatch path
+            // (per-container hosting), so it stays on the switch. (#447)
+            (TemplatedTreeViewElementBase o, TemplatedTreeViewElementBase n, WinUI.TreeView ttv)
+                => UpdateTemplatedTreeView(o, n, ttv, requestRerender),
             (CommandHostElement o, CommandHostElement n, WinUI.Grid chGrid)
                 => UpdateCommandHost(o, n, chGrid, requestRerender),
             (ErrorBoundaryElement oldEb, ErrorBoundaryElement newEb, Border)
@@ -2359,6 +2363,7 @@ public sealed partial class Reconciler
     /// Reconciles ContentElement changes on a TreeViewNode.
     /// When ContentElement is used, node.Content holds a mounted UIElement.
     /// </summary>
+#pragma warning disable CS0618 // legacy TreeViewNodeData.ContentElement path (see issue #447)
     private void ReconcileTreeNodeContent(
         WinUI.TreeViewNode liveNode,
         TreeViewNodeData? oldData,
@@ -2393,6 +2398,152 @@ public sealed partial class Reconciler
                 Unmount(oldCtrl2);
             liveNode.Content = newData;
         }
+    }
+#pragma warning restore CS0618
+
+    // ── Typed, data-driven TreeView<T> ───────────────────────────────────
+
+    /// <summary>
+    /// Updates a typed <see cref="TemplatedTreeViewElementBase"/> in place:
+    /// keyed-diffs the node hierarchy and writes back the parent-control props.
+    /// The ItemInvoked / Expanding trampolines resolve the live element via
+    /// <c>GetElementTag</c>, so refreshing the element tag is all that's needed
+    /// to pick up new callbacks — no re-subscription.
+    /// </summary>
+    private UIElement? UpdateTemplatedTreeView(TemplatedTreeViewElementBase o, TemplatedTreeViewElementBase n, WinUI.TreeView tv, Action requestRerender)
+    {
+        // Diff the node hierarchy (structure + each node's data item). The view
+        // reconcile is a separate flat pass over the realized containers below —
+        // keeping the two concerns decoupled, and using the index-based container
+        // lookup that works under NativeAOT (ContainerFromItem does not resolve
+        // there, and a freshly-realized container can still be the base
+        // ListViewItem rather than TreeViewItem).
+        DiffTemplatedTreeNodes(tv.RootNodes, o, o.GetRoots(), n, n.GetRoots());
+
+        tv.SelectionMode = n.GetSelectionMode();
+        tv.CanDragItems = n.GetCanDragItems();
+        tv.AllowDrop = n.GetAllowDrop();
+        tv.CanReorderItems = n.GetCanReorderItems();
+
+        SetElementTag(tv, n);
+        n.ApplyControlSetters(tv);
+
+        // Reconcile the view of every currently-realized container against its
+        // node's (now-updated) data. Unrealized nodes need no work — their view
+        // is (re)built fresh from node.Content when they next realize via CCC.
+        RefreshRealizedTreeContainers(tv, FindTypedTreeListControl(tv), n, requestRerender);
+        return null;
+    }
+
+    /// <summary>
+    /// Reconciles the hosted view of every realized container against its node's
+    /// current <c>node.Content</c> data. Iterates the flattened
+    /// <see cref="WinUI.ListView.Items"/> via index (the AOT-robust lookup), so
+    /// it covers visible nodes at every depth in one pass.
+    /// </summary>
+    private void RefreshRealizedTreeContainers(WinUI.TreeView tv, WinUI.ListView? list, TemplatedTreeViewElementBase n, Action requestRerender)
+    {
+        if (list is null) return;
+        for (int i = 0; i < list.Items.Count; i++)
+        {
+            if (list.ContainerFromIndex(i) is not ContentControl container) continue;
+            if (container.ContentTemplateRoot is not ContentControl cc) continue;
+            if (list.Items[i] is not WinUI.TreeViewNode node || node.Content is not { } data) continue;
+
+            var newView = n.BuildView(data);
+            if (cc.Content is UIElement existing && GetElementTag(cc) is Element oldView && CanUpdate(oldView, newView))
+            {
+                var replacement = Update(oldView, newView, existing, requestRerender);
+                if (replacement is not null && !ReferenceEquals(cc.Content, replacement))
+                    cc.Content = replacement;
+            }
+            else
+            {
+                if (cc.Content is UIElement old) UnmountChild(old);
+                cc.Content = Mount(newView, requestRerender);
+            }
+            SetElementTag(cc, newView);
+        }
+    }
+
+    private static readonly object[] s_emptyTreeItems = [];
+
+    /// <summary>
+    /// Keyed, in-place hierarchical reconcile of a typed TreeView node list.
+    /// Keys on the element's <c>KeySelector</c>. Matched nodes are reused (their
+    /// data item and any realized container view reconciled in place); the live
+    /// <see cref="WinUI.TreeViewNode"/> collection is then reordered with minimal
+    /// insert/move/remove ops so that <b>unchanged-order updates touch the
+    /// collection not at all</b> — avoiding the container churn that a
+    /// clear-and-rebuild would force.
+    /// </summary>
+    private void DiffTemplatedTreeNodes(
+        IList<WinUI.TreeViewNode> liveNodes,
+        TemplatedTreeViewElementBase oldEl, IReadOnlyList<object> oldItems,
+        TemplatedTreeViewElementBase newEl, IReadOnlyList<object> newItems)
+    {
+        // Snapshot: map old key → (live node, old item). Live nodes correspond
+        // 1:1 to oldItems in order.
+        var oldByKey = new Dictionary<string, (WinUI.TreeViewNode Node, object OldItem)>(oldItems.Count);
+        for (int i = 0; i < oldItems.Count && i < liveNodes.Count; i++)
+            oldByKey.TryAdd(oldEl.GetKey(oldItems[i]), (liveNodes[i], oldItems[i]));
+
+        // Resolve the target node sequence: reuse-and-reconcile matched nodes,
+        // build fresh ones for new keys.
+        var target = new List<WinUI.TreeViewNode>(newItems.Count);
+        for (int i = 0; i < newItems.Count; i++)
+        {
+            var newItem = newItems[i];
+            if (oldByKey.Remove(newEl.GetKey(newItem), out var match))
+            {
+                var node = match.Node;
+                // node.Content is the data item; refresh it so the trampolines
+                // hand back the current T (value-type T is boxed fresh).
+                node.Content = newItem;
+
+                bool expanded = newEl.GetIsExpanded(newItem);
+                if (node.IsExpanded != expanded) node.IsExpanded = expanded;
+
+                DiffTemplatedTreeNodes(
+                    node.Children,
+                    oldEl, oldEl.GetChildren(match.OldItem) ?? s_emptyTreeItems,
+                    newEl, newEl.GetChildren(newItem) ?? s_emptyTreeItems);
+
+                target.Add(node);
+            }
+            else
+            {
+                target.Add(BuildTemplatedTreeNode(newEl, newItem));
+            }
+        }
+
+        // Removed nodes (unmatched old keys): drop them. Their realized
+        // containers recycle → the ContainerContentChanging recycle path tears
+        // their views down.
+        foreach (var leftover in oldByKey.Values)
+            liveNodes.Remove(leftover.Node);
+
+        // Reorder/insert so liveNodes matches `target`. Reused nodes already in
+        // the right slot mean zero collection mutations (the common case).
+        for (int j = 0; j < target.Count; j++)
+        {
+            if (j < liveNodes.Count && ReferenceEquals(liveNodes[j], target[j])) continue;
+
+            int current = IndexOfNode(liveNodes, target[j], j);
+            if (current >= 0) liveNodes.RemoveAt(current);
+            liveNodes.Insert(j, target[j]);
+        }
+        // Trim any stragglers beyond the target length (defensive — removals
+        // above should already have handled these).
+        while (liveNodes.Count > target.Count)
+            liveNodes.RemoveAt(liveNodes.Count - 1);
+    }
+
+    private static int IndexOfNode(IList<WinUI.TreeViewNode> nodes, WinUI.TreeViewNode target, int startAt)
+    {
+        for (int i = startAt; i < nodes.Count; i++)
+            if (ReferenceEquals(nodes[i], target)) return i;
+        return -1;
     }
 
     private UIElement? UpdateRectangle(RectangleElement n, WinShapes.Rectangle r)
