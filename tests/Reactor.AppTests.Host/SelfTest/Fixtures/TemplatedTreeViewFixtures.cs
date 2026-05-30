@@ -508,4 +508,134 @@ internal static class TemplatedTreeViewFixtures
                 await WaitFor(() => expectedChildren.All(l => H.FindText(l) is not null)));
         }
     }
+
+    // Shared by the two harder recycle variants below.
+    private static Element CoupledLabel(FsNode n) => n switch
+    {
+        FsFolder f => TextBlock($"[D] {f.Name}"),
+        FsFile file => TextBlock($"[F] {file.Name}"),
+        _ => TextBlock(""),
+    };
+
+    // Every realized node row must be type-consistent: tag char (index 1 of
+    // "[X] N…") is 'D'/'F' and equals the name's first char (index 4).
+    private static bool RowsTypeConsistent(Harness h, out int rowCount)
+    {
+        var rows = h.FindAllControls<WinXC.TextBlock>(
+            tb => tb.Text is { Length: > 0 } t && t.StartsWith("["));
+        rowCount = rows.Count;
+        foreach (var tb in rows)
+        {
+            var t = tb.Text;
+            if (t.Length < 5 || (t[1] != 'D' && t[1] != 'F') || t[1] != t[4])
+                return false;
+        }
+        return true;
+    }
+
+    // ── 9. A recycled container reused for a DIFFERENT-typed item ─────────
+    // The most direct analogue of the XAML bug: replace the whole item set so
+    // each list slot's pooled container is reused for an item of the OTHER type
+    // (folder↔file), with a different key, on every flip. After each flip every
+    // realized row's template must match the NEW item's type — a container that
+    // kept the prior template would show "[D]" on a file row (or vice versa).
+    internal class HeteroRecycleTypeFlip(Harness h) : SelfTestFixtureBase(h)
+    {
+        // gen parity flips the type at every slot; the key embeds the gen so the
+        // slot's container is recycled (remove+add) rather than keyed-matched.
+        private static FsNode[] Gen(int gen, int n) =>
+            Enumerable.Range(0, n).Select(i =>
+            {
+                bool folder = (i % 2 == 0) ^ (gen % 2 == 1);
+                string name = folder ? $"D{gen}_{i}" : $"F{gen}_{i}";
+                return folder
+                    ? (FsNode)new FsFolder(name, name, [])
+                    : new FsFile(name, name, "txt");
+            }).ToArray();
+
+        public override async Task RunAsync()
+        {
+            const int N = 8;
+            var host = H.CreateHost();
+            host.Mount(ctx =>
+            {
+                var (gen, setGen) = ctx.UseState(0);
+                return VStack(
+                    Button("flip", () => setGen(gen + 1)),
+                    TreeView(Gen(gen, N), n => n.Id, ChildrenOf, CoupledLabel)
+                        with { IsExpanded = _ => false }
+                );
+            });
+
+            await Harness.Render();
+            H.Check("TTV_HeteroRecycleFlip_TreeFound",
+                H.FindControl<WinXC.TreeView>(_ => true) is not null);
+
+            bool allOk = true;
+            int observed = 0;
+            // Each flip reuses every slot's container for the other type.
+            for (int flip = 0; flip < 4; flip++)
+            {
+                H.ClickButton("flip");
+                await WaitFor(() => RowsTypeConsistent(H, out _));
+                bool ok = RowsTypeConsistent(H, out int rows);
+                observed = rows;
+                if (!ok) allOk = false;
+            }
+
+            H.Check("TTV_HeteroRecycleFlip_NoStaleTemplateAfterFlip", allOk);
+            H.Check("TTV_HeteroRecycleFlip_RowsRealized", observed > 0);
+        }
+    }
+
+    // ── 10. Virtualization-scroll recycle over a long heterogeneous list ──
+    // The truest "fast scroll" repro: many heterogeneous roots in a short
+    // viewport so the TreeView's internal list virtualizes, then scroll through
+    // it. Every realized row must stay type-consistent as containers recycle.
+    // If the headless harness doesn't realize a scrollable ScrollViewer, the
+    // assertion is SKIPPED (documented) rather than reported as a false pass.
+    internal class HeteroRecycleScroll(Harness h) : SelfTestFixtureBase(h)
+    {
+        private static FsNode[] ManyHeteroRoots(int n) =>
+            Enumerable.Range(0, n).Select(i => i % 2 == 0
+                ? (FsNode)new FsFolder($"D{i}", $"D{i}", [])
+                : new FsFile($"F{i}", $"F{i}", "txt")).ToArray();
+
+        public override async Task RunAsync()
+        {
+            var host = H.CreateHost();
+            host.Mount(_ =>
+                (TreeView(ManyHeteroRoots(60), n => n.Id, ChildrenOf, CoupledLabel)
+                    with { IsExpanded = _ => false })
+                    .Height(160));   // short viewport → virtualization
+
+            await Harness.Render();
+            H.Check("TTV_HeteroRecycleScroll_TreeFound",
+                H.FindControl<WinXC.TreeView>(_ => true) is not null);
+
+            var sv = H.FindControl<WinXC.ScrollViewer>(s => s.ScrollableHeight > 0)
+                     ?? H.FindControl<WinXC.ScrollViewer>(_ => true);
+            if (sv is null || sv.ScrollableHeight <= 0)
+            {
+                H.Skip("TTV_HeteroRecycleScroll_NoMismatchAcrossScroll",
+                    "no scrollable ScrollViewer realized in the headless harness");
+                return;
+            }
+
+            bool allConsistent = true;
+            int maxRows = 0;
+            double[] fracs = [0.0, 0.34, 0.67, 1.0, 0.5, 0.0];
+            foreach (var frac in fracs)
+            {
+                sv.ChangeView(null, sv.ScrollableHeight * frac, null);
+                await Harness.Render();
+                bool ok = RowsTypeConsistent(H, out int rows);
+                if (rows > maxRows) maxRows = rows;
+                if (!ok) allConsistent = false;
+            }
+
+            H.Check("TTV_HeteroRecycleScroll_NoMismatchAcrossScroll", allConsistent);
+            H.Check("TTV_HeteroRecycleScroll_RowsRealized", maxRows > 0);
+        }
+    }
 }

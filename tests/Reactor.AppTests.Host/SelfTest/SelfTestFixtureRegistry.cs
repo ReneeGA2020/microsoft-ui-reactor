@@ -155,6 +155,8 @@ internal static class SelfTestFixtureRegistry
         // Heterogeneous nodes stay correctly templated across container recycle
         // (issue #447 comment — the XAML ItemTemplateSelector failure mode).
         "TTV_HeteroRecycle_ExpandCollapse",
+        "TTV_HeteroRecycle_TypeFlip",
+        "TTV_HeteroRecycle_Scroll",
         // ItemsView reconciler arm — mount / update / layout-kind / selection.
         "ItemsView_Mount",
         "ItemsView_Layout_UniformGrid",
@@ -1313,6 +1315,8 @@ internal static class SelfTestFixtureRegistry
         "TTV_ExpandCollapseCycle" => new TemplatedTreeViewFixtures.ExpandCollapseCycle(harness),
         "TTV_UnmountTearsDown" => new TemplatedTreeViewFixtures.UnmountTearsDown(harness),
         "TTV_HeteroRecycle_ExpandCollapse" => new TemplatedTreeViewFixtures.HeteroRecycleExpandCollapse(harness),
+        "TTV_HeteroRecycle_TypeFlip" => new TemplatedTreeViewFixtures.HeteroRecycleTypeFlip(harness),
+        "TTV_HeteroRecycle_Scroll" => new TemplatedTreeViewFixtures.HeteroRecycleScroll(harness),
         "ItemsView_Mount" => new ItemsViewFixtures.ItemsView_BasicMount(harness),
         "ItemsView_Layout_UniformGrid" => new ItemsViewFixtures.ItemsView_LayoutKind_AppliesUniformGrid(harness),
         "ItemsView_Layout_LinedFlow" => new ItemsViewFixtures.ItemsView_LayoutKind_AppliesLinedFlow(harness),
