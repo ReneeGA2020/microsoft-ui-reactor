@@ -403,4 +403,109 @@ internal static class TemplatedTreeViewFixtures
             H.Check("TTV_Unmount_ReplacementShown", H.FindText("gone") is not null);
         }
     }
+
+    // ── 8. Heterogeneous nodes stay correctly templated across recycling ──
+    // The WinUI XAML ItemTemplateSelector failure mode (issue #447 comment):
+    // under container recycling a realized container was reused WITHOUT
+    // re-matching the selected template to the current item's type, so a
+    // recycled row rendered the WRONG template (or blank). ExpandCollapseCycle
+    // already proves homogeneous children don't blank; this adds the missing
+    // pixel-level, heterogeneous check the §6 note in KeyedUpdateAddChild
+    // deferred: drive repeated collapse→expand over a folder whose children are
+    // a MIX of sub-folders and files, then assert every realized row is
+    // type-consistent — its "[D]"/"[F]" tag agrees with the node's name tag —
+    // and that no expected row went blank.
+    internal class HeteroRecycleExpandCollapse(Harness h) : SelfTestFixtureBase(h)
+    {
+        // Names are tagged (Dxxx / Fxxx) so the rendered "[D]"/"[F]" prefix and
+        // the name's first letter MUST agree; a stale/mismatched template — the
+        // XAML bug — breaks the pair, and a blanked row drops out entirely.
+        private static FsNode[] MixedTree() =>
+        [
+            new FsFolder("mixed", "Dmixed",
+            [
+                new FsFolder("s1", "Dsub1", []),
+                new FsFile("x1", "Ffile1", "txt"),
+                new FsFolder("s2", "Dsub2", []),
+                new FsFile("x2", "Ffile2", "txt"),
+            ]),
+            new FsFile("root", "Froot", "txt"),
+        ];
+
+        // One coupled label per node, so a single TextBlock reveals a mismatch.
+        private static Element CoupledView(FsNode n) => n switch
+        {
+            FsFolder f => TextBlock($"[D] {f.Name}"),
+            FsFile file => TextBlock($"[F] {file.Name}"),
+            _ => TextBlock(""),
+        };
+
+        // Every realized node row must be type-consistent: tag char (index 1 of
+        // "[X] N…") is 'D'/'F' and equals the name's first char (index 4).
+        // Blank rows don't start with "[", so presence checks catch those.
+        private static bool RowsTypeConsistent(Harness h, out int rowCount)
+        {
+            var rows = h.FindAllControls<WinXC.TextBlock>(
+                tb => tb.Text is { Length: > 0 } t && t.StartsWith("["));
+            rowCount = rows.Count;
+            foreach (var tb in rows)
+            {
+                var t = tb.Text;
+                if (t.Length < 5 || (t[1] != 'D' && t[1] != 'F') || t[1] != t[4])
+                    return false;
+            }
+            return true;
+        }
+
+        public override async Task RunAsync()
+        {
+            var host = H.CreateHost();
+            host.Mount(_ =>
+                TreeView(MixedTree(),
+                    keySelector: n => n.Id,
+                    childrenSelector: ChildrenOf,
+                    viewBuilder: CoupledView)
+                    // Start collapsed so we drive the expansions ourselves.
+                    with { IsExpanded = _ => false });
+
+            await Harness.Render();
+            var tv = H.FindControl<WinXC.TreeView>(_ => true);
+            H.Check("TTV_HeteroRecycle_TreeFound", tv is not null);
+
+            var mixed = tv!.RootNodes[0];   // "Dmixed" — heterogeneous children
+            string[] expectedChildren =
+                ["[D] Dsub1", "[F] Ffile1", "[D] Dsub2", "[F] Ffile2"];
+
+            bool allCyclesOk = true;
+            int observedRows = 0;
+
+            // Repeated collapse→expand recycles the child containers across
+            // folder/file types. After each expand every child must be present
+            // AND every realized row must stay type-consistent.
+            for (int cycle = 0; cycle < 4; cycle++)
+            {
+                mixed.IsExpanded = true;
+                await WaitFor(() => H.FindText("[F] Ffile2") is not null);
+
+                bool allPresent = expectedChildren.All(l => H.FindText(l) is not null);
+                bool consistent = RowsTypeConsistent(H, out int rows);
+                observedRows = rows;
+                if (!allPresent || !consistent) allCyclesOk = false;
+
+                mixed.IsExpanded = false;
+                await Harness.Render();
+            }
+
+            // No "[D]" wearing a file's row, no "[F]" on a folder, no blanks —
+            // the XAML recycling bug did NOT carry over to Reactor's TreeView<T>.
+            H.Check("TTV_HeteroRecycle_NoMismatchedOrBlankRows", allCyclesOk);
+            // Guard against a vacuously-true pass: we really realized rows.
+            H.Check("TTV_HeteroRecycle_RowsRealized", observedRows > 0);
+
+            // Final expand renders the full heterogeneous child set.
+            mixed.IsExpanded = true;
+            H.Check("TTV_HeteroRecycle_FinalExpandFullSet",
+                await WaitFor(() => expectedChildren.All(l => H.FindText(l) is not null)));
+        }
+    }
 }
