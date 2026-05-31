@@ -243,11 +243,24 @@ public sealed partial class Reconciler
                 if (run.Foreground is not null) r.Foreground = run.Foreground;
                 return r;
             case RichTextHyperlink link:
-                var l = link?.NavigateUri ?? new Uri("about:blank");
-                l = l.ToString().Length < 1 ? l = new Uri("about:blank") : l;
                 var hl = new Microsoft.UI.Xaml.Documents.Hyperlink();
-                try { hl.NavigateUri = l; } catch { hl.NavigateUri = new Uri("about:blank"); }
-                hl.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = link?.Text ?? ""});
+                if (link.OnClick is { } onClick)
+                {
+                    // Clickable inline: fire the action, don't navigate. A fresh handler is attached on
+                    // every rich-text rebuild (recycling-safe — no stale closures on reused containers).
+                    hl.Click += (_, _) => onClick();
+                    try { hl.UnderlineStyle = Microsoft.UI.Xaml.Documents.UnderlineStyle.None; } catch { }
+                }
+                else
+                {
+                    var l = link.NavigateUri ?? new Uri("about:blank");
+                    l = l.ToString().Length < 1 ? new Uri("about:blank") : l;
+                    try { hl.NavigateUri = l; } catch { hl.NavigateUri = new Uri("about:blank"); }
+                }
+                if (link.Foreground is not null) hl.Foreground = link.Foreground;
+                if (link.FontSize.HasValue) hl.FontSize = link.FontSize.Value;
+                if (link.IsBold) hl.FontWeight = Microsoft.UI.Text.FontWeights.Bold;
+                hl.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = link.Text ?? "" });
                 return hl;
             case RichTextLineBreak:
                 return new Microsoft.UI.Xaml.Documents.LineBreak();
