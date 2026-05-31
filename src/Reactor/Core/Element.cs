@@ -2197,7 +2197,16 @@ public record RichTextRun(string Text) : RichTextInline
     public Brush? Foreground { get; init; }
 }
 
-public record RichTextHyperlink(string Text, Uri NavigateUri) : RichTextInline;
+public record RichTextHyperlink(string Text, Uri? NavigateUri = null) : RichTextInline
+{
+    /// <summary>Click action. When set, the hyperlink fires this instead of navigating — a
+    /// lightweight clickable inline (no UIElement per fragment). Recycling-safe: rich text rebuilds
+    /// the whole block, so each rebuild attaches a fresh handler bound to the current data.</summary>
+    public Action? OnClick { get; init; }
+    public Brush? Foreground { get; init; }
+    public double? FontSize { get; init; }
+    public bool IsBold { get; init; }
+}
 
 public record RichTextLineBreak() : RichTextInline;
 

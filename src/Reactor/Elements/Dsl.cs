@@ -1249,6 +1249,10 @@ public static partial class Factories
 
     public static RichTextHyperlink Hyperlink(string text, Uri navigateUri) => new(text, navigateUri);
 
+    /// <summary>A clickable rich-text inline that fires <paramref name="onClick"/> (no navigation,
+    /// no per-fragment UIElement) — lets a RichTextBlock carry per-fragment interaction declaratively.</summary>
+    public static RichTextHyperlink Hyperlink(string text, Action onClick) => new(text) { OnClick = onClick };
+
     // ── Markdown ─────────────────────────────────────────────────────
 
     /// <summary>
